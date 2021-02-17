@@ -10,7 +10,7 @@
 
 #define toDigit(c) ( c - '0')
 
-std::map<char, uint8_t> fen_decode_map = {
+std::map<char, Piece> fen_decode_map = {
     {'p', Piece::Black | Piece::Pawn},
     {'n', Piece::Black | Piece::Knight},
     {'b', Piece::Black | Piece::Bishop},
@@ -25,7 +25,7 @@ std::map<char, uint8_t> fen_decode_map = {
     {'K', Piece::White | Piece::King}
 };
 
-std::map<char, uint> file_decode_map = {
+std::map<char, Square::square_t> file_decode_map = {
     {'a', 0},
     {'b', 1},
     {'c', 2},
@@ -37,7 +37,7 @@ std::map<char, uint> file_decode_map = {
 
 };
 
-std::map<uint, char> file_encode_map = {
+std::map<Square::square_t, char> file_encode_map = {
     {0, 'a'},
     {1, 'b'},
     {2, 'c'},
@@ -49,6 +49,85 @@ std::map<uint, char> file_encode_map = {
 
 };
 
+Square::Square(const std::string rf) {
+// eg convert "e4" to (3, 4) to 28
+    if (rf.length() != 2) {
+        throw std::domain_error("Coordinate length != 2");
+    }
+    
+    uint rank = 7 - (toDigit(rf[1]) - 1);
+    uint file = file_decode_map[rf[0]];
+
+    value = rank + 8 * file;
+}
+
+std::string Square::pretty_print() const{
+    return file_encode_map[file()] + std::to_string(8 - rank());
+};
+
+std::ostream& operator<<(std::ostream& os, const Square move) {
+        os << move.pretty_print();
+        return os;
+    }
+Square::square_t Square::squares_to_north() const{
+    // Number of squares between this square and the north edge
+    return rank();
+}
+Square::square_t Square::squares_to_south() const{
+    // Number of squares between this square and the south edge
+    return 7-rank();
+}
+Square::square_t Square::squares_to_east() const{
+    // Number of squares between this square and the south edge
+    return 7-file();
+}
+Square::square_t Square::squares_to_west() const{
+    // Number of squares between this square and the south edge
+    return file();
+}
+
+std::vector<Square> Square::knight_moves() const{
+    std::vector<Square> moves;
+    if (Square::squares_to_north() >= 2){
+        if(Square::squares_to_west() >= 1) {
+            moves.push_back(*this + Square::NNW);
+        }
+        if(Square::squares_to_east() >= 1) {
+            moves.push_back(*this + Square::NNE);
+        }
+    }
+    if (Square::squares_to_east() >= 2){
+        if(Square::squares_to_north() >= 1) {
+            moves.push_back(*this + Square::ENE);
+        }
+        if(Square::squares_to_south() >= 1) {
+            moves.push_back(*this + Square::ESE);
+        }
+    }
+    if (Square::squares_to_south() >= 2){
+        if(Square::squares_to_east() >= 1) {
+            moves.push_back(*this + Square::SSE);
+        }
+        if(Square::squares_to_west() >= 1) {
+            moves.push_back(*this + Square::SSW);
+        }
+    }
+    if (Square::squares_to_west() >= 2){
+        if(Square::squares_to_south() >= 1) {
+            moves.push_back(*this + Square::WSW);
+        }
+        if(Square::squares_to_north() >= 1) {
+            moves.push_back(*this + Square::WNW);
+        }
+    }
+
+    return moves;
+}
+
+std::ostream& operator<<(std::ostream& os, const Move move) {
+    os << move.pretty_print();
+    return os;
+}
 
 void Board::fen_decode(const std::string& fen){
     uint N = fen.length(), board_position;
@@ -74,7 +153,7 @@ void Board::fen_decode(const std::string& fen){
             break;
         }
         // Otherwise should be a character for a piece
-        pieces[to_index(rank, file)] = fen_decode_map[my_char];
+        pieces[Square::to_index(rank, file)] = fen_decode_map[my_char];
         file ++;
     }
     
@@ -149,7 +228,7 @@ void Board::fen_decode(const std::string& fen){
         // No en passent, continue
         en_passent_target = 0;
     } else {
-        en_passent_target = str_to_index(en_passent);
+        en_passent_target = Square(en_passent);
     }
 
     // Halfmove clock
@@ -158,25 +237,6 @@ void Board::fen_decode(const std::string& fen){
     fullmove_counter = counter;
     
 };
-
-uint Board::str_to_index(const std::string& rf){
-    // eg convert "e4" to (3, 4) to 28
-    if (rf.length() != 2) {
-        throw std::domain_error("Coordinate length != 2");
-    }
-    
-    uint rank = 7 - (toDigit(rf[1]) - 1);
-    uint file = file_decode_map[rf[0]];
-
-    return to_index(rank, file);
-}
-
-std::string Board::idx_to_str(Board::coord idx) {
-    // In our convention
-    coord rank = idx / 8;
-    coord file = idx % 8;
-    return file_encode_map[file] + std::to_string(8 - rank);
-}
 
 void Board::print_board_idx() {
     for (uint rank = 0; rank< 8; rank++) {
@@ -191,8 +251,8 @@ void Board::print_board_idx() {
 void Board::print_board() {
     for (uint rank = 0; rank< 8; rank++) {
         for (uint file = 0; file< 8; file++) {
-            coord idx = 8*rank +file;
-            if (idx == en_passent_target & pieces[idx] == Piece::Blank & en_passent_target != 0){
+            Square::square_t idx = 8*rank +file;
+            if (idx == en_passent_target & pieces[idx] == Piece::Blank & en_passent_target.get_value() != 0){
                 std::cout << '!';
             } else {
                 std::cout << pieces[idx].pretty_print() << ' ';
@@ -205,8 +265,8 @@ void Board::print_board() {
 void Board::print_board_extra(){
     for (uint rank = 0; rank< 8; rank++) {
         for (uint file = 0; file< 8; file++) {
-            coord idx = 8*rank +file;
-            if (idx == en_passent_target & en_passent_target != 0 & pieces[idx] == Piece::Blank){
+            Square::square_t idx = 8*rank +file;
+            if (idx == en_passent_target & en_passent_target.get_value() != 0 & pieces[idx] == Piece::Blank){
                 std::cout << '-';
             } else {
                 std::cout << pieces[idx].pretty_print();
@@ -241,66 +301,107 @@ void Board::print_board_extra(){
     }
 };
 
-Board::coord Board::squares_to_north(Board::coord idx) {
-    // Number of squares between this square and the north edge
-    coord rank = idx / 8;
-    return rank;
-}
-Board::coord Board::squares_to_south(Board::coord idx) {
-    // Number of squares between this square and the south edge
-    coord rank = idx / 8;
-    return 7-rank;
-}
-Board::coord Board::squares_to_east(Board::coord idx) {
-    // Number of squares between this square and the south edge
-    coord file = idx % 8;
-    return 7-file;
-}
-Board::coord Board::squares_to_west(Board::coord idx) {
-    // Number of squares between this square and the south edge
-    coord file = idx % 8;
-    return file;
-}
+std::vector<Move> Board::get_pawn_moves(const Square origin, const Piece colour) const{
+    std::vector<Move> moves;
+    Square target;
+    Move move;
+    if (colour.is_colour(Piece::White)) {
+        // Normal moves are N
+        // Check that we are on the 7th rank or less
+        if (origin.rank() > 0) 
+        {
+            target = origin + (Square::N);
+            if (pieces[target].is_piece(Piece::Blank)) {
+                move = Move(origin, target);
+                moves.push_back(move);
+            }
+            moves.push_back(Move(origin, origin + Square::N));
+            // Look for double pawn push possibility
+            if (origin.rank() == 6) {
+                target = origin + (Square::N + Square::N);
+                if (pieces[target].is_piece(Piece::Blank) & pieces[origin + Square::N].is_piece(Piece::Blank)) {
+                    move = Move(origin, target);
+                    move.make_double_push();
+                    moves.push_back(move);
+                }
+            }
+            // Look for en-passent possibility
+            if (origin.rank() == 3) {
+                if (en_passent_target.get_value() != 0) {
+                    if (en_passent_target.file() == origin.file() + 1 | en_passent_target.file() == origin.file() - 1) {
+                        move = Move(origin, en_passent_target); 
+                        move.make_en_passent();
+                        moves.push_back(move);
+                    }
+                }
+            }
 
-std::vector<Board::coord> possible_knight_moves(const Board::coord starting_point) {
-    std::vector<Board::coord> moves;
-    if (Board::squares_to_north(starting_point) >= 2){
-        if(Board::squares_to_west(starting_point) >= 1) {
-            moves.push_back(starting_point + Board::NNW);
-        }
-        if(Board::squares_to_east(starting_point) >= 1) {
-            moves.push_back(starting_point + Board::NNE);
-        }
-    }
-    if (Board::squares_to_east(starting_point) >= 2){
-        if(Board::squares_to_north(starting_point) >= 1) {
-            moves.push_back(starting_point + Board::ENE);
-        }
-        if(Board::squares_to_south(starting_point) >= 1) {
-            moves.push_back(starting_point + Board::ESE);
-        }
-    }
-    if (Board::squares_to_south(starting_point) >= 2){
-        if(Board::squares_to_east(starting_point) >= 1) {
-            moves.push_back(starting_point + Board::SSE);
-        }
-        if(Board::squares_to_west(starting_point) >= 1) {
-            moves.push_back(starting_point + Board::SSW);
-        }
-    }
-    if (Board::squares_to_west(starting_point) >= 2){
-        if(Board::squares_to_south(starting_point) >= 1) {
-            moves.push_back(starting_point + Board::WSW);
-        }
-        if(Board::squares_to_north(starting_point) >= 1) {
-            moves.push_back(starting_point + Board::WNW);
+        } else
+        {
+            target = origin + (Square::S);
+            if (pieces[target].is_piece(Piece::Blank)) {
+                Move move = Move(origin, target);
+                moves.push_back(move);
+            }
+            moves.push_back(Move(origin, origin + Square::S));
+            // Look for double pawn push possibility
+            if (origin.rank() == 1) {
+                target = origin + (Square::S + Square::S);
+                if (pieces[target].is_piece(Piece::Blank) & pieces[origin + Square::S].is_piece(Piece::Blank)) {
+                    Move move = Move(origin, target);
+                    move.make_double_push();
+                    moves.push_back(move);
+                }
+            }
+            // Look for en-passent possibility
+            if (origin.rank() == 4) {
+                if (en_passent_target.get_value() != 0) {
+                    if (en_passent_target.file() == origin.file() + 1 | en_passent_target.file() == origin.file() - 1) {
+                        Move move = Move(origin, en_passent_target); 
+                        move.make_en_passent();
+                        moves.push_back(move);
+                    }
+                }
+            }
         }
     }
-
     return moves;
 }
+void Board::get_moves() const {
+    Piece colour;
+    if (whos_move == white_move) {
+        colour = Piece::White;
+    } else {
+        colour = Piece::Black;
+    }
 
-std::vector<Board::coord> possible_rook_moves(const Board::coord starting_point, Piece piece) {
-    const Piece colour = piece.get_colour();
-    
+    Piece piece;
+    std::vector<Square> targets;
+    std::vector<Move> moves;
+    for (Square::square_t i = 0; i < 64; i++) {
+        Square square = Square(i);
+        piece = pieces[square];
+        if (not piece.is_colour(colour)) {continue; }
+        if (piece.is_piece(Piece::Knight)) {
+            targets = square.knight_moves();
+            for (Square target : targets) {
+                // We can move to somewhere only if that square doesn't have a piece of our colour.
+                if (not pieces[target].is_colour(colour)) {
+                    Move move = Move(square, target);
+                    if (pieces[target].is_colour(~colour)) {
+                        move.make_capture();
+                    }
+                    moves.push_back(move);
+                }
+            }
+        } else if (piece.is_piece(Piece::Pawn)) {
+            std::vector<Move> pawn_moves = get_pawn_moves(square, colour);
+            moves.insert(moves.end(), pawn_moves.begin(), pawn_moves.end());
+        }
+    }
+
+    std::cout << "Pseudolegal moves:" << std::endl;
+    for (Move move: moves) {
+        std::cout << move << std::endl;
+    }
 }

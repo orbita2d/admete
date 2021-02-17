@@ -3,9 +3,9 @@
 #include "game/piece.hpp"
 #include "game/board.hpp"
 
-void print_vector(std::vector<Board::coord> &moves) {
-    for (Board::coord move : moves) {
-        std::cout << Board::idx_to_str(move) << std::endl;
+void print_vector(std::vector<Square> &moves) {
+    for (Square move : moves) {
+        std::cout << move << std::endl;
     }
 }
 
@@ -18,6 +18,5 @@ int main(int argc, char* argv[])
     std::cout << std::endl;
     board.print_board_extra();
     
-    std::vector<Board::coord> knight = possible_knight_moves(Board::str_to_index("g6"));
-    print_vector(knight);
+    board.get_moves();
 }
