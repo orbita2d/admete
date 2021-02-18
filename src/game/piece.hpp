@@ -54,6 +54,8 @@ public:
     }
 
     constexpr uint8_t get_value() const {return value; }
+
+    std::string get_algebraic_character() const;
     constexpr operator uint8_t() const {return value; }
 
 private:

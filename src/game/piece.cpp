@@ -37,6 +37,24 @@ char Piece::pretty_print() const{
        
     }
 
+std::string Piece::get_algebraic_character() const{
+    if (is_piece(Pawn)) {
+        return "";
+    }else if (is_piece(Knight)) {
+        return "N";
+    }else if (is_piece(Bishop)) {
+        return "B";
+    }else if (is_piece(Rook)) {
+        return "R";
+    }else if (is_piece(Queen)) {
+        return "Q";
+    }else if (is_piece(King)) {
+        return "K";
+    } else {
+        return "X";
+    }
+}
+
 std::ostream& operator<<(std::ostream& os, const Piece piece) {
     os << piece.pretty_print();
     return os;

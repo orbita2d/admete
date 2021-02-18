@@ -15,40 +15,40 @@ public:
     Square(const std::string rf);
     Square() = default;
 
-    static const square_t N = -8;
-    static const square_t E =  1;
-    static const square_t S =  8;
-    static const square_t W = -1;
-    static const square_t NW = N + W;
-    static const square_t NE = N + E;
-    static const square_t SE = S + E;
-    static const square_t SW = S + W;
-    static const square_t NNW = N + N + W;
-    static const square_t NNE = N + N + E;
-    static const square_t ENE = E + N + E;
-    static const square_t ESE = E + S + E;
-    static const square_t SSE = S + S + E;
-    static const square_t SSW = S + S + W;
-    static const square_t WSW = W + S + W;
-    static const square_t WNW = W + N + W;
+    static const Square N;
+    static const Square E;
+    static const Square S;
+    static const Square W;
+    static const Square NW;
+    static const Square NE;
+    static const Square SE;
+    static const Square SW;
+    static const Square NNW;
+    static const Square NNE;
+    static const Square ENE;
+    static const Square ESE;
+    static const Square SSE;
+    static const Square SSW;
+    static const Square WSW;
+    static const Square WNW;
+    
+    static const Square Rank1;
+    static const Square Rank2;
+    static const Square Rank3;
+    static const Square Rank4;
+    static const Square Rank5;
+    static const Square Rank6;
+    static const Square Rank7;
+    static const Square Rank8;
 
-    static const square_t Rank1 = 7 * 8;
-    static const square_t Rank2 = 6 * 8;
-    static const square_t Rank3 = 5 * 8;
-    static const square_t Rank4 = 4 * 8;
-    static const square_t Rank5 = 3 * 8;
-    static const square_t Rank6 = 2 * 8;
-    static const square_t Rank7 = 1 * 8;
-    static const square_t Rank8 = 0 * 8;
-
-    static const square_t FileA = 0 ;
-    static const square_t FileB = 1;
-    static const square_t FileC = 2;
-    static const square_t FileD = 3;
-    static const square_t FileE = 4;
-    static const square_t FileF = 5;
-    static const square_t FileG = 6;
-    static const square_t FileH = 7;
+    static const Square FileA;
+    static const Square FileB;
+    static const Square FileC;
+    static const Square FileD;
+    static const Square FileE;
+    static const Square FileF;
+    static const Square FileG;
+    static const Square FileH;
 
     bool operator==(const Square that) const { return value == that.value; }
     bool operator!=(const Square that) const { return value != that.value; }
@@ -61,11 +61,19 @@ public:
         return value;
     }
 
-    square_t rank() const{
+    square_t rank_index() const{
         return value / 8;
     }
-    square_t file() const{
+    square_t file_index() const{
         return value % 8;
+    }
+
+    Square file() const{
+        return value & 0x07;
+    }
+
+    Square rank() const{
+        return value & 0x38;
     }
 
     square_t squares_to_north() const;
@@ -77,7 +85,7 @@ public:
         return 8 * rank + file;
     }
 
-    operator square_t() {
+    operator square_t() const {
         return value;
     };
 
@@ -96,10 +104,17 @@ class Move {
 public:
     Move(const Square o, const Square t) : origin(o), target(t) {};
     Move() = default;
+
+    Square origin;
+    Square target;
+
     std::string pretty_print() const{
         if (capture){ return std::string(origin) + "x" + std::string(target); }
+        else if(is_king_castle()) {return "O-O"; }
+        else if(is_queen_castle()) {return "O-O-O"; }
         else {return std::string(origin) + std::string(target);}
     }
+
     void make_quiet() {
         promotion = false;
         capture = false;
@@ -136,9 +151,37 @@ public:
         special1 = false;
         special2 = true;
     }
+    constexpr bool is_capture() const {
+        return capture;
+    }
+    constexpr bool is_ep_capture() const {
+        return ((promotion == false) & 
+                (capture == true) & 
+                (special1 == false) & 
+                (special2 == true));
+    }
+    constexpr bool is_double_push() const {
+        return ((promotion == false) & 
+                (capture == false) & 
+                (special1 == false) & 
+                (special2 == true));
+    }
+    constexpr bool is_king_castle() const {
+        return ((promotion == false) & 
+                (capture == false) & 
+                (special1 == true) & 
+                (special2 == false));
+    }
+    constexpr bool is_queen_castle() const {
+        return ((promotion == false) & 
+                (capture == false) & 
+                (special1 == true) & 
+                (special2 == true));
+    }
+    Piece captured_peice;
+    Square en_passent_target;
+    uint halfmove_clock;
 private:
-    Square origin;
-    Square target;
     bool promotion = 0;
     bool capture = 0;
     bool special1 = 0;
@@ -163,8 +206,25 @@ public:
 
     void print_board_extra();
 
-    std::vector<Move> get_pawn_moves(const Square origin, const Piece colour) const;
-    void get_moves() const;
+    std::string print_move(const Move move, std::vector<Move> &legal_moves) const;
+    bool is_free(const Square target) const;
+    void get_sliding_moves(const Square origin, const Piece colour, const Square direction, const uint to_edge, std::vector<Move> &moves) const;
+    void get_step_moves(const Square origin, const Square target, const Piece colour, std::vector<Move> &moves) const;
+    void get_pawn_moves(const Square origin, const Piece colour, std::vector<Move> &moves) const;
+    void get_bishop_moves(const Square origin, const Piece colour, std::vector<Move> &moves) const;
+    void get_rook_moves(const Square origin, const Piece colour, std::vector<Move> &moves) const;
+    void get_queen_moves(const Square origin, const Piece colour, std::vector<Move> &moves) const;
+    void get_knight_moves(const Square origin, const Piece colour, std::vector<Move> &moves) const;
+    void get_king_moves(const Square origin, const Piece colour, std::vector<Move> &moves) const;
+    void get_castle_moves(const Piece colour, std::vector<Move> &moves) const;
+    std::vector<Move> get_moves() const;
+
+    void make_move(Move &move);
+    void unmake_move(const Move move);
+    void unmake_last() {unmake_move(last_move); }
+
+    void try_move(const std::string move_sting);
+
 private:
     std::array<Piece, 64> pieces;
     bool whos_move = white_move;
@@ -175,4 +235,5 @@ private:
     Square en_passent_target = 0;
     uint halfmove_clock = 0;
     uint fullmove_counter = 1;
+    Move last_move;
 };
