@@ -609,13 +609,8 @@ void Board::get_knight_moves(const Square origin, const Piece colour, std::vecto
 };
 
 std::vector<Move> Board::get_pseudolegal_moves() const {
-    Piece colour;
-    if (whos_move == white_move) {
-        colour = Pieces::White;
-    } else {
-        colour = Pieces::Black;
-    }
-
+    Piece colour = whos_move;
+    
     Piece piece;
     std::vector<Square> targets;
     std::vector<Move> moves;
@@ -1020,12 +1015,7 @@ std::vector<Move> Board::get_moves(){
 }
 
 bool Board::is_in_check() const {
-    Piece colour;
-    if (whos_move == white_move) {
-        colour = Pieces::White;
-    } else {
-        colour = Pieces::Black;
-    }
+    Piece colour = whos_move;
     Square king_square = find_king(colour);
     return is_check(king_square, colour);
 }
