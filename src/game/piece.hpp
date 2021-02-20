@@ -56,6 +56,30 @@ public:
         return value == 0x00;
     }
 
+    constexpr bool is_pawn() const {
+        return (value & 0x0F) == 0x01;
+    }
+
+    constexpr bool is_knight() const {
+        return (value & 0x0F) == 0x02;
+    }
+
+    constexpr bool is_bishop() const {
+        return (value & 0x0F) == 0x03;
+    }
+
+    constexpr bool is_rook() const {
+        return (value & 0x0F) == 0x04;
+    }
+
+    constexpr bool is_queen() const {
+        return (value & 0x0F) == 0x05;
+    }
+
+    constexpr bool is_king() const {
+        return (value & 0x0F) == 0x06;
+    }
+
     constexpr uint8_t get_value() const {return value; }
 
     std::string get_algebraic_character() const;

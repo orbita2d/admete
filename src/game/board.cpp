@@ -619,21 +619,22 @@ std::vector<Move> Board::get_pseudolegal_moves() const {
     Piece piece;
     std::vector<Square> targets;
     std::vector<Move> moves;
+    moves.reserve(256);
     for (Square::square_t i = 0; i < 64; i++) {
         Square square = Square(i);
         piece = pieces[square];
         if (not piece.is_colour(colour)) {continue; }
-        if (piece.is_piece(Pieces::Knight)) {
+        if (piece.is_knight()) {
             get_knight_moves(square, colour, moves);
-        } else if (piece.is_piece(Pieces::Pawn)) {
+        } else if (piece.is_pawn()) {
             get_pawn_moves(square, colour, moves);
-        } else if (piece.is_piece(Pieces::Rook)) {
+        } else if (piece.is_rook()) {
             get_rook_moves(square, colour, moves);
-        } else if (piece.is_piece(Pieces::Bishop)) {
+        } else if (piece.is_bishop()) {
             get_bishop_moves(square, colour, moves);
-        } else if (piece.is_piece(Pieces::Queen)) {
+        } else if (piece.is_queen()) {
             get_queen_moves(square, colour, moves);
-        } else if (piece.is_piece(Pieces::King)) {
+        } else if (piece.is_king()) {
             get_king_moves(square, colour, moves);
         }
     }
