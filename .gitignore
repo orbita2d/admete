@@ -3,3 +3,6 @@ build
 
 # .vscode directory
 .vscode
+
+# Profiling output
+gmon.out
