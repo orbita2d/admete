@@ -9,16 +9,6 @@ public:
 
     Piece() = default;
     constexpr Piece(int aPiece) : value(uint8_t(aPiece)) { }
-    
-    static const Piece Blank ;
-    static const Piece Pawn ;
-    static const Piece Knight;
-    static const Piece Bishop ;
-    static const Piece Rook ;
-    static const Piece Queen;
-    static const Piece King;
-    static const Piece White;
-    static const Piece Black;
 
     constexpr bool operator==(Piece that) const { return value == that.value; }
     constexpr bool operator!=(Piece that) const { return value != that.value; }
@@ -62,6 +52,17 @@ private:
     uint8_t value;
 };
 
+namespace Pieces {
+    static constexpr Piece Blank = Piece(0);
+    static constexpr Piece Pawn = Piece(1);
+    static constexpr Piece Knight = Piece(2);
+    static constexpr Piece Bishop  = Piece(3);
+    static constexpr Piece Rook = Piece(4);
+    static constexpr Piece Queen = Piece(5);
+    static constexpr Piece King = Piece(6);
+    static constexpr Piece White = Piece(16);
+    static constexpr Piece Black = Piece(32);
+}
 
 std::ostream& operator<<(std::ostream& os, const Piece piece);
 

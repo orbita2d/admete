@@ -3,6 +3,7 @@
 
 #include "game/piece.hpp"
 #include "game/board.hpp"
+#include "testing/testing.hpp"
 
 void print_vector(const std::vector<Square> &moves) {
     for (Square move : moves) {
@@ -33,7 +34,7 @@ void interactive(Board &board) {
         } else if (input == "tb") {
             board.unmake_last();
         } else if (input == "moves") {
-            print_vector(board.get_moves());
+            print_vector(board.get_pseudolegal_moves());
         } else {
         board.try_move(input);
         }
@@ -43,17 +44,25 @@ int main(int argc, char* argv[])
 {
     static int count_moves_flag = 0;
     static int interactive_flag = 0;
-    std::string board_fen = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - ";
+    static int perft_flag = 0;
+    static int divide_flag = 0;
+    static int print_flag = 0;
+    unsigned int depth = 4;
+    std::string board_fen = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -";
     int opt;
 	while (true) {
 		static struct option long_options[] = {
 			{"count-moves",	no_argument, &count_moves_flag, 'c'},
 			{"interactive",	no_argument, &interactive_flag, 'i'},
+            {"perft", no_argument, &perft_flag, 'P'},
+            {"divide", no_argument, &divide_flag, 'D'},
+			{"depth",	required_argument, 0, 'd'},
 			{"board",	required_argument, 0, 'b'},
+            {"print",	no_argument, &print_flag, 'p'},
 			{0, 0, 0, 0}
 		};
 		int option_index = 0;
-		opt = getopt_long(argc, argv, "cb:", long_options, &option_index);
+		opt = getopt_long(argc, argv, "cipPDb:d:", long_options, &option_index);
 		if (opt == -1) { break; }
 		switch (opt) {
 		case 0:
@@ -65,9 +74,21 @@ int main(int argc, char* argv[])
 				fprintf(stdout," with arg %s", optarg);
 			fprintf(stdout, "\n");
 			break;
+		case 'd':
+            depth = atoi(optarg);
+			break;
 		case 'b':
             board_fen = optarg;
 			break;
+        case 'P':
+            perft_flag = true;
+            break;
+        case 'p':
+            print_flag = true;
+            break;
+        case 'D':
+            divide_flag = true;
+            break;
         case 'c':
             count_moves_flag = true;
             break;
@@ -84,6 +105,10 @@ int main(int argc, char* argv[])
     Board board = Board();
     board.fen_decode(board_fen);
 
+    if (print_flag) {
+        board.print_board();
+    }
+
     if (count_moves_flag) {
         count_moves(board);
         exit(EXIT_SUCCESS);
@@ -94,16 +119,18 @@ int main(int argc, char* argv[])
         exit(EXIT_SUCCESS);
     }
 
-    board.print_board();
-    std::cout << std::endl;
-    board.try_move("O-O");
-    board.print_board();
-    board.try_move("O-O");
-    board.print_board();
-    board.try_move("a4");
-    board.print_board();
-    board.try_move("Nh5");
-    board.print_board();
-    board.unmake_last();
-    board.print_board();
+    if (perft_flag) {
+        for (unsigned int i = 1; i <= depth; i++) {
+            std::cout << perft(i, board) << std::endl;
+        }
+        exit(EXIT_SUCCESS);
+    }
+
+    if (divide_flag) {
+        perft_divide(depth, board);
+        exit(EXIT_SUCCESS);
+
+    }
+
+    //std::cout << perft(4, board) << std::endl;
 }

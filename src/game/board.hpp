@@ -1,9 +1,9 @@
+#pragma once
 #include <map>
 #include <array>
 #include <vector>
 #include <string>
 #include "piece.hpp"
-
 
 class Square {
 public:
@@ -109,10 +109,16 @@ public:
     Square target;
 
     std::string pretty_print() const{
-        if (capture){ return std::string(origin) + "x" + std::string(target); }
-        else if(is_king_castle()) {return "O-O"; }
-        else if(is_queen_castle()) {return "O-O-O"; }
-        else {return std::string(origin) + std::string(target);}
+        std::string move_string;
+        if (capture){ move_string =  std::string(origin) + "x" + std::string(target); }
+        else if(is_king_castle()) {move_string =  "O-O"; }
+        else if(is_queen_castle()) {move_string =  "O-O-O"; }
+        else {move_string = std::string(origin) + std::string(target);}
+        if (is_knight_promotion()) {move_string= move_string + "n";}
+        else if (is_bishop_promotion()) {move_string= move_string + "b";}
+        else if (is_rook_promotion()) {move_string= move_string + "r";}
+        else if (is_queen_promotion()) {move_string= move_string + "q";}
+        return move_string;
     }
 
     void make_quiet() {
@@ -151,6 +157,27 @@ public:
         special1 = false;
         special2 = true;
     }
+
+    void make_bishop_promotion() {
+        promotion = true;
+        special1 = false;
+        special2 = false;
+    }
+    void make_knight_promotion() {
+        promotion = true;
+        special1 = false;
+        special2 = true;
+    }
+    void make_rook_promotion() {
+        promotion = true;
+        special1 = true;
+        special2 = false;
+    }
+    void make_queen_promotion() {
+        promotion = true;
+        special1 = true;
+        special2 = true;
+    }
     constexpr bool is_capture() const {
         return capture;
     }
@@ -178,9 +205,36 @@ public:
                 (special1 == true) & 
                 (special2 == true));
     }
+    constexpr bool is_knight_promotion() const {
+        return ((promotion == true) & 
+                (special1 == false) & 
+                (special2 == false));
+    }
+    constexpr bool is_bishop_promotion() const {
+        return ((promotion == true) & 
+                (special1 == false) & 
+                (special2 == true));
+    }
+    constexpr bool is_rook_promotion() const {
+        return ((promotion == true) & 
+                (special1 == true) & 
+                (special2 == false));
+    }
+    constexpr bool is_queen_promotion() const {
+        return ((promotion == true) & 
+                (special1 == true) & 
+                (special2 == true));
+    }
+    constexpr bool is_promotion() const {
+        return promotion;
+    }
     Piece captured_peice;
     Square en_passent_target;
     uint halfmove_clock;
+    bool white_kingside_rights = false;
+    bool white_queenside_rights = false; 
+    bool black_kingside_rights = false;
+    bool black_queenside_rights = false; 
 private:
     bool promotion = 0;
     bool capture = 0;
@@ -195,7 +249,7 @@ constexpr bool black_move = true;
 class Board {
 public:
     Board() {
-        pieces.fill(Piece::Blank);
+        pieces.fill(Pieces::Blank);
     };
 
     void fen_decode(const std::string& fen);
@@ -208,6 +262,7 @@ public:
 
     std::string print_move(const Move move, std::vector<Move> &legal_moves) const;
     bool is_free(const Square target) const;
+    Square slide_to_edge(const Square origin, const Square direction, const uint to_edge) const;
     void get_sliding_moves(const Square origin, const Piece colour, const Square direction, const uint to_edge, std::vector<Move> &moves) const;
     void get_step_moves(const Square origin, const Square target, const Piece colour, std::vector<Move> &moves) const;
     void get_pawn_moves(const Square origin, const Piece colour, std::vector<Move> &moves) const;
@@ -217,7 +272,10 @@ public:
     void get_knight_moves(const Square origin, const Piece colour, std::vector<Move> &moves) const;
     void get_king_moves(const Square origin, const Piece colour, std::vector<Move> &moves) const;
     void get_castle_moves(const Piece colour, std::vector<Move> &moves) const;
-    std::vector<Move> get_moves() const;
+    std::vector<Move> get_pseudolegal_moves() const;
+    std::vector<Move> get_moves();
+    bool is_check(const Square square, const Piece colour) const;
+    bool is_in_check() const;
 
     void make_move(Move &move);
     void unmake_move(const Move move);
@@ -237,3 +295,6 @@ private:
     uint fullmove_counter = 1;
     Move last_move;
 };
+
+Square forwards(const Piece colour);
+Square back_rank(const Piece colour);
