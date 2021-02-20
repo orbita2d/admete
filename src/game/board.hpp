@@ -304,7 +304,7 @@ public:
     void unmake_last() {unmake_move(last_move); }
 
     void try_move(const std::string move_sting);
-    Square find_king(const Piece colour);
+    Square find_king(const Piece colour) const;
 
     std::array<Piece, 64> pieces;
 private:

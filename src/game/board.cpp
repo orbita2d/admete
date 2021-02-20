@@ -988,7 +988,7 @@ bool Board::is_check(const Square origin, const Piece colour) const{
     return false;
 }
 
-Square Board::find_king(const Piece colour) {
+Square Board::find_king(const Piece colour) const{
     Square king_square = -1;
     for (Square::square_t i = 0; i < 64; i++) {
         if (pieces[i] == (colour | Pieces::King)) { king_square = i; break;};        
@@ -1003,7 +1003,7 @@ std::vector<Move> Board::get_moves(){
     Piece colour = whos_move;
     const std::vector<Move> pseudolegal_moves = get_pseudolegal_moves();
     std::vector<Move> legal_moves;
-    legal_moves.reserve(pseudolegal_moves.size());
+    legal_moves.reserve(256);
     Square king_square = find_king(colour);
     // To test if a move is legal, make the move and see if we are in check. 
     for (Move move : pseudolegal_moves) {
@@ -1026,12 +1026,6 @@ bool Board::is_in_check() const {
     } else {
         colour = Pieces::Black;
     }
-    Square king_square = -1;
-    for (Square::square_t i = 0; i < 64; i++) {
-        if (pieces[i] == (colour | Pieces::King)) { king_square = i; break;};        
-    }
-    if (king_square.get_value() == -1) {
-        throw std::runtime_error("Cannot find King on board.");
-    }
+    Square king_square = find_king(colour);
     return is_check(king_square, colour);
 }
