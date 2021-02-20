@@ -8,7 +8,8 @@ class Piece
 public:
 
     Piece() = default;
-    constexpr Piece(int aPiece) : value(uint8_t(aPiece)) { }
+    constexpr Piece(int aPiece) : value(uint8_t(aPiece)) { };
+    constexpr Piece(bool is_white) : value(is_white ? 0x20 : 0x10) {};
 
     constexpr bool operator==(Piece that) const { return value == that.value; }
     constexpr bool operator!=(Piece that) const { return value != that.value; }
@@ -41,6 +42,18 @@ public:
     constexpr bool is_piece(Piece piece) const {
         const uint8_t mask = 0x0F;
         return uint8_t(get_piece()) == (piece.value & mask);
+    }
+
+    constexpr bool is_white() const {
+        return (value & 0x30) == 0x10;
+    }
+
+    constexpr bool is_black() const {
+        return (value & 0x30) == 0x20;
+    }
+
+    constexpr bool is_blank() const {
+        return value == 0x00;
     }
 
     constexpr uint8_t get_value() const {return value; }

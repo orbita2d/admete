@@ -49,55 +49,19 @@ std::map<Square::square_t, char> file_encode_map = {
 
 };
 
-const Square Square::N = -8;
-const Square Square::E =  1;
-const Square Square::S =  8;
-const Square Square::W = -1;
-const Square Square::NW = N + W;
-const Square Square::NE = N + E;
-const Square Square::SE = S + E;
-const Square Square::SW = S + W;
-const Square Square::NNW = N + N + W;
-const Square Square::NNE = N + N + E;
-const Square Square::ENE = E + N + E;
-const Square Square::ESE = E + S + E;
-const Square Square::SSE = S + S + E;
-const Square Square::SSW = S + S + W;
-const Square Square::WSW = W + S + W;
-const Square Square::WNW = W + N + W;
-
-
-const Square Square::Rank1 = 7 * 8;
-const Square Square::Rank2 = 6 * 8;
-const Square Square::Rank3 = 5 * 8;
-const Square Square::Rank4 = 4 * 8;
-const Square Square::Rank5 = 3 * 8;
-const Square Square::Rank6 = 2 * 8;
-const Square Square::Rank7 = 1 * 8;
-const Square Square::Rank8 = 0 * 8;
-
-const Square Square::FileA = 0 ;
-const Square Square::FileB = 1;
-const Square Square::FileC = 2;
-const Square Square::FileD = 3;
-const Square Square::FileE = 4;
-const Square Square::FileF = 5;
-const Square Square::FileG = 6;
-const Square Square::FileH = 7;
-
-Square forwards(const Piece colour) {
-    if (colour.is_colour(Pieces::White)) {
-        return Square::N;
+constexpr Square forwards(const Piece colour) {
+    if (colour.is_white()) {
+        return Squares::N;
     } else {
-        return Square::S;
+        return Squares::S;
     }
 }
 
-Square back_rank(const Piece colour) {
-    if (colour.is_colour(Pieces::White)) {
-        return Square::Rank1;
+constexpr Square back_rank(const Piece colour) {
+    if (colour.is_white()) {
+        return Squares::Rank1;
     } else {
-        return Square::Rank8;
+        return Squares::Rank8;
     }
 }
 
@@ -121,59 +85,70 @@ std::ostream& operator<<(std::ostream& os, const Square move) {
         os << move.pretty_print();
         return os;
     }
-Square::square_t Square::squares_to_north() const{
+constexpr Square::square_t Square::squares_to_north() const{
     // Number of squares between this square and the north edge
     return rank_index();
 }
-Square::square_t Square::squares_to_south() const{
+constexpr Square::square_t Square::squares_to_south() const{
     // Number of squares between this square and the south edge
     return 7-rank_index();
 }
-Square::square_t Square::squares_to_east() const{
+constexpr Square::square_t Square::squares_to_east() const{
     // Number of squares between this square and the south edge
     return 7-file_index();
 }
-Square::square_t Square::squares_to_west() const{
+constexpr Square::square_t Square::squares_to_west() const{
     // Number of squares between this square and the south edge
     return file_index();
 }
 
-std::vector<Square> Square::knight_moves() const{
-    std::vector<Square> moves;
-    if (Square::squares_to_north() >= 2){
-        if(Square::squares_to_west() >= 1) {
-            moves.push_back(*this + Square::NNW);
+std::array<KnightMoveArray, 64> GenerateKnightMoves(){
+    std::array<KnightMoveArray, 64> meta_array;
+    KnightMoveArray moves;
+    for (unsigned int i = 0; i < 64; i++){
+        moves = KnightMoveArray();
+        Square origin = Square(i);
+        if (origin.squares_to_north() >= 2){
+            if(origin.squares_to_west() >= 1) {
+                moves.push_back(origin + Squares::NNW);
+            }
+            if(origin.squares_to_east() >= 1) {
+                moves.push_back(origin + Squares::NNE);
+            }
         }
-        if(Square::squares_to_east() >= 1) {
-            moves.push_back(*this + Square::NNE);
+        if (origin.squares_to_east() >= 2){
+            if(origin.squares_to_north() >= 1) {
+                moves.push_back(origin + Squares::ENE);
+            }
+            if(origin.squares_to_south() >= 1) {
+                moves.push_back(origin + Squares::ESE);
+            }
         }
+        if (origin.squares_to_south() >= 2){
+            if(origin.squares_to_east() >= 1) {
+                moves.push_back(origin + Squares::SSE);
+            }
+            if(origin.squares_to_west() >= 1) {
+                moves.push_back(origin + Squares::SSW);
+            }
+        }
+        if (origin.squares_to_west() >= 2){
+            if(origin.squares_to_south() >= 1) {
+                moves.push_back(origin + Squares::WSW);
+            }
+            if(origin.squares_to_north() >= 1) {
+                moves.push_back(origin + Squares::WNW);
+            }
+        }
+        meta_array[i] = moves;
     }
-    if (Square::squares_to_east() >= 2){
-        if(Square::squares_to_north() >= 1) {
-            moves.push_back(*this + Square::ENE);
-        }
-        if(Square::squares_to_south() >= 1) {
-            moves.push_back(*this + Square::ESE);
-        }
-    }
-    if (Square::squares_to_south() >= 2){
-        if(Square::squares_to_east() >= 1) {
-            moves.push_back(*this + Square::SSE);
-        }
-        if(Square::squares_to_west() >= 1) {
-            moves.push_back(*this + Square::SSW);
-        }
-    }
-    if (Square::squares_to_west() >= 2){
-        if(Square::squares_to_south() >= 1) {
-            moves.push_back(*this + Square::WSW);
-        }
-        if(Square::squares_to_north() >= 1) {
-            moves.push_back(*this + Square::WNW);
-        }
-    }
+    return meta_array;
+}
 
-    return moves;
+std::array<KnightMoveArray, 64> knight_meta_array = GenerateKnightMoves();
+
+KnightMoveArray knight_moves(const Square origin){
+    return knight_meta_array[origin];
 }
 
 std::ostream& operator<<(std::ostream& os, const Move move) {
@@ -305,7 +280,7 @@ void Board::print_board() {
     for (uint rank = 0; rank< 8; rank++) {
         for (uint file = 0; file< 8; file++) {
             Square::square_t idx = 8*rank +file;
-            if (idx == en_passent_target & pieces[idx] == Pieces::Blank & en_passent_target.get_value() != 0){
+            if (idx == en_passent_target & pieces[idx].is_blank() & en_passent_target.get_value() != 0){
                 std::cout << '!';
             } else {
                 std::cout << pieces[idx].pretty_print() << ' ';
@@ -319,7 +294,7 @@ void Board::print_board_extra(){
     for (uint rank = 0; rank< 8; rank++) {
         for (uint file = 0; file< 8; file++) {
             Square::square_t idx = 8*rank +file;
-            if (idx == en_passent_target & en_passent_target.get_value() != 0 & pieces[idx] == Pieces::Blank){
+            if (idx == en_passent_target & en_passent_target.get_value() != 0 & pieces[idx].is_blank()){
                 std::cout << '-';
             } else {
                 std::cout << pieces[idx].pretty_print();
@@ -370,13 +345,13 @@ void add_pawn_promotions(const Move move, std::vector<Move> &moves) {
 void Board::get_pawn_moves(const Square origin, const Piece colour, std::vector<Move> &moves) const{
     Square target;
     Move move;
-    if (colour.is_colour(Pieces::White)) {
+    if (colour.is_white()) {
         // Moves are North
         // Normal pushes.
-        target = origin + (Square::N);
+        target = origin + (Squares::N);
         if (pieces[target].is_piece(Pieces::Blank)) {
             move = Move(origin, target);
-            if (origin.rank() == Square::Rank7) {
+            if (origin.rank() == Squares::Rank7) {
                 add_pawn_promotions(move, moves);
             } else {
                 moves.push_back(move);
@@ -384,11 +359,11 @@ void Board::get_pawn_moves(const Square origin, const Piece colour, std::vector<
         }
         // Normal captures.
         if (origin.squares_to_west() != 0) {
-            target = origin + (Square::NW);
+            target = origin + (Squares::NW);
             if (pieces[target].is_colour(~colour)) {
                 move = Move(origin, target);
                 move.make_capture();
-                if (origin.rank() == Square::Rank7) {
+                if (origin.rank() == Squares::Rank7) {
                     add_pawn_promotions(move, moves);
                 } else {
                     moves.push_back(move);
@@ -397,11 +372,11 @@ void Board::get_pawn_moves(const Square origin, const Piece colour, std::vector<
         }
 
         if (origin.squares_to_east() != 0) {
-            target = origin + (Square::NE);
+            target = origin + (Squares::NE);
             if (pieces[target].is_colour(~colour)) {
                 move = Move(origin, target);
                 move.make_capture();
-                if (origin.rank() == Square::Rank7) {
+                if (origin.rank() == Squares::Rank7) {
                     add_pawn_promotions(move, moves);
                 } else {
                     moves.push_back(move);
@@ -409,9 +384,9 @@ void Board::get_pawn_moves(const Square origin, const Piece colour, std::vector<
             }
         }
         // En-passent
-        if (origin.rank() == Square::Rank5) {
-            if (origin.squares_to_west() != 0 & en_passent_target == origin + Square::NW | 
-                origin.squares_to_east() != 0 & en_passent_target == origin + Square::NE ) {
+        if (origin.rank() == Squares::Rank5) {
+            if (origin.squares_to_west() != 0 & en_passent_target == origin + Squares::NW | 
+                origin.squares_to_east() != 0 & en_passent_target == origin + Squares::NE ) {
                 move = Move(origin, en_passent_target); 
                 move.make_en_passent();
                 moves.push_back(move);
@@ -419,9 +394,9 @@ void Board::get_pawn_moves(const Square origin, const Piece colour, std::vector<
         }
 
         // Look for double pawn push possibility
-        if (origin.rank() == Square::Rank2) {
-            target = origin + (Square::N + Square::N);
-            if (pieces[target].is_piece(Pieces::Blank) & pieces[origin + Square::N].is_piece(Pieces::Blank)) {
+        if (origin.rank() == Squares::Rank2) {
+            target = origin + (Squares::N + Squares::N);
+            if (pieces[target].is_piece(Pieces::Blank) & pieces[origin + Squares::N].is_piece(Pieces::Blank)) {
                 move = Move(origin, target);
                 move.make_double_push();
                 moves.push_back(move);
@@ -431,10 +406,10 @@ void Board::get_pawn_moves(const Square origin, const Piece colour, std::vector<
     {
         // Moves are South
         // Normal pushes.
-        target = origin + (Square::S);
+        target = origin + (Squares::S);
         if (pieces[target].is_piece(Pieces::Blank)) {
             move = Move(origin, target);
-            if (origin.rank() == Square::Rank2) {
+            if (origin.rank() == Squares::Rank2) {
                 add_pawn_promotions(move, moves);
             } else {
                 moves.push_back(move);
@@ -442,11 +417,11 @@ void Board::get_pawn_moves(const Square origin, const Piece colour, std::vector<
         }
         // Normal captures.
         if (origin.squares_to_west() != 0) {
-            target = origin + (Square::SW);
+            target = origin + (Squares::SW);
             if (pieces[target].is_colour(~colour)) {
                 move = Move(origin, target);
                 move.make_capture();
-                if (origin.rank() == Square::Rank2) {
+                if (origin.rank() == Squares::Rank2) {
                     add_pawn_promotions(move, moves);
                 } else {
                     moves.push_back(move);
@@ -455,11 +430,11 @@ void Board::get_pawn_moves(const Square origin, const Piece colour, std::vector<
         }
 
         if (origin.squares_to_east() != 0) {
-            target = origin + (Square::SE);
+            target = origin + (Squares::SE);
             if (pieces[target].is_colour(~colour)) {
                 move = Move(origin, target);
                 move.make_capture();
-                if (origin.rank() == Square::Rank2) {
+                if (origin.rank() == Squares::Rank2) {
                     add_pawn_promotions(move, moves);
                 } else {
                     moves.push_back(move);
@@ -467,9 +442,9 @@ void Board::get_pawn_moves(const Square origin, const Piece colour, std::vector<
             }
         }
         // En-passent
-        if (origin.rank() == Square::Rank4) {
-            if (origin.squares_to_west() != 0 & en_passent_target == origin + Square::SW | 
-                origin.squares_to_east() != 0 & en_passent_target == origin + Square::SE ) {
+        if (origin.rank() == Squares::Rank4) {
+            if (origin.squares_to_west() != 0 & en_passent_target == origin + Squares::SW | 
+                origin.squares_to_east() != 0 & en_passent_target == origin + Squares::SE ) {
                 move = Move(origin, en_passent_target); 
                 move.make_en_passent();
                 moves.push_back(move);
@@ -477,9 +452,9 @@ void Board::get_pawn_moves(const Square origin, const Piece colour, std::vector<
         }
 
         // Look for double pawn push possibility
-        if (origin.rank() == Square::Rank7) {
-            target = origin + (Square::S + Square::S);
-            if (pieces[target].is_piece(Pieces::Blank) & pieces[origin + Square::S].is_piece(Pieces::Blank)) {
+        if (origin.rank() == Squares::Rank7) {
+            target = origin + (Squares::S + Squares::S);
+            if (pieces[target].is_piece(Pieces::Blank) & pieces[origin + Squares::S].is_piece(Pieces::Blank)) {
                 move = Move(origin, target);
                 move.make_double_push();
                 moves.push_back(move);
@@ -511,18 +486,18 @@ void Board::get_sliding_moves(const Square origin, const Piece colour, const Squ
 }
 
 void Board::get_rook_moves(const Square origin, const Piece colour, std::vector<Move> &moves) const {
-    get_sliding_moves(origin, colour, Square::N, origin.squares_to_north(), moves);
-    get_sliding_moves(origin, colour, Square::E, origin.squares_to_east(), moves);
-    get_sliding_moves(origin, colour, Square::S, origin.squares_to_south(), moves);
-    get_sliding_moves(origin, colour, Square::W, origin.squares_to_west(), moves);
+    get_sliding_moves(origin, colour, Squares::N, origin.squares_to_north(), moves);
+    get_sliding_moves(origin, colour, Squares::E, origin.squares_to_east(), moves);
+    get_sliding_moves(origin, colour, Squares::S, origin.squares_to_south(), moves);
+    get_sliding_moves(origin, colour, Squares::W, origin.squares_to_west(), moves);
     
 }
 
 void Board::get_bishop_moves(const Square origin, const Piece colour, std::vector<Move> &moves) const {
-    get_sliding_moves(origin, colour, Square::NE, std::min(origin.squares_to_north(), origin.squares_to_east()), moves);
-    get_sliding_moves(origin, colour, Square::SE, std::min(origin.squares_to_east(), origin.squares_to_south()), moves);
-    get_sliding_moves(origin, colour, Square::SW, std::min(origin.squares_to_south(), origin.squares_to_west()), moves);
-    get_sliding_moves(origin, colour, Square::NW, std::min(origin.squares_to_west(), origin.squares_to_north()), moves);
+    get_sliding_moves(origin, colour, Squares::NE, std::min(origin.squares_to_north(), origin.squares_to_east()), moves);
+    get_sliding_moves(origin, colour, Squares::SE, std::min(origin.squares_to_east(), origin.squares_to_south()), moves);
+    get_sliding_moves(origin, colour, Squares::SW, std::min(origin.squares_to_south(), origin.squares_to_west()), moves);
+    get_sliding_moves(origin, colour, Squares::NW, std::min(origin.squares_to_west(), origin.squares_to_north()), moves);
     
 }
 
@@ -553,73 +528,73 @@ void Board::get_king_moves(const Square origin, const Piece colour, std::vector<
     // We should really be careful that we aren't moving into check here.
     // Look to see if we are on an edge.
     if (origin.squares_to_north() != 0) {
-        get_step_moves(origin, origin + Square::N, colour, moves);
+        get_step_moves(origin, origin + Squares::N, colour, moves);
     }
     if (origin.squares_to_east() != 0) {
-        get_step_moves(origin, origin + Square::E, colour, moves);
+        get_step_moves(origin, origin + Squares::E, colour, moves);
     }
     if (origin.squares_to_south() != 0) {
-        get_step_moves(origin, origin + Square::S, colour, moves);
+        get_step_moves(origin, origin + Squares::S, colour, moves);
     }
     if (origin.squares_to_west() != 0) {
-        get_step_moves(origin, origin + Square::W, colour, moves);
+        get_step_moves(origin, origin + Squares::W, colour, moves);
     }
     if (origin.squares_to_north() != 0 & origin.squares_to_east() != 0) {
-        get_step_moves(origin, origin + Square::NE, colour, moves);
+        get_step_moves(origin, origin + Squares::NE, colour, moves);
     }
     if (origin.squares_to_south() != 0 & origin.squares_to_east() != 0) {
-        get_step_moves(origin, origin + Square::SE, colour, moves);
+        get_step_moves(origin, origin + Squares::SE, colour, moves);
     }
     if (origin.squares_to_south() != 0 & origin.squares_to_west() != 0) {
-        get_step_moves(origin, origin + Square::SW, colour, moves);
+        get_step_moves(origin, origin + Squares::SW, colour, moves);
     }
     if (origin.squares_to_north() != 0 & origin.squares_to_west() != 0) {
-        get_step_moves(origin, origin + Square::NW, colour, moves);
+        get_step_moves(origin, origin + Squares::NW, colour, moves);
     }
 }
 
-bool Board::is_free(const Square target) const{ return pieces[target].is_piece(Pieces::Blank); };
+bool Board::is_free(const Square target) const{  return pieces[target].is_blank(); };
 
 void Board::get_castle_moves(const Piece colour, std::vector<Move> &moves) const {
     Move move;
-    if (colour.is_colour(Pieces::White)) {
+    if (colour.is_white()) {
         // You can't castle through check, or while in check
-        if (is_check(Square::FileE | Square::Rank1, colour)) {return; }
+        if (is_check(Squares::FileE | Squares::Rank1, colour)) {return; }
         if (castle_white_queenside 
-            & is_free(Square::FileD | Square::Rank1) 
-            & is_free(Square::FileC | Square::Rank1)
-            & is_free(Square::FileB | Square::Rank1)
-            & !is_check(Square::FileD | Square::Rank1, colour)) {
-            move = Move(Square::FileE | Square::Rank1, Square::FileC | Square::Rank1);
+            & is_free(Squares::FileD | Squares::Rank1) 
+            & is_free(Squares::FileC | Squares::Rank1)
+            & is_free(Squares::FileB | Squares::Rank1)
+            & !is_check(Squares::FileD | Squares::Rank1, colour)) {
+            move = Move(Squares::FileE | Squares::Rank1, Squares::FileC | Squares::Rank1);
             move.make_queen_castle();
             moves.push_back(move);
         }
         if (castle_white_kingside 
-            & is_free(Square::FileF | Square::Rank1) 
-            & is_free(Square::FileG | Square::Rank1)
-            & !is_check(Square::FileF | Square::Rank1, colour)
-            & !is_check(Square::FileE | Square::Rank1, colour)) {
-            move = Move(Square::FileE | Square::Rank1, Square::FileG | Square::Rank1);
+            & is_free(Squares::FileF | Squares::Rank1) 
+            & is_free(Squares::FileG | Squares::Rank1)
+            & !is_check(Squares::FileF | Squares::Rank1, colour)
+            & !is_check(Squares::FileE | Squares::Rank1, colour)) {
+            move = Move(Squares::FileE | Squares::Rank1, Squares::FileG | Squares::Rank1);
             move.make_king_castle();
             moves.push_back(move);
         }
     } else
     {
-        if (is_check(Square::FileE | Square::Rank8, colour)) {return; }
+        if (is_check(Squares::FileE | Squares::Rank8, colour)) {return; }
         if (castle_black_queenside 
-            & is_free(Square::FileD | Square::Rank8) 
-            & is_free(Square::FileC | Square::Rank8)
-            & is_free(Square::FileB | Square::Rank8)
-            & !is_check(Square::FileD | Square::Rank8, colour)) {
-            move = Move(Square::FileE | Square::Rank8, Square::FileC | Square::Rank8);
+            & is_free(Squares::FileD | Squares::Rank8) 
+            & is_free(Squares::FileC | Squares::Rank8)
+            & is_free(Squares::FileB | Squares::Rank8)
+            & !is_check(Squares::FileD | Squares::Rank8, colour)) {
+            move = Move(Squares::FileE | Squares::Rank8, Squares::FileC | Squares::Rank8);
             move.make_queen_castle();
             moves.push_back(move);
         }
         if (castle_black_kingside 
-            & is_free(Square::FileF | Square::Rank8) 
-            & is_free(Square::FileG | Square::Rank8)
-            & !is_check(Square::FileF | Square::Rank8, colour)) {
-            move = Move(Square::FileE | Square::Rank8, Square::FileG | Square::Rank8);
+            & is_free(Squares::FileF | Squares::Rank8) 
+            & is_free(Squares::FileG | Squares::Rank8)
+            & !is_check(Squares::FileF | Squares::Rank8, colour)) {
+            move = Move(Squares::FileE | Squares::Rank8, Squares::FileG | Squares::Rank8);
             move.make_king_castle();
             moves.push_back(move);
         }
@@ -628,7 +603,7 @@ void Board::get_castle_moves(const Piece colour, std::vector<Move> &moves) const
 }
 
 void Board::get_knight_moves(const Square origin, const Piece colour, std::vector<Move> &moves) const {
-    for (Square target : origin.knight_moves()) {
+    for (Square target : knight_moves(origin)) {
         get_step_moves(origin, target, colour, moves);
     }
 };
@@ -737,8 +712,8 @@ void Board::make_move(Move &move) {
     if (move.is_king_castle()) {
         pieces[move.target] = pieces[move.origin];
         pieces[move.origin] = Pieces::Blank;
-        pieces[move.origin + Square::E] = pieces[move.origin.rank() | Square::FileH];
-        pieces[move.origin.rank() | Square::FileH] = Pieces::Blank;
+        pieces[move.origin + Squares::E] = pieces[move.origin.rank() | Squares::FileH];
+        pieces[move.origin.rank() | Squares::FileH] = Pieces::Blank;
         if (whos_move == white_move) {
             castle_white_kingside  = false;
             castle_white_queenside = false;
@@ -749,8 +724,8 @@ void Board::make_move(Move &move) {
     } else if (move.is_queen_castle()) {
         pieces[move.target] = pieces[move.origin];
         pieces[move.origin] = Pieces::Blank;
-        pieces[move.origin + Square::W] = pieces[move.origin.rank() | Square::FileA];
-        pieces[move.origin.rank() | Square::FileA] = Pieces::Blank;
+        pieces[move.origin + Squares::W] = pieces[move.origin.rank() | Squares::FileA];
+        pieces[move.origin.rank() | Squares::FileA] = Pieces::Blank;
         if (whos_move == white_move) {
             castle_white_kingside  = false;
             castle_white_queenside = false;
@@ -787,29 +762,29 @@ void Board::make_move(Move &move) {
     }
     
     if ((castle_white_kingside | castle_white_queenside) & whos_move == white_move){
-        if (move.origin == (Square::Rank1 | Square::FileE)) {
+        if (move.origin == (Squares::Rank1 | Squares::FileE)) {
             // Check if they've moved their King
             castle_white_kingside  = false;
             castle_white_queenside  = false;
         }
-        if (move.origin == (Square::FileH | Square::Rank1)) {
+        if (move.origin == (Squares::FileH | Squares::Rank1)) {
             // Check if they've moved their rook.
             castle_white_kingside  = false;
-        } else if (move.origin == (Square::FileA | Square::Rank1)) {
+        } else if (move.origin == (Squares::FileA | Squares::Rank1)) {
             // Check if they've moved their rook.
             castle_white_queenside  = false;
         }
     }
     if ((castle_black_kingside | castle_black_queenside) & whos_move == black_move){
-        if (move.origin == (Square::Rank8 | Square::FileE)) {
+        if (move.origin == (Squares::Rank8 | Squares::FileE)) {
             // Check if they've moved their King
             castle_black_kingside  = false;
             castle_black_queenside  = false;
         }
-        if (move.origin == (Square::FileH | Square::Rank8)) {
+        if (move.origin == (Squares::FileH | Squares::Rank8)) {
             // Check if they've moved their rook.
             castle_black_kingside  = false;
-        } else if (move.origin == (Square::FileA | Square::Rank8)) {
+        } else if (move.origin == (Squares::FileA | Squares::Rank8)) {
             // Check if they've moved their rook.
             castle_black_queenside  = false;
         }
@@ -817,19 +792,19 @@ void Board::make_move(Move &move) {
 
     if ((castle_black_kingside | castle_black_queenside) & whos_move == white_move){
         // Check for rook captures.
-        if (move.target == (Square::FileH | Square::Rank8)) {
+        if (move.target == (Squares::FileH | Squares::Rank8)) {
             castle_black_kingside = false;
         }
-        if (move.target == (Square::FileA | Square::Rank8)) {
+        if (move.target == (Squares::FileA | Squares::Rank8)) {
             castle_black_queenside = false;
         }
     }
     if ((castle_white_kingside | castle_white_queenside) & whos_move == black_move){
         // Check for rook captures.
-        if (move.target == (Square::FileH | Square::Rank1)) {
+        if (move.target == (Squares::FileH | Squares::Rank1)) {
             castle_white_kingside = false;
         }
-        if (move.target == (Square::FileA | Square::Rank1)) {
+        if (move.target == (Squares::FileA | Squares::Rank1)) {
             castle_white_queenside = false;
         }
     }
@@ -849,13 +824,13 @@ void Board::unmake_move(const Move move) {
     if (move.is_king_castle()) {
         pieces[move.origin] = pieces[move.target];
         pieces[move.target] = Pieces::Blank;
-        pieces[move.origin.rank() | Square::FileH] = pieces[move.origin + Square::E];
-        pieces[move.origin + Square::E] = Pieces::Blank;
+        pieces[move.origin.rank() | Squares::FileH] = pieces[move.origin + Squares::E];
+        pieces[move.origin + Squares::E] = Pieces::Blank;
     } else if (move.is_queen_castle()) {
         pieces[move.origin] = pieces[move.target];
         pieces[move.target] = Pieces::Blank;
-        pieces[move.origin.rank() | Square::FileA] = pieces[move.origin + Square::W];
-        pieces[move.origin + Square::W] = Pieces::Blank;
+        pieces[move.origin.rank() | Squares::FileA] = pieces[move.origin + Squares::W];
+        pieces[move.origin + Squares::W] = Pieces::Blank;
     } else if(move.is_ep_capture()) {
         // En-passent is weird too.
         const Square captured_square = move.origin.rank() | move.target.file();
@@ -905,7 +880,7 @@ Square Board::slide_to_edge(const Square origin, const Square direction, const u
     Square target = origin;
     for (uint i = 0; i < to_edge; i++) {
         target = target + direction;
-        if (pieces[target].is_piece(Pieces::Blank)) {
+        if (is_free(target)) {
             // Blank Square
             continue;
         } else {
@@ -918,87 +893,92 @@ Square Board::slide_to_edge(const Square origin, const Square direction, const u
 bool Board::is_check(const Square origin, const Piece colour) const{
     // Want to (semi-efficiently) see if a square is attacked, ignoring pins.
     // First off, if the square is attacked by a knight, it's definitely in check.
-    for (Square target : origin.knight_moves()) {
-        if (pieces[target] == (~colour.get_colour() | Pieces::Knight)) {
+    for (Square target : knight_moves(origin)) {
+        if (pieces[target] == (~colour | Pieces::Knight)) {
             return true;
         }
     }
 
-    // Pawn squares
+    // Pawn square
     Square target;
     if (origin.squares_to_west() != 0) {
-        target = origin + (Square::W + forwards(colour));
-        if (pieces[target] == (~colour.get_colour() | Pieces::Pawn)) {
+        target = origin + (Squares::W + forwards(colour));
+        if (pieces[target] == (~colour | Pieces::Pawn)) {
             return true;
         }
     }
     if (origin.squares_to_east() != 0) {
-        target = origin + (Square::E + forwards(colour));
-        if (pieces[target] == (~colour.get_colour() | Pieces::Pawn)) {
+        target = origin + (Squares::E + forwards(colour));
+        if (pieces[target] == (~colour | Pieces::Pawn)) {
             return true;
         }
     }
+
 
     // Sliding moves.
+    Piece target_piece;
     std::array<Square, 4> targets;
-    targets[0] = slide_to_edge(origin, Square::N, origin.squares_to_north());
-    targets[1] = slide_to_edge(origin, Square::E, origin.squares_to_east());
-    targets[2] = slide_to_edge(origin, Square::S, origin.squares_to_south());
-    targets[3] = slide_to_edge(origin, Square::W, origin.squares_to_west());
+    targets[0] = slide_to_edge(origin, Squares::N, origin.squares_to_north());
+    targets[1] = slide_to_edge(origin, Squares::E, origin.squares_to_east());
+    targets[2] = slide_to_edge(origin, Squares::S, origin.squares_to_south());
+    targets[3] = slide_to_edge(origin, Squares::W, origin.squares_to_west());
     for (Square target : targets){
-        if (pieces[target].is_colour(~colour) & (pieces[target].is_piece(Pieces::Rook) |  pieces[target].is_piece(Pieces::Queen))) {
+        target_piece = pieces[target];
+        if ((target_piece == (~colour | Pieces::Rook)) | (target_piece == (~colour | Pieces::Queen))) {
             return true;
         }
     }
+    
     // Diagonals
-    targets[0] = slide_to_edge(origin, Square::NE, std::min(origin.squares_to_north(), origin.squares_to_east()));
-    targets[1] = slide_to_edge(origin, Square::SE, std::min(origin.squares_to_south(), origin.squares_to_east()));
-    targets[2] = slide_to_edge(origin, Square::SW, std::min(origin.squares_to_south(), origin.squares_to_west()));
-    targets[3] = slide_to_edge(origin, Square::NW, std::min(origin.squares_to_north(), origin.squares_to_west()));
+    targets[0] = slide_to_edge(origin, Squares::NE, std::min(origin.squares_to_north(), origin.squares_to_east()));
+    targets[1] = slide_to_edge(origin, Squares::SE, std::min(origin.squares_to_south(), origin.squares_to_east()));
+    targets[2] = slide_to_edge(origin, Squares::SW, std::min(origin.squares_to_south(), origin.squares_to_west()));
+    targets[3] = slide_to_edge(origin, Squares::NW, std::min(origin.squares_to_north(), origin.squares_to_west()));
     for (Square target : targets){
-        if (pieces[target].is_colour(~colour) & (pieces[target].is_piece(Pieces::Bishop) |  pieces[target].is_piece(Pieces::Queen))) {
+        target_piece = pieces[target];
+        if ((target_piece == (~colour | Pieces::Bishop)) | (target_piece == (~colour | Pieces::Queen))) {
             return true;
         }
     }
-
+    
     // King's can't be next to each other in a game, but this is how we enforce that.
     if (origin.squares_to_north() != 0) {
-        if (pieces[origin + Square::N] == (~colour.get_colour() | Pieces::King)) {
+        if (pieces[origin + Squares::N] == (~colour.get_colour() | Pieces::King)) {
             return true;
         }
         if (origin.squares_to_east() != 0) {
-            if (pieces[origin + Square::NE] == (~colour.get_colour() | Pieces::King)) {
+            if (pieces[origin + Squares::NE] == (~colour.get_colour() | Pieces::King)) {
                 return true;
             }
         }
         if (origin.squares_to_west() != 0) {
-            if (pieces[origin + Square::NW] == (~colour.get_colour() | Pieces::King)) {
+            if (pieces[origin + Squares::NW] == (~colour.get_colour() | Pieces::King)) {
                 return true;
             }
         }
     } 
     if (origin.squares_to_south() != 0) {
-        if (pieces[origin + Square::S] == (~colour.get_colour() | Pieces::King)) {
+        if (pieces[origin + Squares::S] == (~colour.get_colour() | Pieces::King)) {
             return true;
         }
         if (origin.squares_to_east() != 0) {
-            if (pieces[origin + Square::SE] == (~colour.get_colour() | Pieces::King)) {
+            if (pieces[origin + Squares::SE] == (~colour.get_colour() | Pieces::King)) {
                 return true;
             }
         }
         if (origin.squares_to_west() != 0) {
-            if (pieces[origin + Square::SW] == (~colour.get_colour() | Pieces::King)) {
+            if (pieces[origin + Squares::SW] == (~colour.get_colour() | Pieces::King)) {
                 return true;
             }
         }
     } 
     if (origin.squares_to_east() != 0) {
-        if (pieces[origin + Square::E] == (~colour.get_colour() | Pieces::King)) {
+        if (pieces[origin + Squares::E] == (~colour.get_colour() | Pieces::King)) {
             return true;
         }
     }
     if (origin.squares_to_west() != 0) {
-        if (pieces[origin + Square::W] == (~colour.get_colour() | Pieces::King)) {
+        if (pieces[origin + Squares::W] == (~colour.get_colour() | Pieces::King)) {
             return true;
         }
     }
@@ -1007,17 +987,7 @@ bool Board::is_check(const Square origin, const Piece colour) const{
     return false;
 }
 
-
-std::vector<Move> Board::get_moves(){
-    Piece colour;
-    if (whos_move == white_move) {
-        colour = Pieces::White;
-    } else {
-        colour = Pieces::Black;
-    }
-    const std::vector<Move> pseudolegal_moves = get_pseudolegal_moves();
-    std::vector<Move> legal_moves;
-    legal_moves.reserve(pseudolegal_moves.size());
+Square Board::find_king(const Piece colour) {
     Square king_square = -1;
     for (Square::square_t i = 0; i < 64; i++) {
         if (pieces[i] == (colour | Pieces::King)) { king_square = i; break;};        
@@ -1025,6 +995,15 @@ std::vector<Move> Board::get_moves(){
     if (king_square.get_value() == -1) {
         throw std::runtime_error("Cannot find King on board.");
     }
+    return king_square;
+}
+
+std::vector<Move> Board::get_moves(){
+    Piece colour = whos_move;
+    const std::vector<Move> pseudolegal_moves = get_pseudolegal_moves();
+    std::vector<Move> legal_moves;
+    legal_moves.reserve(pseudolegal_moves.size());
+    Square king_square = find_king(colour);
     // To test if a move is legal, make the move and see if we are in check. 
     for (Move move : pseudolegal_moves) {
         make_move(move);

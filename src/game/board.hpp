@@ -8,84 +8,49 @@
 class Square {
 public:
     typedef signed int square_t;
-    Square(const square_t val) : value(val) {};
-    Square(const square_t rank, const square_t file) {
+    constexpr Square(const square_t val) : value(val) {};
+    constexpr Square(const square_t rank, const square_t file) {
         value = to_index(rank, file);
     };
     Square(const std::string rf);
     Square() = default;
 
-    static const Square N;
-    static const Square E;
-    static const Square S;
-    static const Square W;
-    static const Square NW;
-    static const Square NE;
-    static const Square SE;
-    static const Square SW;
-    static const Square NNW;
-    static const Square NNE;
-    static const Square ENE;
-    static const Square ESE;
-    static const Square SSE;
-    static const Square SSW;
-    static const Square WSW;
-    static const Square WNW;
-    
-    static const Square Rank1;
-    static const Square Rank2;
-    static const Square Rank3;
-    static const Square Rank4;
-    static const Square Rank5;
-    static const Square Rank6;
-    static const Square Rank7;
-    static const Square Rank8;
-
-    static const Square FileA;
-    static const Square FileB;
-    static const Square FileC;
-    static const Square FileD;
-    static const Square FileE;
-    static const Square FileF;
-    static const Square FileG;
-    static const Square FileH;
-
     bool operator==(const Square that) const { return value == that.value; }
     bool operator!=(const Square that) const { return value != that.value; }
 
-    Square operator+(const Square that) const {return Square(value + that.value);};
-    Square operator-(const Square that) const {return Square(value - that.value);};
-    Square operator|(const Square that) const {return Square(value | that.value);};
+    constexpr Square operator+(const Square that) const {return Square(value + that.value);};
+    constexpr Square operator-(const Square that) const {return Square(value - that.value);};
+    constexpr Square operator|(const Square that) const {return Square(value | that.value);};
 
-    square_t get_value() const{
+    constexpr square_t get_value() const{
         return value;
     }
 
-    square_t rank_index() const{
+    constexpr square_t rank_index() const{
         return value / 8;
     }
-    square_t file_index() const{
+    constexpr square_t file_index() const{
         return value % 8;
     }
 
-    Square file() const{
+    constexpr Square file() const{
         return value & 0x07;
     }
 
-    Square rank() const{
+    constexpr Square rank() const{
         return value & 0x38;
     }
 
-    square_t squares_to_north() const;
-    square_t squares_to_south() const;
-    square_t squares_to_east() const;
-    square_t squares_to_west()const;
+    constexpr square_t squares_to_north() const;
+    constexpr square_t squares_to_south() const;
+    constexpr square_t squares_to_east() const;
+    constexpr square_t squares_to_west()const;
 
-    static square_t to_index(const square_t rank, const square_t file){
+    static constexpr square_t to_index(const square_t rank, const square_t file){
         return 8 * rank + file;
     }
 
-    operator square_t() const {
+    constexpr operator square_t() const {
         return value;
     };
 
@@ -93,12 +58,69 @@ public:
     operator std::string() const {
         return pretty_print();
     };
-    std::vector<Square> knight_moves() const;
 private:
     square_t value = 0;
 };
 std::ostream& operator<<(std::ostream& os, const Square square);
 
+namespace Squares {
+    static constexpr Square N = -8;
+    static constexpr Square E =  1;
+    static constexpr Square S = 8;
+    static constexpr Square W = -1;
+    static constexpr Square NW = N + W;
+    static constexpr Square NE = N + E;
+    static constexpr Square SE = S + E;
+    static constexpr Square SW = S + W;
+    static constexpr Square NNW = N + N + W;
+    static constexpr Square NNE = N + N + E;
+    static constexpr Square ENE = E + N + E;
+    static constexpr Square ESE = E + S + E;
+    static constexpr Square SSE = S + S + E;
+    static constexpr Square SSW = S + S + W;
+    static constexpr Square WSW = W + S + W;
+    static constexpr Square WNW = W + N + W;
+    
+    static constexpr Square Rank1 = 7 * 8;
+    static constexpr Square Rank2 = 6 * 8;
+    static constexpr Square Rank3 = 5 * 8;
+    static constexpr Square Rank4 = 4 * 8;
+    static constexpr Square Rank5 = 3 * 8;
+    static constexpr Square Rank6 = 2 * 8;
+    static constexpr Square Rank7 = 1 * 8;
+    static constexpr Square Rank8 = 0 * 8;
+
+    static constexpr Square FileA = 0;
+    static constexpr Square FileB = 1;
+    static constexpr Square FileC = 2;
+    static constexpr Square FileD = 3;
+    static constexpr Square FileE = 4;
+    static constexpr Square FileF = 5;
+    static constexpr Square FileG = 6;
+    static constexpr Square FileH = 7;
+}
+
+class KnightMoveArray {
+    // Class just to hold the iterator for a knight move so it doesn't have to be a vector.
+public:
+    KnightMoveArray() = default;
+    Square operator[](const unsigned int i) { return move_array[i];};
+    Square operator[](const unsigned int i) const { return move_array[i];};
+    unsigned int len = 0;
+    typedef Square * iterator;
+    typedef const Square * const_iterator;
+    iterator begin() { return &move_array[0]; }
+    iterator end() { return &move_array[len]; }
+    void push_back(const Square in) {
+        move_array[len] = in;
+        len++;
+    }
+private:
+    std::array<Square, 8> move_array; 
+};
+
+
+KnightMoveArray knight_moves(const Square origin);
 
 class Move {
 public:
@@ -282,9 +304,10 @@ public:
     void unmake_last() {unmake_move(last_move); }
 
     void try_move(const std::string move_sting);
+    Square find_king(const Piece colour);
 
-private:
     std::array<Piece, 64> pieces;
+private:
     bool whos_move = white_move;
     bool castle_white_kingside = true;
     bool castle_white_queenside = true;
@@ -296,5 +319,5 @@ private:
     Move last_move;
 };
 
-Square forwards(const Piece colour);
-Square back_rank(const Piece colour);
+constexpr Square forwards(const Piece colour);
+constexpr Square back_rank(const Piece colour);
