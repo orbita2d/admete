@@ -140,6 +140,14 @@ std::ostream& operator<<(std::ostream& os, const Move move) {
     return os;
 }
 
+void Board::initialise() {
+    build_occupied_bb();
+    search_kings();
+    update_checkers();
+    search_pins(white_move);
+    search_pins(black_move);
+}
+
 void Board::fen_decode(const std::string& fen){
     uint N = fen.length(), board_position;
     uint rank = 0, file = 0;
@@ -167,11 +175,6 @@ void Board::fen_decode(const std::string& fen){
         pieces[Square::to_index(rank, file)] = fen_decode_map[my_char];
         file ++;
     }
-    
-    build_occupied_bb();
-    search_kings();
-    search_pins(white_move);
-    search_pins(black_move);
 
     std::string side_to_move, castling, en_passent;
     int halfmove = 0, counter = 0;
@@ -200,7 +203,6 @@ void Board::fen_decode(const std::string& fen){
     default:
         throw std::domain_error("Unrecognised <Side to move> character");
     }
-    aux_info.is_check = is_in_check();
 
     aux_info.castle_black_kingside = false;
     aux_info.castle_black_queenside = false;
@@ -253,7 +255,7 @@ void Board::fen_decode(const std::string& fen){
     aux_info.halfmove_clock = halfmove;
     // Fullmove counter
     fullmove_counter = counter;
-    
+    initialise();
 };
 
 void Board::print_board_idx() {
@@ -845,7 +847,7 @@ void Board::make_move(Move &move) {
     // Switch whos turn it is to play
     whos_move = ! whos_move;
 
-    aux_info.is_check = is_in_check();
+    update_checkers();
     ply_counter ++;
 }
 
@@ -916,6 +918,7 @@ void Board::unmake_move(const Move move) {
         pieces[move.origin] = pieces[move.origin].get_colour() | Pieces::Pawn;
     } 
     search_pins(whos_move); 
+    update_checkers();
 }
 
 void Board::try_move(const std::string move_sting) {
@@ -1071,16 +1074,31 @@ std::vector<Move> Board::get_moves(){
     legal_moves.reserve(256);
     Square king_square = find_king(colour);
     if (aux_info.is_check) {
-        // To test if a move is legal, make the move and see if we are in check. 
         for (Move move : pseudolegal_moves) {
-            make_move(move);
             if (move.origin == king_square) {
-                // This is a king move, check where he's gone.
+                // King moves have to be very careful.
+                make_move(move);
                 if (!is_check(move.target, colour)) {legal_moves.push_back(move); }
-            } else {
-                if (!is_check(king_square, colour)) {legal_moves.push_back(move); }
+                unmake_move(move);
+            } else if (numer_checkers == 2) {
+                // double checks require a king move, which we've just seen this is not.
+                continue;
+            } else if (is_pinned(move.origin)) {
+                continue;
+            } else if (move.target == checkers[0]) {
+                // this captures the checker, it's legal unless the peice in absolutely pinned.
+                legal_moves.push_back(move);
             }
-            unmake_move(move);
+            else if ( interposes(king_square, checkers[0], move.target)) {
+                // this interposes the check it's legal unless the peice in absolutely pinned.
+                legal_moves.push_back(move);
+            } else if (move.is_ep_capture() & ((move.origin.rank()|move.target.file()) == checkers[0])){
+                // If it's an enpassent capture, the captures piece isn't at the target.
+                legal_moves.push_back(move);
+            } else {
+                // All other moves are illegal.
+                continue;
+            }
         }
         return legal_moves;
     } 
@@ -1092,16 +1110,24 @@ std::vector<Move> Board::get_moves(){
             make_move(move);
             if (!is_check(move.target, colour)) {legal_moves.push_back(move); }
             unmake_move(move);  
-        } else if (is_pinned(move.origin)) {
-            // This piece is pinned, double check that the move doesn't put us in check.
-            make_move(move);
-            if (!is_check(king_square, colour)) {legal_moves.push_back(move); }
-            unmake_move(move);
         } else if (move.is_ep_capture()) {
             // en_passent's are weird.
-            make_move(move);
-            if (!is_check(king_square, colour)) {legal_moves.push_back(move); }
-            unmake_move(move);
+            if (is_pinned(move.origin)) {
+                // If the pawn was pinned to the diagonal or file, the move is definitely illegal.
+                continue;
+            } else {
+                // This can open a rank. if the king is on that rank it could be a problem.
+                if (king_square.rank() == move.origin.rank()) {
+                    make_move(move);
+                    if (!is_check(king_square, colour)) {legal_moves.push_back(move); }
+                    unmake_move(move);
+                } else {
+                    legal_moves.push_back(move); 
+                }
+            }
+        } else if (is_pinned(move.origin)) {
+            // This piece is absoluetly pinned, only legal moves will maintain the pin or capture the pinner.
+            if (in_line(king_square, move.origin, move.target)) {legal_moves.push_back(move); }
         } else {
             // Piece isn't pinned, it can do what it wants. 
             legal_moves.push_back(move);
@@ -1119,16 +1145,55 @@ bool Board::is_in_check() const {
 bool in_line(const Square origin, const Square target){
     if (origin.file() == target.file()) {return true; }
     if (origin.rank() == target.rank()) {return true; }
-    if (origin.left_diagonal() == target.left_diagonal()) {return true; }
-    if (origin.right_diagonal() == target.right_diagonal()) {return true; }
+    if (origin.anti_diagonal() == target.anti_diagonal()) {return true; }
+    if (origin.diagonal() == target.diagonal()) {return true; }
+    return false;
+}
+
+bool in_line(const Square p1, const Square p2, const Square p3){
+    if (p1.file() == p2.file() & p1.file() == p3.file()) {return true; }
+    if (p1.rank() == p2.rank() & p1.rank() == p3.rank()) {return true; }
+    if (p1.diagonal() == p2.diagonal() & p1.diagonal() == p3.diagonal()) {return true; }
+    if (p1.anti_diagonal() == p2.anti_diagonal() & p1.anti_diagonal() == p3.anti_diagonal()) {return true; }
+    return false;
+}
+
+bool interposes(const Square origin, const Square target, const Square query) {
+    if (origin.file() == target.file()) {
+        if (origin.file() != query.file()) {return false;}
+        if ((query.rank() > std::min(origin.rank(), target.rank())) & (query.rank() < std::max(origin.rank(), target.rank()))) {
+            return true;
+        } else { return false;}
+    }
+    if (origin.rank() == target.rank()) {
+        if (origin.rank() != query.rank()) {return false;}
+        if ((query.file() > std::min(origin.file(), target.file())) & (query.file() < std::max(origin.file(), target.file()))) {
+            return true;
+        } else { return false;}
+    }
+
+    if (origin.diagonal() == target.diagonal()) {
+        if (origin.diagonal() != query.diagonal()) {return false;}
+        if ((query.anti_diagonal() > std::min(origin.anti_diagonal(), target.anti_diagonal())) & (query.anti_diagonal() < std::max(origin.anti_diagonal(), target.anti_diagonal()))) {
+            return true;
+        } else { return false;}
+    }
+
+    if (origin.anti_diagonal() == target.anti_diagonal()) {
+        if (origin.anti_diagonal() != query.anti_diagonal()) {return false;}
+        if ((query.diagonal() > std::min(origin.diagonal(), target.diagonal())) & (query.diagonal() < std::max(origin.diagonal(), target.diagonal()))) {
+            return true;
+        } else { return false;}
+    }
+
     return false;
 }
 
 int what_dirx(const Square origin, const Square target){
     if (origin.file() == target.file()) {return origin.rank_index() < target.rank_index() ? 2 : 0; }
     if (origin.rank() == target.rank()) {return origin.file_index() < target.file_index() ? 1 : 3; }
-    if (origin.left_diagonal() == target.left_diagonal()) {return origin.right_diagonal() < target.right_diagonal() ? 5 : 7; }
-    if (origin.right_diagonal() == target.right_diagonal()) {return origin.left_diagonal() < target.left_diagonal() ? 6 : 4; }
+    if (origin.anti_diagonal() == target.anti_diagonal()) {return origin.diagonal() < target.diagonal() ? 5 : 7; }
+    if (origin.diagonal() == target.diagonal()) {return origin.anti_diagonal() < target.anti_diagonal() ? 6 : 4; }
     return -1;
 }
 
@@ -1140,6 +1205,7 @@ bool Board::is_pinned(const Square origin) const{
     }
     return false;
 }
+
 Square slide_rook_pin(const Board &board, const Square origin, const Square direction, const uint to_edge, const Piece colour) {
     // Slide from the origin in a direction, to look for a peice pinned by some sliding piece of ~colour
     Square target = origin;
@@ -1259,4 +1325,65 @@ void Board::search_pins(const Piece colour, const Square origin, const Square ta
             pinned_pieces[start_index + target_dirx] = slide_bishop_pin(*this, king_square, Squares::by_dirx[target_dirx], king_square.to_dirx(target_dirx), colour);
         }
     }
+}
+
+void Board::update_checkers() {
+    Square origin = find_king(whos_move);
+    Piece colour = whos_move;
+    // Want to (semi-efficiently) see if a square is attacked, ignoring pins.
+    // First off, if the square is attacked by a knight, it's definitely in check.
+    numer_checkers = 0;
+    for (Square target : knight_moves(origin)) {
+        if (pieces[target] == (~colour | Pieces::Knight)) {
+            checkers[numer_checkers] = target;
+            numer_checkers++;
+            continue;
+        }
+    }
+
+    // Pawn square
+    Square target;
+    if (origin.to_west() != 0) {
+        target = origin + (Squares::W + forwards(colour));
+        if (pieces[target] == (~colour | Pieces::Pawn)) {
+            checkers[numer_checkers] = target;
+            numer_checkers++;
+        }
+    }
+    if (origin.to_east() != 0) {
+        target = origin + (Squares::E + forwards(colour));
+        if (pieces[target] == (~colour | Pieces::Pawn)) {
+            checkers[numer_checkers] = target;
+            numer_checkers++;
+        }
+    }
+
+    // Sliding moves.
+    Piece target_piece;
+    std::array<Square, 4> targets;
+    targets[0] = slide_to_edge(origin, Squares::N, origin.to_north());
+    targets[1] = slide_to_edge(origin, Squares::E, origin.to_east());
+    targets[2] = slide_to_edge(origin, Squares::S, origin.to_south());
+    targets[3] = slide_to_edge(origin, Squares::W, origin.to_west());
+    for (Square target : targets){
+        target_piece = pieces[target];
+        if ((target_piece == (~colour | Pieces::Rook)) | (target_piece == (~colour | Pieces::Queen))) {
+            checkers[numer_checkers] = target;
+            numer_checkers++;
+        }
+    }
+    
+    // Diagonals
+    targets[0] = slide_to_edge(origin, Squares::NE, std::min(origin.to_north(), origin.to_east()));
+    targets[1] = slide_to_edge(origin, Squares::SE, std::min(origin.to_south(), origin.to_east()));
+    targets[2] = slide_to_edge(origin, Squares::SW, std::min(origin.to_south(), origin.to_west()));
+    targets[3] = slide_to_edge(origin, Squares::NW, std::min(origin.to_north(), origin.to_west()));
+    for (Square target : targets){
+        target_piece = pieces[target];
+        if ((target_piece == (~colour | Pieces::Bishop)) | (target_piece == (~colour | Pieces::Queen))) {
+            checkers[numer_checkers] = target;
+            numer_checkers++;
+        }
+    }
+    aux_info.is_check = (numer_checkers > 0);
 }

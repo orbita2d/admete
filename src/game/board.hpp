@@ -41,10 +41,10 @@ public:
         return value & 0x38;
     }
 
-    constexpr square_t right_diagonal() const{
+    constexpr square_t diagonal() const{
         return rank_index() + file_index();
     }
-    constexpr square_t left_diagonal() const{
+    constexpr square_t anti_diagonal() const{
         return rank_index() - file_index() + 7;
     }
 
@@ -319,6 +319,7 @@ public:
     };
 
     void fen_decode(const std::string& fen);
+    void initialise();
 
     void print_board_idx();
     void print_board();
@@ -341,6 +342,7 @@ public:
     std::vector<Move> get_moves();
     bool is_check(const Square square, const Piece colour) const;
     bool is_in_check() const;
+    void update_checkers();
 
     void make_move(Move &move);
     void unmake_move(const Move move);
@@ -356,6 +358,8 @@ public:
 
     std::array<Piece, 64> pieces;
 private:
+    uint numer_checkers;
+    std::array<Square, 2> checkers;
     bitboard occupied;
     bool whos_move = white_move;
     uint fullmove_counter = 1;
@@ -370,3 +374,6 @@ private:
 
 constexpr Square forwards(const Piece colour);
 constexpr Square back_rank(const Piece colour);
+bool interposes(const Square origin, const Square target, const Square query);
+bool in_line(const Square, const Square, const Square);
+bool in_line(const Square, const Square);
