@@ -1,5 +1,5 @@
 #include "../game/board.hpp"
-#include "iostream"
+#include <iostream>
 
 unsigned int perft(unsigned int depth, Board &board) {
     if (depth == 0) {
@@ -16,6 +16,21 @@ unsigned int perft(unsigned int depth, Board &board) {
 
 }
 
+unsigned int perft_bulk(unsigned int depth, Board &board) {
+    std::vector<Move> legal_moves = board.get_moves();
+
+    if (depth == 1) {
+        return legal_moves.size();
+    }
+
+    unsigned int nodes = 0;
+    for (Move move : legal_moves) {
+        board.make_move(move);
+        nodes += perft_bulk(depth-1, board);
+        board.unmake_move(move);
+    }
+    return nodes;
+}
 
 unsigned int pseudolegal_perft(unsigned int depth, Board &board) {
     if (depth == 0) {
@@ -26,7 +41,7 @@ unsigned int pseudolegal_perft(unsigned int depth, Board &board) {
     for (Move move : moves) {
         board.make_move(move);
         if (!board.is_in_check()) {
-            nodes += perft(depth-1, board);
+            nodes += pseudolegal_perft(depth-1, board);
         }
         board.unmake_move(move);
     }
