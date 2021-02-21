@@ -288,12 +288,6 @@ public:
         return promotion;
     }
     Piece captured_peice;
-    Square en_passent_target;
-    uint halfmove_clock;
-    bool white_kingside_rights = false;
-    bool white_queenside_rights = false; 
-    bool black_kingside_rights = false;
-    bool black_queenside_rights = false; 
 private:
     bool promotion = 0;
     bool capture = 0;
@@ -304,6 +298,19 @@ std::ostream& operator<<(std::ostream& os, const Move move);
 
 constexpr bool white_move = false;
 constexpr bool black_move = true;
+
+typedef std::array<std::array<bool, 64>, 64> bitboard;
+
+struct AuxilliaryInfo {
+    // Information that is game history dependent, that would otherwise need to be encoded in a move.
+    bool castle_white_kingside = true;
+    bool castle_white_queenside = true;
+    bool castle_black_kingside = true;
+    bool castle_black_queenside = true;
+    uint halfmove_clock = 0;
+    Square en_passent_target;
+    bool is_check = false;
+};
 
 class Board {
 public:
@@ -352,18 +359,14 @@ public:
     std::array<Piece, 64> pieces;
 private:
     bool whos_move = white_move;
-    bool castle_white_kingside = true;
-    bool castle_white_queenside = true;
-    bool castle_black_kingside = true;
-    bool castle_black_queenside = true;
-    Square en_passent_target = 0;
-    uint halfmove_clock = 0;
     uint fullmove_counter = 1;
+    uint ply_counter = 0;
     Move last_move;
     std::array<Square, 2> king_square;
     // Array of absolute pins for legal move generation. Max 8 pieces per king.
     std::array<Square, 16> pinned_pieces;
-    bool currently_check = 0;
+    std::array<AuxilliaryInfo, 256> aux_history;
+    AuxilliaryInfo aux_info;
 };
 
 constexpr Square forwards(const Piece colour);
