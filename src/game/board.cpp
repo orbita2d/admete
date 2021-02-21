@@ -85,22 +85,6 @@ std::ostream& operator<<(std::ostream& os, const Square move) {
         os << move.pretty_print();
         return os;
     }
-constexpr Square::square_t Square::squares_to_north() const{
-    // Number of squares between this square and the north edge
-    return rank_index();
-}
-constexpr Square::square_t Square::squares_to_south() const{
-    // Number of squares between this square and the south edge
-    return 7-rank_index();
-}
-constexpr Square::square_t Square::squares_to_east() const{
-    // Number of squares between this square and the south edge
-    return 7-file_index();
-}
-constexpr Square::square_t Square::squares_to_west() const{
-    // Number of squares between this square and the south edge
-    return file_index();
-}
 
 std::array<KnightMoveArray, 64> GenerateKnightMoves(){
     std::array<KnightMoveArray, 64> meta_array;
@@ -108,35 +92,35 @@ std::array<KnightMoveArray, 64> GenerateKnightMoves(){
     for (unsigned int i = 0; i < 64; i++){
         moves = KnightMoveArray();
         Square origin = Square(i);
-        if (origin.squares_to_north() >= 2){
-            if(origin.squares_to_west() >= 1) {
+        if (origin.to_north() >= 2){
+            if(origin.to_west() >= 1) {
                 moves.push_back(origin + Squares::NNW);
             }
-            if(origin.squares_to_east() >= 1) {
+            if(origin.to_east() >= 1) {
                 moves.push_back(origin + Squares::NNE);
             }
         }
-        if (origin.squares_to_east() >= 2){
-            if(origin.squares_to_north() >= 1) {
+        if (origin.to_east() >= 2){
+            if(origin.to_north() >= 1) {
                 moves.push_back(origin + Squares::ENE);
             }
-            if(origin.squares_to_south() >= 1) {
+            if(origin.to_south() >= 1) {
                 moves.push_back(origin + Squares::ESE);
             }
         }
-        if (origin.squares_to_south() >= 2){
-            if(origin.squares_to_east() >= 1) {
+        if (origin.to_south() >= 2){
+            if(origin.to_east() >= 1) {
                 moves.push_back(origin + Squares::SSE);
             }
-            if(origin.squares_to_west() >= 1) {
+            if(origin.to_west() >= 1) {
                 moves.push_back(origin + Squares::SSW);
             }
         }
-        if (origin.squares_to_west() >= 2){
-            if(origin.squares_to_south() >= 1) {
+        if (origin.to_west() >= 2){
+            if(origin.to_south() >= 1) {
                 moves.push_back(origin + Squares::WSW);
             }
-            if(origin.squares_to_north() >= 1) {
+            if(origin.to_north() >= 1) {
                 moves.push_back(origin + Squares::WNW);
             }
         }
@@ -184,6 +168,9 @@ void Board::fen_decode(const std::string& fen){
         file ++;
     }
     
+    search_kings();
+    search_pins();
+
     std::string side_to_move, castling, en_passent;
     int halfmove = 0, counter = 0;
     stream = std::stringstream(fen.substr(board_position));
@@ -358,7 +345,7 @@ void Board::get_pawn_moves(const Square origin, const Piece colour, std::vector<
             }
         }
         // Normal captures.
-        if (origin.squares_to_west() != 0) {
+        if (origin.to_west() != 0) {
             target = origin + (Squares::NW);
             if (pieces[target].is_colour(~colour)) {
                 move = Move(origin, target);
@@ -371,7 +358,7 @@ void Board::get_pawn_moves(const Square origin, const Piece colour, std::vector<
             }
         }
 
-        if (origin.squares_to_east() != 0) {
+        if (origin.to_east() != 0) {
             target = origin + (Squares::NE);
             if (pieces[target].is_colour(~colour)) {
                 move = Move(origin, target);
@@ -385,8 +372,8 @@ void Board::get_pawn_moves(const Square origin, const Piece colour, std::vector<
         }
         // En-passent
         if (origin.rank() == Squares::Rank5) {
-            if (origin.squares_to_west() != 0 & en_passent_target == origin + Squares::NW | 
-                origin.squares_to_east() != 0 & en_passent_target == origin + Squares::NE ) {
+            if (origin.to_west() != 0 & en_passent_target == origin + Squares::NW | 
+                origin.to_east() != 0 & en_passent_target == origin + Squares::NE ) {
                 move = Move(origin, en_passent_target); 
                 move.make_en_passent();
                 moves.push_back(move);
@@ -416,7 +403,7 @@ void Board::get_pawn_moves(const Square origin, const Piece colour, std::vector<
             }
         }
         // Normal captures.
-        if (origin.squares_to_west() != 0) {
+        if (origin.to_west() != 0) {
             target = origin + (Squares::SW);
             if (pieces[target].is_colour(~colour)) {
                 move = Move(origin, target);
@@ -429,7 +416,7 @@ void Board::get_pawn_moves(const Square origin, const Piece colour, std::vector<
             }
         }
 
-        if (origin.squares_to_east() != 0) {
+        if (origin.to_east() != 0) {
             target = origin + (Squares::SE);
             if (pieces[target].is_colour(~colour)) {
                 move = Move(origin, target);
@@ -443,8 +430,8 @@ void Board::get_pawn_moves(const Square origin, const Piece colour, std::vector<
         }
         // En-passent
         if (origin.rank() == Squares::Rank4) {
-            if (origin.squares_to_west() != 0 & en_passent_target == origin + Squares::SW | 
-                origin.squares_to_east() != 0 & en_passent_target == origin + Squares::SE ) {
+            if (origin.to_west() != 0 & en_passent_target == origin + Squares::SW | 
+                origin.to_east() != 0 & en_passent_target == origin + Squares::SE ) {
                 move = Move(origin, en_passent_target); 
                 move.make_en_passent();
                 moves.push_back(move);
@@ -486,18 +473,18 @@ void Board::get_sliding_moves(const Square origin, const Piece colour, const Squ
 }
 
 void Board::get_rook_moves(const Square origin, const Piece colour, std::vector<Move> &moves) const {
-    get_sliding_moves(origin, colour, Squares::N, origin.squares_to_north(), moves);
-    get_sliding_moves(origin, colour, Squares::E, origin.squares_to_east(), moves);
-    get_sliding_moves(origin, colour, Squares::S, origin.squares_to_south(), moves);
-    get_sliding_moves(origin, colour, Squares::W, origin.squares_to_west(), moves);
+    get_sliding_moves(origin, colour, Squares::N, origin.to_north(), moves);
+    get_sliding_moves(origin, colour, Squares::E, origin.to_east(), moves);
+    get_sliding_moves(origin, colour, Squares::S, origin.to_south(), moves);
+    get_sliding_moves(origin, colour, Squares::W, origin.to_west(), moves);
     
 }
 
 void Board::get_bishop_moves(const Square origin, const Piece colour, std::vector<Move> &moves) const {
-    get_sliding_moves(origin, colour, Squares::NE, std::min(origin.squares_to_north(), origin.squares_to_east()), moves);
-    get_sliding_moves(origin, colour, Squares::SE, std::min(origin.squares_to_east(), origin.squares_to_south()), moves);
-    get_sliding_moves(origin, colour, Squares::SW, std::min(origin.squares_to_south(), origin.squares_to_west()), moves);
-    get_sliding_moves(origin, colour, Squares::NW, std::min(origin.squares_to_west(), origin.squares_to_north()), moves);
+    get_sliding_moves(origin, colour, Squares::NE, std::min(origin.to_north(), origin.to_east()), moves);
+    get_sliding_moves(origin, colour, Squares::SE, std::min(origin.to_east(), origin.to_south()), moves);
+    get_sliding_moves(origin, colour, Squares::SW, std::min(origin.to_south(), origin.to_west()), moves);
+    get_sliding_moves(origin, colour, Squares::NW, std::min(origin.to_west(), origin.to_north()), moves);
     
 }
 
@@ -527,28 +514,28 @@ void Board::get_step_moves(const Square origin, const Square target, const Piece
 void Board::get_king_moves(const Square origin, const Piece colour, std::vector<Move> &moves) const {
     // We should really be careful that we aren't moving into check here.
     // Look to see if we are on an edge.
-    if (origin.squares_to_north() != 0) {
+    if (origin.to_north() != 0) {
         get_step_moves(origin, origin + Squares::N, colour, moves);
     }
-    if (origin.squares_to_east() != 0) {
+    if (origin.to_east() != 0) {
         get_step_moves(origin, origin + Squares::E, colour, moves);
     }
-    if (origin.squares_to_south() != 0) {
+    if (origin.to_south() != 0) {
         get_step_moves(origin, origin + Squares::S, colour, moves);
     }
-    if (origin.squares_to_west() != 0) {
+    if (origin.to_west() != 0) {
         get_step_moves(origin, origin + Squares::W, colour, moves);
     }
-    if (origin.squares_to_north() != 0 & origin.squares_to_east() != 0) {
+    if (origin.to_north() != 0 & origin.to_east() != 0) {
         get_step_moves(origin, origin + Squares::NE, colour, moves);
     }
-    if (origin.squares_to_south() != 0 & origin.squares_to_east() != 0) {
+    if (origin.to_south() != 0 & origin.to_east() != 0) {
         get_step_moves(origin, origin + Squares::SE, colour, moves);
     }
-    if (origin.squares_to_south() != 0 & origin.squares_to_west() != 0) {
+    if (origin.to_south() != 0 & origin.to_west() != 0) {
         get_step_moves(origin, origin + Squares::SW, colour, moves);
     }
-    if (origin.squares_to_north() != 0 & origin.squares_to_west() != 0) {
+    if (origin.to_north() != 0 & origin.to_west() != 0) {
         get_step_moves(origin, origin + Squares::NW, colour, moves);
     }
 }
@@ -704,6 +691,14 @@ void Board::make_move(Move &move) {
     move.white_kingside_rights = castle_white_kingside;
     move.white_queenside_rights = castle_white_queenside;
 
+    if (pieces[move.origin].is_king()) {
+        if (whos_move == white_move) {
+            king_square[0] = move.target;
+        } else {
+            king_square[1] = move.target;
+        }
+    }
+
     // Castling is special
     if (move.is_king_castle()) {
         pieces[move.target] = pieces[move.origin];
@@ -806,6 +801,12 @@ void Board::make_move(Move &move) {
     }
     // Switch whos turn it is to play
     whos_move = ! whos_move;
+    if (is_in_check()) {
+        currently_check = true;
+    } else {
+        currently_check = false;
+    }
+    search_pins();
 }
 
 void Board::unmake_move(const Move move) {
@@ -817,6 +818,15 @@ void Board::unmake_move(const Move move) {
     // Track en-passent square
     en_passent_target = move.en_passent_target;
     // Castling is special
+
+    if (pieces[move.target].is_king()) {
+        if (whos_move == white_move) {
+            king_square[0] = move.origin;
+        } else {
+            king_square[1] = move.origin;
+        }
+    }
+
     if (move.is_king_castle()) {
         pieces[move.origin] = pieces[move.target];
         pieces[move.target] = Pieces::Blank;
@@ -850,6 +860,13 @@ void Board::unmake_move(const Move move) {
     castle_black_queenside = move.black_queenside_rights;
     castle_white_kingside = move.white_kingside_rights;
     castle_white_queenside = move.white_queenside_rights;
+
+    if (is_in_check()) {
+        currently_check = true;
+    } else {
+        currently_check = false;
+    }
+    search_pins();
 }
 
 void Board::try_move(const std::string move_sting) {
@@ -897,13 +914,13 @@ bool Board::is_check(const Square origin, const Piece colour) const{
 
     // Pawn square
     Square target;
-    if (origin.squares_to_west() != 0) {
+    if (origin.to_west() != 0) {
         target = origin + (Squares::W + forwards(colour));
         if (pieces[target] == (~colour | Pieces::Pawn)) {
             return true;
         }
     }
-    if (origin.squares_to_east() != 0) {
+    if (origin.to_east() != 0) {
         target = origin + (Squares::E + forwards(colour));
         if (pieces[target] == (~colour | Pieces::Pawn)) {
             return true;
@@ -914,10 +931,10 @@ bool Board::is_check(const Square origin, const Piece colour) const{
     // Sliding moves.
     Piece target_piece;
     std::array<Square, 4> targets;
-    targets[0] = slide_to_edge(origin, Squares::N, origin.squares_to_north());
-    targets[1] = slide_to_edge(origin, Squares::E, origin.squares_to_east());
-    targets[2] = slide_to_edge(origin, Squares::S, origin.squares_to_south());
-    targets[3] = slide_to_edge(origin, Squares::W, origin.squares_to_west());
+    targets[0] = slide_to_edge(origin, Squares::N, origin.to_north());
+    targets[1] = slide_to_edge(origin, Squares::E, origin.to_east());
+    targets[2] = slide_to_edge(origin, Squares::S, origin.to_south());
+    targets[3] = slide_to_edge(origin, Squares::W, origin.to_west());
     for (Square target : targets){
         target_piece = pieces[target];
         if ((target_piece == (~colour | Pieces::Rook)) | (target_piece == (~colour | Pieces::Queen))) {
@@ -926,10 +943,10 @@ bool Board::is_check(const Square origin, const Piece colour) const{
     }
     
     // Diagonals
-    targets[0] = slide_to_edge(origin, Squares::NE, std::min(origin.squares_to_north(), origin.squares_to_east()));
-    targets[1] = slide_to_edge(origin, Squares::SE, std::min(origin.squares_to_south(), origin.squares_to_east()));
-    targets[2] = slide_to_edge(origin, Squares::SW, std::min(origin.squares_to_south(), origin.squares_to_west()));
-    targets[3] = slide_to_edge(origin, Squares::NW, std::min(origin.squares_to_north(), origin.squares_to_west()));
+    targets[0] = slide_to_edge(origin, Squares::NE, std::min(origin.to_north(), origin.to_east()));
+    targets[1] = slide_to_edge(origin, Squares::SE, std::min(origin.to_south(), origin.to_east()));
+    targets[2] = slide_to_edge(origin, Squares::SW, std::min(origin.to_south(), origin.to_west()));
+    targets[3] = slide_to_edge(origin, Squares::NW, std::min(origin.to_north(), origin.to_west()));
     for (Square target : targets){
         target_piece = pieces[target];
         if ((target_piece == (~colour | Pieces::Bishop)) | (target_piece == (~colour | Pieces::Queen))) {
@@ -938,42 +955,42 @@ bool Board::is_check(const Square origin, const Piece colour) const{
     }
     
     // King's can't be next to each other in a game, but this is how we enforce that.
-    if (origin.squares_to_north() != 0) {
+    if (origin.to_north() != 0) {
         if (pieces[origin + Squares::N] == (~colour.get_colour() | Pieces::King)) {
             return true;
         }
-        if (origin.squares_to_east() != 0) {
+        if (origin.to_east() != 0) {
             if (pieces[origin + Squares::NE] == (~colour.get_colour() | Pieces::King)) {
                 return true;
             }
         }
-        if (origin.squares_to_west() != 0) {
+        if (origin.to_west() != 0) {
             if (pieces[origin + Squares::NW] == (~colour.get_colour() | Pieces::King)) {
                 return true;
             }
         }
     } 
-    if (origin.squares_to_south() != 0) {
+    if (origin.to_south() != 0) {
         if (pieces[origin + Squares::S] == (~colour.get_colour() | Pieces::King)) {
             return true;
         }
-        if (origin.squares_to_east() != 0) {
+        if (origin.to_east() != 0) {
             if (pieces[origin + Squares::SE] == (~colour.get_colour() | Pieces::King)) {
                 return true;
             }
         }
-        if (origin.squares_to_west() != 0) {
+        if (origin.to_west() != 0) {
             if (pieces[origin + Squares::SW] == (~colour.get_colour() | Pieces::King)) {
                 return true;
             }
         }
     } 
-    if (origin.squares_to_east() != 0) {
+    if (origin.to_east() != 0) {
         if (pieces[origin + Squares::E] == (~colour.get_colour() | Pieces::King)) {
             return true;
         }
     }
-    if (origin.squares_to_west() != 0) {
+    if (origin.to_west() != 0) {
         if (pieces[origin + Squares::W] == (~colour.get_colour() | Pieces::King)) {
             return true;
         }
@@ -983,15 +1000,20 @@ bool Board::is_check(const Square origin, const Piece colour) const{
     return false;
 }
 
-Square Board::find_king(const Piece colour) const{
-    Square king_square = -1;
+void Board::search_kings() {
     for (Square::square_t i = 0; i < 64; i++) {
-        if (pieces[i] == (colour | Pieces::King)) { king_square = i; break;};        
+        if (pieces[i].is_king()) { 
+            if (pieces[i].is_white()) {
+                king_square[0] = i;
+            } else {
+                king_square[1] = i;
+            }
+        }
     }
-    if (king_square.get_value() == -1) {
-        throw std::runtime_error("Cannot find King on board.");
-    }
-    return king_square;
+}
+
+Square Board::find_king(const Piece colour) const{
+    return colour.is_white() ? king_square[0] : king_square[1];
 }
 
 std::vector<Move> Board::get_moves(){
@@ -1000,16 +1022,42 @@ std::vector<Move> Board::get_moves(){
     std::vector<Move> legal_moves;
     legal_moves.reserve(256);
     Square king_square = find_king(colour);
-    // To test if a move is legal, make the move and see if we are in check. 
+    if (is_check(king_square, colour)) {
+        // To test if a move is legal, make the move and see if we are in check. 
+        for (Move move : pseudolegal_moves) {
+            make_move(move);
+            if (move.origin == king_square) {
+                // This is a king move, check where he's gone.
+                if (!is_check(move.target, colour)) {legal_moves.push_back(move); }
+            } else {
+                if (!is_check(king_square, colour)) {legal_moves.push_back(move); }
+            }
+            unmake_move(move);
+        }
+        return legal_moves;
+    } 
+    
+    // Otherwise we can be smarter.
     for (Move move : pseudolegal_moves) {
-        make_move(move);
         if (move.origin == king_square) {
             // This is a king move, check where he's gone.
+            make_move(move);
             if (!is_check(move.target, colour)) {legal_moves.push_back(move); }
-        } else {
+            unmake_move(move);  
+        } else if (is_pinned(move.origin)) {
+            // This piece is pinned, double check that the move doesn't put us in check.
+            make_move(move);
             if (!is_check(king_square, colour)) {legal_moves.push_back(move); }
+            unmake_move(move);
+        } else if (move.is_ep_capture()) {
+            // en_passent's are weird.
+            make_move(move);
+            if (!is_check(king_square, colour)) {legal_moves.push_back(move); }
+            unmake_move(move);
+        } else {
+            // Piece isn't pinned, it can do what it wants. 
+            legal_moves.push_back(move);
         }
-        unmake_move(move);
     }
     return legal_moves;
 }
@@ -1018,4 +1066,123 @@ bool Board::is_in_check() const {
     Piece colour = whos_move;
     Square king_square = find_king(colour);
     return is_check(king_square, colour);
+}
+
+bool in_line(const Square origin, const Square target){
+    if (origin.file() == target.file()) {return true; }
+    if (origin.rank() == target.rank()) {return true; }
+    if (origin.left_diagonal() == target.left_diagonal()) {return true; }
+    if (origin.right_diagonal() == target.right_diagonal()) {return true; }
+    return false;
+}
+bool Board::is_pinned(const Square origin) const{
+    for (Square target : pinned_pieces) {
+        if (origin == target) {
+            return true;
+        }
+    }
+    return false;
+}
+Square slide_rook_pin(const Board &board, const Square origin, const Square direction, const uint to_edge, const Piece colour) {
+    // Slide from the origin in a direction, to look for a peice pinned by some sliding piece of ~colour
+    Square target = origin;
+    // Flag of if we have found a piece in the way yet.
+    bool flag = false;
+    Square found_piece;
+    // First look south
+    for (uint i = 0; i < to_edge; i++) {
+        target = target + direction;
+        if (board.is_free(target)) {
+            // Blank Square
+            continue;
+        }
+        if (board.pieces[target].is_colour(colour)) {
+            // It's our piece.
+            if (flag) {
+                // This piece isn't pinned.
+                return origin;
+            } else {
+                flag = true;
+                found_piece = target;
+                continue;
+            }
+        } else {
+            // It's their piece.
+            if (flag) {
+                // The last piece we found may be pinned.
+                return (board.pieces[target].is_rook() | board.pieces[target].is_queen()) ? found_piece : origin;
+            } else {
+                // Origin is attacked, but no pins here.
+                return origin;
+            }
+        }
+    };
+    return origin;
+}
+
+Square slide_bishop_pin(const Board &board, const Square origin, const Square direction, const uint to_edge, const Piece colour) {
+    // Slide from the origin in a direction, to look for a peice pinned by some sliding piece of ~colour
+    Square target = origin;
+    // Flag of if we have found a piece in the way yet.
+    bool flag = false;
+    Square found_piece;
+    // First look south
+    for (uint i = 0; i < to_edge; i++) {
+        target = target + direction;
+        if (board.is_free(target)) {
+            // Blank Square
+            continue;
+        }
+        if (board.pieces[target].is_colour(colour)) {
+            // It's our piece.
+            if (flag) {
+                // This piece isn't pinned.
+                return origin;
+            } else {
+                flag = true;
+                found_piece = target;
+                continue;
+            }
+        } else {
+            // It's their piece.
+            if (flag) {
+                // The last piece we found may be pinned.
+                return (board.pieces[target].is_bishop() | board.pieces[target].is_queen()) ? found_piece : origin;
+            } else {
+                // Origin is attacked, but no pins here.
+                return origin;
+            }
+        }
+    };
+    return origin;
+}
+
+void Board::search_pins() {
+    // Max 8 sliding pieces in line. 
+    // Sliding moves.
+    Square origin = find_king(white_move);
+    Piece target_piece;
+    std::array<Square, 16> targets;
+    targets[0] = slide_rook_pin(*this, origin, Squares::N, origin.to_north(), white_move);
+    targets[1] = slide_rook_pin(*this, origin, Squares::E, origin.to_east(), white_move);
+    targets[2] = slide_rook_pin(*this, origin, Squares::S, origin.to_south(), white_move);
+    targets[3] = slide_rook_pin(*this, origin, Squares::W, origin.to_west(), white_move);
+    targets[4] = slide_bishop_pin(*this, origin, Squares::NE, origin.to_northeast(), white_move);
+    targets[5] = slide_bishop_pin(*this, origin, Squares::SE, origin.to_southeast(), white_move);
+    targets[6] = slide_bishop_pin(*this, origin, Squares::SW, origin.to_southwest(), white_move);
+    targets[7] = slide_bishop_pin(*this, origin, Squares::NW, origin.to_northwest(), white_move);
+
+    origin = find_king(black_move);
+    targets[8] = slide_rook_pin(*this, origin, Squares::N, origin.to_north(), black_move);
+    targets[9] = slide_rook_pin(*this, origin, Squares::E, origin.to_east(), black_move);
+    targets[10] = slide_rook_pin(*this, origin, Squares::S, origin.to_south(), black_move);
+    targets[11] = slide_rook_pin(*this, origin, Squares::W, origin.to_west(), black_move);
+    targets[12] = slide_bishop_pin(*this, origin, Squares::NE, origin.to_northeast(), black_move);
+    targets[13] = slide_bishop_pin(*this, origin, Squares::SE, origin.to_southeast(), black_move);
+    targets[14] = slide_bishop_pin(*this, origin, Squares::SW, origin.to_southwest(), black_move);
+    targets[15] = slide_bishop_pin(*this, origin, Squares::NW, origin.to_northwest(), black_move);
+    for (int i = 0; i < 16; i++){
+        pinned_pieces[i] = targets[i];
+    }
+    
 }

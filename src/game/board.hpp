@@ -41,10 +41,22 @@ public:
         return value & 0x38;
     }
 
-    constexpr square_t squares_to_north() const;
-    constexpr square_t squares_to_south() const;
-    constexpr square_t squares_to_east() const;
-    constexpr square_t squares_to_west()const;
+    constexpr square_t right_diagonal() const{
+        return rank_index() + file_index();
+    }
+    constexpr square_t left_diagonal() const{
+        return rank_index() - file_index() + 7;
+    }
+
+    square_t to_north() const { return rank_index(); };
+    square_t to_south() const { return 7-rank_index(); };
+    square_t to_east() const { return 7-file_index(); };
+    square_t to_west()const { { return file_index(); }};
+
+    square_t to_northeast() const { return std::min(to_north(), to_east()); };
+    square_t to_southeast() const { return std::min(to_south(), to_east()); };
+    square_t to_southwest() const { return std::min(to_south(), to_west()); };
+    square_t to_northwest() const { return std::min(to_north(), to_west()); };
 
     static constexpr square_t to_index(const square_t rank, const square_t file){
         return 8 * rank + file;
@@ -305,6 +317,9 @@ public:
 
     void try_move(const std::string move_sting);
     Square find_king(const Piece colour) const;
+    void search_kings();
+    void search_pins();
+    bool is_pinned(const Square origin) const;
 
     std::array<Piece, 64> pieces;
 private:
@@ -317,6 +332,10 @@ private:
     uint halfmove_clock = 0;
     uint fullmove_counter = 1;
     Move last_move;
+    std::array<Square, 2> king_square;
+    // Array of absolute pins for legal move generation. Max 8 pieces per king.
+    std::array<Square, 16> pinned_pieces;
+    bool currently_check = 0;
 };
 
 constexpr Square forwards(const Piece colour);

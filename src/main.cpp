@@ -104,6 +104,7 @@ int main(int argc, char* argv[])
 	}
     Board board = Board();
     board.fen_decode(board_fen);
+    board.print_board_idx();
 
     if (print_flag) {
         board.print_board();
@@ -121,7 +122,7 @@ int main(int argc, char* argv[])
 
     if (perft_flag) {
         for (unsigned int i = 1; i <= depth; i++) {
-            std::cout << perft(i, board) << std::endl;
+            std::cout << perft_bulk(i, board) << std::endl;
         }
         exit(EXIT_SUCCESS);
     }
