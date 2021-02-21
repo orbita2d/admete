@@ -169,7 +169,8 @@ void Board::fen_decode(const std::string& fen){
     }
     
     search_kings();
-    search_pins();
+    search_pins(white_move);
+    search_pins(black_move);
 
     std::string side_to_move, castling, en_passent;
     int halfmove = 0, counter = 0;
@@ -806,7 +807,8 @@ void Board::make_move(Move &move) {
     } else {
         currently_check = false;
     }
-    search_pins();
+    // Update the pins for the person whos turn it is. 
+    search_pins(whos_move);
 }
 
 void Board::unmake_move(const Move move) {
@@ -866,7 +868,7 @@ void Board::unmake_move(const Move move) {
     } else {
         currently_check = false;
     }
-    search_pins();
+    search_pins(whos_move);
 }
 
 void Board::try_move(const std::string move_sting) {
@@ -1157,32 +1159,24 @@ Square slide_bishop_pin(const Board &board, const Square origin, const Square di
     return origin;
 }
 
-void Board::search_pins() {
+void Board::search_pins(const Piece colour) {
     // Max 8 sliding pieces in line. 
     // Sliding moves.
-    Square origin = find_king(white_move);
+    Square origin = find_king(colour);
     Piece target_piece;
+    uint start_index = colour.is_white() ? 0 : 8;
     std::array<Square, 16> targets;
-    targets[0] = slide_rook_pin(*this, origin, Squares::N, origin.to_north(), white_move);
-    targets[1] = slide_rook_pin(*this, origin, Squares::E, origin.to_east(), white_move);
-    targets[2] = slide_rook_pin(*this, origin, Squares::S, origin.to_south(), white_move);
-    targets[3] = slide_rook_pin(*this, origin, Squares::W, origin.to_west(), white_move);
-    targets[4] = slide_bishop_pin(*this, origin, Squares::NE, origin.to_northeast(), white_move);
-    targets[5] = slide_bishop_pin(*this, origin, Squares::SE, origin.to_southeast(), white_move);
-    targets[6] = slide_bishop_pin(*this, origin, Squares::SW, origin.to_southwest(), white_move);
-    targets[7] = slide_bishop_pin(*this, origin, Squares::NW, origin.to_northwest(), white_move);
+    targets[0] = slide_rook_pin(*this, origin, Squares::N, origin.to_north(), colour);
+    targets[1] = slide_rook_pin(*this, origin, Squares::E, origin.to_east(), colour);
+    targets[2] = slide_rook_pin(*this, origin, Squares::S, origin.to_south(), colour);
+    targets[3] = slide_rook_pin(*this, origin, Squares::W, origin.to_west(), colour);
+    targets[4] = slide_bishop_pin(*this, origin, Squares::NE, origin.to_northeast(), colour);
+    targets[5] = slide_bishop_pin(*this, origin, Squares::SE, origin.to_southeast(), colour);
+    targets[6] = slide_bishop_pin(*this, origin, Squares::SW, origin.to_southwest(), colour);
+    targets[7] = slide_bishop_pin(*this, origin, Squares::NW, origin.to_northwest(), colour);
 
-    origin = find_king(black_move);
-    targets[8] = slide_rook_pin(*this, origin, Squares::N, origin.to_north(), black_move);
-    targets[9] = slide_rook_pin(*this, origin, Squares::E, origin.to_east(), black_move);
-    targets[10] = slide_rook_pin(*this, origin, Squares::S, origin.to_south(), black_move);
-    targets[11] = slide_rook_pin(*this, origin, Squares::W, origin.to_west(), black_move);
-    targets[12] = slide_bishop_pin(*this, origin, Squares::NE, origin.to_northeast(), black_move);
-    targets[13] = slide_bishop_pin(*this, origin, Squares::SE, origin.to_southeast(), black_move);
-    targets[14] = slide_bishop_pin(*this, origin, Squares::SW, origin.to_southwest(), black_move);
-    targets[15] = slide_bishop_pin(*this, origin, Squares::NW, origin.to_northwest(), black_move);
-    for (int i = 0; i < 16; i++){
-        pinned_pieces[i] = targets[i];
+    for (int i = 0; i < 8; i++){
+        pinned_pieces[i + start_index] = targets[i];
     }
     
 }

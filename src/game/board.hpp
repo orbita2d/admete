@@ -318,7 +318,7 @@ public:
     void try_move(const std::string move_sting);
     Square find_king(const Piece colour) const;
     void search_kings();
-    void search_pins();
+    void search_pins(const Piece colour);
     bool is_pinned(const Square origin) const;
 
     std::array<Piece, 64> pieces;
