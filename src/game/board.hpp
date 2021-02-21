@@ -299,7 +299,7 @@ std::ostream& operator<<(std::ostream& os, const Move move);
 constexpr bool white_move = false;
 constexpr bool black_move = true;
 
-typedef std::array<std::array<bool, 64>, 64> bitboard;
+typedef uint64_t bitboard;
 
 struct AuxilliaryInfo {
     // Information that is game history dependent, that would otherwise need to be encoded in a move.
@@ -321,10 +321,9 @@ public:
     void fen_decode(const std::string& fen);
 
     void print_board_idx();
-
     void print_board();
-
     void print_board_extra();
+    void print_bitboard(const bitboard bb);
 
     std::string print_move(const Move move, std::vector<Move> &legal_moves) const;
     bool is_free(const Square target) const;
@@ -353,11 +352,11 @@ public:
     void search_pins(const Piece colour);
     void search_pins(const Piece colour, const Square origin, const Square target);
     bool is_pinned(const Square origin) const;
-    void search_sliding_checks(const Piece colour, const Square origin);
-    void search_step_checks(const Piece colour, const Square origin);
+    void build_occupied_bb();
 
     std::array<Piece, 64> pieces;
 private:
+    bitboard occupied;
     bool whos_move = white_move;
     uint fullmove_counter = 1;
     uint ply_counter = 0;
