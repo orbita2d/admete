@@ -49,14 +49,37 @@ public:
     }
 
     square_t to_north() const { return rank_index(); };
-    square_t to_south() const { return 7-rank_index(); };
     square_t to_east() const { return 7-file_index(); };
-    square_t to_west()const { { return file_index(); }};
+    square_t to_south() const { return 7-rank_index(); };
+    square_t to_west() const { { return file_index(); }};
 
     square_t to_northeast() const { return std::min(to_north(), to_east()); };
     square_t to_southeast() const { return std::min(to_south(), to_east()); };
     square_t to_southwest() const { return std::min(to_south(), to_west()); };
     square_t to_northwest() const { return std::min(to_north(), to_west()); };
+    square_t to_dirx(const int dirx) const {
+        switch (dirx)
+        {
+        case 0:
+            return to_north();
+        case 1:
+            return to_east();
+        case 2:
+            return to_south();
+        case 3:
+            return to_west();
+        case 4:
+            return to_northeast();
+        case 5:
+            return to_southeast();
+        case 6:
+            return to_southwest();
+        case 7:
+            return to_northwest();
+        default:
+            return 0;
+        }
+    }
 
     static constexpr square_t to_index(const square_t rank, const square_t file){
         return 8 * rank + file;
@@ -110,6 +133,8 @@ namespace Squares {
     static constexpr Square FileF = 5;
     static constexpr Square FileG = 6;
     static constexpr Square FileH = 7;
+
+    static constexpr std::array<Square, 8> by_dirx = {N, E, S, W, NE, SE, SW, NW};
 }
 
 class KnightMoveArray {
@@ -319,7 +344,10 @@ public:
     Square find_king(const Piece colour) const;
     void search_kings();
     void search_pins(const Piece colour);
+    void search_pins(const Piece colour, const Square origin, const Square target);
     bool is_pinned(const Square origin) const;
+    void search_sliding_checks(const Piece colour, const Square origin);
+    void search_step_checks(const Piece colour, const Square origin);
 
     std::array<Piece, 64> pieces;
 private:

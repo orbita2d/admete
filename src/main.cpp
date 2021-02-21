@@ -104,7 +104,7 @@ int main(int argc, char* argv[])
 	}
     Board board = Board();
     board.fen_decode(board_fen);
-    board.print_board_idx();
+    board.print_board();
 
     if (print_flag) {
         board.print_board();

@@ -199,6 +199,7 @@ void Board::fen_decode(const std::string& fen){
     default:
         throw std::domain_error("Unrecognised <Side to move> character");
     }
+    currently_check = is_in_check();
 
     castle_black_kingside = false;
     castle_black_queenside = false;
@@ -800,15 +801,40 @@ void Board::make_move(Move &move) {
             castle_white_queenside = false;
         }
     }
+    
+    search_pins(!whos_move);
+    /*
+    // Update the pins for the person whos turn it is. 
+    if (pieces[move.target].is_king()){
+        search_pins(whos_move);
+        // Maybe I've created/released a pin.
+        search_pins(!whos_move, move.origin, move.target);
+    } else if (move.is_king_castle()) {
+        search_pins(whos_move);
+        search_pins(!whos_move, move.origin.rank() | Squares::FileH, move.origin.rank() | Squares::FileF);
+    } else if (move.is_queen_castle()) {
+        search_pins(whos_move);
+        search_pins(!whos_move, move.origin.rank() | Squares::FileA, move.origin.rank() | Squares::FileD);
+    } else if (move.is_ep_capture()) {
+        search_pins(whos_move);
+        search_pins(!whos_move);
+    } else {
+        // Maybe I've created / released a pin
+        search_pins(whos_move, move.origin, move.target);
+        // Maybe I've unblocked / blocked a pin
+        search_pins(!whos_move, move.origin, move.target);
+    }
+    */
+
     // Switch whos turn it is to play
     whos_move = ! whos_move;
-    if (is_in_check()) {
-        currently_check = true;
-    } else {
-        currently_check = false;
-    }
-    // Update the pins for the person whos turn it is. 
-    search_pins(whos_move);
+
+    //currently_check = is_in_check();
+    //search_step_checks(whos_move, move.origin);
+    //search_step_checks(whos_move, move.target);
+    //search_sliding_checks(whos_move, move.origin);
+    //search_sliding_checks(whos_move, move.target);
+    
 }
 
 void Board::unmake_move(const Move move) {
@@ -863,12 +889,35 @@ void Board::unmake_move(const Move move) {
     castle_white_kingside = move.white_kingside_rights;
     castle_white_queenside = move.white_queenside_rights;
 
-    if (is_in_check()) {
-        currently_check = true;
-    } else {
-        currently_check = false;
-    }
     search_pins(whos_move);
+    /*
+    // Update the pins for the person whos turn it is. 
+    if (pieces[move.origin].is_king()){
+        search_pins(whos_move);
+        // Maybe I've created/released a pin.
+        search_pins(!whos_move, move.origin, move.target);
+    } else if (move.is_king_castle()) {
+        search_pins(whos_move);
+        search_pins(!whos_move, move.origin.rank() | Squares::FileH, move.origin.rank() | Squares::FileF);
+    } else if (move.is_queen_castle()) {
+        search_pins(whos_move);
+        search_pins(!whos_move, move.origin.rank() | Squares::FileA, move.origin.rank() | Squares::FileD);
+    } else if (move.is_ep_capture()) {
+        search_pins(whos_move);
+        search_pins(!whos_move);
+    } else {
+        // Maybe I've created / released a pin
+        search_pins(whos_move, move.origin, move.target);
+        // Maybe I've unblocked / blocked a pin
+        search_pins(!whos_move, move.origin, move.target);
+    }
+    */
+    
+    //currently_check = is_in_check();
+    //search_step_checks(whos_move, move.origin);
+    //search_step_checks(whos_move, move.target);
+    //search_sliding_checks(whos_move, move.origin);
+    //search_sliding_checks(whos_move, move.target);
 }
 
 void Board::try_move(const std::string move_sting) {
@@ -928,7 +977,6 @@ bool Board::is_check(const Square origin, const Piece colour) const{
             return true;
         }
     }
-
 
     // Sliding moves.
     Piece target_piece;
@@ -1024,7 +1072,7 @@ std::vector<Move> Board::get_moves(){
     std::vector<Move> legal_moves;
     legal_moves.reserve(256);
     Square king_square = find_king(colour);
-    if (is_check(king_square, colour)) {
+    if (is_in_check()) {
         // To test if a move is legal, make the move and see if we are in check. 
         for (Move move : pseudolegal_moves) {
             make_move(move);
@@ -1077,6 +1125,15 @@ bool in_line(const Square origin, const Square target){
     if (origin.right_diagonal() == target.right_diagonal()) {return true; }
     return false;
 }
+
+int what_dirx(const Square origin, const Square target){
+    if (origin.file() == target.file()) {return origin.rank_index() < target.rank_index() ? 2 : 0; }
+    if (origin.rank() == target.rank()) {return origin.file_index() < target.file_index() ? 1 : 3; }
+    if (origin.left_diagonal() == target.left_diagonal()) {return origin.right_diagonal() < target.right_diagonal() ? 5 : 7; }
+    if (origin.right_diagonal() == target.right_diagonal()) {return origin.left_diagonal() < target.left_diagonal() ? 6 : 4; }
+    return -1;
+}
+
 bool Board::is_pinned(const Square origin) const{
     for (Square target : pinned_pieces) {
         if (origin == target) {
@@ -1163,7 +1220,6 @@ void Board::search_pins(const Piece colour) {
     // Max 8 sliding pieces in line. 
     // Sliding moves.
     Square origin = find_king(colour);
-    Piece target_piece;
     uint start_index = colour.is_white() ? 0 : 8;
     std::array<Square, 16> targets;
     targets[0] = slide_rook_pin(*this, origin, Squares::N, origin.to_north(), colour);
@@ -1179,4 +1235,79 @@ void Board::search_pins(const Piece colour) {
         pinned_pieces[i + start_index] = targets[i];
     }
     
+}
+
+
+void Board::search_pins(const Piece colour, const Square origin, const Square target) {
+    Square king_square = find_king(colour);
+    if (!in_line(king_square, origin) & !in_line(king_square, target)) {return;}
+    uint start_index = colour.is_white() ? 0 : 8;
+    std::array<Square, 16> targets;;
+    if (in_line(king_square, origin)) {
+        int origin_dirx = what_dirx(king_square, origin);
+        if (origin_dirx < 4) {
+            // Rook move.
+            pinned_pieces[start_index + origin_dirx] = slide_rook_pin(*this, king_square, Squares::by_dirx[origin_dirx], king_square.to_dirx(origin_dirx), colour);
+        } else {
+            pinned_pieces[start_index + origin_dirx] = slide_bishop_pin(*this, king_square, Squares::by_dirx[origin_dirx], king_square.to_dirx(origin_dirx), colour);
+        }
+    }
+    if (in_line(king_square, target)) {
+        int target_dirx = what_dirx(king_square, target);
+        if (target_dirx < 4) {
+            // Rook move.
+            pinned_pieces[start_index + target_dirx] = slide_rook_pin(*this, king_square, Squares::by_dirx[target_dirx], king_square.to_dirx(target_dirx), colour);
+        } else {
+            pinned_pieces[start_index + target_dirx] = slide_bishop_pin(*this, king_square, Squares::by_dirx[target_dirx], king_square.to_dirx(target_dirx), colour);
+        }
+    }
+}
+
+
+void Board::search_sliding_checks(const Piece colour, const Square origin){
+    // Want to (semi-efficiently) see if a square is attacked, ignoring pins.
+    // First off, if the square is attacked by a knight, it's definitely in check.
+    Square king_square = find_king(colour);
+
+    // Sliding moves.
+    Piece target_piece;
+    Square target;
+    
+    if (in_line(king_square, origin)) {
+        int origin_dirx = what_dirx(king_square, origin);
+        target = slide_to_edge(king_square, Squares::by_dirx[origin_dirx], king_square.to_dirx(origin_dirx));
+        if (origin_dirx < 4) {
+            // Rook move.
+            if (pieces[target].is_rook()|pieces[target].is_queen()) {
+                currently_check = true;
+            }
+        } else {
+            if (pieces[target].is_bishop()|pieces[target].is_queen()) {
+                currently_check = true;
+            }
+        }
+    }
+}
+void Board::search_step_checks(const Piece colour, const Square origin) {
+    Square king_square = find_king(colour);
+    for (Square target : knight_moves(king_square)) {
+        if (pieces[target] == (~colour | Pieces::Knight)) {
+            currently_check = true;
+        }
+    }
+
+    // Pawn square
+    Square target;
+    if (origin.to_west() != 0) {
+        target = king_square + (Squares::W + forwards(colour));
+        if (pieces[target] == (~colour | Pieces::Pawn)) {
+            currently_check = true;
+        }
+    }
+    if (origin.to_east() != 0) {
+        target = king_square + (Squares::E + forwards(colour));
+        if (pieces[target] == (~colour | Pieces::Pawn)) {
+            currently_check = true;
+        }
+    }
 }
