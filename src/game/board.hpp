@@ -319,6 +319,7 @@ public:
     };
 
     void fen_decode(const std::string& fen);
+    std::string fen_encode() const;
     void initialise();
 
     void print_board_idx();
@@ -326,7 +327,7 @@ public:
     void print_board_extra();
     void print_bitboard(const bitboard bb);
 
-    std::string print_move(const Move move, std::vector<Move> &legal_moves) const;
+    std::string print_move(Move move, std::vector<Move> &legal_moves);
     bool is_free(const Square target) const;
     Square slide_to_edge(const Square origin, const Square direction, const uint to_edge) const;
     void get_sliding_moves(const Square origin, const Piece colour, const Square direction, const uint to_edge, std::vector<Move> &moves) const;
@@ -355,7 +356,10 @@ public:
     void search_pins(const Piece colour, const Square origin, const Square target);
     bool is_pinned(const Square origin) const;
     void build_occupied_bb();
-
+    int evaluate();
+    int evaluate(std::vector<Move> &legal_moves);
+    bool is_black_move() const{ return whos_move; }
+    bool is_white_move() const{ return !whos_move; }
     std::array<Piece, 64> pieces;
 private:
     uint numer_checkers;
@@ -372,6 +376,7 @@ private:
     AuxilliaryInfo aux_info;
 };
 
+constexpr int mating_score = 100100;
 constexpr Square forwards(const Piece colour);
 constexpr Square back_rank(const Piece colour);
 bool interposes(const Square origin, const Square target, const Square query);

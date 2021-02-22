@@ -2,6 +2,14 @@
 #include "testing.hpp"
 #include "board.hpp"
 
+
+TEST(FenEncoding, initial) {
+    std::string board_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 ";
+    Board board = Board();
+    board.fen_decode(board_fen);
+    EXPECT_EQ(board.fen_encode(), board_fen);
+}
+
 TEST(PerftTest, initial1) {
     std::string board_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 ";
     Board board = Board();
@@ -65,14 +73,14 @@ TEST(PerftTest, kiwipete4) {
     board.fen_decode(board_fen);
     EXPECT_EQ(perft_bulk(4, board),  4085603);
 }
-
+/*
 TEST(PerftTest, kiwipete5) {
     std::string board_fen = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -";
     Board board = Board();
     board.fen_decode(board_fen);
     EXPECT_EQ(perft_bulk(5, board),  193690690);
 }
-
+*/
 
 TEST(PerftTest, wikithree1) {
     std::string board_fen = "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - -";

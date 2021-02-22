@@ -4,6 +4,7 @@
 #include "game/piece.hpp"
 #include "game/board.hpp"
 #include "testing/testing.hpp"
+#include "search/search.hpp"
 
 void print_vector(const std::vector<Square> &moves) {
     for (Square move : moves) {
@@ -11,12 +12,23 @@ void print_vector(const std::vector<Square> &moves) {
     }
 }
 
-
 void print_vector(const std::vector<Move> &moves) {
     for (Move move : moves) {
         std::cout << move << std::endl;
     }
 }
+
+void print_line(PrincipleLine &line, Board& board) {
+    for (PrincipleLine::reverse_iterator it = line.rbegin(); it != line.rend(); ++it) {
+        std::vector<Move> legal_moves = board.get_moves();
+        std::cout << board.print_move(*it, legal_moves) << std::endl;
+        board.make_move(*it);
+    }
+    for (Move move : line) {
+        board.unmake_move(move);
+    }
+}
+
 
 void count_moves(Board &board) {
     std::vector<Move> moves = board.get_moves();
@@ -45,6 +57,7 @@ int main(int argc, char* argv[])
     static int count_moves_flag = 0;
     static int interactive_flag = 0;
     static int perft_flag = 0;
+    static int evaluate_flag = 0;
     static int divide_flag = 0;
     static int print_flag = 0;
     unsigned int depth = 4;
@@ -55,6 +68,7 @@ int main(int argc, char* argv[])
 			{"count-moves",	no_argument, &count_moves_flag, 'c'},
 			{"interactive",	no_argument, &interactive_flag, 'i'},
             {"perft", no_argument, &perft_flag, 'P'},
+            {"eval", no_argument, &evaluate_flag, 'e'},
             {"divide", no_argument, &divide_flag, 'D'},
 			{"depth",	required_argument, 0, 'd'},
 			{"board",	required_argument, 0, 'b'},
@@ -62,7 +76,7 @@ int main(int argc, char* argv[])
 			{0, 0, 0, 0}
 		};
 		int option_index = 0;
-		opt = getopt_long(argc, argv, "cipPDb:d:", long_options, &option_index);
+		opt = getopt_long(argc, argv, "cipePDb:d:", long_options, &option_index);
 		if (opt == -1) { break; }
 		switch (opt) {
 		case 0:
@@ -92,6 +106,9 @@ int main(int argc, char* argv[])
         case 'c':
             count_moves_flag = true;
             break;
+        case 'e':
+            evaluate_flag = true;
+            break;
         case 'i':
             interactive_flag = true;
             break;
@@ -105,6 +122,7 @@ int main(int argc, char* argv[])
     Board board = Board();
     board.fen_decode(board_fen);
     board.print_board();
+    std::cout << board.fen_encode() << std::endl;
 
     if (print_flag) {
         board.print_board();
@@ -117,6 +135,15 @@ int main(int argc, char* argv[])
 
     if (interactive_flag) {
         interactive(board);
+        exit(EXIT_SUCCESS);
+    }
+
+    if (evaluate_flag) {
+        std::vector<Move> line;
+        line.reserve(depth);
+        int value = find_best(board, depth, line);
+        std::cout << value * (board.is_white_move() ? 1 : -1) << std::endl;
+        print_line(line, board);
         exit(EXIT_SUCCESS);
     }
 

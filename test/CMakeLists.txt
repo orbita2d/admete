@@ -1,10 +1,12 @@
-add_executable(testperft main.cpp
-                perft.cpp)
+add_executable(tests main.cpp
+                perft.cpp
+                search.cpp)
 
-target_link_libraries(testperft
+target_link_libraries(tests
         gtest
         test_library
-        game_library)
+        game_library
+        search_library)
 
-add_test(NAME testperft
-        COMMAND testperft)
+add_test(NAME tests
+        COMMAND tests)

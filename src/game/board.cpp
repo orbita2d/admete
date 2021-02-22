@@ -25,6 +25,22 @@ std::map<char, Piece> fen_decode_map = {
     {'K', Pieces::White | Pieces::King}
 };
 
+
+std::map<Piece, char> fen_encode_map = {
+    {Pieces::Black | Pieces::Pawn, 'p'},
+    {Pieces::Black | Pieces::Knight, 'n'},
+    {Pieces::Black | Pieces::Bishop, 'b'},
+    {Pieces::Black | Pieces::Rook, 'r'},
+    {Pieces::Black | Pieces::Queen, 'q'},
+    {Pieces::Black | Pieces::King, 'k'},
+    {Pieces::White | Pieces::Pawn, 'P'},
+    {Pieces::White | Pieces::Knight, 'N'},
+    {Pieces::White | Pieces::Bishop, 'B'},
+    {Pieces::White | Pieces::Rook, 'R'},
+    {Pieces::White | Pieces::Queen, 'Q'},
+    {Pieces::White | Pieces::King, 'K'},
+};
+
 std::map<char, Square::square_t> file_decode_map = {
     {'a', 0},
     {'b', 1},
@@ -154,6 +170,10 @@ void Board::fen_decode(const std::string& fen){
     char my_char;
     
     std::stringstream stream;
+    // reset board
+    for (uint i = 0; i < 64; i++) {
+        pieces[i] = Pieces::Blank;
+    }
     // First, go through the board position part of the fen string
     for (uint i = 0; i < N; i++) {
         my_char = fen[i];
@@ -257,6 +277,69 @@ void Board::fen_decode(const std::string& fen){
     fullmove_counter = counter;
     initialise();
 };
+
+std::string Board::fen_encode() const {
+    uint space_counter = 0;
+    std::stringstream ss;
+    for (uint rank = 0; rank< 8; rank++) {
+        for (uint file = 0; file< 8; file++) {
+            int idx = rank * 8 + file;
+            if (pieces[idx].is_blank()) {
+                space_counter++;
+                continue;
+            } 
+            if (space_counter > 0){
+                // Found a piece after a little space.
+                ss << space_counter;
+                space_counter = 0;
+            }
+            ss << fen_encode_map[pieces[idx].get_value()];
+        }
+        if (space_counter > 0){
+            // Found a piece after a little space.
+            ss << space_counter;
+            space_counter = 0;
+        }
+        if (rank < 7) {
+            ss << "/";
+        }
+    }
+
+    ss << " ";
+    ss << (whos_move == white_move ? "w" : "b");
+    ss << " ";
+    
+    if (aux_info.castle_white_kingside) {
+        ss << "K";
+    }
+    if (aux_info.castle_white_queenside) {
+        ss << "Q";
+    }
+    if (aux_info.castle_black_kingside) {
+        ss << "k";
+    }
+    if (aux_info.castle_black_queenside) {
+        ss << "q";
+    }
+    
+    if (!(aux_info.castle_black_kingside|aux_info.castle_black_queenside|aux_info.castle_white_kingside|aux_info.castle_white_queenside)) {
+        ss << "-";
+    }
+    ss << " ";
+    // En passent
+    if (aux_info.en_passent_target == Square(0)) {
+        ss << "-";
+    } else {
+        ss << aux_info.en_passent_target.pretty_print();
+    }
+
+    ss << " " << aux_info.halfmove_clock<< " " << fullmove_counter;
+    std::string fen, tmp;
+    while(ss >> tmp) {
+        fen = fen + tmp + " ";
+    }
+    return fen;
+}
 
 void Board::print_board_idx() {
     for (uint rank = 0; rank< 8; rank++) {
@@ -652,16 +735,17 @@ std::vector<Move> Board::get_pseudolegal_moves() const {
 }
 
 
-std::string Board::print_move(const Move move, std::vector<Move> &legal_moves) const{
+std::string Board::print_move(Move move, std::vector<Move> &legal_moves){
     Piece moving_piece = pieces[move.origin];
     bool ambiguity_flag = false;
+    std::string notation;
     // Pawn captures are special.
     if (moving_piece.is_piece(Pieces::Pawn) & move.is_capture()) {
-        return std::string(1, file_encode_map[move.origin.file_index()]) + "x" + move.target.pretty_print();
+        notation = std::string(1, file_encode_map[move.origin.file_index()]) + "x" + move.target.pretty_print();
     }
     // Castles are special
     if (move.is_king_castle() | move.is_queen_castle()) {
-        return move.pretty_print();
+        notation = move.pretty_print();
     }
     for (Move a_move : legal_moves) {
         // Ignore moves targeting somewhere else.
@@ -671,7 +755,6 @@ std::string Board::print_move(const Move move, std::vector<Move> &legal_moves) c
         // Check for ambiguity
         if (moving_piece.is_piece(pieces[a_move.origin])) { ambiguity_flag = true; } 
     }
-    std::string notation;
     if (ambiguity_flag) {
         // This is ambiguous, use full disambiguation for now.
         notation = move.origin.pretty_print() + moving_piece.get_algebraic_character();
@@ -693,6 +776,31 @@ std::string Board::print_move(const Move move, std::vector<Move> &legal_moves) c
     } else if (move.is_queen_promotion()) {
         notation = notation + "=Q";
     } 
+    // To check for mate
+    make_move(move);
+    bool can_not_move = (get_moves().size() == 0);
+    bool now_is_check = aux_info.is_check;
+    bool now_whos_move = whos_move;
+    unmake_move(move);
+    if (can_not_move) {
+        // This could be a stalemate or a checkmate.
+        if (now_is_check) {
+            // Checkmate
+            notation = notation + "# ";
+            if (now_whos_move == white_move) {
+                notation = notation + "1-0";
+            } else {
+                notation = notation + "0-1";
+            }
+        } else {
+            notation = notation + "½–½";
+        }
+    } else {
+        if (now_is_check) {
+            // Checkmate
+            notation = notation + "+";
+        }
+    }
     return notation;
 }
 
@@ -1386,4 +1494,29 @@ void Board::update_checkers() {
         }
     }
     aux_info.is_check = (numer_checkers > 0);
+}
+
+int Board::evaluate() {
+    std::vector<Move> legal_moves = get_moves();
+    return evaluate(legal_moves);
+}
+
+
+int Board::evaluate(std::vector<Move> &legal_moves) {
+    int side_multiplier = whos_move ? -1 : 1;
+    int value = 0;
+    // First check if we have been mated.
+    if (legal_moves.size() == 0) {
+        if (aux_info.is_check) {
+            // This is checkmate
+            return -mating_score;
+        } else {
+            // This is stalemate.
+            return -10;
+        }
+    }
+    for (uint i = 0; i < 64; i++) {
+        value += material(pieces[i]);
+    }
+    return value * side_multiplier;
 }
