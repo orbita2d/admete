@@ -742,40 +742,41 @@ std::string Board::print_move(Move move, std::vector<Move> &legal_moves){
     // Pawn captures are special.
     if (moving_piece.is_piece(Pieces::Pawn) & move.is_capture()) {
         notation = std::string(1, file_encode_map[move.origin.file_index()]) + "x" + move.target.pretty_print();
+        if (move.is_knight_promotion()) {
+            notation = notation + "=N";
+        } else if (move.is_bishop_promotion()) {
+            notation = notation + "=B";
+        } else if (move.is_rook_promotion()) {
+            notation = notation + "=R";
+        } else if (move.is_queen_promotion()) {
+            notation = notation + "=Q";
+        } 
+    } else {
+        // Castles are special
+        if (move.is_king_castle() | move.is_queen_castle()) {
+            notation = move.pretty_print();
+        }
+        for (Move a_move : legal_moves) {
+            // Ignore moves targeting somewhere else.
+            if (move.target != a_move.target) {continue;}
+            // Ignore this move when we find it.
+            if (move.origin == a_move.origin) {continue;}
+            // Check for ambiguity
+            if (moving_piece.is_piece(pieces[a_move.origin])) { ambiguity_flag = true; } 
+        }
+        if (ambiguity_flag) {
+            // This is ambiguous, use full disambiguation for now.
+            notation = move.origin.pretty_print() + moving_piece.get_algebraic_character();
+        }else {
+            // Unambiguous move
+            notation = moving_piece.get_algebraic_character();
+        };
     }
-    // Castles are special
-    if (move.is_king_castle() | move.is_queen_castle()) {
-        notation = move.pretty_print();
-    }
-    for (Move a_move : legal_moves) {
-        // Ignore moves targeting somewhere else.
-        if (move.target != a_move.target) {continue;}
-        // Ignore this move when we find it.
-        if (move.origin == a_move.origin) {continue;}
-        // Check for ambiguity
-        if (moving_piece.is_piece(pieces[a_move.origin])) { ambiguity_flag = true; } 
-    }
-    if (ambiguity_flag) {
-        // This is ambiguous, use full disambiguation for now.
-        notation = move.origin.pretty_print() + moving_piece.get_algebraic_character();
-    }else {
-        // Unambiguous move
-        notation = moving_piece.get_algebraic_character();
-    };
     if (move.is_capture()) {
         notation = notation + "x" + move.target.pretty_print();
     } else {
         notation = notation + move.target.pretty_print();
     }
-    if (move.is_knight_promotion()) {
-        notation = notation + "=N";
-    } else if (move.is_bishop_promotion()) {
-        notation = notation + "=B";
-    } else if (move.is_rook_promotion()) {
-        notation = notation + "=R";
-    } else if (move.is_queen_promotion()) {
-        notation = notation + "=Q";
-    } 
     // To check for mate
     make_move(move);
     bool can_not_move = (get_moves().size() == 0);
@@ -1196,8 +1197,7 @@ std::vector<Move> Board::get_moves(){
             } else if (move.target == checkers[0]) {
                 // this captures the checker, it's legal unless the peice in absolutely pinned.
                 legal_moves.push_back(move);
-            }
-            else if ( interposes(king_square, checkers[0], move.target)) {
+            } else if ( interposes(king_square, checkers[0], move.target)) {
                 // this interposes the check it's legal unless the peice in absolutely pinned.
                 legal_moves.push_back(move);
             } else if (move.is_ep_capture() & ((move.origin.rank()|move.target.file()) == checkers[0])){
@@ -1498,11 +1498,35 @@ void Board::update_checkers() {
 
 int Board::evaluate() {
     std::vector<Move> legal_moves = get_moves();
-    return evaluate(legal_moves);
+    return evaluate(legal_moves, is_white_move());
 }
 
 
-int Board::evaluate(std::vector<Move> &legal_moves) {
+int Board::evaluate(std::vector<Move> &legal_moves, const bool maximising) {
+    int value = 0;
+    // First check if we have been mated.
+    if (legal_moves.size() == 0) {
+        if (aux_info.is_check) {
+            // This is checkmate
+            return -mating_score * (maximising ? 1 : -1);
+        } else {
+            // This is stalemate.
+            return -10 * (maximising ? 1 : -1);
+        }
+    }
+    for (uint i = 0; i < 64; i++) {
+        value += material(pieces[i]);
+    }
+    return value;
+}
+
+
+int Board::evaluate_negamax() {
+    std::vector<Move> legal_moves = get_moves();
+    return evaluate_negamax(legal_moves);
+}
+
+int Board::evaluate_negamax(std::vector<Move> &legal_moves) {
     int side_multiplier = whos_move ? -1 : 1;
     int value = 0;
     // First check if we have been mated.

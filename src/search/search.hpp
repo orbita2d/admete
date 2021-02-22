@@ -3,4 +3,7 @@
 
 typedef std::vector<Move> PrincipleLine;
 int minimax(Board& board, const uint depth);
+int alphabeta(Board& board, const uint depth, int alpha, int beta, const bool maximising);
+int alphabeta(Board& board, const uint depth, int alpha, int beta, const bool maximising, PrincipleLine& line);
+int alphabeta(Board& board, const uint depth, PrincipleLine& line);
 int find_best(Board& board, const uint depth, PrincipleLine& line);

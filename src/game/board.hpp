@@ -357,7 +357,9 @@ public:
     bool is_pinned(const Square origin) const;
     void build_occupied_bb();
     int evaluate();
-    int evaluate(std::vector<Move> &legal_moves);
+    int evaluate(std::vector<Move> &legal_moves, const bool maximising);
+    int evaluate_negamax();
+    int evaluate_negamax(std::vector<Move> &legal_moves);
     bool is_black_move() const{ return whos_move; }
     bool is_white_move() const{ return !whos_move; }
     std::array<Piece, 64> pieces;
