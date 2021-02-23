@@ -160,8 +160,6 @@ void Board::initialise() {
     build_occupied_bb();
     search_kings();
     update_checkers();
-    search_pins(white_move);
-    search_pins(black_move);
 }
 
 void Board::fen_decode(const std::string& fen){
@@ -951,7 +949,6 @@ void Board::make_move(Move &move) {
         }
     }
 
-    search_pins(!whos_move);
 
     // Switch whos turn it is to play
     whos_move = ! whos_move;
@@ -1026,7 +1023,6 @@ void Board::unmake_move(const Move move) {
     if (move.is_promotion()) {
         pieces[move.origin] = pieces[move.origin].get_colour() | Pieces::Pawn;
     } 
-    search_pins(whos_move); 
     update_checkers();
 }
 
@@ -1189,7 +1185,7 @@ std::vector<Move> Board::get_moves(){
                 make_move(move);
                 if (!is_check(move.target, colour)) {legal_moves.push_back(move); }
                 unmake_move(move);
-            } else if (numer_checkers == 2) {
+            } else if (number_checkers == 2) {
                 // double checks require a king move, which we've just seen this is not.
                 continue;
             } else if (is_pinned(move.origin)) {
@@ -1342,7 +1338,7 @@ bool Board::is_pinned(const Square origin) const{
     return false;
 }
 
-void slide_rook_pin(Board &board, const Square origin, const Square direction, const uint to_edge, const Piece colour, const int idx) {
+void Board::slide_rook_pin(const Square origin, const Square direction, const uint to_edge, const Piece colour, const int idx) {
     // Slide from the origin in a direction, to look for a peice pinned by some sliding piece of ~colour
     Square target = origin;
     // Flag of if we have found a piece in the way yet.
@@ -1351,15 +1347,15 @@ void slide_rook_pin(Board &board, const Square origin, const Square direction, c
     // First look south
     for (uint i = 0; i < to_edge; i++) {
         target = target + direction;
-        if (board.is_free(target)) {
+        if (is_free(target)) {
             // Blank Square
             continue;
         }
-        if (board.pieces[target].is_colour(colour)) {
+        if (pieces[target].is_colour(colour)) {
             // It's our piece.
             if (flag) {
                 // This piece isn't pinned.
-                board.pinned_pieces[idx] = origin;
+                pinned_pieces[idx] = origin;
                 return;
             } else {
                 flag = true;
@@ -1370,20 +1366,24 @@ void slide_rook_pin(Board &board, const Square origin, const Square direction, c
             // It's their piece.
             if (flag) {
                 // The last piece we found may be pinned.
-                board.pinned_pieces[idx] = (board.pieces[target].is_rook() | board.pieces[target].is_queen()) ? found_piece : origin;
+                pinned_pieces[idx] = (pieces[target].is_rook() | pieces[target].is_queen()) ? found_piece : origin;
                 return;
             } else {
                 // Origin is attacked, but no pins here.
-                board.pinned_pieces[idx] = origin;
+                pinned_pieces[idx] = origin;
+                if ((pieces[target].is_rook() | pieces[target].is_queen())) {
+                    checkers[number_checkers] = target;
+                    number_checkers++;
+                }
                 return;
             }
         }
     };
-    board.pinned_pieces[idx] =  origin;
+    pinned_pieces[idx] =  origin;
     return;
 }
 
-void slide_bishop_pin(Board &board, const Square origin, const Square direction, const uint to_edge, const Piece colour, const int idx) {
+void Board::slide_bishop_pin(const Square origin, const Square direction, const uint to_edge, const Piece colour, const int idx) {
     // Slide from the origin in a direction, to look for a peice pinned by some sliding piece of ~colour
     Square target = origin;
     // Flag of if we have found a piece in the way yet.
@@ -1392,15 +1392,15 @@ void slide_bishop_pin(Board &board, const Square origin, const Square direction,
     // First look south
     for (uint i = 0; i < to_edge; i++) {
         target = target + direction;
-        if (board.is_free(target)) {
+        if (is_free(target)) {
             // Blank Square
             continue;
         }
-        if (board.pieces[target].is_colour(colour)) {
+        if (pieces[target].is_colour(colour)) {
             // It's our piece.
             if (flag) {
                 // This piece isn't pinned.
-                board.pinned_pieces[idx] = origin;
+                pinned_pieces[idx] = origin;
                 return;
             } else {
                 flag = true;
@@ -1411,33 +1411,21 @@ void slide_bishop_pin(Board &board, const Square origin, const Square direction,
             // It's their piece.
             if (flag) {
                 // The last piece we found may be pinned.
-                board.pinned_pieces[idx] = (board.pieces[target].is_bishop() | board.pieces[target].is_queen()) ? found_piece : origin;
+                pinned_pieces[idx] = (pieces[target].is_bishop() | pieces[target].is_queen()) ? found_piece : origin;
                 return;
             } else {
                 // Origin is attacked, but no pins here.
-                board.pinned_pieces[idx] = origin;
+                pinned_pieces[idx] = origin;
+                if ((pieces[target].is_bishop() | pieces[target].is_queen())) {
+                    checkers[number_checkers] = target;
+                    number_checkers++;
+                }
                 return;
             }
         }
     };
-    board.pinned_pieces[idx] =  origin;
+    pinned_pieces[idx] =  origin;
     return;
-}
-
-void Board::search_pins(const Piece colour) {
-    // Max 8 sliding pieces in line. 
-    // Sliding moves.
-    Square origin = find_king(colour);
-    uint start_index = colour.is_white() ? 0 : 8;
-    std::array<Square, 16> targets;
-    slide_rook_pin(*this, origin, Squares::N, origin.to_north(), colour, start_index + 0);
-    slide_rook_pin(*this, origin, Squares::E, origin.to_east(), colour, start_index + 1);
-    slide_rook_pin(*this, origin, Squares::S, origin.to_south(), colour, start_index + 2);
-    slide_rook_pin(*this, origin, Squares::W, origin.to_west(), colour, start_index + 3);
-    slide_bishop_pin(*this, origin, Squares::NE, origin.to_northeast(), colour, start_index + 4);
-    slide_bishop_pin(*this, origin, Squares::SE, origin.to_southeast(), colour, start_index + 5);
-    slide_bishop_pin(*this, origin, Squares::SW, origin.to_southwest(), colour, start_index + 6);
-    slide_bishop_pin(*this, origin, Squares::NW, origin.to_northwest(), colour, start_index + 7);
 }
 
 void Board::update_checkers() {
@@ -1445,11 +1433,11 @@ void Board::update_checkers() {
     Piece colour = whos_move;
     // Want to (semi-efficiently) see if a square is attacked, ignoring pins.
     // First off, if the square is attacked by a knight, it's definitely in check.
-    numer_checkers = 0;
+    number_checkers = 0;
     for (Square target : knight_moves(origin)) {
         if (pieces[target] == (~colour | Pieces::Knight)) {
-            checkers[numer_checkers] = target;
-            numer_checkers++;
+            checkers[number_checkers] = target;
+            number_checkers++;
             continue;
         }
     }
@@ -1459,46 +1447,29 @@ void Board::update_checkers() {
     if (origin.to_west() != 0) {
         target = origin + (Squares::W + forwards(colour));
         if (pieces[target] == (~colour | Pieces::Pawn)) {
-            checkers[numer_checkers] = target;
-            numer_checkers++;
+            checkers[number_checkers] = target;
+            number_checkers++;
         }
     }
     if (origin.to_east() != 0) {
         target = origin + (Squares::E + forwards(colour));
         if (pieces[target] == (~colour | Pieces::Pawn)) {
-            checkers[numer_checkers] = target;
-            numer_checkers++;
+            checkers[number_checkers] = target;
+            number_checkers++;
         }
     }
+    // Sliding_pieces
 
-    // Sliding moves.
-    Piece target_piece;
-    std::array<Square, 4> targets;
-    targets[0] = slide_to_edge(origin, Squares::N, origin.to_north());
-    targets[1] = slide_to_edge(origin, Squares::E, origin.to_east());
-    targets[2] = slide_to_edge(origin, Squares::S, origin.to_south());
-    targets[3] = slide_to_edge(origin, Squares::W, origin.to_west());
-    for (Square target : targets){
-        target_piece = pieces[target];
-        if ((target_piece == (~colour | Pieces::Rook)) | (target_piece == (~colour | Pieces::Queen))) {
-            checkers[numer_checkers] = target;
-            numer_checkers++;
-        }
-    }
-    
-    // Diagonals
-    targets[0] = slide_to_edge(origin, Squares::NE, std::min(origin.to_north(), origin.to_east()));
-    targets[1] = slide_to_edge(origin, Squares::SE, std::min(origin.to_south(), origin.to_east()));
-    targets[2] = slide_to_edge(origin, Squares::SW, std::min(origin.to_south(), origin.to_west()));
-    targets[3] = slide_to_edge(origin, Squares::NW, std::min(origin.to_north(), origin.to_west()));
-    for (Square target : targets){
-        target_piece = pieces[target];
-        if ((target_piece == (~colour | Pieces::Bishop)) | (target_piece == (~colour | Pieces::Queen))) {
-            checkers[numer_checkers] = target;
-            numer_checkers++;
-        }
-    }
-    aux_info.is_check = (numer_checkers > 0);
+    uint start_index = colour.is_white() ? 0 : 8;
+    slide_rook_pin(origin, Squares::N, origin.to_north(), colour, start_index + 0);
+    slide_rook_pin(origin, Squares::E, origin.to_east(), colour, start_index + 1);
+    slide_rook_pin(origin, Squares::S, origin.to_south(), colour, start_index + 2);
+    slide_rook_pin(origin, Squares::W, origin.to_west(), colour, start_index + 3);
+    slide_bishop_pin(origin, Squares::NE, origin.to_northeast(), colour, start_index + 4);
+    slide_bishop_pin(origin, Squares::SE, origin.to_southeast(), colour, start_index + 5);
+    slide_bishop_pin(origin, Squares::SW, origin.to_southwest(), colour, start_index + 6);
+    slide_bishop_pin(origin, Squares::NW, origin.to_northwest(), colour, start_index + 7);
+    aux_info.is_check = number_checkers > 0;
 }
 
 int Board::evaluate() {

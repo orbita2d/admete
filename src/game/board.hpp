@@ -353,8 +353,8 @@ public:
     void try_move(const std::string move_sting);
     Square find_king(const Piece colour) const;
     void search_kings();
-    void search_pins(const Piece colour);
-    void search_pins(const Piece colour, const Square hint);
+    void slide_bishop_pin(const Square origin, const Square direction, const uint to_edge, const Piece colour, const int idx);
+    void slide_rook_pin(const Square origin, const Square direction, const uint to_edge, const Piece colour, const int idx);
     bool is_pinned(const Square origin) const;
     void build_occupied_bb();
     int evaluate();
@@ -364,12 +364,10 @@ public:
     bool is_black_move() const{ return whos_move; }
     bool is_white_move() const{ return !whos_move; }
     std::array<Piece, 64> pieces;
-    std::array<Square, 16> pinned_pieces;
-    std::array<Square, 16> pinning_pieces;
 private:
-    uint numer_checkers;
+    std::array<Square, 16> pinned_pieces;
+    uint number_checkers;
     std::array<Square, 2> checkers;
-    bitboard occupied;
     bool whos_move = white_move;
     uint fullmove_counter = 1;
     uint ply_counter = 0;
