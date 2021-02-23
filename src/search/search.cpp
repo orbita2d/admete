@@ -174,7 +174,7 @@ int pv_search(Board& board, const uint depth, int alpha, int beta, const bool ma
                 best_line = temp_line;
                 best_line.push_back(move);
             }
-            if (score == mating_score) {
+            if (is_mating(score)) {
                 // Mate in 1.
                 break;
             }
@@ -198,7 +198,7 @@ int pv_search(Board& board, const uint depth, int alpha, int beta, const bool ma
                 best_line = temp_line;
                 best_line.push_back(move);
             }
-            if (score == mating_score) {
+            if (is_mating(-score)) {
                 // Mate in 1.
                 break;
             }
