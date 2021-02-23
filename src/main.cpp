@@ -141,12 +141,6 @@ int main(int argc, char* argv[])
     if (evaluate_flag) {
         std::vector<Move> line;
         line.reserve(depth);
-        int value = find_best(board, depth, line);
-        std::cout << value * (board.is_white_move() ? 1 : -1) << std::endl;
-        print_line(line, board);
-
-        line.clear();
-        line.reserve(depth);
         std::cout << alphabeta(board, depth, INT32_MIN, INT32_MAX, board.is_white_move(), line) << std::endl;
         print_line(line, board);
 

@@ -341,6 +341,7 @@ public:
     void get_castle_moves(const Piece colour, std::vector<Move> &moves) const;
     std::vector<Move> get_pseudolegal_moves() const;
     std::vector<Move> get_moves();
+    std::vector<Move> get_sorted_moves();
     bool is_check(const Square square, const Piece colour) const;
     bool is_in_check() const;
     void update_checkers();

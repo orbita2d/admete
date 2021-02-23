@@ -1244,6 +1244,34 @@ std::vector<Move> Board::get_moves(){
     return legal_moves;
 }
 
+std::vector<Move> Board::get_sorted_moves() {
+    const std::vector<Move> legal_moves = get_moves();
+    std::vector<Move> checks, promotions, captures, quiet_moves, sorted_moves;
+    checks.reserve(16);
+    promotions.reserve(16);
+    captures.reserve(16);
+    quiet_moves.reserve(16);
+    for (Move move : legal_moves) {
+        make_move(move);
+        if (aux_info.is_check) {
+            checks.push_back(move);
+        } else if (move.is_queen_promotion()) {
+            promotions.push_back(move);
+        } else if (move.is_capture()) {
+            promotions.push_back(move);
+        } else {
+            quiet_moves.push_back(move);
+        }
+        unmake_move(move);
+    }
+    sorted_moves.clear();
+    sorted_moves.insert(sorted_moves.end(), checks.begin(), checks.end());
+    sorted_moves.insert(sorted_moves.end(), promotions.begin(), promotions.end());
+    sorted_moves.insert(sorted_moves.end(), captures.begin(), captures.end());
+    sorted_moves.insert(sorted_moves.end(), quiet_moves.begin(), quiet_moves.end());
+    return sorted_moves;
+}
+
 bool Board::is_in_check() const {
     Piece colour = whos_move;
     Square king_square = find_king(colour);
