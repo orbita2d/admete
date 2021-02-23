@@ -354,7 +354,7 @@ public:
     Square find_king(const Piece colour) const;
     void search_kings();
     void search_pins(const Piece colour);
-    void search_pins(const Piece colour, const Square origin, const Square target);
+    void search_pins(const Piece colour, const Square hint);
     bool is_pinned(const Square origin) const;
     void build_occupied_bb();
     int evaluate();
@@ -364,6 +364,8 @@ public:
     bool is_black_move() const{ return whos_move; }
     bool is_white_move() const{ return !whos_move; }
     std::array<Piece, 64> pieces;
+    std::array<Square, 16> pinned_pieces;
+    std::array<Square, 16> pinning_pieces;
 private:
     uint numer_checkers;
     std::array<Square, 2> checkers;
@@ -374,7 +376,6 @@ private:
     Move last_move;
     std::array<Square, 2> king_square;
     // Array of absolute pins for legal move generation. Max 8 pieces per king.
-    std::array<Square, 16> pinned_pieces;
     std::array<AuxilliaryInfo, 256> aux_history;
     AuxilliaryInfo aux_info;
 };
