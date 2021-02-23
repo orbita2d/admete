@@ -141,7 +141,7 @@ int main(int argc, char* argv[])
     if (evaluate_flag) {
         std::vector<Move> line;
         line.reserve(depth);
-        int score = alphabeta(board, depth, line);
+        int score = iterative_deepening(board, depth, line);
         std::cout << print_score(score) << std::endl;
         print_line(line, board);
         exit(EXIT_SUCCESS);
