@@ -141,9 +141,9 @@ int main(int argc, char* argv[])
     if (evaluate_flag) {
         std::vector<Move> line;
         line.reserve(depth);
-        std::cout << alphabeta(board, depth, INT32_MIN, INT32_MAX, board.is_white_move(), line) << std::endl;
+        int score = alphabeta(board, depth, line);
+        std::cout << print_score(score) << std::endl;
         print_line(line, board);
-
         exit(EXIT_SUCCESS);
     }
 

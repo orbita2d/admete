@@ -1572,3 +1572,33 @@ int Board::evaluate_negamax(std::vector<Move> &legal_moves) {
     }
     return value * side_multiplier;
 }
+
+
+bool is_mating(int score) {
+    return (score > (mating_score-500));
+}
+
+std::string print_score(int score) {
+    std::stringstream ss;
+    if (is_mating(score)) {
+        //Make for white.
+        int n = mating_score - score;
+        ss << "#" << n;
+    }else if (is_mating(-score)) {
+        //Make for black.
+        int n = -(mating_score - score);
+        ss << "#-" << n;
+    } else if (score > 5) {
+        // White winning
+        ss << "+" << score / 100 << "." << (score % 100) / 10;
+    } else if (score < -5) {
+        // White winning
+        ss << "-" << -score / 100 << "." << (-score % 100) / 10;
+    } else {
+        // White winning
+        ss << "0.0";
+    }
+    std::string out;
+    ss >> out;
+    return out;
+}

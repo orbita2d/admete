@@ -380,8 +380,11 @@ private:
 };
 
 constexpr int mating_score = 100100;
+bool is_mating(int score);
+std::string print_score(int);
 constexpr Square forwards(const Piece colour);
 constexpr Square back_rank(const Piece colour);
 bool interposes(const Square origin, const Square target, const Square query);
 bool in_line(const Square, const Square, const Square);
 bool in_line(const Square, const Square);
+

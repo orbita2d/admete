@@ -1,9 +1,5 @@
 #include "search.hpp"
 
-bool is_mating(int score) {
-    return (score > (mating_score-500));
-}
-
 int minimax(Board &board, const uint depth) {
     int max = INT32_MIN;
     std::vector<Move> legal_moves = board.get_moves();
