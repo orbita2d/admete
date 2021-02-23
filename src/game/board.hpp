@@ -299,8 +299,6 @@ std::ostream& operator<<(std::ostream& os, const Move move);
 constexpr bool white_move = false;
 constexpr bool black_move = true;
 
-typedef uint64_t bitboard;
-
 struct AuxilliaryInfo {
     // Information that is game history dependent, that would otherwise need to be encoded in a move.
     bool castle_white_kingside = true;
@@ -325,7 +323,6 @@ public:
     void print_board_idx();
     void print_board();
     void print_board_extra();
-    void print_bitboard(const bitboard bb);
 
     std::string print_move(Move move, std::vector<Move> &legal_moves);
     bool is_free(const Square target) const;

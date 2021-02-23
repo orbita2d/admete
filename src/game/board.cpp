@@ -157,7 +157,6 @@ std::ostream& operator<<(std::ostream& os, const Move move) {
 }
 
 void Board::initialise() {
-    build_occupied_bb();
     search_kings();
     update_checkers();
 }
@@ -626,30 +625,9 @@ void Board::get_king_moves(const Square origin, const Piece colour, std::vector<
     }
 }
 
-void Board::build_occupied_bb() {
-    bitboard temp_occupied = 0;
-    for (uint i = 0; i < 64; i++) {
-        if (!pieces[i].is_blank()) {
-            temp_occupied |= (uint64_t(1)<< i);
-        }
-    }
-    occupied = temp_occupied;
-}
-
-void Board::print_bitboard(const bitboard bb) {
-    for (uint rank = 0; rank< 8; rank++) {
-        for (uint file = 0; file< 8; file++) {
-            uint idx = 8*rank +file;
-            std::cout << ((bb >> idx) & 1) << ' ';
-        }
-        std::cout << std::endl;
-    }
-}
-
 bool Board::is_free(const Square target) const{  
-    return ((occupied >> target) % 2) == 0 ;
+    return pieces[target].is_blank();
 };
-
 void Board::get_castle_moves(const Piece colour, std::vector<Move> &moves) const {
     Move move;
     if (colour.is_white()) {
@@ -826,9 +804,6 @@ void Board::make_move(Move &move) {
             king_square[1] = move.target;
         }
     }
-    bitboard from_bb = uint64_t(1) << move.origin;
-    bitboard to_bb = uint64_t(1) << move.target;
-    bitboard from_to_bb;
 
     // Castling is special
     if (move.is_king_castle()) {
@@ -836,11 +811,6 @@ void Board::make_move(Move &move) {
         pieces[move.origin] = Pieces::Blank;
         pieces[move.origin + Squares::E] = pieces[move.origin.rank() | Squares::FileH];
         pieces[move.origin.rank() | Squares::FileH] = Pieces::Blank;
-        from_bb = from_bb ^ (uint64_t(1) << (move.origin.rank() | Squares::FileH));
-        to_bb = to_bb ^ (uint64_t(1) << (move.origin.rank() | Squares::FileF));
-        // Update the bitboard.
-        from_to_bb = from_bb ^ to_bb;
-        occupied ^= from_to_bb;
         if (whos_move == white_move) {
             aux_info.castle_white_kingside  = false;
             aux_info.castle_white_queenside = false;
@@ -853,11 +823,6 @@ void Board::make_move(Move &move) {
         pieces[move.origin] = Pieces::Blank;
         pieces[move.origin + Squares::W] = pieces[move.origin.rank() | Squares::FileA];
         pieces[move.origin.rank() | Squares::FileA] = Pieces::Blank;
-        from_bb = from_bb ^ (uint64_t(1) << (move.origin.rank() | Squares::FileA));
-        to_bb = to_bb ^ (uint64_t(1) << (move.origin.rank() | Squares::FileD));
-        // Update the bitboard.
-        from_to_bb = from_bb ^ to_bb;
-        occupied ^= from_to_bb;
         if (whos_move == white_move) {
             aux_info.castle_white_kingside  = false;
             aux_info.castle_white_queenside = false;
@@ -868,18 +833,12 @@ void Board::make_move(Move &move) {
     } else if(move.is_ep_capture()) {
         // En-passent is weird too.
         const Square captured_square = move.origin.rank() | move.target.file();
-        // Update the bitboard.
-        from_to_bb = from_bb ^ to_bb;
-        from_to_bb ^= (uint64_t(1) << captured_square);
-        occupied ^= from_to_bb;
         // Make sure to lookup and record the piece captured 
         move.captured_peice = pieces[captured_square];
         pieces[move.target] = pieces[move.origin];
         pieces[move.origin] = Pieces::Blank;
         pieces[captured_square] = Pieces::Blank;
     } else if (move.is_capture()){
-        // Update the bitboard.
-        occupied ^= from_bb;
         // Make sure to lookup and record the piece captured 
         move.captured_peice = pieces[move.target];
         pieces[move.target] = pieces[move.origin];
@@ -887,8 +846,6 @@ void Board::make_move(Move &move) {
     } else {
         pieces[move.target] = pieces[move.origin];
         pieces[move.origin] = Pieces::Blank;
-        from_to_bb = from_bb ^ to_bb;
-        occupied ^= from_to_bb;
     }
     // And now do the promotion if it is one.
     if (move.is_knight_promotion()) {
@@ -975,29 +932,16 @@ void Board::unmake_move(const Move move) {
         }
     }
 
-    bitboard from_bb = uint64_t(1) << move.origin;
-    bitboard to_bb = uint64_t(1) << move.target;
-    bitboard from_to_bb;
     if (move.is_king_castle()) {
         pieces[move.origin] = pieces[move.target];
         pieces[move.target] = Pieces::Blank;
         pieces[move.origin.rank() | Squares::FileH] = pieces[move.origin + Squares::E];
         pieces[move.origin + Squares::E] = Pieces::Blank;
-        from_bb = from_bb ^ (uint64_t(1) << (move.origin.rank() | Squares::FileH));
-        to_bb = to_bb ^ (uint64_t(1) << (move.origin.rank() | Squares::FileF));
-        // Update the bitboard.
-        from_to_bb = from_bb ^ to_bb;
-        occupied ^= from_to_bb;
     } else if (move.is_queen_castle()) {
         pieces[move.origin] = pieces[move.target];
         pieces[move.target] = Pieces::Blank;
         pieces[move.origin.rank() | Squares::FileA] = pieces[move.origin + Squares::W];
         pieces[move.origin + Squares::W] = Pieces::Blank;
-        from_bb = from_bb ^ (uint64_t(1) << (move.origin.rank() | Squares::FileA));
-        to_bb = to_bb ^ (uint64_t(1) << (move.origin.rank() | Squares::FileD));
-        // Update the bitboard.
-        from_to_bb = from_bb ^ to_bb;
-        occupied ^= from_to_bb;
     } else if(move.is_ep_capture()) {
         // En-passent is weird too.
         const Square captured_square = move.origin.rank() | move.target.file();
@@ -1005,19 +949,13 @@ void Board::unmake_move(const Move move) {
         pieces[move.origin] = pieces[move.target];
         pieces[move.target] = Pieces::Blank;
         pieces[captured_square] = move.captured_peice;
-        from_to_bb = from_bb ^ to_bb;
-        from_to_bb ^= (uint64_t(1) << captured_square);
-        occupied ^= from_to_bb;
     } else if (move.is_capture()){
         // Make sure to lookup and record the piece captured 
         pieces[move.origin] = pieces[move.target];
         pieces[move.target] = move.captured_peice;
-        occupied ^= from_bb;
     } else {
         pieces[move.origin] = pieces[move.target];
         pieces[move.target] = Pieces::Blank;
-        from_to_bb = from_bb ^ to_bb;
-        occupied ^= from_to_bb;
     }
     // And now do the promotion if it is one.
     if (move.is_promotion()) {
