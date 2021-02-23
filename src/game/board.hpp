@@ -365,6 +365,7 @@ public:
     bool is_white_move() const{ return !whos_move; }
     std::array<Piece, 64> pieces;
 private:
+    bitboard occupied;
     std::array<Square, 16> pinned_pieces;
     uint number_checkers;
     std::array<Square, 2> checkers;
