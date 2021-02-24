@@ -4,7 +4,6 @@ add_executable(tests main.cpp
 
 target_link_libraries(tests
         gtest
-        test_library
         game_library
         search_library)
 
