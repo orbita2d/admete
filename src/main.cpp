@@ -123,11 +123,6 @@ int main(int argc, char* argv[])
     board.print_board();
     std::cout << board.fen_encode() << std::endl;
 
-    std::cout << Pieces::White.is_white() << std::endl;
-    std::cout << Pieces::White.is_colour(Colour::WHITE) << std::endl;
-    std::cout << Pieces::White.is_colour(Colour::BLACK) << std::endl;
-    std::cout << Pieces::White.is_colour(~Colour::BLACK) << std::endl;
-
     if (print_flag) {
         board.print_board();
     }

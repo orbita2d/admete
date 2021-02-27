@@ -337,11 +337,6 @@ public:
     std::string print_move(Move move, std::vector<Move> &legal_moves);
     bool is_free(const Square target) const;
     Square slide_to_edge(const Square origin, const Square direction, const uint to_edge) const;
-    void get_step_moves(const Square origin, const Square target, const Piece colour, std::vector<Move> &moves) const;
-    void get_pawn_moves(const Square origin, const Piece colour, std::vector<Move> &moves) const;
-    void get_knight_moves(const Square origin, const Piece colour, std::vector<Move> &moves) const;
-    void get_king_moves(const Square origin, const Piece colour, std::vector<Move> &moves) const;
-    void get_castle_moves(const Piece colour, std::vector<Move> &moves) const;
     std::vector<Move> get_pseudolegal_moves() const;
     std::vector<Move> get_moves();
     std::vector<Move> get_sorted_moves();
@@ -367,6 +362,7 @@ public:
     bool is_black_move() const{ return whos_move; }
     bool is_white_move() const{ return !whos_move; }
     std::array<Piece, 64> pieces;
+    AuxilliaryInfo aux_info;
 private:
     bitboard occupied;
     std::array<Square, 16> pinned_pieces;
@@ -379,7 +375,6 @@ private:
     std::array<Square, 2> king_square;
     // Array of absolute pins for legal move generation. Max 8 pieces per king.
     std::array<AuxilliaryInfo, 256> aux_history;
-    AuxilliaryInfo aux_info;
 };
 
 constexpr int mating_score = 100100;
