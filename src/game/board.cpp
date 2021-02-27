@@ -81,55 +81,6 @@ int what_dirx(const Square origin, const Square target){
     return -1;
 }
 
-std::array<KnightMoveArray, 64> GenerateKnightMoves(){
-    std::array<KnightMoveArray, 64> meta_array;
-    KnightMoveArray moves;
-    for (unsigned int i = 0; i < 64; i++){
-        moves = KnightMoveArray();
-        Square origin = Square(i);
-        if (origin.to_north() >= 2){
-            if(origin.to_west() >= 1) {
-                moves.push_back(origin + Direction::NNW);
-            }
-            if(origin.to_east() >= 1) {
-                moves.push_back(origin + Direction::NNE);
-            }
-        }
-        if (origin.to_east() >= 2){
-            if(origin.to_north() >= 1) {
-                moves.push_back(origin + Direction::ENE);
-            }
-            if(origin.to_south() >= 1) {
-                moves.push_back(origin + Direction::ESE);
-            }
-        }
-        if (origin.to_south() >= 2){
-            if(origin.to_east() >= 1) {
-                moves.push_back(origin + Direction::SSE);
-            }
-            if(origin.to_west() >= 1) {
-                moves.push_back(origin + Direction::SSW);
-            }
-        }
-        if (origin.to_west() >= 2){
-            if(origin.to_south() >= 1) {
-                moves.push_back(origin + Direction::WSW);
-            }
-            if(origin.to_north() >= 1) {
-                moves.push_back(origin + Direction::WNW);
-            }
-        }
-        meta_array[i] = moves;
-    }
-    return meta_array;
-}
-
-std::array<KnightMoveArray, 64> knight_meta_array = GenerateKnightMoves();
-
-KnightMoveArray knight_moves(const Square origin){
-    return knight_meta_array[origin];
-}
-
 void Board::initialise() {
     build_occupied_bb();
     search_kings();
@@ -752,6 +703,56 @@ std::string print_score(int score) {
 
 // Move Generation
 
+
+std::array<KnightMoveArray, 64> GenerateKnightMoves(){
+    std::array<KnightMoveArray, 64> meta_array;
+    KnightMoveArray moves;
+    for (unsigned int i = 0; i < 64; i++){
+        moves = KnightMoveArray();
+        Square origin = Square(i);
+        if (origin.to_north() >= 2){
+            if(origin.to_west() >= 1) {
+                moves.push_back(origin + Direction::NNW);
+            }
+            if(origin.to_east() >= 1) {
+                moves.push_back(origin + Direction::NNE);
+            }
+        }
+        if (origin.to_east() >= 2){
+            if(origin.to_north() >= 1) {
+                moves.push_back(origin + Direction::ENE);
+            }
+            if(origin.to_south() >= 1) {
+                moves.push_back(origin + Direction::ESE);
+            }
+        }
+        if (origin.to_south() >= 2){
+            if(origin.to_east() >= 1) {
+                moves.push_back(origin + Direction::SSE);
+            }
+            if(origin.to_west() >= 1) {
+                moves.push_back(origin + Direction::SSW);
+            }
+        }
+        if (origin.to_west() >= 2){
+            if(origin.to_south() >= 1) {
+                moves.push_back(origin + Direction::WSW);
+            }
+            if(origin.to_north() >= 1) {
+                moves.push_back(origin + Direction::WNW);
+            }
+        }
+        meta_array[i] = moves;
+    }
+    return meta_array;
+}
+
+std::array<KnightMoveArray, 64> knight_meta_array = GenerateKnightMoves();
+
+KnightMoveArray knight_moves(const Square origin){
+    return knight_meta_array[origin];
+}
+
 void add_pawn_promotions(const Move move, std::vector<Move> &moves) {
     // Add all variations of promotions to a move.
     Move my_move = move;
@@ -910,7 +911,6 @@ void get_sliding_moves(const Board &board, const Square origin, const uint to_ed
     };
 }
 
-
 template<Colour colour>
 void get_rook_moves(const Board &board, const Square origin, std::vector<Move> &moves) {
     get_sliding_moves<colour, Direction::N>(board, origin, origin.to_north(), moves);
@@ -941,12 +941,12 @@ void get_castle_moves(const Board &board, std::vector<Move> &moves) {
     Move move;
     if (colour == Colour::WHITE) {
         // You can't castle through check, or while in check
-        if (board.is_check(Squares::FileE | Squares::Rank1, Pieces::White)) {return; }
         if (board.aux_info.castle_white_queenside 
             & board.is_free(Squares::FileD | Squares::Rank1) 
             & board.is_free(Squares::FileC | Squares::Rank1)
             & board.is_free(Squares::FileB | Squares::Rank1)
-            & !board.is_check(Squares::FileD | Squares::Rank1, Pieces::White)) {
+            & !board.is_check(Squares::FileD | Squares::Rank1, Pieces::White)
+            & !board.is_check(Squares::FileC | Squares::Rank1, Pieces::White)) {
             move = Move(Squares::FileE | Squares::Rank1, Squares::FileC | Squares::Rank1);
             move.make_queen_castle();
             moves.push_back(move);
@@ -955,19 +955,19 @@ void get_castle_moves(const Board &board, std::vector<Move> &moves) {
             & board.is_free(Squares::FileF | Squares::Rank1) 
             & board.is_free(Squares::FileG | Squares::Rank1)
             & !board.is_check(Squares::FileF | Squares::Rank1, Pieces::White)
-            & !board.is_check(Squares::FileE | Squares::Rank1, Pieces::White)) {
+            & !board.is_check(Squares::FileG | Squares::Rank1, Pieces::White)) {
             move = Move(Squares::FileE | Squares::Rank1, Squares::FileG | Squares::Rank1);
             move.make_king_castle();
             moves.push_back(move);
         }
     } else
     {
-        if (board.is_check(Squares::FileE | Squares::Rank8, Pieces::Black)) {return; }
         if (board.aux_info.castle_black_queenside 
             & board.is_free(Squares::FileD | Squares::Rank8) 
             & board.is_free(Squares::FileC | Squares::Rank8)
             & board.is_free(Squares::FileB | Squares::Rank8)
-            & !board.is_check(Squares::FileD | Squares::Rank8, Pieces::Black)) {
+            & !board.is_check(Squares::FileD | Squares::Rank8, Pieces::Black)
+            & !board.is_check(Squares::FileC | Squares::Rank8, Pieces::Black)) {
             move = Move(Squares::FileE | Squares::Rank8, Squares::FileC | Squares::Rank8);
             move.make_queen_castle();
             moves.push_back(move);
@@ -975,7 +975,8 @@ void get_castle_moves(const Board &board, std::vector<Move> &moves) {
         if (board.aux_info.castle_black_kingside 
             & board.is_free(Squares::FileF | Squares::Rank8) 
             & board.is_free(Squares::FileG | Squares::Rank8)
-            & !board.is_check(Squares::FileF | Squares::Rank8, Pieces::Black)) {
+            & !board.is_check(Squares::FileF | Squares::Rank8, Pieces::Black)
+            & !board.is_check(Squares::FileG | Squares::Rank8, Pieces::Black)) {
             move = Move(Squares::FileE | Squares::Rank8, Squares::FileG | Squares::Rank8);
             move.make_king_castle();
             moves.push_back(move);
@@ -1060,7 +1061,6 @@ void generate_pseudolegal_moves(const Board &board, std::vector<Move> &moves) {
             get_king_moves<colour>(board, square, moves);
         }
     }
-    get_castle_moves<colour>(board, moves);
 }
 
 
@@ -1139,6 +1139,12 @@ std::vector<Move> Board::get_moves(){
             // Piece isn't pinned, it can do what it wants. 
             legal_moves.push_back(move);
         }
+    }
+
+    if (colour.is_white()) {
+        get_castle_moves<WHITE>(*this, legal_moves);
+    }  else {
+        get_castle_moves<BLACK>(*this, legal_moves);
     }
     return legal_moves;
 }
