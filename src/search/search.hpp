@@ -3,10 +3,11 @@
 
 typedef std::vector<Move> PrincipleLine;
 
-// testing
+// perft.cpp
 unsigned int perft_bulk(unsigned int depth, Board &board);
 void perft_divide(unsigned int depth, Board &board);
 
+// search.cpp
 int alphabeta(Board& board, const uint depth, int alpha, int beta, const bool maximising);
 int alphabeta(Board& board, const uint depth, int alpha, int beta, const bool maximising, PrincipleLine& line);
 int alphabeta(Board& board, const uint depth, PrincipleLine& line);

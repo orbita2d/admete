@@ -1,4 +1,5 @@
 #include "../game/board.hpp"
+#include "search.hpp"
 #include <iostream>
 
 unsigned int perft(unsigned int depth, Board &board) {

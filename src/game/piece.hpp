@@ -101,6 +101,11 @@ namespace Pieces {
     static constexpr Piece Black = Piece(16);
 }
 
+enum Colour : bool {
+    WHITE,
+    BLACK
+};
+
 std::ostream& operator<<(std::ostream& os, const Piece piece);
 
 /*

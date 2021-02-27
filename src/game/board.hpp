@@ -18,7 +18,6 @@ public:
     bool operator==(const Square that) const { return value == that.value; }
     bool operator!=(const Square that) const { return value != that.value; }
 
-    constexpr Square operator+(const Square that) const {return Square(value + that.value);};
     constexpr Square operator-(const Square that) const {return Square(value - that.value);};
     constexpr Square operator|(const Square that) const {return Square(value | that.value);};
 
@@ -89,6 +88,12 @@ public:
         return value;
     };
 
+    /*
+    constexpr Square operator+(Direction v) {
+        return Square(value + v);
+    }
+    */
+   
     std::string pretty_print() const;
     operator std::string() const {
         return pretty_print();
@@ -98,24 +103,26 @@ private:
 };
 std::ostream& operator<<(std::ostream& os, const Square square);
 
-namespace Squares {
-    static constexpr Square N = -8;
-    static constexpr Square E =  1;
-    static constexpr Square S = 8;
-    static constexpr Square W = -1;
-    static constexpr Square NW = N + W;
-    static constexpr Square NE = N + E;
-    static constexpr Square SE = S + E;
-    static constexpr Square SW = S + W;
-    static constexpr Square NNW = N + N + W;
-    static constexpr Square NNE = N + N + E;
-    static constexpr Square ENE = E + N + E;
-    static constexpr Square ESE = E + S + E;
-    static constexpr Square SSE = S + S + E;
-    static constexpr Square SSW = S + S + W;
-    static constexpr Square WSW = W + S + W;
-    static constexpr Square WNW = W + N + W;
-    
+enum Direction : int {
+    N = -8,
+    E =  1,
+    S = 8,
+    W = -1,
+    NW = -9,
+    NE = -7,
+    SE = 9,
+    SW = 7,
+    NNW = -17,
+    NNE = -15,
+    ENE = -6,
+    ESE = 10,
+    SSE = 17,
+    SSW = 15,
+    WSW = 6,
+    WNW = -10
+};
+
+namespace Squares {    
     static constexpr Square Rank1 = 7 * 8;
     static constexpr Square Rank2 = 6 * 8;
     static constexpr Square Rank3 = 5 * 8;
