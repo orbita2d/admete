@@ -64,18 +64,18 @@ int main(int argc, char* argv[])
     int opt;
 	while (true) {
 		static struct option long_options[] = {
-			{"count-moves",	no_argument, &count_moves_flag, 'c'},
-			{"interactive",	no_argument, &interactive_flag, 'i'},
-            {"perft", no_argument, &perft_flag, 'P'},
-            {"eval", no_argument, &evaluate_flag, 'e'},
-            {"divide", no_argument, &divide_flag, 'D'},
+			{"count-moves",	no_argument, &count_moves_flag, 1},
+			{"interactive",	no_argument, &interactive_flag, 1},
+            {"perft", no_argument, &perft_flag, 1},
+            {"eval", no_argument, &evaluate_flag, 1},
+            {"divide", no_argument, &divide_flag, 1},
 			{"depth",	required_argument, 0, 'd'},
 			{"board",	required_argument, 0, 'b'},
-            {"print",	no_argument, &print_flag, 'p'},
+            {"print",	no_argument, &print_flag, 1},
 			{0, 0, 0, 0}
 		};
 		int option_index = 0;
-		opt = getopt_long(argc, argv, "cipePDb:d:", long_options, &option_index);
+		opt = getopt_long(argc, argv, "b:d:", long_options, &option_index);
 		if (opt == -1) { break; }
 		switch (opt) {
 		case 0:
@@ -93,24 +93,6 @@ int main(int argc, char* argv[])
 		case 'b':
             board_fen = optarg;
 			break;
-        case 'P':
-            perft_flag = true;
-            break;
-        case 'p':
-            print_flag = true;
-            break;
-        case 'D':
-            divide_flag = true;
-            break;
-        case 'c':
-            count_moves_flag = true;
-            break;
-        case 'e':
-            evaluate_flag = true;
-            break;
-        case 'i':
-            interactive_flag = true;
-            break;
 		case '?':
 			/* getopt_long already printed an error message. */
 			break;
