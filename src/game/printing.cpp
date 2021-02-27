@@ -406,3 +406,14 @@ std::ostream& operator<<(std::ostream& os, const Move move) {
     os << move.pretty_print();
     return os;
 }
+
+void Board::print_bitboard(const bitboard bb) {
+    for (uint rank = 0; rank< 8; rank++) {
+        for (uint file = 0; file< 8; file++) {
+            uint idx = 8*rank +file;
+            std::cout << ((bb >> idx) & 1) << ' ';
+        }
+        std::cout << std::endl;
+    }
+}
+
