@@ -120,11 +120,10 @@ int main(int argc, char* argv[])
 	}
     Board board = Board();
     board.fen_decode(board_fen);
-    board.print_board();
     std::cout << board.fen_encode() << std::endl;
 
     if (print_flag) {
-        board.print_board();
+        board.print_board(false);
     }
 
     if (count_moves_flag) {

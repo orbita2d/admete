@@ -252,14 +252,18 @@ void Board::print_board_idx() {
     }
 };
 
-void Board::print_board() {
+void Board::print_board(const bool use_symbols) {
     for (uint rank = 0; rank< 8; rank++) {
         for (uint file = 0; file< 8; file++) {
             Square::square_t idx = 8*rank +file;
             if (idx == aux_info.en_passent_target & pieces[idx].is_blank() & aux_info.en_passent_target.get_value() != 0){
-                std::cout << '!';
+                std::cout << "!";
             } else {
-                std::cout << pieces[idx].pretty_print() << ' ';
+                if (use_symbols) {
+                    std::cout << pieces[idx].prettier_print() << " ";
+                } else {
+                    std::cout << pieces[idx].pretty_print() << " ";
+                }
             }
         }
         std::cout << std::endl;

@@ -2,29 +2,49 @@
 #include <map>
 #include <string>
 
-std::map<uint8_t, char> pretty_print_map = {
-    { Pieces::Blank, '.' },
-    { Pieces::Pawn, 'p' },
-    { Pieces::Knight, 'n' },
-    { Pieces::Bishop, 'b' },
-    { Pieces::Rook, 'r' },
-    { Pieces::Queen, 'q' },
-    { Pieces::King, 'k' }
+std::map<uint8_t, std::string> pretty_print_map = {
+    { Pieces::Blank, "." },
+    { Pieces::White | Pieces::Pawn, "P" },
+    { Pieces::White | Pieces::Knight, "N" },
+    { Pieces::White |  Pieces::Bishop, "B" },
+    { Pieces::White | Pieces::Rook, "R" },
+    { Pieces::White | Pieces::Queen, "Q" },
+    { Pieces::White | Pieces::King, "K" },
+    { Pieces::Black | Pieces::Pawn, "p" },
+    { Pieces::Black | Pieces::Knight, "n" },
+    { Pieces::Black |  Pieces::Bishop, "b" },
+    { Pieces::Black | Pieces::Rook, "r" },
+    { Pieces::Black | Pieces::Queen, "q" },
+    { Pieces::Black | Pieces::King, "k" }
 };
 
-char Piece::pretty_print() const{
+
+std::map<uint8_t, std::string> prettier_print_map = {
+    { Pieces::Blank, "." },
+    { Pieces::White | Pieces::Pawn, "♙" },
+    { Pieces::White | Pieces::Knight, "♘" },
+    { Pieces::White | Pieces::Bishop, "♗" },
+    { Pieces::White | Pieces::Rook, "♖" },
+    { Pieces::White | Pieces::Queen, "♕" },
+    { Pieces::White | Pieces::King, "♔" },
+    { Pieces::Black | Pieces::Pawn, "♟︎" },
+    { Pieces::Black | Pieces::Knight, "♞" },
+    { Pieces::Black | Pieces::Bishop, "♝" },
+    { Pieces::Black | Pieces::Rook, "♜" },
+    { Pieces::Black | Pieces::Queen, "♛" },
+    { Pieces::Black | Pieces::King, "♚" }
+};
+
+std::string Piece::pretty_print() const{
         Piece piece = get_piece();
         Piece colour = get_colour();
-        char character = pretty_print_map[piece];
-        if (piece == Pieces::Blank) {
-            return character;
-        }
-        if (colour == Pieces::Black) {
-            return character;
-        } else if (colour == Pieces::White){
-            return toupper(character);
-        } else { return 'X'; }
-       
+        return pretty_print_map[piece];
+}
+
+std::string Piece::prettier_print() const{
+        Piece piece = get_piece();
+        Piece colour = get_colour();
+        return prettier_print_map[piece | colour];
     }
 
 std::string Piece::get_algebraic_character() const{

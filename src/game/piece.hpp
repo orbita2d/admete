@@ -35,7 +35,8 @@ public:
 
     constexpr Piece operator|(Piece that) const {return Piece(value | that.value);}
 
-    char pretty_print() const;
+    std::string pretty_print() const;
+    std::string prettier_print() const;
 
     constexpr Piece get_piece() const{
         return Piece(value & PMASK);

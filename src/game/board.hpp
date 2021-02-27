@@ -330,7 +330,7 @@ public:
     void initialise();
 
     void print_board_idx();
-    void print_board();
+    void print_board(const bool use_symbols);
     void print_board_extra();
     void print_bitboard(const bitboard bb);
 
