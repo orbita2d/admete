@@ -1,10 +1,9 @@
 #include <iostream>
 #include <getopt.h> // For get_opt_long()
 
-#include "game/piece.hpp"
-#include "game/board.hpp"
-#include "testing/testing.hpp"
-#include "search/search.hpp"
+#include "piece.hpp"
+#include "board.hpp"
+#include "search.hpp"
 
 void print_vector(const std::vector<Square> &moves) {
     for (Square move : moves) {
