@@ -47,10 +47,10 @@ public:
         return rank_index() - file_index() + 7;
     }
 
-    square_t to_north() const { return rank_index(); };
-    square_t to_east() const { return 7-file_index(); };
-    square_t to_south() const { return 7-rank_index(); };
-    square_t to_west() const { { return file_index(); }};
+    uint to_north() const { return rank_index(); };
+    uint to_east() const { return 7-file_index(); };
+    uint to_south() const { return 7-rank_index(); };
+    uint to_west() const { { return file_index(); }};
 
     square_t to_northeast() const { return std::min(to_north(), to_east()); };
     square_t to_southeast() const { return std::min(to_south(), to_east()); };
@@ -93,7 +93,7 @@ public:
         return Square(value + v);
     }
     */
-   
+
     std::string pretty_print() const;
     operator std::string() const {
         return pretty_print();
@@ -337,12 +337,8 @@ public:
     std::string print_move(Move move, std::vector<Move> &legal_moves);
     bool is_free(const Square target) const;
     Square slide_to_edge(const Square origin, const Square direction, const uint to_edge) const;
-    void get_sliding_moves(const Square origin, const Piece colour, const Square direction, const uint to_edge, std::vector<Move> &moves) const;
     void get_step_moves(const Square origin, const Square target, const Piece colour, std::vector<Move> &moves) const;
     void get_pawn_moves(const Square origin, const Piece colour, std::vector<Move> &moves) const;
-    void get_bishop_moves(const Square origin, const Piece colour, std::vector<Move> &moves) const;
-    void get_rook_moves(const Square origin, const Piece colour, std::vector<Move> &moves) const;
-    void get_queen_moves(const Square origin, const Piece colour, std::vector<Move> &moves) const;
     void get_knight_moves(const Square origin, const Piece colour, std::vector<Move> &moves) const;
     void get_king_moves(const Square origin, const Piece colour, std::vector<Move> &moves) const;
     void get_castle_moves(const Piece colour, std::vector<Move> &moves) const;

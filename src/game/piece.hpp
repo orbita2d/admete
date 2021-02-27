@@ -6,6 +6,16 @@
 #define CMASK 0x18
 #define PMASK 0x07
 
+
+enum Colour : bool {
+    WHITE,
+    BLACK
+};
+
+constexpr Colour operator~(Colour c) {
+  return Colour(c ^ Colour::BLACK); // Toggle color
+}
+
 class Piece
 {
 public:
@@ -37,6 +47,14 @@ public:
     constexpr bool is_colour(Piece colour) const {
         const uint8_t mask = CMASK;
         return uint8_t(get_colour()) == (colour.value & mask);
+    }
+
+    constexpr bool is_colour(Colour colour) const {
+        if (colour == Colour::WHITE) {
+            return is_white();
+        } else {
+            return is_black();
+        }
     }
 
     constexpr bool is_piece(Piece piece) const {
@@ -101,10 +119,6 @@ namespace Pieces {
     static constexpr Piece Black = Piece(16);
 }
 
-enum Colour : bool {
-    WHITE,
-    BLACK
-};
 
 std::ostream& operator<<(std::ostream& os, const Piece piece);
 

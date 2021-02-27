@@ -214,49 +214,53 @@ void Board::get_pawn_moves(const Square origin, const Piece colour, std::vector<
     }
 }
 
-void Board::get_sliding_moves(const Square origin, const Piece colour, const Square direction, const uint to_edge, std::vector<Move> &moves) const {
+template<Colour colour, Direction direction>
+void get_sliding_moves(const Board &board, const Square origin, const uint to_edge, std::vector<Move> &moves) {
     Square target = origin;
     Move move;
     for (uint i = 0; i < to_edge; i++) {
         target = target + direction;
-        if (pieces[target].is_piece(Pieces::Blank)) {
+        if (board.pieces[target].is_piece(Pieces::Blank)) {
             // Blank Square
             moves.push_back(Move(origin, target));
             continue;
-        } else if (pieces[target].is_colour(~colour)) {
+        } else if (board.pieces[target].is_colour(~colour)) {
             // Enemy piece
             move = Move(origin, target);
             move.make_capture();
             moves.push_back(move);
             return;
-        } else if (pieces[target].is_colour(colour)) {
+        } else if (board.pieces[target].is_colour(colour)) {
             // Our piece, no more legal moves.
             return;
         }
     };
 }
 
-void Board::get_rook_moves(const Square origin, const Piece colour, std::vector<Move> &moves) const {
-    get_sliding_moves(origin, colour, Direction::N, origin.to_north(), moves);
-    get_sliding_moves(origin, colour, Direction::E, origin.to_east(), moves);
-    get_sliding_moves(origin, colour, Direction::S, origin.to_south(), moves);
-    get_sliding_moves(origin, colour, Direction::W, origin.to_west(), moves);
-    
+template<Colour colour>
+void get_rook_moves(const Board &board, const Square origin, std::vector<Move> &moves) {
+    get_sliding_moves<colour, Direction::N>(board, origin, origin.to_north(), moves);
+    get_sliding_moves<colour, Direction::E>(board, origin, origin.to_east(), moves);
+    get_sliding_moves<colour, Direction::S>(board, origin, origin.to_south(), moves);
+    get_sliding_moves<colour, Direction::W>(board, origin, origin.to_west(), moves);
 }
 
-void Board::get_bishop_moves(const Square origin, const Piece colour, std::vector<Move> &moves) const {
-    get_sliding_moves(origin, colour, Direction::NE, std::min(origin.to_north(), origin.to_east()), moves);
-    get_sliding_moves(origin, colour, Direction::SE, std::min(origin.to_east(), origin.to_south()), moves);
-    get_sliding_moves(origin, colour, Direction::SW, std::min(origin.to_south(), origin.to_west()), moves);
-    get_sliding_moves(origin, colour, Direction::NW, std::min(origin.to_west(), origin.to_north()), moves);
-    
+
+template<Colour colour>
+void get_bishop_moves(const Board &board, const Square origin, std::vector<Move> &moves) {
+        get_sliding_moves<colour, Direction::NE>(board, origin, origin.to_northeast(), moves);
+        get_sliding_moves<colour, Direction::SE>(board, origin, origin.to_southeast(), moves);
+        get_sliding_moves<colour, Direction::SW>(board, origin, origin.to_southwest(), moves);
+        get_sliding_moves<colour, Direction::NW>(board, origin, origin.to_northwest(), moves);
 }
 
-void Board::get_queen_moves(const Square origin, const Piece colour, std::vector<Move> &moves) const {
+template<Colour colour>
+void get_queen_moves(const Board &board, const Square origin, std::vector<Move> &moves) {
     // Queen moves are the union superset of rook and bishop moves
-    get_bishop_moves(origin,colour, moves);
-    get_rook_moves(origin, colour, moves);
+    get_bishop_moves<colour>(board, origin, moves);
+    get_rook_moves<colour>(board, origin, moves);
 }
+
 void Board::get_step_moves(const Square origin, const Square target, const Piece colour, std::vector<Move> &moves) const {
     Move move;
     if (pieces[target].is_colour(colour)) {
@@ -397,11 +401,23 @@ std::vector<Move> Board::get_pseudolegal_moves() const {
         } else if (piece.is_pawn()) {
             get_pawn_moves(square, colour, moves);
         } else if (piece.is_rook()) {
-            get_rook_moves(square, colour, moves);
+            if (colour.is_white()) {
+                get_rook_moves<Colour::WHITE>(*this, square, moves);
+            } else {
+                get_rook_moves<Colour::BLACK>(*this, square, moves);
+            }
         } else if (piece.is_bishop()) {
-            get_bishop_moves(square, colour, moves);
+            if (colour.is_white()) {
+                get_bishop_moves<Colour::WHITE>(*this, square, moves);
+            } else {
+                get_bishop_moves<Colour::BLACK>(*this, square, moves);
+            }
         } else if (piece.is_queen()) {
-            get_queen_moves(square, colour, moves);
+            if (colour.is_white()) {
+                get_queen_moves<Colour::WHITE>(*this, square, moves);
+            } else {
+                get_queen_moves<Colour::BLACK>(*this, square, moves);
+            }
         } else if (piece.is_king()) {
             get_king_moves(square, colour, moves);
         }
