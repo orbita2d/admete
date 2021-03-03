@@ -54,3 +54,13 @@ TEST(ForcedMateTest, MateInFour) {
     board.fen_decode("2r2b2/p2q1P1p/3p2k1/4pNP1/4P1RQ/7K/2pr4/5R2 w - - 1 0");
     EXPECT_EQ(iterative_deepening(board, depth, line),  +(mating_score - 4));
 }
+
+
+TEST(ForcedMateTest, MateInFourWiggle) {
+    Board board = Board();
+    std::vector<Move> line;
+    uint depth = 8;
+    line.reserve(depth);
+    board.fen_decode("2r2b2/p2q1P1p/3p2k1/4pNP1/4P1RQ/7K/2pr4/5R2 w - - 1 0");
+    EXPECT_EQ(find_best_random(board, depth, 5, line),  +(mating_score - 4));
+}

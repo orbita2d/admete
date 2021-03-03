@@ -176,10 +176,7 @@ public:
 
     std::string pretty_print() const{
         std::string move_string;
-        if (capture){ move_string =  std::string(origin) + "x" + std::string(target); }
-        else if(is_king_castle()) {move_string =  "O-O"; }
-        else if(is_queen_castle()) {move_string =  "O-O-O"; }
-        else {move_string = std::string(origin) + std::string(target);}
+        move_string = std::string(origin) + std::string(target);
         if (is_knight_promotion()) {move_string= move_string + "n";}
         else if (is_bishop_promotion()) {move_string= move_string + "b";}
         else if (is_rook_promotion()) {move_string= move_string + "r";}
@@ -328,9 +325,10 @@ public:
     void fen_decode(const std::string& fen);
     std::string fen_encode() const;
     void initialise();
+    void initialise_starting_position() { fen_decode("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"); }
 
     void print_board_idx();
-    void print_board(const bool use_symbols);
+    void print_board();
     void print_board_extra();
     void print_bitboard(const bitboard bb);
 
@@ -349,6 +347,7 @@ public:
     void unmake_last() {unmake_move(last_move); }
 
     void try_move(const std::string move_sting);
+    bool try_uci_move(const std::string move_sting);
     Square find_king(const Piece colour) const;
     void search_kings();
     void slide_bishop_pin(const Square origin, const Square direction, const uint to_edge, const Piece colour, const int idx);

@@ -4,6 +4,7 @@
 #include "piece.hpp"
 #include "board.hpp"
 #include "search.hpp"
+#include "uci.hpp"
 
 void print_vector(const std::vector<Square> &moves) {
     for (Square move : moves) {
@@ -51,6 +52,7 @@ void interactive(Board &board) {
         }
     }
 }
+
 int main(int argc, char* argv[])
 {
     static int count_moves_flag = 0;
@@ -102,23 +104,25 @@ int main(int argc, char* argv[])
 	}
     Board board = Board();
     board.fen_decode(board_fen);
-    std::cout << board.fen_encode() << std::endl;
 
     if (print_flag) {
-        board.print_board(false);
+        board.print_board();
     }
 
     if (count_moves_flag) {
+        std::cout << board.fen_encode() << std::endl;
         count_moves(board);
         exit(EXIT_SUCCESS);
     }
 
     if (interactive_flag) {
+        std::cout << board.fen_encode() << std::endl;
         interactive(board);
         exit(EXIT_SUCCESS);
     }
 
     if (evaluate_flag) {
+        std::cout << board.fen_encode() << std::endl;
         std::vector<Move> line;
         line.reserve(depth);
         int score = iterative_deepening(board, depth, line);
@@ -128,6 +132,7 @@ int main(int argc, char* argv[])
     }
 
     if (perft_flag) {
+        std::cout << board.fen_encode() << std::endl;
         for (unsigned int i = 1; i <= depth; i++) {
             std::cout << perft_bulk(i, board) << std::endl;
         }
@@ -135,9 +140,22 @@ int main(int argc, char* argv[])
     }
 
     if (divide_flag) {
+        std::cout << board.fen_encode() << std::endl;
         perft_divide(depth, board);
         exit(EXIT_SUCCESS);
+    }
 
+    std::vector<Move> line;
+    line.reserve(depth);
+    find_best_random(board, 6, 10, line);
+
+    // Otherwise, we are probably talking to a computer.
+
+    std::string command;
+    std::cin >> command;
+    
+    if (command == "uci") {
+        uci();
     }
 
     //std::cout << perft(4, board) << std::endl;

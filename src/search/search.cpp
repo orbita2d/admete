@@ -1,3 +1,4 @@
+#include <time.h>
 #include "search.hpp"
 
 int alphabeta(Board& board, const uint depth, PrincipleLine& line) {
@@ -189,4 +190,48 @@ int iterative_deepening(Board& board, const uint depth, PrincipleLine& line) {
     }
     line = principle;
     return score;
+}
+
+int find_best_random(Board& board, const uint depth, const int weight, PrincipleLine& line) {
+    std::srand(time(NULL));
+    PrincipleLine principle;
+    const bool maximising = board.is_white_move();
+    std::vector<Move> legal_moves = board.get_sorted_moves();
+    if (maximising) {
+        int best_score = INT32_MIN;
+        for (Move move : legal_moves) {
+            PrincipleLine temp_line;
+            board.make_move(move);
+            int score = iterative_deepening(board, depth - 1, temp_line);
+            int offset = is_mating(score) ? 0 : ((std::rand() % (2*weight)) - weight);
+            score += offset;
+            board.unmake_move(move);
+            if (score > best_score) {
+                best_score = score;
+                principle = temp_line;
+                principle.push_back(move);
+            }
+            if (is_mating(score)) { break; }
+        }
+        line = principle;
+        return is_mating(best_score) ? best_score - 1 : best_score;
+    } else {
+        int best_score = INT32_MAX;
+        for (Move move : legal_moves) {
+            PrincipleLine temp_line;
+            board.make_move(move);
+            int score = iterative_deepening(board, depth - 1, temp_line);
+            int offset = is_mating(-score) ? 0 : ((std::rand() % 2*weight) - weight);
+            score += offset;
+            board.unmake_move(move);
+            if (score < best_score) {
+                best_score = score;
+                principle = temp_line;
+                principle.push_back(move);
+            }
+            if (is_mating(-score)) { break; }
+        }
+        line = principle;
+        return is_mating(-best_score) ? best_score + 1 : best_score;
+    }
 }

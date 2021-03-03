@@ -1,4 +1,4 @@
-add_executable(admete main.cpp)
+add_executable(admete main.cpp uci.cpp)
 
 target_link_libraries(admete 
 PRIVATE game_library

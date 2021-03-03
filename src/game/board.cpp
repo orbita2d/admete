@@ -345,6 +345,17 @@ void Board::try_move(const std::string move_sting) {
     }
 }
 
+bool Board::try_uci_move(const std::string move_sting) {
+    std::vector<Move> legal_moves = get_moves();
+    for (Move move : legal_moves) {
+        if (move_sting == move.pretty_print()) {
+            make_move(move);
+            return true;
+        }
+    }
+    return false;
+}
+
 Square Board::slide_to_edge(const Square origin, const Square direction, const uint to_edge) const {
     // Look along a direction until you get to the edge of the board or a piece.
     Square target = origin;

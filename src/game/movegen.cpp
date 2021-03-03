@@ -72,7 +72,7 @@ void get_pawn_moves(const Board &board, const Square origin, std::vector<Move> &
         // Moves are North
         // Normal pushes.
         target = origin + (Direction::N);
-        if (board.pieces[target].is_piece(Pieces::Blank)) {
+        if (board.is_free(target)) {
             move = Move(origin, target);
             if (origin.rank() == Squares::Rank7) {
                 add_pawn_promotions(move, moves);
@@ -119,7 +119,7 @@ void get_pawn_moves(const Board &board, const Square origin, std::vector<Move> &
         // Look for double pawn push possibility
         if (origin.rank() == Squares::Rank2) {
             target = origin + (Direction::N + Direction::N);
-            if (board.pieces[target].is_piece(Pieces::Blank) & board.pieces[origin + Direction::N].is_piece(Pieces::Blank)) {
+            if (board.is_free(target) & board.is_free(origin + Direction::N)) {
                 move = Move(origin, target);
                 move.make_double_push();
                 moves.push_back(move);
@@ -130,7 +130,7 @@ void get_pawn_moves(const Board &board, const Square origin, std::vector<Move> &
         // Moves are South
         // Normal pushes.
         target = origin + (Direction::S);
-        if (board.pieces[target].is_piece(Pieces::Blank)) {
+        if (board.is_free(target)) {
             move = Move(origin, target);
             if (origin.rank() == Squares::Rank2) {
                 add_pawn_promotions(move, moves);
@@ -177,7 +177,7 @@ void get_pawn_moves(const Board &board, const Square origin, std::vector<Move> &
         // Look for double pawn push possibility
         if (origin.rank() == Squares::Rank7) {
             target = origin + (Direction::S + Direction::S);
-            if (board.pieces[target].is_piece(Pieces::Blank) & board.pieces[origin + Direction::S].is_piece(Pieces::Blank)) {
+            if (board.is_free(target) & board.is_free(origin + Direction::S)) {
                 move = Move(origin, target);
                 move.make_double_push();
                 moves.push_back(move);

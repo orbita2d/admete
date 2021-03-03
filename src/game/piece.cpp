@@ -38,7 +38,7 @@ std::map<uint8_t, std::string> prettier_print_map = {
 std::string Piece::pretty_print() const{
         Piece piece = get_piece();
         Piece colour = get_colour();
-        return pretty_print_map[piece];
+        return pretty_print_map[value];
 }
 
 std::string Piece::prettier_print() const{

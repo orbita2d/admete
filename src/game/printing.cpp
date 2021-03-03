@@ -252,18 +252,14 @@ void Board::print_board_idx() {
     }
 };
 
-void Board::print_board(const bool use_symbols) {
+void Board::print_board() {
     for (uint rank = 0; rank< 8; rank++) {
         for (uint file = 0; file< 8; file++) {
             Square::square_t idx = 8*rank +file;
             if (idx == aux_info.en_passent_target & pieces[idx].is_blank() & aux_info.en_passent_target.get_value() != 0){
                 std::cout << "!";
             } else {
-                if (use_symbols) {
-                    std::cout << pieces[idx].prettier_print() << " ";
-                } else {
-                    std::cout << pieces[idx].pretty_print() << " ";
-                }
+                std::cout << pieces[idx].pretty_print() << " ";
             }
         }
         std::cout << std::endl;
@@ -328,9 +324,8 @@ std::string Board::print_move(Move move, std::vector<Move> &legal_moves){
         } 
     } else {
         // Castles are special
-        if (move.is_king_castle() | move.is_queen_castle()) {
-            notation = move.pretty_print();
-        }
+        if (move.is_king_castle()) { notation = "O-O"; }
+        else if (move.is_king_castle()) { notation = "O-O-O"; }
         for (Move a_move : legal_moves) {
             // Ignore moves targeting somewhere else.
             if (move.target != a_move.target) {continue;}
