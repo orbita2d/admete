@@ -16,5 +16,7 @@ int alphabeta(Board& board, const uint depth, int alpha, int beta, const bool ma
 int alphabeta_negamax(Board& board, const uint depth, int alpha, int beta, PrincipleLine& line);
 int alphabeta(Board& board, const uint depth, PrincipleLine& line);
 int pv_search(Board& board, const uint depth, int alpha, int beta, const bool maximising, PrincipleLine& principle, const uint pv_depth, PrincipleLine& line);
+int pv_search_negamax(Board& board, const uint depth, int alpha, int beta, PrincipleLine& principle, const uint pv_depth, PrincipleLine& line);
 int iterative_deepening(Board& board, const uint depth, PrincipleLine& line);
+int iterative_deepening_negamax(Board& board, const uint depth, PrincipleLine& line);
 int find_best_random(Board& board, const uint depth, const int weight, PrincipleLine& line);

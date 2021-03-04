@@ -2,6 +2,7 @@
 #include "search.hpp"
 
 int alphabeta(Board& board, const uint depth, PrincipleLine& line) {
+    int nodes_count;
     return alphabeta(board, depth, NEG_INF, POS_INF, board.is_white_move(), line);
 }
 
@@ -114,7 +115,50 @@ int alphabeta_negamax(Board& board, const uint depth, int alpha, int beta, Princ
         return board.evaluate_negamax(legal_moves); 
     }
     PrincipleLine best_line;
-    int best_score = INT32_MIN;
+    int best_score = NEG_INF;
+    for (Move move : legal_moves) {
+        PrincipleLine temp_line;
+        board.make_move(move);
+        int score = -alphabeta_negamax(board, depth - 1, -beta, -alpha, temp_line);
+        board.unmake_move(move);
+        if (score > best_score) {
+            best_score = score;
+            best_line = temp_line;
+            best_line.push_back(move);
+        }
+        if (score == mating_score - depth) {
+            // Mate in 1.
+            break;
+        }
+        alpha = std::max(alpha, score);
+        if (alpha >= beta) {
+            break; // beta-cutoff
+        }
+    }
+    line = best_line;
+    return is_mating(best_score) ? best_score - 1 : best_score;
+}
+
+int pv_search_negamax(Board& board, const uint depth, int alpha, int beta, PrincipleLine& principle, const uint pv_depth, PrincipleLine& line) {
+    // perform alpha-beta pruning search with principle variation optimisation.
+    std::vector<Move> legal_moves = board.get_sorted_moves();
+    if (depth == 0) { return board.evaluate_negamax(legal_moves); }
+    if (legal_moves.size() == 0) { 
+        return board.evaluate_negamax(legal_moves); 
+    }
+    if (pv_depth == 0) {
+        // End of the principle variation, just evaluate this node using alphabeta()
+        return alphabeta_negamax(board, depth, alpha, beta, line);
+    }
+    PrincipleLine best_line;
+    // -1 here is because we are indexing at 0. If there is 1 move left, that's at index 0;
+    Move pv_move = principle.at(pv_depth - 1);
+    board.make_move(pv_move);
+    int pv_score = -pv_search_negamax(board, depth - 1, -beta, -alpha, principle, pv_depth - 1, best_line);
+    best_line.push_back(pv_move);
+    board.unmake_move(pv_move);
+
+    int best_score = NEG_INF;
     for (Move move : legal_moves) {
         PrincipleLine temp_line;
         board.make_move(move);
@@ -141,6 +185,7 @@ int alphabeta_negamax(Board& board, const uint depth, int alpha, int beta, Princ
 int pv_search(Board& board, const uint depth, int alpha, int beta, const bool maximising, PrincipleLine& principle, const uint pv_depth, PrincipleLine& line) {
     // perform alpha-beta pruning search with principle variation optimisation.
     std::vector<Move> legal_moves = board.get_sorted_moves();
+    int cutoffs = 0;
     if (depth == 0) { return board.evaluate(legal_moves, maximising); }
     if (legal_moves.size() == 0) { 
         return board.evaluate(legal_moves, maximising); 
@@ -214,7 +259,7 @@ int iterative_deepening(Board& board, const uint depth, PrincipleLine& line) {
     // Start at 2 ply for a best guess first move.
     for (int i = 4; i <= depth; i+=2) {
         PrincipleLine temp_line;
-        score = pv_search(board, i, INT32_MIN, INT32_MAX, maximising, principle, principle.size(), temp_line);
+        score = alphabeta(board, i, INT32_MIN, INT32_MAX, maximising, temp_line);
         principle = temp_line;
         if (maximising & is_mating(score)) { break; }
         if (!maximising & is_mating(-score)) { break; }
@@ -223,6 +268,19 @@ int iterative_deepening(Board& board, const uint depth, PrincipleLine& line) {
     return score;
 }
 
+int iterative_deepening_negamax(Board& board, const uint depth, PrincipleLine& line) {
+    PrincipleLine principle;
+    int score = alphabeta_negamax(board, 2, NEG_INF, POS_INF, principle);
+    // Start at 2 ply for a best guess first move.
+    for (int i = 4; i <= depth; i+=2) {
+        PrincipleLine temp_line;
+        score = alphabeta_negamax(board, i, NEG_INF, POS_INF, temp_line);
+        principle = temp_line;
+        if (is_mating(score)) { break; }
+    }
+    line = principle;
+    return score;
+}
 /*
 int find_best_random(Board& board, const uint max_depth, const int random_weight, PrincipleLine& line) {
     std::srand(time(NULL));
@@ -282,6 +340,7 @@ int find_best_random(Board& board, const uint depth, const int weight, Principle
     PrincipleLine principle;
     const bool maximising = board.is_white_move();
     std::vector<Move> legal_moves = board.get_sorted_moves();
+    int nodes_count;
     if (maximising) {
         int best_score = INT32_MIN;
         for (Move move : legal_moves) {

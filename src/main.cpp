@@ -59,6 +59,7 @@ int main(int argc, char* argv[])
     static int interactive_flag = 0;
     static int perft_flag = 0;
     static int evaluate_flag = 0;
+    static int evaluate_negamax_flag = 0;
     static int divide_flag = 0;
     static int print_flag = 0;
     unsigned int depth = 4;
@@ -70,6 +71,7 @@ int main(int argc, char* argv[])
 			{"interactive",	no_argument, &interactive_flag, 1},
             {"perft", no_argument, &perft_flag, 1},
             {"eval", no_argument, &evaluate_flag, 1},
+            {"eval-negamax", no_argument, &evaluate_negamax_flag, 1},
             {"divide", no_argument, &divide_flag, 1},
 			{"depth",	required_argument, 0, 'd'},
 			{"board",	required_argument, 0, 'b'},
@@ -125,7 +127,16 @@ int main(int argc, char* argv[])
         std::cout << board.fen_encode() << std::endl;
         std::vector<Move> line;
         line.reserve(depth);
-        int score = alphabeta_negamax(board, depth, NEG_INF, POS_INF, line);
+        int score = iterative_deepening(board, depth, line);
+        std::cout << print_score(score) << std::endl;
+        print_line(line, board);
+        exit(EXIT_SUCCESS);
+    }
+    if (evaluate_negamax_flag) {
+        std::cout << board.fen_encode() << std::endl;
+        std::vector<Move> line;
+        line.reserve(depth);
+        int score = iterative_deepening_negamax(board, depth, line);
         std::cout << print_score(score) << std::endl;
         print_line(line, board);
         exit(EXIT_SUCCESS);

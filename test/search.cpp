@@ -35,6 +35,14 @@ TEST(ForcedMateTest, MateInThree) {
     board.fen_decode("r1b1kb1r/pppp1ppp/5q2/4n3/3KP3/2N3PN/PPP4P/R1BQ1B1R b kq - 0 1");
     EXPECT_EQ(iterative_deepening(board, depth, line),  -(mating_score - 3));
 }
+TEST(ForcedMateTest, MateInThreeNegamax) {
+    Board board = Board();
+    std::vector<Move> line;
+    uint depth = 6;
+    line.reserve(depth);
+    board.fen_decode("r1b1kb1r/pppp1ppp/5q2/4n3/3KP3/2N3PN/PPP4P/R1BQ1B1R b kq - 0 1");
+    EXPECT_EQ(iterative_deepening_negamax(board, depth, line),  (mating_score - 3));
+}
 
 TEST(ForcedMateTest, PvMateSearch) {
     Board board = Board();
