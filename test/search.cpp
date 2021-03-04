@@ -33,15 +33,7 @@ TEST(ForcedMateTest, MateInThree) {
     uint depth = 6;
     line.reserve(depth);
     board.fen_decode("r1b1kb1r/pppp1ppp/5q2/4n3/3KP3/2N3PN/PPP4P/R1BQ1B1R b kq - 0 1");
-    EXPECT_EQ(iterative_deepening(board, depth, line),  -(mating_score - 3));
-}
-TEST(ForcedMateTest, MateInThreeNegamax) {
-    Board board = Board();
-    std::vector<Move> line;
-    uint depth = 6;
-    line.reserve(depth);
-    board.fen_decode("r1b1kb1r/pppp1ppp/5q2/4n3/3KP3/2N3PN/PPP4P/R1BQ1B1R b kq - 0 1");
-    EXPECT_EQ(iterative_deepening_negamax(board, depth, line),  (mating_score - 3));
+    EXPECT_EQ(iterative_deepening(board, depth, line),  (mating_score - 3));
 }
 
 TEST(ForcedMateTest, PvMateSearch) {
@@ -63,14 +55,6 @@ TEST(ForcedMateTest, MateInFour) {
     EXPECT_EQ(iterative_deepening(board, depth, line),  +(mating_score - 4));
 }
 
-TEST(ForcedMateTest, MateInFourNega) {
-    Board board = Board();
-    std::vector<Move> line;
-    uint depth = 8;
-    line.reserve(depth);
-    board.fen_decode("2r2b2/p2q1P1p/3p2k1/4pNP1/4P1RQ/7K/2pr4/5R2 w - - 1 0");
-    EXPECT_EQ(alphabeta_negamax(board, depth, NEG_INF, POS_INF, line),  (mating_score - 4));
-}
 
 TEST(ForcedMateTest, MateInFourWiggle) {
     Board board = Board();
@@ -78,5 +62,5 @@ TEST(ForcedMateTest, MateInFourWiggle) {
     uint depth = 8;
     line.reserve(depth);
     board.fen_decode("2r2b2/p2q1P1p/3p2k1/4pNP1/4P1RQ/7K/2pr4/5R2 w - - 1 0");
-    EXPECT_EQ(find_best_random(board, depth, 5, line),  +(mating_score - 4));
+    EXPECT_EQ(find_best_random(board, depth, 5, POS_INF, line),  +(mating_score - 4));
 }

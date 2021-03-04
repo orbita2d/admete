@@ -29,7 +29,6 @@ void print_line(PrincipleLine &line, Board& board) {
     }
 }
 
-
 void count_moves(Board &board) {
     std::vector<Move> moves = board.get_moves();
     std::cout << moves.size() << std::endl;
@@ -59,7 +58,7 @@ int main(int argc, char* argv[])
     static int interactive_flag = 0;
     static int perft_flag = 0;
     static int evaluate_flag = 0;
-    static int evaluate_negamax_flag = 0;
+    static int evaluate_random_flag = 0;
     static int divide_flag = 0;
     static int print_flag = 0;
     unsigned int depth = 4;
@@ -71,7 +70,7 @@ int main(int argc, char* argv[])
 			{"interactive",	no_argument, &interactive_flag, 1},
             {"perft", no_argument, &perft_flag, 1},
             {"eval", no_argument, &evaluate_flag, 1},
-            {"eval-negamax", no_argument, &evaluate_negamax_flag, 1},
+            {"eval-random", no_argument, &evaluate_random_flag, 1},
             {"divide", no_argument, &divide_flag, 1},
 			{"depth",	required_argument, 0, 'd'},
 			{"board",	required_argument, 0, 'b'},
@@ -132,11 +131,12 @@ int main(int argc, char* argv[])
         print_line(line, board);
         exit(EXIT_SUCCESS);
     }
-    if (evaluate_negamax_flag) {
+
+    if (evaluate_random_flag) {
         std::cout << board.fen_encode() << std::endl;
         std::vector<Move> line;
         line.reserve(depth);
-        int score = iterative_deepening_negamax(board, depth, line);
+        int score = find_best_random(board, depth, 10, 4000, line);
         std::cout << print_score(score) << std::endl;
         print_line(line, board);
         exit(EXIT_SUCCESS);
@@ -155,11 +155,6 @@ int main(int argc, char* argv[])
         perft_divide(depth, board);
         exit(EXIT_SUCCESS);
     }
-
-    std::vector<Move> line;
-    line.reserve(depth);
-    find_best_random(board, 6, 10, line);
-
     // Otherwise, we are probably talking to a computer.
 
     std::string command;

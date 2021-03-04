@@ -184,6 +184,13 @@ public:
         return move_string;
     }
 
+    bool operator==(const Move that) {
+        return  origin == that.origin &&
+                target == that.target &&
+                special1 == that.special1 && 
+                special2 == that.special2;
+    }
+
     void make_quiet() {
         promotion = false;
         capture = false;

@@ -108,11 +108,11 @@ void go(Board& board, std::istringstream& is) {
     */
 
     // That's a lot, let's just search to a fixed depth for now.
-    constexpr int depth = 4;
+    constexpr int max_depth = 6;
     std::cerr << "searching" << std::endl;
     std::vector<Move> line;
-    line.reserve(depth);
-    int score = find_best_random(board, depth, 5, line);
+    line.reserve(max_depth);
+    int score = iterative_deepening(board, max_depth, 1000, line);
     Move first_move = line.back();
     std::cerr << "found move:" << first_move.pretty_print() << ":" << score << std::endl;
     bestmove(first_move);
