@@ -664,7 +664,7 @@ int Board::evaluate_negamax() {
 }
 
 int Board::evaluate_negamax(std::vector<Move> &legal_moves) {
-    int side_multiplier = whos_move ? -1 : 1;
+    int side_multiplier = whos_move == black_move ? -1 : 1;
     int value = 0;
     // First check if we have been mated.
     if (legal_moves.size() == 0) {

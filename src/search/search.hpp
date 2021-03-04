@@ -3,6 +3,9 @@
 
 typedef std::vector<Move> PrincipleLine;
 
+constexpr int NEG_INF = -1000000;
+constexpr int POS_INF = +1000000;
+
 // perft.cpp
 unsigned int perft_bulk(unsigned int depth, Board &board);
 void perft_divide(unsigned int depth, Board &board);
@@ -10,6 +13,7 @@ void perft_divide(unsigned int depth, Board &board);
 // search.cpp
 int alphabeta(Board& board, const uint depth, int alpha, int beta, const bool maximising);
 int alphabeta(Board& board, const uint depth, int alpha, int beta, const bool maximising, PrincipleLine& line);
+int alphabeta_negamax(Board& board, const uint depth, int alpha, int beta, PrincipleLine& line);
 int alphabeta(Board& board, const uint depth, PrincipleLine& line);
 int pv_search(Board& board, const uint depth, int alpha, int beta, const bool maximising, PrincipleLine& principle, const uint pv_depth, PrincipleLine& line);
 int iterative_deepening(Board& board, const uint depth, PrincipleLine& line);

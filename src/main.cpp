@@ -125,7 +125,7 @@ int main(int argc, char* argv[])
         std::cout << board.fen_encode() << std::endl;
         std::vector<Move> line;
         line.reserve(depth);
-        int score = iterative_deepening(board, depth, line);
+        int score = alphabeta_negamax(board, depth, NEG_INF, POS_INF, line);
         std::cout << print_score(score) << std::endl;
         print_line(line, board);
         exit(EXIT_SUCCESS);
