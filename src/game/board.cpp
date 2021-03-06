@@ -107,6 +107,9 @@ void Board::make_move(Move &move) {
     last_move = move;
     // Iterate counters.
     if (whos_move == black_move) {fullmove_counter++;}
+    aux_info.pinned_pieces = pinned_pieces;
+    aux_info.checkers = checkers;
+    aux_info.number_checkers = number_checkers;
     aux_history[ply_counter] = aux_info;
     if (move.is_capture() | pieces[move.origin].is_piece(Pieces::Pawn)) {
         aux_info.halfmove_clock = 0;
@@ -249,7 +252,6 @@ void Board::make_move(Move &move) {
         }
     }
 
-
     // Switch whos turn it is to play
     whos_move = ! whos_move;
 
@@ -323,7 +325,9 @@ void Board::unmake_move(const Move move) {
     if (move.is_promotion()) {
         pieces[move.origin] = pieces[move.origin].get_colour() | Pieces::Pawn;
     } 
-    update_checkers();
+    pinned_pieces = aux_info.pinned_pieces;
+    number_checkers = aux_info.number_checkers;
+    checkers = aux_info.checkers;
 }
 
 void Board::try_move(const std::string move_sting) {

@@ -320,7 +320,11 @@ struct AuxilliaryInfo {
     bool castle_black_queenside = true;
     uint halfmove_clock = 0;
     Square en_passent_target;
+    std::array<Square, 16> pinned_pieces;
+    uint number_checkers;
+    std::array<Square, 2> checkers;
     bool is_check = false;
+
 };
 
 class Board {
