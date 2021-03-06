@@ -6,6 +6,7 @@
 #include <stdexcept>
 
 #include "board.hpp"
+#include "../search/evaluate.hpp"
 
 
 constexpr Square forwards(const Piece colour) {
@@ -215,6 +216,7 @@ void Board::initialise() {
     build_occupied_bb();
     search_kings();
     update_checkers();
+    aux_info.lazy_heuristic = evaluate_material(*this);
 }
 
 
@@ -381,6 +383,8 @@ void Board::make_move(Move &move) {
             aux_info.castle_white_queenside = false;
         }
     }
+    // Update the lazy evaluation huristic for this move
+    aux_info.lazy_heuristic += evaluation_diff(*this, move);
 
     // Switch whos turn it is to play
     whos_move = ! whos_move;

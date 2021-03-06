@@ -324,6 +324,7 @@ struct AuxilliaryInfo {
     uint number_checkers;
     std::array<Square, 2> checkers;
     bool is_check = false;
+    int lazy_heuristic = 0;
 
 };
 
@@ -350,10 +351,12 @@ public:
     std::vector<Move> get_moves();
     std::vector<Move> get_sorted_moves();
     bool is_check(const Square square, const Piece colour) const;
-    bool in_check() const{ return aux_info.is_check;};
     bool is_in_check() const;
     void update_checkers();
 
+
+    bool in_check() const{ return aux_info.is_check;};
+    int lazy_heuristic() const{ return aux_info.lazy_heuristic;}
     std::array<Piece, 64> pieces() const{return pieces_array;}
     Piece pieces(Square sq) const{return pieces_array[sq];}
     Piece pieces(int sq) const{return pieces_array[sq];}

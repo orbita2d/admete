@@ -7,13 +7,12 @@ int alphabeta(Board& board, const uint depth, PrincipleLine& line) {
     return alphabeta(board, depth, NEG_INF, POS_INF, line);
 }
 
-
 int alphabeta(Board& board, const uint depth, int alpha, int beta, PrincipleLine& line) {
     // perform alpha-beta pruning search.
     std::vector<Move> legal_moves = board.get_sorted_moves();
-    if (depth == 0) { return evaluate(board, legal_moves); }
+    if (depth == 0) { return evaluate_lazy(board, legal_moves); }
     if (legal_moves.size() == 0) { 
-        return evaluate(board, legal_moves); 
+        return evaluate_lazy(board, legal_moves); 
     }
     PrincipleLine best_line;
     int best_score = NEG_INF;
@@ -43,9 +42,9 @@ int alphabeta(Board& board, const uint depth, int alpha, int beta, PrincipleLine
 int pv_search(Board& board, const uint depth, int alpha, int beta, PrincipleLine& principle, const uint pv_depth, PrincipleLine& line) {
     // perform alpha-beta pruning search with principle variation optimisation.
     std::vector<Move> legal_moves = board.get_sorted_moves();
-    if (depth == 0) { return evaluate(board, legal_moves); }
+    if (depth == 0) { return evaluate_lazy(board, legal_moves); }
     if (legal_moves.size() == 0) { 
-        return evaluate(board, legal_moves); 
+        return evaluate_lazy(board, legal_moves); 
     }
     if (pv_depth == 0) {
         // End of the principle variation, just evaluate this node using alphabeta()
