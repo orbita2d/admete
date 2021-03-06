@@ -383,8 +383,6 @@ void Board::make_move(Move &move) {
             aux_info.castle_white_queenside = false;
         }
     }
-    // Update the lazy evaluation huristic for this move
-    aux_info.lazy_heuristic += evaluation_diff(*this, move);
 
     // Switch whos turn it is to play
     whos_move = ! whos_move;
@@ -520,19 +518,20 @@ bool Board::is_check(const Square origin, const Piece colour) const{
 
     // Pawn square
     Square target;
-    if (origin.to_west() != 0) {
-        target = origin + (Direction::W + forwards(colour));
-        if (pieces_array[target] == (~colour | Pieces::Pawn)) {
-            return true;
+    if (origin.rank() != back_rank(~colour)) {
+        if (origin.to_west() != 0) {
+            target = origin + (Direction::W + forwards(colour));
+            if (pieces_array[target] == (~colour | Pieces::Pawn)) {
+                return true;
+            }
+        }
+        if (origin.to_east() != 0) {
+            target = origin + (Direction::E + forwards(colour));
+            if (pieces_array[target] == (~colour | Pieces::Pawn)) {
+                return true;
+            }
         }
     }
-    if (origin.to_east() != 0) {
-        target = origin + (Direction::E + forwards(colour));
-        if (pieces_array[target] == (~colour | Pieces::Pawn)) {
-            return true;
-        }
-    }
-
     // Sliding moves.
     Piece target_piece;
     std::array<Square, 4> targets;
