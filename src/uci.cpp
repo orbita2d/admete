@@ -108,11 +108,22 @@ void go(Board& board, std::istringstream& is) {
     */
 
     // That's a lot, let's just search to a fixed depth for now.
+    int wtime, btime;
+    std::string token;
+    while (is >> token) {
+        // munch through the command string
+        if (token == "wtime") {
+            is >> wtime;
+        } else if (token == "btime") {
+            is >> btime;
+        }
+    }
+    int our_time = board.is_white_move() ? wtime : btime;
     constexpr int max_depth = 6;
-    std::cerr << "searching" << std::endl;
+    std::cerr << "searching: " << our_time/1000 << std::endl;
     std::vector<Move> line;
     line.reserve(max_depth);
-    int score = iterative_deepening(board, max_depth, 1000, line);
+    int score = iterative_deepening(board, max_depth, our_time/240, line);
     Move first_move = line.back();
     std::cerr << "found move:" << first_move.pretty_print() << ":" << score << std::endl;
     bestmove(first_move);
@@ -136,6 +147,7 @@ void uci() {
             std::cerr << command << std::endl;
             position(board, is);
         } else if (token == "go") {
+            std::cerr << command << std::endl;
             go(board, is);
         } else if (token == "quit") {
             exit(EXIT_SUCCESS);

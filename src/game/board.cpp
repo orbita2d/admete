@@ -633,55 +633,6 @@ void Board::update_checkers() {
     aux_info.is_check = number_checkers > 0;
 }
 
-int Board::evaluate() {
-    std::vector<Move> legal_moves = get_moves();
-    return evaluate(legal_moves, is_white_move());
-}
-
-
-int Board::evaluate(std::vector<Move> &legal_moves, const bool maximising) {
-    int value = 0;
-    // First check if we have been mated.
-    if (legal_moves.size() == 0) {
-        if (aux_info.is_check) {
-            // This is checkmate
-            return -mating_score * (maximising ? 1 : -1);
-        } else {
-            // This is stalemate.
-            return -10 * (maximising ? 1 : -1);
-        }
-    }
-    for (uint i = 0; i < 64; i++) {
-        value += material(pieces[i]);
-    }
-    return value;
-}
-
-
-int Board::evaluate_negamax() {
-    std::vector<Move> legal_moves = get_moves();
-    return evaluate_negamax(legal_moves);
-}
-
-int Board::evaluate_negamax(std::vector<Move> &legal_moves) {
-    int side_multiplier = whos_move == black_move ? -1 : 1;
-    int value = 0;
-    // First check if we have been mated.
-    if (legal_moves.size() == 0) {
-        if (aux_info.is_check) {
-            // This is checkmate
-            return -mating_score;
-        } else {
-            // This is stalemate.
-            return -10;
-        }
-    }
-    for (uint i = 0; i < 64; i++) {
-        value += material(pieces[i]);
-    }
-    return value * side_multiplier;
-}
-
 
 bool is_mating(int score) {
     return (score > (mating_score-500));

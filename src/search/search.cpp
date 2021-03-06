@@ -1,7 +1,7 @@
 #include <time.h>
 #include <chrono>
 #include "search.hpp"
-#include <iostream>
+#include "evaluate.hpp"
 
 int alphabeta(Board& board, const uint depth, PrincipleLine& line) {
     return alphabeta(board, depth, NEG_INF, POS_INF, line);
@@ -11,9 +11,9 @@ int alphabeta(Board& board, const uint depth, PrincipleLine& line) {
 int alphabeta(Board& board, const uint depth, int alpha, int beta, PrincipleLine& line) {
     // perform alpha-beta pruning search.
     std::vector<Move> legal_moves = board.get_sorted_moves();
-    if (depth == 0) { return board.evaluate_negamax(legal_moves); }
+    if (depth == 0) { return evaluate(board, legal_moves); }
     if (legal_moves.size() == 0) { 
-        return board.evaluate_negamax(legal_moves); 
+        return evaluate(board, legal_moves); 
     }
     PrincipleLine best_line;
     int best_score = NEG_INF;
@@ -43,9 +43,9 @@ int alphabeta(Board& board, const uint depth, int alpha, int beta, PrincipleLine
 int pv_search(Board& board, const uint depth, int alpha, int beta, PrincipleLine& principle, const uint pv_depth, PrincipleLine& line) {
     // perform alpha-beta pruning search with principle variation optimisation.
     std::vector<Move> legal_moves = board.get_sorted_moves();
-    if (depth == 0) { return board.evaluate_negamax(legal_moves); }
+    if (depth == 0) { return evaluate(board, legal_moves); }
     if (legal_moves.size() == 0) { 
-        return board.evaluate_negamax(legal_moves); 
+        return evaluate(board, legal_moves); 
     }
     if (pv_depth == 0) {
         // End of the principle variation, just evaluate this node using alphabeta()
@@ -103,8 +103,6 @@ int iterative_deepening(Board& board, const uint max_depth, const int max_millis
         time_now = std::chrono::high_resolution_clock::now();
         time_span = time_now - time_origin;
         // We've run out of time to calculate.
-        std::cerr << "depth: " << depth << std::endl;
-        std::cerr << int(time_span.count()) << "millis " << std::endl;
         if (int(time_span.count()) > max_millis) { break;}
     }
     line = principle;
@@ -159,8 +157,6 @@ int find_best_random(Board& board, const uint max_depth, const int random_weight
         time_now = std::chrono::high_resolution_clock::now();
         time_span = time_now - time_origin;
         // We've run out of time to calculate.
-        std::cerr << "depth: " << depth << std::endl;
-        std::cerr << time_span.count() << "millis " << std::endl;
         if (int(time_span.count()) > max_millis) { break;}
     }
     std::srand(time(NULL));

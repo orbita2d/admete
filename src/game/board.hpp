@@ -361,12 +361,9 @@ public:
     void slide_rook_pin(const Square origin, const Square direction, const uint to_edge, const Piece colour, const int idx);
     bool is_pinned(const Square origin) const;
     void build_occupied_bb();
-    int evaluate();
-    int evaluate(std::vector<Move> &legal_moves, const bool maximising);
-    int evaluate_negamax();
-    int evaluate_negamax(std::vector<Move> &legal_moves);
     bool is_black_move() const{ return whos_move; }
     bool is_white_move() const{ return !whos_move; }
+    bool can_castle(Colour c) const{ return c==WHITE ? (aux_info.castle_white_kingside | aux_info.castle_white_queenside) : (aux_info.castle_black_kingside | aux_info.castle_black_queenside);}
     std::array<Piece, 64> pieces;
     AuxilliaryInfo aux_info;
 private:
