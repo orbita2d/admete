@@ -350,6 +350,7 @@ public:
     std::vector<Move> get_moves();
     std::vector<Move> get_sorted_moves();
     bool is_check(const Square square, const Piece colour) const;
+    bool in_check() const{ return aux_info.is_check;};
     bool is_in_check() const;
     void update_checkers();
 

@@ -108,7 +108,7 @@ void go(Board& board, std::istringstream& is) {
     */
 
     // That's a lot, let's just search to a fixed depth for now.
-    int wtime, btime;
+    int wtime = POS_INF, btime = POS_INF;
     std::string token;
     while (is >> token) {
         // munch through the command string
