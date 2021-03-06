@@ -330,7 +330,7 @@ struct AuxilliaryInfo {
 class Board {
 public:
     Board() {
-        pieces.fill(Pieces::Blank);
+        pieces_array.fill(Pieces::Blank);
     };
 
     void fen_decode(const std::string& fen);
@@ -354,6 +354,10 @@ public:
     bool is_in_check() const;
     void update_checkers();
 
+    std::array<Piece, 64> pieces() const{return pieces_array;}
+    Piece pieces(Square sq) const{return pieces_array[sq];}
+    Piece pieces(int sq) const{return pieces_array[sq];}
+
     void make_move(Move &move);
     void unmake_move(const Move move);
     void unmake_last() {unmake_move(last_move); }
@@ -369,9 +373,9 @@ public:
     bool is_black_move() const{ return whos_move; }
     bool is_white_move() const{ return !whos_move; }
     bool can_castle(Colour c) const{ return c==WHITE ? (aux_info.castle_white_kingside | aux_info.castle_white_queenside) : (aux_info.castle_black_kingside | aux_info.castle_black_queenside);}
-    std::array<Piece, 64> pieces;
     AuxilliaryInfo aux_info;
 private:
+    std::array<Piece, 64> pieces_array;
     bitboard occupied;
     std::array<Square, 16> pinned_pieces;
     uint number_checkers;

@@ -8,22 +8,6 @@
 #define toDigit(c) ( c - '0')
 
 
-std::map<char, Piece> fen_decode_map = {
-    {'p', Pieces::Black | Pieces::Pawn},
-    {'n', Pieces::Black | Pieces::Knight},
-    {'b', Pieces::Black | Pieces::Bishop},
-    {'r', Pieces::Black | Pieces::Rook},
-    {'q', Pieces::Black | Pieces::Queen},
-    {'k', Pieces::Black | Pieces::King},
-    {'P', Pieces::White | Pieces::Pawn},
-    {'N', Pieces::White | Pieces::Knight},
-    {'B', Pieces::White | Pieces::Bishop},
-    {'R', Pieces::White | Pieces::Rook},
-    {'Q', Pieces::White | Pieces::Queen},
-    {'K', Pieces::White | Pieces::King}
-};
-
-
 std::map<Piece, char> fen_encode_map = {
     {Pieces::Black | Pieces::Pawn, 'p'},
     {Pieces::Black | Pieces::Knight, 'n'},
@@ -64,128 +48,13 @@ std::map<Square::square_t, char> file_encode_map = {
 };
 
 
-
-void Board::fen_decode(const std::string& fen){
-    uint N = fen.length(), board_position;
-    uint rank = 0, file = 0;
-    char my_char;
-    
-    std::stringstream stream;
-    // reset board
-    for (uint i = 0; i < 64; i++) {
-        pieces[i] = Pieces::Blank;
-    }
-    // First, go through the board position part of the fen string
-    for (uint i = 0; i < N; i++) {
-        my_char = fen[i];
-        if (my_char == '/'){
-            rank++;
-            file = 0;
-            continue;
-        }
-        if (isdigit(my_char)) {
-            file += toDigit(my_char);
-            continue;
-        }
-        if (my_char == ' ') {
-            // Space is at the end of the board position section
-            board_position = i;
-            break;
-        }
-        // Otherwise should be a character for a piece
-        pieces[Square::to_index(rank, file)] = fen_decode_map[my_char];
-        file ++;
-    }
-
-    std::string side_to_move, castling, en_passent;
-    int halfmove = 0, counter = 0;
-    stream = std::stringstream(fen.substr(board_position));
-    stream >> std::ws;
-    stream >> side_to_move >> std::ws;
-    stream >> castling >> std::ws;
-    stream >>  en_passent >> std::ws;
-    stream >> halfmove >> std::ws;
-    stream >> counter >> std::ws;
-
-    // Side to move
-    if (side_to_move.length() > 1) {
-        throw std::domain_error("<Side to move> length > 1");
-    }
-    switch (side_to_move[0])
-    {
-    case 'w':
-        whos_move = white_move;
-        break;
-
-    case 'b':
-        whos_move = black_move;
-        break;
-    
-    default:
-        throw std::domain_error("Unrecognised <Side to move> character");
-    }
-
-    aux_info.castle_black_kingside = false;
-    aux_info.castle_black_queenside = false;
-    aux_info.castle_white_kingside = false;
-    aux_info.castle_white_queenside = false;
-    // Castling rights
-    if (castling.length() > 4) {
-        throw std::domain_error("<Castling> length > 4");
-    }
-    if (castling[0] == '-') {
-        // No castling rights, continue
-    } else {
-        for (uint i = 0; i < castling.length(); i++) {
-            switch (castling[i])
-            {
-            case 'q':
-                aux_info.castle_black_queenside = true;
-                break;
-
-            case 'Q':
-                aux_info.castle_white_queenside = true;
-                break;
-
-            case 'k':
-                aux_info.castle_black_kingside = true;
-                break;
-
-            case 'K':
-                aux_info.castle_white_kingside = true;
-                break;
-
-            default:
-                throw std::domain_error("Unrecognised <Castling> character");
-            }
-        }
-    }
-
-    // En passent
-    if (en_passent.length() > 2) {
-        throw std::domain_error("<en passent> length > 2");
-    }
-    if (en_passent[0] == '-') {
-        // No en passent, continue
-        aux_info.en_passent_target = 0;
-    } else {
-        aux_info.en_passent_target = Square(en_passent);
-    }
-
-    // Halfmove clock
-    aux_info.halfmove_clock = halfmove;
-    // Fullmove counter
-    fullmove_counter = counter;
-    initialise();
-};
-
 std::string Board::fen_encode() const {
     uint space_counter = 0;
     std::stringstream ss;
     for (uint rank = 0; rank< 8; rank++) {
         for (uint file = 0; file< 8; file++) {
             int idx = rank * 8 + file;
-            if (pieces[idx].is_blank()) {
+            if (pieces(idx).is_blank()) {
                 space_counter++;
                 continue;
             } 
@@ -194,7 +63,7 @@ std::string Board::fen_encode() const {
                 ss << space_counter;
                 space_counter = 0;
             }
-            ss << fen_encode_map[pieces[idx].get_value()];
+            ss << fen_encode_map[pieces(idx).get_value()];
         }
         if (space_counter > 0){
             // Found a piece after a little space.
@@ -256,10 +125,10 @@ void Board::print_board() {
     for (uint rank = 0; rank< 8; rank++) {
         for (uint file = 0; file< 8; file++) {
             Square::square_t idx = 8*rank +file;
-            if (idx == aux_info.en_passent_target & pieces[idx].is_blank() & aux_info.en_passent_target.get_value() != 0){
+            if (idx == aux_info.en_passent_target & pieces(idx).is_blank() & aux_info.en_passent_target.get_value() != 0){
                 std::cout << "!";
             } else {
-                std::cout << pieces[idx].pretty_print() << " ";
+                std::cout << pieces(idx).pretty_print() << " ";
             }
         }
         std::cout << std::endl;
@@ -270,10 +139,10 @@ void Board::print_board_extra(){
     for (uint rank = 0; rank< 8; rank++) {
         for (uint file = 0; file< 8; file++) {
             Square::square_t idx = 8*rank +file;
-            if (idx == aux_info.en_passent_target & aux_info.en_passent_target.get_value() != 0 & pieces[idx].is_blank()){
+            if (idx == aux_info.en_passent_target & aux_info.en_passent_target.get_value() != 0 & pieces(idx).is_blank()){
                 std::cout << '-';
             } else {
-                std::cout << pieces[idx].pretty_print();
+                std::cout << pieces(idx).pretty_print();
             }
             std::cout << ' ';
         }
@@ -307,7 +176,7 @@ void Board::print_board_extra(){
 
 
 std::string Board::print_move(Move move, std::vector<Move> &legal_moves){
-    Piece moving_piece = pieces[move.origin];
+    Piece moving_piece = pieces(move.origin);
     bool ambiguity_flag = false;
     std::string notation;
     // Pawn captures are special.
@@ -332,7 +201,7 @@ std::string Board::print_move(Move move, std::vector<Move> &legal_moves){
             // Ignore this move when we find it.
             if (move.origin == a_move.origin) {continue;}
             // Check for ambiguity
-            if (moving_piece.is_piece(pieces[a_move.origin])) { ambiguity_flag = true; } 
+            if (moving_piece.is_piece(pieces(a_move.origin))) { ambiguity_flag = true; } 
         }
         if (ambiguity_flag) {
             // This is ambiguous, use full disambiguation for now.

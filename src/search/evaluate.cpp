@@ -1,5 +1,6 @@
 #include "evaluate.hpp"
 #include "../game/piece.hpp"
+#include "../game/board.hpp"
 #include <array>
 
 // Want some consideration of positional play
@@ -129,8 +130,6 @@ int evaluate(Board &board) {
     return evaluate(board, legal_moves);
 }
 
-
-#include <iostream>
 int evaluate(Board &board, std::vector<Move> &legal_moves) {
     // evaluate the position relative to the current player.
     int side_multiplier = board.is_white_move() ? 1 : -1;
@@ -147,10 +146,9 @@ int evaluate(Board &board, std::vector<Move> &legal_moves) {
     }
     for (uint i = 0; i < 64; i++) {
         if(board.is_free(i)) {continue;}
-        Piece piece = board.pieces[i];
+        Piece piece = board.pieces(i);
         value += material[to_enum_colour(piece)][piece.get_piece() - 1];
         value += PositionScores[to_enum_colour(piece)][piece.get_piece() - 1][i];
-        //std::cout << value << std::endl;
     }
     if (board.can_castle(WHITE)) {
         value+=10;
@@ -159,4 +157,14 @@ int evaluate(Board &board, std::vector<Move> &legal_moves) {
         value-=10;
     } 
     return value * side_multiplier;
+}
+
+int evaluation_diff(Board &board, Move move) {
+    int diff = 0;
+    if (move.is_king_castle() | move.is_queen_castle()) {
+
+    } else {
+        Piece piece = board.pieces(move.origin);
+    }
+    diff -= 0;
 }
