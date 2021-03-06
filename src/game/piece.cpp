@@ -70,13 +70,6 @@ std::ostream& operator<<(std::ostream& os, const Piece piece) {
     return os;
 }
 
-int material(const Piece piece) {
-    int side_multiplier = piece.is_white() ? 1 : -1;
-    if (piece.is_blank()) {return 0; }
-    if (piece.is_pawn()) {return side_multiplier * 100; }
-    else if (piece.is_knight()) {return side_multiplier * 300; }
-    else if (piece.is_bishop()) {return side_multiplier * 300; }
-    else if (piece.is_rook()) {return side_multiplier * 500; }
-    else if (piece.is_queen()) {return side_multiplier * 900; }
-    else {return 0;}
+Colour to_enum_colour(const Piece p) {
+    return p.is_white() ? WHITE : BLACK;
 }

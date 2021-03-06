@@ -121,11 +121,5 @@ namespace Pieces {
     static constexpr Piece Black = Piece(16);
 }
 
-
+Colour to_enum_colour(const Piece p);
 std::ostream& operator<<(std::ostream& os, const Piece piece);
-
-/*
-constexpr bool operator==(Piece thing1, Piece::Value thing2) { return uint8_t(thing1) == thing2; }
-constexpr bool operator==(Piece::Value thing2, Piece thing1) { return uint8_t(thing1) == thing2; }
-*/
-int material(const Piece piece);
