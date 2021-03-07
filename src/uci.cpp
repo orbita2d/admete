@@ -121,14 +121,15 @@ void go(Board& board, std::istringstream& is) {
             is >> btime;
         }
     }
-    int our_time = board.is_white_move() ? wtime : btime;
+    const int our_time = board.is_white_move() ? wtime : btime;
+    const int cutoff_time = our_time / 300;
     constexpr int max_depth = 6;
-    std::cerr << "searching: " << our_time/1000 << std::endl;
+    std::cerr << "searching: " << float(cutoff_time) / 1000  << std::endl;
     std::vector<Move> line;
     line.reserve(max_depth);
-    int score = iterative_deepening(board, max_depth, our_time/240, line);
+    int score = iterative_deepening(board, max_depth, cutoff_time, line);
     Move first_move = line.back();
-    std::cerr << "found move:" << first_move.pretty_print() << ":" << print_score(score) << std::endl;
+    std::cerr << "found move: " << first_move.pretty_print() << ": " << print_score(score) << "(depth: " << line.size() << ")" << std::endl;
     bestmove(first_move);
     
 }
