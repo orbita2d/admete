@@ -39,6 +39,9 @@ void position(Board& board, std::istringstream& is) {
             // munch through the command string
             fen += token + " ";
         }
+    } else {
+        // This is invalid. Just ignore it
+        return;
     }
     board.fen_decode(fen);
     if (token == "moves") {
@@ -125,7 +128,7 @@ void go(Board& board, std::istringstream& is) {
     line.reserve(max_depth);
     int score = iterative_deepening(board, max_depth, our_time/240, line);
     Move first_move = line.back();
-    std::cerr << "found move:" << first_move.pretty_print() << ":" << score << std::endl;
+    std::cerr << "found move:" << first_move.pretty_print() << ":" << print_score(score) << std::endl;
     bestmove(first_move);
     
 }

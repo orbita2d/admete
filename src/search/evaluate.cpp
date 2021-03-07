@@ -5,7 +5,7 @@
 
 // Want some consideration of positional play
 typedef std::array<int, 64> position_board;
-typedef std::array<position_board, 2> position_board_pair;
+typedef std::array<position_board, 6> position_board_set;
 
 std::array<std::array<int, 6>, 2> material = {
     {
@@ -29,7 +29,7 @@ inline int reverse_rank(int square) {
 position_board reverse_board(position_board in) {
     position_board pb;
     for (int s = 0; s<64; s++) {
-        pb[s] = in[reverse_rank(s)];
+        pb[s] = -in[reverse_rank(s)];
     }
     return pb;
 }
@@ -104,26 +104,26 @@ constexpr position_board pb_rook = {   0, 0, 0, 0, 0, 0, 0, 0,
                                         0, 0, 0, 0, 0, 0, 0, 0, 
                                         0, 0, 0, 0, 0, 0, 0, 0 };
 
-std::array<position_board_pair, 6> fill_positional_scores() {
-    std::array<position_board_pair, 6> scores;
+std::array<position_board_set, 2> fill_positional_scores() {
+    std::array<position_board_set, 2> scores;
 
-    scores[Pieces::Pawn - 1][WHITE] = pb_pawn;
-    scores[Pieces::Knight - 1][WHITE] = fill_knight_positional_scores();
-    scores[Pieces::Bishop - 1][WHITE] = pb_bishop;
-    scores[Pieces::Rook - 1][WHITE] = pb_rook;
-    scores[Pieces::Queen - 1][WHITE] = pb_queen;
-    scores[Pieces::King - 1][WHITE] = pb_king;
+    scores[WHITE][Pieces::Pawn - 1] = pb_pawn;
+    scores[WHITE][Pieces::Knight - 1] = fill_knight_positional_scores();
+    scores[WHITE][Pieces::Bishop - 1] = pb_bishop;
+    scores[WHITE][Pieces::Rook - 1] = pb_rook;
+    scores[WHITE][Pieces::Queen - 1] = pb_queen;
+    scores[WHITE][Pieces::King - 1] = pb_king;
 
-    scores[Pieces::Pawn - 1][BLACK] = reverse_board(pb_pawn);
-    scores[Pieces::Knight - 1][BLACK] = reverse_board(fill_knight_positional_scores());
-    scores[Pieces::Bishop - 1][BLACK] = reverse_board(pb_bishop);
-    scores[Pieces::Rook - 1][BLACK] = reverse_board(pb_rook);
-    scores[Pieces::Queen - 1][BLACK] = reverse_board(pb_king);
-    scores[Pieces::King - 1][BLACK] = reverse_board(pb_king);
+    scores[BLACK][Pieces::Pawn - 1] = reverse_board(pb_pawn);
+    scores[BLACK][Pieces::Knight - 1] = reverse_board(fill_knight_positional_scores());
+    scores[BLACK][Pieces::Bishop - 1] = reverse_board(pb_bishop);
+    scores[BLACK][Pieces::Rook - 1] = reverse_board(pb_rook);
+    scores[BLACK][Pieces::Queen - 1] = reverse_board(pb_queen);
+    scores[BLACK][Pieces::King - 1] = reverse_board(pb_king);
 
     return scores;
 }
-std::array<position_board_pair, 6> PositionScores = fill_positional_scores();
+std::array<position_board_set, 2> PositionScores = fill_positional_scores();
 
 int evaluate(Board &board) {
     std::vector<Move> legal_moves = board.get_moves();
