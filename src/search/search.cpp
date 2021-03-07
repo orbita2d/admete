@@ -39,6 +39,25 @@ int alphabeta(Board& board, const uint depth, int alpha, int beta, PrincipleLine
     return is_mating(best_score) ? best_score - 1 : best_score;
 }
 
+int quiesce(Board& board, int alpha, int beta) {
+    // perform alpha-beta pruning search.
+    std::vector<Move> captures = board.get_captures();
+    if (captures.size() == 0) { 
+        return evaluate(board, captures); 
+    }
+    int best_score = NEG_INF;
+    for (Move move : captures) {
+        board.make_move(move);
+        int score = -quiesce(board, -beta, -alpha);
+        board.unmake_move(move);
+        best_score = std::max(best_score, score);
+        alpha = std::max(alpha, score);
+        if (alpha >= beta) {
+            break; // beta-cutoff
+        }
+    }
+    return best_score;
+}
 int pv_search(Board& board, const uint depth, int alpha, int beta, PrincipleLine& principle, const uint pv_depth, PrincipleLine& line) {
     // perform alpha-beta pruning search with principle variation optimisation.
     std::vector<Move> legal_moves = board.get_sorted_moves();

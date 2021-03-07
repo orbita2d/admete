@@ -349,6 +349,7 @@ public:
     Square slide_to_edge(const Square origin, const Square direction, const uint to_edge) const;
     std::vector<Move> get_pseudolegal_moves() const;
     std::vector<Move> get_moves();
+    std::vector<Move> get_captures();
     std::vector<Move> get_sorted_moves();
     bool is_check(const Square square, const Piece colour) const;
     bool is_in_check() const;

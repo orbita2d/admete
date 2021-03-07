@@ -475,3 +475,14 @@ std::vector<Move> Board::get_sorted_moves() {
     sorted_moves.insert(sorted_moves.end(), quiet_moves.begin(), quiet_moves.end());
     return sorted_moves;
 }
+
+
+std::vector<Move> Board::get_captures() {
+    const std::vector<Move> legal_moves = get_moves();
+    std::vector<Move> captures;
+    captures.reserve(16);
+    for (Move move : legal_moves) {
+        if (move.is_capture()) {captures.push_back(move);}
+    }
+    return captures;
+}
