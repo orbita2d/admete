@@ -22,8 +22,8 @@ public:
 
     Piece() = default;
     constexpr Piece(int aPiece) : value(uint8_t(aPiece)) { };
-    constexpr Piece(bool is_white) : value(is_white ? 0x10 : 0x08) {};
-    constexpr Piece(Colour c) : value( c == Colour::WHITE ? 0x10 : 0x08) {};
+    constexpr Piece(bool is_black) : value(is_black ? 0x10 : 0x08) {};
+    constexpr Piece(Colour c) : value( c == Colour::WHITE ? 0x08 : 0x10) {};
 
     constexpr bool operator==(Piece that) const { return value == that.value; }
     constexpr bool operator!=(Piece that) const { return value != that.value; }
