@@ -10,10 +10,10 @@ int alphabeta(Board& board, const uint depth, PrincipleLine& line) {
 int alphabeta(Board& board, const uint depth, int alpha, int beta, PrincipleLine& line) {
     // perform alpha-beta pruning search.
     std::vector<Move> legal_moves = board.get_sorted_moves();
-    if (depth == 0) { return evaluate(board, legal_moves); }
     if (legal_moves.size() == 0) { 
         return evaluate(board, legal_moves); 
     }
+    if (depth == 0) { return evaluate(board, legal_moves); }
     PrincipleLine best_line;
     int best_score = NEG_INF;
     for (Move move : legal_moves) {
@@ -131,6 +131,7 @@ int iterative_deepening(Board& board, const uint depth, PrincipleLine& line) {
     return iterative_deepening(board, depth, POS_INF, line);
 }
 
+#include <iostream>
 int find_best_random(Board& board, const uint max_depth, const int random_weight, const int max_millis, PrincipleLine& line) {
     std::vector<Move> legal_moves = board.get_sorted_moves();
     int n = legal_moves.size();
