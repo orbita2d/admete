@@ -4,35 +4,35 @@
 
 std::map<uint8_t, std::string> pretty_print_map = {
     { Pieces::Blank, "." },
-    { Pieces::White | Pieces::Pawn, "P" },
-    { Pieces::White | Pieces::Knight, "N" },
-    { Pieces::White |  Pieces::Bishop, "B" },
-    { Pieces::White | Pieces::Rook, "R" },
-    { Pieces::White | Pieces::Queen, "Q" },
-    { Pieces::White | Pieces::King, "K" },
-    { Pieces::Black | Pieces::Pawn, "p" },
-    { Pieces::Black | Pieces::Knight, "n" },
-    { Pieces::Black |  Pieces::Bishop, "b" },
-    { Pieces::Black | Pieces::Rook, "r" },
-    { Pieces::Black | Pieces::Queen, "q" },
-    { Pieces::Black | Pieces::King, "k" }
+    { Piece(WHITE, PAWN), "P" },
+    { Piece(WHITE, KNIGHT), "N" },
+    { Piece(WHITE, BISHOP), "B" },
+    { Piece(WHITE, ROOK), "R" },
+    { Piece(WHITE, QUEEN), "Q" },
+    { Piece(WHITE, KING), "K" },
+    { Piece(BLACK, PAWN), "p" },
+    { Piece(BLACK, KNIGHT), "n" },
+    { Piece(BLACK, BISHOP), "b" },
+    { Piece(BLACK, ROOK), "r" },
+    { Piece(BLACK, QUEEN), "q" },
+    { Piece(BLACK, KING), "k" }
 };
 
 
 std::map<uint8_t, std::string> prettier_print_map = {
     { Pieces::Blank, "." },
-    { Pieces::White | Pieces::Pawn, "♙" },
-    { Pieces::White | Pieces::Knight, "♘" },
-    { Pieces::White | Pieces::Bishop, "♗" },
-    { Pieces::White | Pieces::Rook, "♖" },
-    { Pieces::White | Pieces::Queen, "♕" },
-    { Pieces::White | Pieces::King, "♔" },
-    { Pieces::Black | Pieces::Pawn, "♟︎" },
-    { Pieces::Black | Pieces::Knight, "♞" },
-    { Pieces::Black | Pieces::Bishop, "♝" },
-    { Pieces::Black | Pieces::Rook, "♜" },
-    { Pieces::Black | Pieces::Queen, "♛" },
-    { Pieces::Black | Pieces::King, "♚" }
+    { Piece(WHITE, PAWN), "♙" },
+    { Piece(WHITE, KNIGHT), "♘" },
+    { Piece(WHITE, BISHOP), "♗" },
+    { Piece(WHITE, ROOK), "♖" },
+    { Piece(WHITE, QUEEN), "♕" },
+    { Piece(WHITE, KING), "♔" },
+    { Piece(BLACK, PAWN), "♟︎" },
+    { Piece(BLACK, KNIGHT), "♞" },
+    { Piece(BLACK, BISHOP), "♝" },
+    { Piece(BLACK, ROOK), "♜" },
+    { Piece(BLACK, QUEEN), "♛" },
+    { Piece(BLACK, KING), "♚" }
 };
 
 std::string Piece::pretty_print() const{
@@ -48,17 +48,17 @@ std::string Piece::prettier_print() const{
     }
 
 std::string Piece::get_algebraic_character() const{
-    if (is_piece(Pieces::Pawn)) {
+    if (is_pawn()) {
         return "";
-    }else if (is_piece(Pieces::Knight)) {
+    }else if (is_knight()) {
         return "N";
-    }else if (is_piece(Pieces::Bishop)) {
+    }else if (is_bishop()) {
         return "B";
-    }else if (is_piece(Pieces::Rook)) {
+    }else if (is_rook()) {
         return "R";
-    }else if (is_piece(Pieces::Queen)) {
+    }else if (is_queen()) {
         return "Q";
-    }else if (is_piece(Pieces::King)) {
+    }else if (is_king()) {
         return "K";
     } else {
         return "X";
@@ -68,8 +68,4 @@ std::string Piece::get_algebraic_character() const{
 std::ostream& operator<<(std::ostream& os, const Piece piece) {
     os << piece.pretty_print();
     return os;
-}
-
-Colour to_enum_colour(const Piece p) {
-    return p.is_white() ? WHITE : BLACK;
 }

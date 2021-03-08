@@ -12,6 +12,15 @@ enum Colour : bool {
     BLACK
 };
 
+enum PieceEnum {
+    PAWN,
+    KNIGHT,
+    BISHOP,
+    ROOK,
+    QUEEN,
+    KING
+};
+
 constexpr Colour operator~(Colour c) {
   return Colour(c ^ Colour::BLACK); // Toggle color
 }
@@ -24,6 +33,7 @@ public:
     constexpr Piece(int aPiece) : value(uint8_t(aPiece)) { };
     constexpr Piece(bool is_black) : value(is_black ? 0x10 : 0x08) {};
     constexpr Piece(Colour c) : value( c == Colour::WHITE ? 0x08 : 0x10) {};
+    constexpr Piece(Colour c, PieceEnum p) : value( (c == Colour::WHITE ? 0x08 : 0x10) | (p + 1) ) {};
 
     constexpr bool operator==(Piece that) const { return value == that.value; }
     constexpr bool operator!=(Piece that) const { return value != that.value; }
@@ -100,6 +110,9 @@ public:
         return (value & PMASK) == 0x06;
     }
 
+    constexpr bool is_piece(const PieceEnum p) const {
+       return (value & PMASK) == p + 1;
+    }
     constexpr uint8_t get_value() const {return value; }
 
     std::string get_algebraic_character() const;
@@ -121,5 +134,10 @@ namespace Pieces {
     static constexpr Piece Black = Piece(16);
 }
 
-Colour to_enum_colour(const Piece p);
+inline Colour to_enum_colour(const Piece p) {
+    return p.is_white() ? WHITE : BLACK;
+}
+inline PieceEnum to_enum_piece(const Piece p) {
+    return PieceEnum((p.get_value() & PMASK) - 1);
+}
 std::ostream& operator<<(std::ostream& os, const Piece piece);

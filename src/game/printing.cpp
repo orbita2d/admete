@@ -180,7 +180,7 @@ std::string Board::print_move(Move move, std::vector<Move> &legal_moves){
     bool ambiguity_flag = false;
     std::string notation;
     // Pawn captures are special.
-    if (moving_piece.is_piece(Pieces::Pawn) & move.is_capture()) {
+    if (moving_piece.is_pawn() & move.is_capture()) {
         notation = std::string(1, file_encode_map[move.origin.file_index()]) + "x" + move.target.pretty_print();
         if (move.is_knight_promotion()) {
             notation = notation + "=N";
