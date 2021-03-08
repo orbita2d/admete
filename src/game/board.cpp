@@ -256,11 +256,9 @@ void Board::make_move(Move &move) {
     }
 
     if (pieces(move.origin).is_king()) {
-        if (whos_move == WHITE) {
-            king_square[0] = move.target;
-        } else {
-            king_square[1] = move.target;
-        }
+        king_square[us] = move.target;
+        aux_info.castling_rights[us][KINGSIDE]  = false;
+        aux_info.castling_rights[us][QUEENSIDE]  = false;
     }
     bitboard from_bb = uint64_t(1) << move.origin;
     bitboard to_bb = uint64_t(1) << move.target;
@@ -271,36 +269,27 @@ void Board::make_move(Move &move) {
         pieces_array[move.target] = pieces_array[move.origin];
         pieces_array[move.origin] = Pieces::Blank;
         pieces_array[move.origin + Direction::E] = pieces_array[move.origin.rank() | Squares::FileH];
-        pieces_array[move.origin.rank() | Squares::FileH] = Pieces::Blank;
+        pieces_array[RookSquare[us][KINGSIDE]] = Pieces::Blank;
         from_bb = from_bb ^ (uint64_t(1) << (move.origin.rank() | Squares::FileH));
         to_bb = to_bb ^ (uint64_t(1) << (move.origin.rank() | Squares::FileF));
         // Update the bitboard.
         from_to_bb = from_bb ^ to_bb;
         occupied ^= from_to_bb;
-        if (whos_move == Colour::WHITE) {
-            aux_info.castling_rights[WHITE][KINGSIDE] = false;
-            aux_info.castling_rights[WHITE][QUEENSIDE] = false;
-        } else {
-            aux_info.castling_rights[BLACK][KINGSIDE] = false;
-            aux_info.castling_rights[BLACK][QUEENSIDE] = false;
-        }
+
+        aux_info.castling_rights[us][KINGSIDE] = false;
+        aux_info.castling_rights[us][QUEENSIDE] = false;
     } else if (move.is_queen_castle()) {
         pieces_array[move.target] = pieces_array[move.origin];
         pieces_array[move.origin] = Pieces::Blank;
         pieces_array[move.origin + Direction::W] = pieces_array[move.origin.rank() | Squares::FileA];
-        pieces_array[move.origin.rank() | Squares::FileA] = Pieces::Blank;
+        pieces_array[RookSquare[us][QUEENSIDE]] = Pieces::Blank;
         from_bb = from_bb ^ (uint64_t(1) << (move.origin.rank() | Squares::FileA));
         to_bb = to_bb ^ (uint64_t(1) << (move.origin.rank() | Squares::FileD));
         // Update the bitboard.
         from_to_bb = from_bb ^ to_bb;
         occupied ^= from_to_bb;
-        if (whos_move == Colour::WHITE) {
-            aux_info.castling_rights[WHITE][KINGSIDE] = false;
-            aux_info.castling_rights[WHITE][QUEENSIDE] = false;
-        } else {
-            aux_info.castling_rights[BLACK][KINGSIDE] = false;
-            aux_info.castling_rights[BLACK][QUEENSIDE] = false;
-        }
+        aux_info.castling_rights[us][KINGSIDE] = false;
+        aux_info.castling_rights[us][QUEENSIDE] = false;
     } else if(move.is_ep_capture()) {
         // En-passent is weird too.
         const Square captured_square = move.origin.rank() | move.target.file();
@@ -337,52 +326,19 @@ void Board::make_move(Move &move) {
         pieces_array[move.target] = pieces_array[move.target].get_colour() | Pieces::Queen;
     }
     
-    if (can_castle(WHITE) & whos_move == Colour::WHITE){
-        if (move.origin == (Squares::Rank1 | Squares::FileE)) {
-            // Check if they've moved their King
-            aux_info.castling_rights[WHITE][KINGSIDE]  = false;
-            aux_info.castling_rights[WHITE][QUEENSIDE]  = false;
-        }
-        if (move.origin == RookSquare[WHITE][KINGSIDE]) {
-            // Check if they've moved their rook.
-            aux_info.castling_rights[WHITE][KINGSIDE]  = false;
-        } else if (move.origin == RookSquare[WHITE][QUEENSIDE]) {
-            // Check if they've moved their rook.
-            aux_info.castling_rights[WHITE][QUEENSIDE]  = false;
-        }
-    }
-    if (can_castle(BLACK) & whos_move == Colour::BLACK){
-        if (move.origin == (Squares::Rank8 | Squares::FileE)) {
-            // Check if they've moved their King
-            aux_info.castling_rights[BLACK][KINGSIDE]  = false;
-            aux_info.castling_rights[BLACK][QUEENSIDE]  = false;
-        }
-        if (move.origin == RookSquare[BLACK][KINGSIDE]) {
-            // Check if they've moved their rook.
-            aux_info.castling_rights[BLACK][KINGSIDE]  = false;
-        } else if (move.origin == RookSquare[BLACK][QUEENSIDE]) {
-            // Check if they've moved their rook.
-            aux_info.castling_rights[BLACK][QUEENSIDE]  = false;
-        }
-    }
 
-    if (can_castle(BLACK) & whos_move == Colour::WHITE){
-        // Check for rook captures.
-        if (move.target == RookSquare[BLACK][KINGSIDE]) {
-            aux_info.castling_rights[BLACK][KINGSIDE] = false;
-        }
-        if (move.target == RookSquare[BLACK][QUEENSIDE]) {
-            aux_info.castling_rights[BLACK][QUEENSIDE] = false;
-        }
+    // Check if we've moved our rook.
+    if (move.origin == RookSquare[us][KINGSIDE]) {
+        aux_info.castling_rights[us][KINGSIDE]  = false;
+    } else if (move.origin == RookSquare[us][QUEENSIDE]) {
+        aux_info.castling_rights[us][QUEENSIDE]  = false;
     }
-    if (can_castle(WHITE) & whos_move == Colour::BLACK){
-        // Check for rook captures.
-        if (move.target == RookSquare[WHITE][KINGSIDE]) {
-            aux_info.castling_rights[WHITE][KINGSIDE] = false;
-        }
-        if (move.target == RookSquare[WHITE][QUEENSIDE]) {
-            aux_info.castling_rights[WHITE][QUEENSIDE] = false;
-        }
+    // Check for rook captures.
+    if (move.target == RookSquare[them][KINGSIDE]) {
+        aux_info.castling_rights[them][KINGSIDE] = false;
+    }
+    if (move.target == RookSquare[them][QUEENSIDE]) {
+        aux_info.castling_rights[them][QUEENSIDE] = false;
     }
 
     // Switch whos turn it is to play
@@ -400,14 +356,12 @@ void Board::unmake_move(const Move move) {
 
     // Switch whos turn it is to play
     whos_move = ~ whos_move;
+    Colour us = whos_move;
+    Colour them = ~ us;
     // Castling is special
 
     if (pieces_array[move.target].is_king()) {
-        if (whos_move == Colour::WHITE) {
-            king_square[0] = move.origin;
-        } else {
-            king_square[1] = move.origin;
-        }
+        king_square[us] = move.origin;
     }
 
     bitboard from_bb = uint64_t(1) << move.origin;
@@ -416,9 +370,9 @@ void Board::unmake_move(const Move move) {
     if (move.is_king_castle()) {
         pieces_array[move.origin] = pieces_array[move.target];
         pieces_array[move.target] = Pieces::Blank;
-        pieces_array[move.origin.rank() | Squares::FileH] = pieces_array[move.origin + Direction::E];
+        pieces_array[RookSquare[us][KINGSIDE]] = pieces_array[move.origin + Direction::E];
         pieces_array[move.origin + Direction::E] = Pieces::Blank;
-        from_bb = from_bb ^ (uint64_t(1) << (move.origin.rank() | Squares::FileH));
+        from_bb = from_bb ^ (uint64_t(1) << (RookSquare[us][KINGSIDE]));
         to_bb = to_bb ^ (uint64_t(1) << (move.origin.rank() | Squares::FileF));
         // Update the bitboard.
         from_to_bb = from_bb ^ to_bb;
@@ -426,10 +380,10 @@ void Board::unmake_move(const Move move) {
     } else if (move.is_queen_castle()) {
         pieces_array[move.origin] = pieces_array[move.target];
         pieces_array[move.target] = Pieces::Blank;
-        pieces_array[move.origin.rank() | Squares::FileA] = pieces_array[move.origin + Direction::W];
+        pieces_array[RookSquare[us][QUEENSIDE]] = pieces_array[move.origin + Direction::W];
         pieces_array[move.origin + Direction::W] = Pieces::Blank;
-        from_bb = from_bb ^ (uint64_t(1) << (move.origin.rank() | Squares::FileA));
-        to_bb = to_bb ^ (uint64_t(1) << (move.origin.rank() | Squares::FileD));
+        from_bb = from_bb ^ (uint64_t(1) << (RookSquare[us][QUEENSIDE]));
+        to_bb = to_bb ^ (uint64_t(1) << (move.origin + Direction::W));
         // Update the bitboard.
         from_to_bb = from_bb ^ to_bb;
         occupied ^= from_to_bb;
