@@ -76,23 +76,23 @@ std::string Board::fen_encode() const {
     }
 
     ss << " ";
-    ss << (whos_move == white_move ? "w" : "b");
+    ss << (whos_move == Colour::WHITE ? "w" : "b");
     ss << " ";
     
-    if (aux_info.castle_white_kingside) {
+    if (aux_info.castling_rights[WHITE][KINGSIDE]) {
         ss << "K";
     }
-    if (aux_info.castle_white_queenside) {
+    if (aux_info.castling_rights[WHITE][QUEENSIDE]) {
         ss << "Q";
     }
-    if (aux_info.castle_black_kingside) {
+    if (aux_info.castling_rights[BLACK][KINGSIDE]) {
         ss << "k";
     }
-    if (aux_info.castle_black_queenside) {
+    if (aux_info.castling_rights[BLACK][QUEENSIDE]) {
         ss << "q";
     }
     
-    if (!(aux_info.castle_black_kingside|aux_info.castle_black_queenside|aux_info.castle_white_kingside|aux_info.castle_white_queenside)) {
+    if (!(can_castle(WHITE) | can_castle(BLACK))) {
         ss << "-";
     }
     ss << " ";
@@ -146,21 +146,21 @@ void Board::print_board_extra(){
             }
             std::cout << ' ';
         }
-        if (rank == 0 & whos_move == black_move){
+        if (rank == 0 & whos_move == Colour::BLACK){
             std::cout << "  ***";
         }
-        if (rank == 7 & whos_move == white_move){
+        if (rank == 7 & whos_move == Colour::WHITE){
             std::cout << "  ***";
         }
         if (rank == 1){
             std::cout << "  ";
-            if (aux_info.castle_black_kingside) { std::cout << 'k'; }
-            if (aux_info.castle_black_queenside) { std::cout << 'q'; }
+            if (aux_info.castling_rights[BLACK][KINGSIDE]) { std::cout << 'k'; }
+            if (aux_info.castling_rights[BLACK][QUEENSIDE]) { std::cout << 'q'; }
         }
         if (rank == 6){
             std::cout << "  ";
-            if (aux_info.castle_white_kingside) { std::cout << 'K'; }
-            if (aux_info.castle_white_queenside) { std::cout << 'Q'; }
+            if (aux_info.castling_rights[WHITE][KINGSIDE]) { std::cout << 'K'; }
+            if (aux_info.castling_rights[WHITE][QUEENSIDE]) { std::cout << 'Q'; }
         }
         if (rank == 3){
             std::cout << "  " << std::setw(3) << std::setfill(' ') << aux_info.halfmove_clock;
@@ -227,7 +227,7 @@ std::string Board::print_move(Move move, std::vector<Move> &legal_moves){
         if (now_is_check) {
             // Checkmate
             notation = notation + "# ";
-            if (now_whos_move == white_move) {
+            if (now_whos_move == Colour::WHITE) {
                 notation = notation + "1-0";
             } else {
                 notation = notation + "0-1";

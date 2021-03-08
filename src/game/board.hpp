@@ -307,17 +307,18 @@ private:
 };
 std::ostream& operator<<(std::ostream& os, const Move move);
 
-constexpr bool white_move = false;
-constexpr bool black_move = true;
-
 typedef uint64_t bitboard;
+
+enum CastlingSide : bool {
+    KINGSIDE,
+    QUEENSIDE
+};
+constexpr std::array<std::array<Square, 2>, 2> RookSquare = {{{Squares::FileH | Squares::Rank1, Squares::FileA | Squares::Rank1},{Squares::FileH | Squares::Rank8, Squares::FileA | Squares::Rank8}}};
 
 struct AuxilliaryInfo {
     // Information that is game history dependent, that would otherwise need to be encoded in a move.
-    bool castle_white_kingside = true;
-    bool castle_white_queenside = true;
-    bool castle_black_kingside = true;
-    bool castle_black_queenside = true;
+    // Access linke castling_rights[WHITE][KINGSIDE]
+    std::array<std::array<bool, 2>, 2> castling_rights;
     uint halfmove_clock = 0;
     Square en_passent_target;
     std::array<Square, 16> pinned_pieces;
@@ -350,7 +351,7 @@ public:
     std::vector<Move> get_moves();
     std::vector<Move> get_captures();
     std::vector<Move> get_sorted_moves();
-    bool is_check(const Square square, const Piece colour) const;
+    bool is_attacked(const Square square, const Piece colour) const;
     bool is_in_check() const;
     void update_checkers();
 
@@ -374,7 +375,7 @@ public:
     void build_occupied_bb();
     bool is_black_move() const{ return whos_move; }
     bool is_white_move() const{ return !whos_move; }
-    bool can_castle(Colour c) const{ return c==WHITE ? (aux_info.castle_white_kingside | aux_info.castle_white_queenside) : (aux_info.castle_black_kingside | aux_info.castle_black_queenside);}
+    bool can_castle(Colour c) const{ return aux_info.castling_rights[c][KINGSIDE] | aux_info.castling_rights[c][QUEENSIDE];}
     AuxilliaryInfo aux_info;
 private:
     std::array<Piece, 64> pieces_array;
@@ -382,7 +383,7 @@ private:
     std::array<Square, 16> pinned_pieces;
     uint number_checkers;
     std::array<Square, 2> checkers;
-    bool whos_move = white_move;
+    Colour whos_move = WHITE;
     uint fullmove_counter = 1;
     uint ply_counter = 0;
     Move last_move;

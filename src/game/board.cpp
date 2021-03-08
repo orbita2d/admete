@@ -90,21 +90,21 @@ void Board::fen_decode(const std::string& fen){
     switch (side_to_move[0])
     {
     case 'w':
-        whos_move = white_move;
+        whos_move = WHITE;
         break;
 
     case 'b':
-        whos_move = black_move;
+        whos_move = BLACK;
         break;
     
     default:
         throw std::domain_error("Unrecognised <Side to move> character");
     }
 
-    aux_info.castle_black_kingside = false;
-    aux_info.castle_black_queenside = false;
-    aux_info.castle_white_kingside = false;
-    aux_info.castle_white_queenside = false;
+    aux_info.castling_rights[WHITE][KINGSIDE] = false;
+    aux_info.castling_rights[WHITE][QUEENSIDE] = false;
+    aux_info.castling_rights[BLACK][KINGSIDE] = false;
+    aux_info.castling_rights[BLACK][QUEENSIDE] = false;
     // Castling rights
     if (castling.length() > 4) {
         throw std::domain_error("<Castling> length > 4");
@@ -116,19 +116,19 @@ void Board::fen_decode(const std::string& fen){
             switch (castling[i])
             {
             case 'q':
-                aux_info.castle_black_queenside = true;
+                aux_info.castling_rights[BLACK][QUEENSIDE] = true;
                 break;
 
             case 'Q':
-                aux_info.castle_white_queenside = true;
+                aux_info.castling_rights[WHITE][QUEENSIDE] = true;
                 break;
 
             case 'k':
-                aux_info.castle_black_kingside = true;
+                aux_info.castling_rights[BLACK][KINGSIDE] = true;
                 break;
 
             case 'K':
-                aux_info.castle_white_kingside = true;
+                aux_info.castling_rights[WHITE][KINGSIDE] = true;
                 break;
 
             default:
@@ -237,11 +237,13 @@ bool Board::is_free(const Square target) const{
 void Board::make_move(Move &move) {
     last_move = move;
     // Iterate counters.
-    if (whos_move == black_move) {fullmove_counter++;}
+    if (whos_move == Colour::BLACK) {fullmove_counter++;}
     aux_info.pinned_pieces = pinned_pieces;
     aux_info.checkers = checkers;
     aux_info.number_checkers = number_checkers;
     aux_history[ply_counter] = aux_info;
+    Colour us = whos_move;
+    Colour them = ~ us;
     if (move.is_capture() | pieces(move.origin).is_pawn()) {
         aux_info.halfmove_clock = 0;
     } else {aux_info.halfmove_clock++ ;}
@@ -254,7 +256,7 @@ void Board::make_move(Move &move) {
     }
 
     if (pieces(move.origin).is_king()) {
-        if (whos_move == white_move) {
+        if (whos_move == WHITE) {
             king_square[0] = move.target;
         } else {
             king_square[1] = move.target;
@@ -275,12 +277,12 @@ void Board::make_move(Move &move) {
         // Update the bitboard.
         from_to_bb = from_bb ^ to_bb;
         occupied ^= from_to_bb;
-        if (whos_move == white_move) {
-            aux_info.castle_white_kingside  = false;
-            aux_info.castle_white_queenside = false;
+        if (whos_move == Colour::WHITE) {
+            aux_info.castling_rights[WHITE][KINGSIDE] = false;
+            aux_info.castling_rights[WHITE][QUEENSIDE] = false;
         } else {
-            aux_info.castle_black_kingside  = false;
-            aux_info.castle_black_queenside = false;
+            aux_info.castling_rights[BLACK][KINGSIDE] = false;
+            aux_info.castling_rights[BLACK][QUEENSIDE] = false;
         }
     } else if (move.is_queen_castle()) {
         pieces_array[move.target] = pieces_array[move.origin];
@@ -292,12 +294,12 @@ void Board::make_move(Move &move) {
         // Update the bitboard.
         from_to_bb = from_bb ^ to_bb;
         occupied ^= from_to_bb;
-        if (whos_move == white_move) {
-            aux_info.castle_white_kingside  = false;
-            aux_info.castle_white_queenside = false;
+        if (whos_move == Colour::WHITE) {
+            aux_info.castling_rights[WHITE][KINGSIDE] = false;
+            aux_info.castling_rights[WHITE][QUEENSIDE] = false;
         } else {
-            aux_info.castle_black_kingside  = false;
-            aux_info.castle_black_queenside = false;
+            aux_info.castling_rights[BLACK][KINGSIDE] = false;
+            aux_info.castling_rights[BLACK][QUEENSIDE] = false;
         }
     } else if(move.is_ep_capture()) {
         // En-passent is weird too.
@@ -335,56 +337,56 @@ void Board::make_move(Move &move) {
         pieces_array[move.target] = pieces_array[move.target].get_colour() | Pieces::Queen;
     }
     
-    if ((aux_info.castle_white_kingside | aux_info.castle_white_queenside) & whos_move == white_move){
+    if (can_castle(WHITE) & whos_move == Colour::WHITE){
         if (move.origin == (Squares::Rank1 | Squares::FileE)) {
             // Check if they've moved their King
-            aux_info.castle_white_kingside  = false;
-            aux_info.castle_white_queenside  = false;
+            aux_info.castling_rights[WHITE][KINGSIDE]  = false;
+            aux_info.castling_rights[WHITE][QUEENSIDE]  = false;
         }
-        if (move.origin == (Squares::FileH | Squares::Rank1)) {
+        if (move.origin == RookSquare[WHITE][KINGSIDE]) {
             // Check if they've moved their rook.
-            aux_info.castle_white_kingside  = false;
-        } else if (move.origin == (Squares::FileA | Squares::Rank1)) {
+            aux_info.castling_rights[WHITE][KINGSIDE]  = false;
+        } else if (move.origin == RookSquare[WHITE][QUEENSIDE]) {
             // Check if they've moved their rook.
-            aux_info.castle_white_queenside  = false;
+            aux_info.castling_rights[WHITE][QUEENSIDE]  = false;
         }
     }
-    if ((aux_info.castle_black_kingside | aux_info.castle_black_queenside) & whos_move == black_move){
+    if (can_castle(BLACK) & whos_move == Colour::BLACK){
         if (move.origin == (Squares::Rank8 | Squares::FileE)) {
             // Check if they've moved their King
-            aux_info.castle_black_kingside  = false;
-            aux_info.castle_black_queenside  = false;
+            aux_info.castling_rights[BLACK][KINGSIDE]  = false;
+            aux_info.castling_rights[BLACK][QUEENSIDE]  = false;
         }
-        if (move.origin == (Squares::FileH | Squares::Rank8)) {
+        if (move.origin == RookSquare[BLACK][KINGSIDE]) {
             // Check if they've moved their rook.
-            aux_info.castle_black_kingside  = false;
-        } else if (move.origin == (Squares::FileA | Squares::Rank8)) {
+            aux_info.castling_rights[BLACK][KINGSIDE]  = false;
+        } else if (move.origin == RookSquare[BLACK][QUEENSIDE]) {
             // Check if they've moved their rook.
-            aux_info.castle_black_queenside  = false;
+            aux_info.castling_rights[BLACK][QUEENSIDE]  = false;
         }
     }
 
-    if ((aux_info.castle_black_kingside | aux_info.castle_black_queenside) & whos_move == white_move){
+    if (can_castle(BLACK) & whos_move == Colour::WHITE){
         // Check for rook captures.
-        if (move.target == (Squares::FileH | Squares::Rank8)) {
-            aux_info.castle_black_kingside = false;
+        if (move.target == RookSquare[BLACK][KINGSIDE]) {
+            aux_info.castling_rights[BLACK][KINGSIDE] = false;
         }
-        if (move.target == (Squares::FileA | Squares::Rank8)) {
-            aux_info.castle_black_queenside = false;
+        if (move.target == RookSquare[BLACK][QUEENSIDE]) {
+            aux_info.castling_rights[BLACK][QUEENSIDE] = false;
         }
     }
-    if ((aux_info.castle_white_kingside | aux_info.castle_white_queenside) & whos_move == black_move){
+    if (can_castle(WHITE) & whos_move == Colour::BLACK){
         // Check for rook captures.
-        if (move.target == (Squares::FileH | Squares::Rank1)) {
-            aux_info.castle_white_kingside = false;
+        if (move.target == RookSquare[WHITE][KINGSIDE]) {
+            aux_info.castling_rights[WHITE][KINGSIDE] = false;
         }
-        if (move.target == (Squares::FileA | Squares::Rank1)) {
-            aux_info.castle_white_queenside = false;
+        if (move.target == RookSquare[WHITE][QUEENSIDE]) {
+            aux_info.castling_rights[WHITE][QUEENSIDE] = false;
         }
     }
 
     // Switch whos turn it is to play
-    whos_move = ! whos_move;
+    whos_move = ~ whos_move;
 
     update_checkers();
     ply_counter ++;
@@ -392,16 +394,16 @@ void Board::make_move(Move &move) {
 
 void Board::unmake_move(const Move move) {
     // Iterate counters.
-    if (whos_move == white_move) {fullmove_counter--;}
+    if (whos_move == Colour::WHITE) {fullmove_counter--;}
     ply_counter--;
     aux_info = aux_history[ply_counter];
 
     // Switch whos turn it is to play
-    whos_move = ! whos_move;
+    whos_move = ~ whos_move;
     // Castling is special
 
     if (pieces_array[move.target].is_king()) {
-        if (whos_move == white_move) {
+        if (whos_move == Colour::WHITE) {
             king_square[0] = move.origin;
         } else {
             king_square[1] = move.origin;
@@ -506,7 +508,7 @@ Square Board::slide_to_edge(const Square origin, const Square direction, const u
     return target;
 }
 
-bool Board::is_check(const Square origin, const Piece colour) const{
+bool Board::is_attacked(const Square origin, const Piece colour) const{
     // Want to (semi-efficiently) see if a square is attacked, ignoring pins.
     // First off, if the square is attacked by a knight, it's definitely in check.
     for (Square target : knight_moves(origin)) {
@@ -622,7 +624,7 @@ Square Board::find_king(const Piece colour) const{
 bool Board::is_in_check() const {
     Piece colour = whos_move;
     Square king_square = find_king(colour);
-    return is_check(king_square, colour);
+    return is_attacked(king_square, colour);
 }
 
 

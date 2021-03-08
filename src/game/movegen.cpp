@@ -240,42 +240,42 @@ void get_castle_moves(const Board &board, std::vector<Move> &moves) {
     Move move;
     if (colour == Colour::WHITE) {
         // You can't castle through check, or while in check
-        if (board.aux_info.castle_white_queenside 
+        if (board.aux_info.castling_rights[WHITE][QUEENSIDE]  
             & board.is_free(Squares::FileD | Squares::Rank1) 
             & board.is_free(Squares::FileC | Squares::Rank1)
             & board.is_free(Squares::FileB | Squares::Rank1)
-            & !board.is_check(Squares::FileD | Squares::Rank1, Pieces::White)
-            & !board.is_check(Squares::FileC | Squares::Rank1, Pieces::White)) {
+            & !board.is_attacked(Squares::FileD | Squares::Rank1, Pieces::White)
+            & !board.is_attacked(Squares::FileC | Squares::Rank1, Pieces::White)) {
             move = Move(Squares::FileE | Squares::Rank1, Squares::FileC | Squares::Rank1);
             move.make_queen_castle();
             moves.push_back(move);
         }
-        if (board.aux_info.castle_white_kingside 
+        if (board.aux_info.castling_rights[WHITE][KINGSIDE]   
             & board.is_free(Squares::FileF | Squares::Rank1) 
             & board.is_free(Squares::FileG | Squares::Rank1)
-            & !board.is_check(Squares::FileF | Squares::Rank1, Pieces::White)
-            & !board.is_check(Squares::FileG | Squares::Rank1, Pieces::White)) {
+            & !board.is_attacked(Squares::FileF | Squares::Rank1, Pieces::White)
+            & !board.is_attacked(Squares::FileG | Squares::Rank1, Pieces::White)) {
             move = Move(Squares::FileE | Squares::Rank1, Squares::FileG | Squares::Rank1);
             move.make_king_castle();
             moves.push_back(move);
         }
     } else
     {
-        if (board.aux_info.castle_black_queenside 
+        if (board.aux_info.castling_rights[BLACK][QUEENSIDE] 
             & board.is_free(Squares::FileD | Squares::Rank8) 
             & board.is_free(Squares::FileC | Squares::Rank8)
             & board.is_free(Squares::FileB | Squares::Rank8)
-            & !board.is_check(Squares::FileD | Squares::Rank8, Pieces::Black)
-            & !board.is_check(Squares::FileC | Squares::Rank8, Pieces::Black)) {
+            & !board.is_attacked(Squares::FileD | Squares::Rank8, Pieces::Black)
+            & !board.is_attacked(Squares::FileC | Squares::Rank8, Pieces::Black)) {
             move = Move(Squares::FileE | Squares::Rank8, Squares::FileC | Squares::Rank8);
             move.make_queen_castle();
             moves.push_back(move);
         }
-        if (board.aux_info.castle_black_kingside 
+        if (board.aux_info.castling_rights[BLACK][KINGSIDE]
             & board.is_free(Squares::FileF | Squares::Rank8) 
             & board.is_free(Squares::FileG | Squares::Rank8)
-            & !board.is_check(Squares::FileF | Squares::Rank8, Pieces::Black)
-            & !board.is_check(Squares::FileG | Squares::Rank8, Pieces::Black)) {
+            & !board.is_attacked(Squares::FileF | Squares::Rank8, Pieces::Black)
+            & !board.is_attacked(Squares::FileG | Squares::Rank8, Pieces::Black)) {
             move = Move(Squares::FileE | Squares::Rank8, Squares::FileG | Squares::Rank8);
             move.make_king_castle();
             moves.push_back(move);
@@ -365,7 +365,7 @@ void generate_pseudolegal_moves(const Board &board, std::vector<Move> &moves) {
 std::vector<Move> Board::get_pseudolegal_moves() const {    
     std::vector<Move> moves;
     moves.reserve(256);
-    if (whos_move == white_move) {
+    if (whos_move == Colour::WHITE) {
         generate_pseudolegal_moves<Colour::WHITE>(*this, moves);
     } else {
         generate_pseudolegal_moves<Colour::BLACK>(*this, moves);
@@ -384,7 +384,7 @@ std::vector<Move> Board::get_moves(){
             if (move.origin == king_square) {
                 // King moves have to be very careful.
                 make_move(move);
-                if (!is_check(move.target, colour)) {legal_moves.push_back(move); }
+                if (!is_attacked(move.target, colour)) {legal_moves.push_back(move); }
                 unmake_move(move);
             } else if (number_checkers == 2) {
                 // double checks require a king move, which we've just seen this is not.
@@ -413,7 +413,7 @@ std::vector<Move> Board::get_moves(){
         if (move.origin == king_square) {
             // This is a king move, check where he's gone.
             make_move(move);
-            if (!is_check(move.target, colour)) {legal_moves.push_back(move); }
+            if (!is_attacked(move.target, colour)) {legal_moves.push_back(move); }
             unmake_move(move);  
         } else if (move.is_ep_capture()) {
             // en_passent's are weird.
@@ -424,7 +424,7 @@ std::vector<Move> Board::get_moves(){
                 // This can open a rank. if the king is on that rank it could be a problem.
                 if (king_square.rank() == move.origin.rank()) {
                     make_move(move);
-                    if (!is_check(king_square, colour)) {legal_moves.push_back(move); }
+                    if (!is_attacked(king_square, colour)) {legal_moves.push_back(move); }
                     unmake_move(move);
                 } else {
                     legal_moves.push_back(move); 
