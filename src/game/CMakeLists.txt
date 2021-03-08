@@ -2,7 +2,9 @@ add_library(game_library piece.cpp
             board.cpp
             printing.cpp
             movegen.cpp
-            bitboard.cpp)
+            bitboard.cpp
+            board.hpp
+            piece.hpp)
 
 set_property(TARGET game_library PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
 

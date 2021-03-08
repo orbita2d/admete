@@ -1,6 +1,6 @@
 #include "evaluate.hpp"
-#include "../game/piece.hpp"
-#include "../game/board.hpp"
+#include "piece.hpp"
+#include "board.hpp"
 #include <array>
 
 // Want some consideration of positional play
@@ -136,8 +136,8 @@ int heuristic(Board &board) {
     for (uint i = 0; i < 64; i++) {
         if(board.is_free(i)) {continue;}
         Piece piece = board.pieces(i);
-        value += material.at(to_enum_colour(piece)).at(piece.get_piece() - 1);
-        value += PositionScores.at(to_enum_colour(piece)).at(piece.get_piece() - 1).at(i);
+        value += material[to_enum_colour(piece)][piece.get_piece() - 1];
+        value += PositionScores[to_enum_colour(piece)][piece.get_piece() - 1][i];
     }
     if (board.can_castle(WHITE)) {
         value+=10;
