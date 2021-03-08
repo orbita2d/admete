@@ -216,7 +216,6 @@ void Board::initialise() {
     build_occupied_bb();
     search_kings();
     update_checkers();
-    aux_info.lazy_heuristic = evaluate_material(*this);
 }
 
 

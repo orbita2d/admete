@@ -1,3 +1,4 @@
+#include "movegen.hpp"
 #include "board.hpp"
 
 // Move Generation

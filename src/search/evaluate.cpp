@@ -47,7 +47,7 @@ constexpr position_board center_dist = {
 
 position_board fill_knight_positional_scores() {
     // want centralised knights.
-    const int weight = 5;
+    const int weight = 8;
     position_board pb;
     for( int i = 0; i<64 ; i++) {
         pb[i] = (3-center_dist[i]) * weight;
@@ -136,8 +136,8 @@ int heuristic(Board &board) {
     for (uint i = 0; i < 64; i++) {
         if(board.is_free(i)) {continue;}
         Piece piece = board.pieces(i);
-        value += material[to_enum_colour(piece)][piece.get_piece() - 1];
-        value += PositionScores[to_enum_colour(piece)][piece.get_piece() - 1][i];
+        value += material.at(to_enum_colour(piece)).at(piece.get_piece() - 1);
+        value += PositionScores.at(to_enum_colour(piece)).at(piece.get_piece() - 1).at(i);
     }
     if (board.can_castle(WHITE)) {
         value+=10;
@@ -162,80 +162,5 @@ int evaluate(Board &board, std::vector<Move> &legal_moves) {
             return -10;
         }
     }
-    for (uint i = 0; i < 64; i++) {
-        if(board.is_free(i)) {continue;}
-        Piece piece = board.pieces(i);
-        value += material[to_enum_colour(piece)][piece.get_piece() - 1];
-        value += PositionScores[to_enum_colour(piece)][piece.get_piece() - 1][i];
-    }
-    if (board.can_castle(WHITE)) {
-        value+=10;
-    } 
-    if (board.can_castle(BLACK)) {
-        value-=10;
-    } 
-    return value * side_multiplier;
-}
-
-int evaluate_material(Board &board) {
-    // evaluate the position relative to the current player.
-    int side_multiplier = board.is_white_move() ? 1 : -1;
-    int value = 0;
-    for (uint i = 0; i < 64; i++) {
-        if(board.is_free(i)) {continue;}
-        Piece piece = board.pieces(i);
-        value += material[to_enum_colour(piece)][piece.get_piece() - 1];
-        value += PositionScores[to_enum_colour(piece)][piece.get_piece() - 1][i];
-    }
-    if (board.can_castle(WHITE)) {
-        value+=10;
-    } 
-    if (board.can_castle(BLACK)) {
-        value-=10;
-    } 
-    return value * side_multiplier;
-}
-
-int evaluate_lazy(Board &board, std::vector<Move> &legal_moves) {
-    // evaluate the position relative to the current player.
-    int side_multiplier = board.is_white_move() ? 1 : -1;
-    // First check if we have been mated.
-    if (legal_moves.size() == 0) {
-        if (board.aux_info.is_check) {
-            // This is checkmate
-            return -mating_score;
-        } else {
-            // This is stalemate.
-            return -10;
-        }
-    }
-    return board.lazy_heuristic() * side_multiplier;
-}
-
-int evaluation_diff(Board &board, Move const move) {
-    int diff = 0;
-    Piece piece = board.pieces(move.target);
-    diff -= PositionScores[to_enum_colour(piece)][piece.get_piece() - 1][move.origin];
-    diff += PositionScores[to_enum_colour(piece)][piece.get_piece() - 1][move.target];
-    if (move.is_king_castle()) {
-        Square rook_from = move.origin + (Direction::E + Direction::E + Direction::E);
-        Square rook_to = move.origin + (Direction::E);
-        diff -= PositionScores[to_enum_colour(piece)][Pieces::Rook - 1][rook_from];
-        diff += PositionScores[to_enum_colour(piece)][Pieces::Rook - 1][rook_to];
-    } else if (move.is_queen_castle()) {
-        Square rook_from = move.origin + (Direction::W + Direction::W + Direction::W + Direction::W);
-        Square rook_to = move.origin + (Direction::W);
-        diff -= PositionScores[to_enum_colour(piece)][Pieces::Rook - 1][rook_from];
-        diff += PositionScores[to_enum_colour(piece)][Pieces::Rook - 1][rook_to];
-    }
-    if (move.is_ep_capture()) {
-        const Square captured_square = move.origin.rank() | move.target.file();
-        diff -= material[~to_enum_colour(piece)][Pieces::Pawn - 1];
-        diff -= PositionScores[~to_enum_colour(piece)][Pieces::Pawn - 1][captured_square];
-
-    } else if (move.is_capture()) {
-        diff -= material[~to_enum_colour(piece)][move.captured_peice.get_piece() - 1];
-        diff -= PositionScores[~to_enum_colour(piece)][move.captured_peice.get_piece() - 1][move.target];
-    }
-    return diff;
+    return heuristic(board);
 }
