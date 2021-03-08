@@ -338,10 +338,10 @@ public:
     void initialise();
     void initialise_starting_position() { fen_decode("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"); }
 
-    void print_board_idx();
-    void print_board();
-    void print_board_extra();
-    void print_bitboard(const Bitboard bb);
+    void print_board_idx() const;
+    void print_board() const;
+    void print_board_extra() const;
+    void print_bitboard(const Bitboard bb) const;
 
     std::string print_move(Move move, std::vector<Move> &legal_moves);
     bool is_free(const Square target) const;
@@ -359,7 +359,7 @@ public:
 
     bool in_check() const{ return aux_info.is_check;};
     std::array<Piece, 64> pieces() const{return pieces_array;}
-    Piece pieces(Square sq) const{return pieces_array[sq];}
+    Piece pieces(Square sq) const{return pieces_array.at(sq);}
     Piece pieces(int sq) const{return pieces_array[sq];}
 
     void make_move(Move &move);
@@ -370,8 +370,8 @@ public:
     bool try_uci_move(const std::string move_sting);
     Square find_king(const Colour colour) const;
     void search_kings();
-    void slide_bishop_pin(const Square origin, const Square direction, const uint to_edge, const Piece colour, const int idx);
-    void slide_rook_pin(const Square origin, const Square direction, const uint to_edge, const Piece colour, const int idx);
+    void slide_bishop_pin(const Square origin, const Square direction, const uint to_edge, const Colour colour, const int idx);
+    void slide_rook_pin(const Square origin, const Square direction, const uint to_edge, const Colour colour, const int idx);
     bool is_pinned(const Square origin) const;
     void build_occupied_bb();
     bool is_black_move() const{ return whos_move; }
@@ -380,7 +380,8 @@ public:
     AuxilliaryInfo aux_info;
 private:
     std::array<Piece, 64> pieces_array;
-    Bitboard occupied;
+    Bitboard occupied_bb;
+    std::array<Bitboard, 2> colour_bb;
     std::array<Square, 16> pinned_pieces;
     uint number_checkers;
     std::array<Square, 2> checkers;

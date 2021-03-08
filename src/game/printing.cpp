@@ -111,7 +111,7 @@ std::string Board::fen_encode() const {
     return fen;
 }
 
-void Board::print_board_idx() {
+void Board::print_board_idx() const{
     for (uint rank = 0; rank< 8; rank++) {
         for (uint file = 0; file< 8; file++) {
             uint idx = 8*rank +file;
@@ -121,7 +121,7 @@ void Board::print_board_idx() {
     }
 };
 
-void Board::print_board() {
+void Board::print_board() const{
     for (uint rank = 0; rank< 8; rank++) {
         for (uint file = 0; file< 8; file++) {
             Square::square_t idx = 8*rank +file;
@@ -135,7 +135,7 @@ void Board::print_board() {
     }
 }
 
-void Board::print_board_extra(){
+void Board::print_board_extra() const{
     for (uint rank = 0; rank< 8; rank++) {
         for (uint file = 0; file< 8; file++) {
             Square::square_t idx = 8*rank +file;
@@ -275,7 +275,7 @@ std::ostream& operator<<(std::ostream& os, const Move move) {
     return os;
 }
 
-void Board::print_bitboard(const Bitboard bb) {
+void Board::print_bitboard(const Bitboard bb) const{
     for (uint rank = 0; rank< 8; rank++) {
         for (uint file = 0; file< 8; file++) {
             uint idx = 8*rank +file;
@@ -283,5 +283,6 @@ void Board::print_bitboard(const Bitboard bb) {
         }
         std::cout << std::endl;
     }
+    std::cout << std::endl;
 }
 

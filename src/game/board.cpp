@@ -6,7 +6,6 @@
 #include <stdexcept>
 
 #include "board.hpp"
-#include "../search/evaluate.hpp"
 
 
 constexpr Square forwards(const Colour colour) {
@@ -219,21 +218,26 @@ void Board::initialise() {
 }
 
 void Board::build_occupied_bb() {
-    Bitboard temp_occupied = 0;
+    occupied_bb = 0;
+    colour_bb[WHITE] = 0;
+    colour_bb[BLACK] = 0;
     for (uint i = 0; i < 64; i++) {
-        if (!pieces(i).is_blank()) {
-            temp_occupied |= sq_to_bb(i);
+        if (pieces(i).is_blank()) { continue; }
+        occupied_bb |= sq_to_bb(i);
+        if (pieces(i).is_colour(WHITE)) {
+            colour_bb[WHITE] |= sq_to_bb(i);
+        } else {
+            colour_bb[BLACK] |= sq_to_bb(i);
         }
     }
-    occupied = temp_occupied;
 }
 
 bool Board::is_free(const Square target) const{  
-    return (occupied & sq_to_bb(target)) == 0 ;
+    return (occupied_bb & sq_to_bb(target)) == 0 ;
 };
 
-bool Board::is_colour(const Colour c, const Square target) const{  
-    return pieces_array[target].is_colour(c);
+bool Board::is_colour(const Colour c, const Square target) const{ 
+    return (colour_bb[c] & sq_to_bb(target)) != 0 ;
 };
 
 void Board::make_move(Move &move) {
@@ -262,10 +266,10 @@ void Board::make_move(Move &move) {
         aux_info.castling_rights[us][KINGSIDE]  = false;
         aux_info.castling_rights[us][QUEENSIDE]  = false;
     }
+
     Bitboard from_bb = sq_to_bb(move.origin);
     Bitboard to_bb = sq_to_bb(move.target);
     Bitboard from_to_bb;
-
     // Castling is special
     if (move.is_king_castle()) {
         pieces_array[move.target] = pieces_array[move.origin];
@@ -276,7 +280,8 @@ void Board::make_move(Move &move) {
         to_bb = to_bb ^ sq_to_bb(move.origin + Direction::E);
         // Update the bitboard.
         from_to_bb = from_bb ^ to_bb;
-        occupied ^= from_to_bb;
+        occupied_bb ^= from_to_bb;
+        colour_bb[us] ^= from_to_bb;
 
         aux_info.castling_rights[us][KINGSIDE] = false;
         aux_info.castling_rights[us][QUEENSIDE] = false;
@@ -289,7 +294,8 @@ void Board::make_move(Move &move) {
         to_bb = to_bb ^ sq_to_bb(move.origin + Direction::W);
         // Update the bitboard.
         from_to_bb = from_bb ^ to_bb;
-        occupied ^= from_to_bb;
+        occupied_bb ^= from_to_bb;
+        colour_bb[us] ^= from_to_bb;
         aux_info.castling_rights[us][KINGSIDE] = false;
         aux_info.castling_rights[us][QUEENSIDE] = false;
     } else if(move.is_ep_capture()) {
@@ -297,8 +303,10 @@ void Board::make_move(Move &move) {
         const Square captured_square = move.origin.rank() | move.target.file();
         // Update the bitboard.
         from_to_bb = from_bb ^ to_bb;
-        from_to_bb ^= sq_to_bb(captured_square);
-        occupied ^= from_to_bb;
+        occupied_bb ^= from_to_bb;
+        occupied_bb ^= sq_to_bb(captured_square);
+        colour_bb[us] ^= from_to_bb;
+        colour_bb[them] ^= sq_to_bb(captured_square);
         // Make sure to lookup and record the piece captured 
         move.captured_peice = pieces_array[captured_square];
         pieces_array[move.target] = pieces_array[move.origin];
@@ -306,7 +314,10 @@ void Board::make_move(Move &move) {
         pieces_array[captured_square] = Pieces::Blank;
     } else if (move.is_capture()){
         // Update the bitboard.
-        occupied ^= from_bb;
+        from_to_bb = from_bb ^ to_bb;
+        occupied_bb ^= from_bb;
+        colour_bb[us] ^= from_to_bb;
+        colour_bb[them] ^= to_bb;
         // Make sure to lookup and record the piece captured 
         move.captured_peice = pieces_array[move.target];
         pieces_array[move.target] = pieces_array[move.origin];
@@ -316,8 +327,10 @@ void Board::make_move(Move &move) {
         pieces_array[move.target] = pieces_array[move.origin];
         pieces_array[move.origin] = Pieces::Blank;
         from_to_bb = from_bb ^ to_bb;
-        occupied ^= from_to_bb;
+        occupied_bb ^= from_to_bb;
+        colour_bb[us] ^= from_to_bb;
     }
+
     // And now do the promotion if it is one.
     if (move.is_knight_promotion()) {
         pieces_array[move.target] = pieces_array[move.target].get_colour() | Pieces::Knight;
@@ -379,7 +392,8 @@ void Board::unmake_move(const Move move) {
         to_bb = to_bb ^ sq_to_bb(move.origin.rank() | Squares::FileF);
         // Update the bitboard.
         from_to_bb = from_bb ^ to_bb;
-        occupied ^= from_to_bb;
+        occupied_bb ^= from_to_bb;
+        colour_bb[us] ^= from_to_bb;
     } else if (move.is_queen_castle()) {
         pieces_array[move.origin] = pieces_array[move.target];
         pieces_array[move.target] = Pieces::Blank;
@@ -389,7 +403,8 @@ void Board::unmake_move(const Move move) {
         to_bb = to_bb ^ sq_to_bb(move.origin + Direction::W);
         // Update the bitboard.
         from_to_bb = from_bb ^ to_bb;
-        occupied ^= from_to_bb;
+        occupied_bb ^= from_to_bb;
+        colour_bb[us] ^= from_to_bb;
     } else if(move.is_ep_capture()) {
         // En-passent is weird too.
         const Square captured_square = move.origin.rank() | move.target.file();
@@ -398,18 +413,24 @@ void Board::unmake_move(const Move move) {
         pieces_array[move.target] = Pieces::Blank;
         pieces_array[captured_square] = move.captured_peice;
         from_to_bb = from_bb ^ to_bb;
-        from_to_bb ^= sq_to_bb(captured_square);
-        occupied ^= from_to_bb;
+        occupied_bb ^= from_to_bb;
+        occupied_bb ^= sq_to_bb(captured_square);
+        colour_bb[us] ^= from_to_bb;
+        colour_bb[them] ^= sq_to_bb(captured_square);
     } else if (move.is_capture()){
         // Make sure to lookup and record the piece captured 
         pieces_array[move.origin] = pieces_array[move.target];
         pieces_array[move.target] = move.captured_peice;
-        occupied ^= from_bb;
+        occupied_bb ^= from_bb;
+        from_to_bb = from_bb ^ to_bb;
+        colour_bb[us] ^= from_to_bb;
+        colour_bb[them] ^= to_bb;
     } else {
         pieces_array[move.origin] = pieces_array[move.target];
         pieces_array[move.target] = Pieces::Blank;
         from_to_bb = from_bb ^ to_bb;
-        occupied ^= from_to_bb;
+        occupied_bb ^= from_to_bb;
+        colour_bb[us] ^= from_to_bb;
     }
     // And now do the promotion if it is one.
     if (move.is_promotion()) {
@@ -469,7 +490,7 @@ bool Board::is_attacked(const Square origin, const Colour colour) const{
     // Want to (semi-efficiently) see if a square is attacked, ignoring pins.
     // First off, if the square is attacked by a knight, it's definitely in check.
     for (Square target : knight_moves(origin)) {
-        if (pieces_array[target] == (Piece(~colour) | Pieces::Knight)) {
+        if (pieces(target) == (Piece(~colour) | Pieces::Knight)) {
             return true;
         }
     }
@@ -479,13 +500,13 @@ bool Board::is_attacked(const Square origin, const Colour colour) const{
     if (origin.rank() != back_rank(~colour)) {
         if (origin.to_west() != 0) {
             target = origin + (Direction::W + forwards(colour));
-            if (pieces_array[target] == (Piece(~colour) | Pieces::Pawn)) {
+            if (pieces(target) == (Piece(~colour) | Pieces::Pawn)) {
                 return true;
             }
         }
         if (origin.to_east() != 0) {
             target = origin + (Direction::E + forwards(colour));
-            if (pieces_array[target] == (Piece(~colour) | Pieces::Pawn)) {
+            if (pieces(target) == (Piece(~colour) | Pieces::Pawn)) {
                 return true;
             }
         }
@@ -498,7 +519,7 @@ bool Board::is_attacked(const Square origin, const Colour colour) const{
     targets[2] = slide_to_edge(origin, Direction::S, origin.to_south());
     targets[3] = slide_to_edge(origin, Direction::W, origin.to_west());
     for (Square target : targets){
-        target_piece = pieces_array[target];
+        target_piece = pieces(target);
         if ((target_piece == (Piece(~colour) | Pieces::Rook)) | (target_piece == (Piece(~colour) | Pieces::Queen))) {
             return true;
         }
@@ -510,7 +531,7 @@ bool Board::is_attacked(const Square origin, const Colour colour) const{
     targets[2] = slide_to_edge(origin, Direction::SW, std::min(origin.to_south(), origin.to_west()));
     targets[3] = slide_to_edge(origin, Direction::NW, std::min(origin.to_north(), origin.to_west()));
     for (Square target : targets){
-        target_piece = pieces_array[target];
+        target_piece = pieces(target);
         if ((target_piece == (Piece(~colour) | Pieces::Bishop)) | (target_piece == (Piece(~colour) | Pieces::Queen))) {
             return true;
         }
@@ -518,42 +539,42 @@ bool Board::is_attacked(const Square origin, const Colour colour) const{
     
     // King's can't be next to each other in a game, but this is how we enforce that.
     if (origin.to_north() != 0) {
-        if (pieces_array[origin + Direction::N] == (Piece(~colour) | Pieces::King)) {
+        if (pieces(origin + Direction::N) == (Piece(~colour) | Pieces::King)) {
             return true;
         }
         if (origin.to_east() != 0) {
-            if (pieces_array[origin + Direction::NE] == (Piece(~colour) | Pieces::King)) {
+            if (pieces(origin + Direction::NE) == (Piece(~colour) | Pieces::King)) {
                 return true;
             }
         }
         if (origin.to_west() != 0) {
-            if (pieces_array[origin + Direction::NW] == (Piece(~colour) | Pieces::King)) {
+            if (pieces(origin + Direction::NW) == (Piece(~colour) | Pieces::King)) {
                 return true;
             }
         }
     } 
     if (origin.to_south() != 0) {
-        if (pieces_array[origin + Direction::S] == (Piece(~colour) | Pieces::King)) {
+        if (pieces(origin + Direction::S) == (Piece(~colour) | Pieces::King)) {
             return true;
         }
         if (origin.to_east() != 0) {
-            if (pieces_array[origin + Direction::SE] == (Piece(~colour) | Pieces::King)) {
+            if (pieces(origin + Direction::SE) == (Piece(~colour) | Pieces::King)) {
                 return true;
             }
         }
         if (origin.to_west() != 0) {
-            if (pieces_array[origin + Direction::SW] == (Piece(~colour) | Pieces::King)) {
+            if (pieces(origin + Direction::SW) == (Piece(~colour) | Pieces::King)) {
                 return true;
             }
         }
     } 
     if (origin.to_east() != 0) {
-        if (pieces_array[origin + Direction::E] == (Piece(~colour) | Pieces::King)) {
+        if (pieces(origin + Direction::E) == (Piece(~colour) | Pieces::King)) {
             return true;
         }
     }
     if (origin.to_west() != 0) {
-        if (pieces_array[origin + Direction::W] == (Piece(~colour) | Pieces::King)) {
+        if (pieces(origin + Direction::W) == (Piece(~colour) | Pieces::King)) {
             return true;
         }
     }
@@ -564,8 +585,8 @@ bool Board::is_attacked(const Square origin, const Colour colour) const{
 
 void Board::search_kings() {
     for (Square::square_t i = 0; i < 64; i++) {
-        if (pieces_array[i].is_king()) { 
-            if (pieces_array[i].is_white()) {
+        if (pieces(i).is_king()) { 
+            if (pieces(i).is_white()) {
                 king_square[WHITE] = i;
             } else {
                 king_square[BLACK] = i;
@@ -596,7 +617,7 @@ bool Board::is_pinned(const Square origin) const{
     return false;
 }
 
-void Board::slide_rook_pin(const Square origin, const Square direction, const uint to_edge, const Piece colour, const int idx) {
+void Board::slide_rook_pin(const Square origin, const Square direction, const uint to_edge, const Colour colour, const int idx) {
     // Slide from the origin in a direction, to look for a peice pinned by some sliding piece of ~colour
     Square target = origin;
     // Flag of if we have found a piece in the way yet.
@@ -609,7 +630,7 @@ void Board::slide_rook_pin(const Square origin, const Square direction, const ui
             // Blank Square
             continue;
         }
-        if (pieces_array[target].is_colour(colour)) {
+        if (is_colour(colour, target)) {
             // It's our piece.
             if (flag) {
                 // This piece isn't pinned.
@@ -624,12 +645,12 @@ void Board::slide_rook_pin(const Square origin, const Square direction, const ui
             // It's their piece.
             if (flag) {
                 // The last piece we found may be pinned.
-                pinned_pieces[idx] = (pieces_array[target].is_rook() | pieces_array[target].is_queen()) ? found_piece : origin;
+                pinned_pieces[idx] = (pieces(target).is_rook() | pieces(target).is_queen()) ? found_piece : origin;
                 return;
             } else {
                 // Origin is attacked, but no pins here.
                 pinned_pieces[idx] = origin;
-                if ((pieces_array[target].is_rook() | pieces_array[target].is_queen())) {
+                if ((pieces(target).is_rook() | pieces(target).is_queen())) {
                     checkers[number_checkers] = target;
                     number_checkers++;
                 }
@@ -641,7 +662,7 @@ void Board::slide_rook_pin(const Square origin, const Square direction, const ui
     return;
 }
 
-void Board::slide_bishop_pin(const Square origin, const Square direction, const uint to_edge, const Piece colour, const int idx) {
+void Board::slide_bishop_pin(const Square origin, const Square direction, const uint to_edge, const Colour colour, const int idx) {
     // Slide from the origin in a direction, to look for a peice pinned by some sliding piece of ~colour
     Square target = origin;
     // Flag of if we have found a piece in the way yet.
@@ -654,7 +675,7 @@ void Board::slide_bishop_pin(const Square origin, const Square direction, const 
             // Blank Square
             continue;
         }
-        if (pieces_array[target].is_colour(colour)) {
+        if (is_colour(colour, target)) {
             // It's our piece.
             if (flag) {
                 // This piece isn't pinned.
@@ -669,12 +690,12 @@ void Board::slide_bishop_pin(const Square origin, const Square direction, const 
             // It's their piece.
             if (flag) {
                 // The last piece we found may be pinned.
-                pinned_pieces[idx] = (pieces_array[target].is_bishop() | pieces_array[target].is_queen()) ? found_piece : origin;
+                pinned_pieces[idx] = (pieces(target).is_bishop() | pieces(target).is_queen()) ? found_piece : origin;
                 return;
             } else {
                 // Origin is attacked, but no pins here.
                 pinned_pieces[idx] = origin;
-                if ((pieces_array[target].is_bishop() | pieces_array[target].is_queen())) {
+                if ((pieces(target).is_bishop() | pieces(target).is_queen())) {
                     checkers[number_checkers] = target;
                     number_checkers++;
                 }
@@ -693,7 +714,7 @@ void Board::update_checkers() {
     // First off, if the square is attacked by a knight, it's definitely in check.
     number_checkers = 0;
     for (Square target : knight_moves(origin)) {
-        if (pieces_array[target] == (Piece(~colour) | Pieces::Knight)) {
+        if (pieces(target) == (Piece(~colour) | Pieces::Knight)) {
             checkers[number_checkers] = target;
             number_checkers++;
             continue;
@@ -702,18 +723,20 @@ void Board::update_checkers() {
 
     // Pawn square
     Square target;
-    if (origin.to_west() != 0) {
-        target = origin + (Direction::W + forwards(colour));
-        if (pieces_array[target] == (Piece(~colour) | Pieces::Pawn)) {
-            checkers[number_checkers] = target;
-            number_checkers++;
+    if (origin.rank() != back_rank(~colour)) {
+        if (origin.to_west() != 0) {
+            target = origin + (Direction::W + forwards(colour));
+            if (pieces(target) == (Piece(~colour) | Pieces::Pawn)) {
+                checkers[number_checkers] = target;
+                number_checkers++;
+            }
         }
-    }
-    if (origin.to_east() != 0) {
-        target = origin + (Direction::E + forwards(colour));
-        if (pieces_array[target] == (Piece(~colour) | Pieces::Pawn)) {
-            checkers[number_checkers] = target;
-            number_checkers++;
+        if (origin.to_east() != 0) {
+            target = origin + (Direction::E + forwards(colour));
+            if (pieces(target) == (Piece(~colour) | Pieces::Pawn)) {
+                checkers[number_checkers] = target;
+                number_checkers++;
+            }
         }
     }
     // Sliding_pieces

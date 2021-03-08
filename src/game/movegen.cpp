@@ -286,7 +286,7 @@ void get_castle_moves(const Board &board, std::vector<Move> &moves) {
 
 template<Colour colour>
 void get_step_moves(const Board &board, const Square origin, const Square target, std::vector<Move> &moves) {
-    if (board.pieces(target).is_colour(colour)) {
+    if (board.is_colour(colour, target)) {
         // Piece on target is our colour.
         return;
     } else if (board.pieces(target).is_colour(~colour)) {
