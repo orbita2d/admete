@@ -7,6 +7,7 @@ PRIVATE search_library)
 add_subdirectory(game)
 add_subdirectory(search)
 
+set_property(TARGET admete PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
 if ( CMAKE_COMPILER_IS_GNUCXX )
     target_compile_options(admete PRIVATE "-Wall" PRIVATE "-Wextra")
 endif()
