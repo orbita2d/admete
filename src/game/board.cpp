@@ -218,20 +218,18 @@ void Board::initialise() {
     update_checkers();
 }
 
-
-
 void Board::build_occupied_bb() {
-    bitboard temp_occupied = 0;
+    Bitboard temp_occupied = 0;
     for (uint i = 0; i < 64; i++) {
         if (!pieces(i).is_blank()) {
-            temp_occupied |= (uint64_t(1)<< i);
+            temp_occupied |= sq_to_bb(i);
         }
     }
     occupied = temp_occupied;
 }
 
 bool Board::is_free(const Square target) const{  
-    return (occupied & (uint64_t(1) << target)) == 0 ;
+    return (occupied & sq_to_bb(target)) == 0 ;
 };
 
 void Board::make_move(Move &move) {
@@ -260,9 +258,9 @@ void Board::make_move(Move &move) {
         aux_info.castling_rights[us][KINGSIDE]  = false;
         aux_info.castling_rights[us][QUEENSIDE]  = false;
     }
-    bitboard from_bb = uint64_t(1) << move.origin;
-    bitboard to_bb = uint64_t(1) << move.target;
-    bitboard from_to_bb;
+    Bitboard from_bb = sq_to_bb(move.origin);
+    Bitboard to_bb = sq_to_bb(move.target);
+    Bitboard from_to_bb;
 
     // Castling is special
     if (move.is_king_castle()) {
@@ -270,8 +268,8 @@ void Board::make_move(Move &move) {
         pieces_array[move.origin] = Pieces::Blank;
         pieces_array[move.origin + Direction::E] = Piece(us) | Pieces::Rook;
         pieces_array[RookSquare[us][KINGSIDE]] = Pieces::Blank;
-        from_bb = from_bb ^ (uint64_t(1) << (RookSquare[us][KINGSIDE]));
-        to_bb = to_bb ^ (uint64_t(1) << (move.origin + Direction::E));
+        from_bb = from_bb ^ sq_to_bb(RookSquare[us][KINGSIDE]);
+        to_bb = to_bb ^ sq_to_bb(move.origin + Direction::E);
         // Update the bitboard.
         from_to_bb = from_bb ^ to_bb;
         occupied ^= from_to_bb;
@@ -283,8 +281,8 @@ void Board::make_move(Move &move) {
         pieces_array[move.origin] = Pieces::Blank;
         pieces_array[move.origin + Direction::W] = Piece(us) | Pieces::Rook;
         pieces_array[RookSquare[us][QUEENSIDE]] = Pieces::Blank;
-        from_bb = from_bb ^ (uint64_t(1) << (RookSquare[us][QUEENSIDE]));
-        to_bb = to_bb ^ (uint64_t(1) << (move.origin + Direction::W));
+        from_bb = from_bb ^ sq_to_bb(RookSquare[us][QUEENSIDE]);
+        to_bb = to_bb ^ sq_to_bb(move.origin + Direction::W);
         // Update the bitboard.
         from_to_bb = from_bb ^ to_bb;
         occupied ^= from_to_bb;
@@ -295,7 +293,7 @@ void Board::make_move(Move &move) {
         const Square captured_square = move.origin.rank() | move.target.file();
         // Update the bitboard.
         from_to_bb = from_bb ^ to_bb;
-        from_to_bb ^= (uint64_t(1) << captured_square);
+        from_to_bb ^= sq_to_bb(captured_square);
         occupied ^= from_to_bb;
         // Make sure to lookup and record the piece captured 
         move.captured_peice = pieces_array[captured_square];
@@ -365,16 +363,16 @@ void Board::unmake_move(const Move move) {
         king_square[us] = move.origin;
     }
 
-    bitboard from_bb = uint64_t(1) << move.origin;
-    bitboard to_bb = uint64_t(1) << move.target;
-    bitboard from_to_bb;
+    Bitboard from_bb = sq_to_bb(move.origin);
+    Bitboard to_bb = sq_to_bb(move.target);
+    Bitboard from_to_bb;
     if (move.is_king_castle()) {
         pieces_array[move.origin] = pieces_array[move.target];
         pieces_array[move.target] = Pieces::Blank;
         pieces_array[RookSquare[us][KINGSIDE]] = Piece(us) | Pieces::Rook;
         pieces_array[move.origin + Direction::E] = Pieces::Blank;
-        from_bb = from_bb ^ (uint64_t(1) << (RookSquare[us][KINGSIDE]));
-        to_bb = to_bb ^ (uint64_t(1) << (move.origin.rank() | Squares::FileF));
+        from_bb = from_bb ^ sq_to_bb(RookSquare[us][KINGSIDE]);
+        to_bb = to_bb ^ sq_to_bb(move.origin.rank() | Squares::FileF);
         // Update the bitboard.
         from_to_bb = from_bb ^ to_bb;
         occupied ^= from_to_bb;
@@ -383,8 +381,8 @@ void Board::unmake_move(const Move move) {
         pieces_array[move.target] = Pieces::Blank;
         pieces_array[RookSquare[us][QUEENSIDE]] = Piece(us) | Pieces::Rook;
         pieces_array[move.origin + Direction::W] = Pieces::Blank;
-        from_bb = from_bb ^ (uint64_t(1) << (RookSquare[us][QUEENSIDE]));
-        to_bb = to_bb ^ (uint64_t(1) << (move.origin + Direction::W));
+        from_bb = from_bb ^ sq_to_bb(RookSquare[us][QUEENSIDE]);
+        to_bb = to_bb ^ sq_to_bb(move.origin + Direction::W);
         // Update the bitboard.
         from_to_bb = from_bb ^ to_bb;
         occupied ^= from_to_bb;
@@ -396,7 +394,7 @@ void Board::unmake_move(const Move move) {
         pieces_array[move.target] = Pieces::Blank;
         pieces_array[captured_square] = move.captured_peice;
         from_to_bb = from_bb ^ to_bb;
-        from_to_bb ^= (uint64_t(1) << captured_square);
+        from_to_bb ^= sq_to_bb(captured_square);
         occupied ^= from_to_bb;
     } else if (move.is_capture()){
         // Make sure to lookup and record the piece captured 

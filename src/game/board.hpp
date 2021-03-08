@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include "piece.hpp"
+#include "bitboard.hpp"
 
 class Square {
 public:
@@ -307,8 +308,6 @@ private:
 };
 std::ostream& operator<<(std::ostream& os, const Move move);
 
-typedef uint64_t bitboard;
-
 enum CastlingSide : bool {
     KINGSIDE,
     QUEENSIDE
@@ -342,7 +341,7 @@ public:
     void print_board_idx();
     void print_board();
     void print_board_extra();
-    void print_bitboard(const bitboard bb);
+    void print_bitboard(const Bitboard bb);
 
     std::string print_move(Move move, std::vector<Move> &legal_moves);
     bool is_free(const Square target) const;
@@ -379,7 +378,7 @@ public:
     AuxilliaryInfo aux_info;
 private:
     std::array<Piece, 64> pieces_array;
-    bitboard occupied;
+    Bitboard occupied;
     std::array<Square, 16> pinned_pieces;
     uint number_checkers;
     std::array<Square, 2> checkers;

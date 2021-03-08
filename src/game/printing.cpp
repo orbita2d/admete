@@ -275,7 +275,7 @@ std::ostream& operator<<(std::ostream& os, const Move move) {
     return os;
 }
 
-void Board::print_bitboard(const bitboard bb) {
+void Board::print_bitboard(const Bitboard bb) {
     for (uint rank = 0; rank< 8; rank++) {
         for (uint file = 0; file< 8; file++) {
             uint idx = 8*rank +file;
