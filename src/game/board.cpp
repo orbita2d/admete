@@ -9,16 +9,16 @@
 #include "../search/evaluate.hpp"
 
 
-constexpr Square forwards(const Piece colour) {
-    if (colour.is_white()) {
+constexpr Square forwards(const Colour colour) {
+    if (colour == WHITE) {
         return Direction::N;
     } else {
         return Direction::S;
     }
 }
 
-constexpr Square back_rank(const Piece colour) {
-    if (colour.is_white()) {
+constexpr Square back_rank(const Colour colour) {
+    if (colour == WHITE) {
         return Squares::Rank1;
     } else {
         return Squares::Rank8;
@@ -230,6 +230,10 @@ void Board::build_occupied_bb() {
 
 bool Board::is_free(const Square target) const{  
     return (occupied & sq_to_bb(target)) == 0 ;
+};
+
+bool Board::is_colour(const Colour c, const Square target) const{  
+    return pieces_array[target].is_colour(c);
 };
 
 void Board::make_move(Move &move) {
@@ -461,11 +465,11 @@ Square Board::slide_to_edge(const Square origin, const Square direction, const u
     return target;
 }
 
-bool Board::is_attacked(const Square origin, const Piece colour) const{
+bool Board::is_attacked(const Square origin, const Colour colour) const{
     // Want to (semi-efficiently) see if a square is attacked, ignoring pins.
     // First off, if the square is attacked by a knight, it's definitely in check.
     for (Square target : knight_moves(origin)) {
-        if (pieces_array[target] == (~colour | Pieces::Knight)) {
+        if (pieces_array[target] == (Piece(~colour) | Pieces::Knight)) {
             return true;
         }
     }
@@ -475,13 +479,13 @@ bool Board::is_attacked(const Square origin, const Piece colour) const{
     if (origin.rank() != back_rank(~colour)) {
         if (origin.to_west() != 0) {
             target = origin + (Direction::W + forwards(colour));
-            if (pieces_array[target] == (~colour | Pieces::Pawn)) {
+            if (pieces_array[target] == (Piece(~colour) | Pieces::Pawn)) {
                 return true;
             }
         }
         if (origin.to_east() != 0) {
             target = origin + (Direction::E + forwards(colour));
-            if (pieces_array[target] == (~colour | Pieces::Pawn)) {
+            if (pieces_array[target] == (Piece(~colour) | Pieces::Pawn)) {
                 return true;
             }
         }
@@ -495,7 +499,7 @@ bool Board::is_attacked(const Square origin, const Piece colour) const{
     targets[3] = slide_to_edge(origin, Direction::W, origin.to_west());
     for (Square target : targets){
         target_piece = pieces_array[target];
-        if ((target_piece == (~colour | Pieces::Rook)) | (target_piece == (~colour | Pieces::Queen))) {
+        if ((target_piece == (Piece(~colour) | Pieces::Rook)) | (target_piece == (Piece(~colour) | Pieces::Queen))) {
             return true;
         }
     }
@@ -507,49 +511,49 @@ bool Board::is_attacked(const Square origin, const Piece colour) const{
     targets[3] = slide_to_edge(origin, Direction::NW, std::min(origin.to_north(), origin.to_west()));
     for (Square target : targets){
         target_piece = pieces_array[target];
-        if ((target_piece == (~colour | Pieces::Bishop)) | (target_piece == (~colour | Pieces::Queen))) {
+        if ((target_piece == (Piece(~colour) | Pieces::Bishop)) | (target_piece == (Piece(~colour) | Pieces::Queen))) {
             return true;
         }
     }
     
     // King's can't be next to each other in a game, but this is how we enforce that.
     if (origin.to_north() != 0) {
-        if (pieces_array[origin + Direction::N] == (~colour.get_colour() | Pieces::King)) {
+        if (pieces_array[origin + Direction::N] == (Piece(~colour) | Pieces::King)) {
             return true;
         }
         if (origin.to_east() != 0) {
-            if (pieces_array[origin + Direction::NE] == (~colour.get_colour() | Pieces::King)) {
+            if (pieces_array[origin + Direction::NE] == (Piece(~colour) | Pieces::King)) {
                 return true;
             }
         }
         if (origin.to_west() != 0) {
-            if (pieces_array[origin + Direction::NW] == (~colour.get_colour() | Pieces::King)) {
+            if (pieces_array[origin + Direction::NW] == (Piece(~colour) | Pieces::King)) {
                 return true;
             }
         }
     } 
     if (origin.to_south() != 0) {
-        if (pieces_array[origin + Direction::S] == (~colour.get_colour() | Pieces::King)) {
+        if (pieces_array[origin + Direction::S] == (Piece(~colour) | Pieces::King)) {
             return true;
         }
         if (origin.to_east() != 0) {
-            if (pieces_array[origin + Direction::SE] == (~colour.get_colour() | Pieces::King)) {
+            if (pieces_array[origin + Direction::SE] == (Piece(~colour) | Pieces::King)) {
                 return true;
             }
         }
         if (origin.to_west() != 0) {
-            if (pieces_array[origin + Direction::SW] == (~colour.get_colour() | Pieces::King)) {
+            if (pieces_array[origin + Direction::SW] == (Piece(~colour) | Pieces::King)) {
                 return true;
             }
         }
     } 
     if (origin.to_east() != 0) {
-        if (pieces_array[origin + Direction::E] == (~colour.get_colour() | Pieces::King)) {
+        if (pieces_array[origin + Direction::E] == (Piece(~colour) | Pieces::King)) {
             return true;
         }
     }
     if (origin.to_west() != 0) {
-        if (pieces_array[origin + Direction::W] == (~colour.get_colour() | Pieces::King)) {
+        if (pieces_array[origin + Direction::W] == (Piece(~colour) | Pieces::King)) {
             return true;
         }
     }
@@ -562,20 +566,22 @@ void Board::search_kings() {
     for (Square::square_t i = 0; i < 64; i++) {
         if (pieces_array[i].is_king()) { 
             if (pieces_array[i].is_white()) {
-                king_square[0] = i;
+                king_square[WHITE] = i;
             } else {
-                king_square[1] = i;
+                king_square[BLACK] = i;
             }
         }
     }
 }
 
-Square Board::find_king(const Piece colour) const{
-    return colour.is_white() ? king_square[0] : king_square[1];
+
+Square Board::find_king(const Colour colour) const{
+    return king_square[colour];
 }
 
+
 bool Board::is_in_check() const {
-    Piece colour = whos_move;
+    Colour colour = whos_move;
     Square king_square = find_king(colour);
     return is_attacked(king_square, colour);
 }
@@ -682,12 +688,12 @@ void Board::slide_bishop_pin(const Square origin, const Square direction, const 
 
 void Board::update_checkers() {
     Square origin = find_king(whos_move);
-    Piece colour = whos_move;
+    Colour colour = whos_move;
     // Want to (semi-efficiently) see if a square is attacked, ignoring pins.
     // First off, if the square is attacked by a knight, it's definitely in check.
     number_checkers = 0;
     for (Square target : knight_moves(origin)) {
-        if (pieces_array[target] == (~colour | Pieces::Knight)) {
+        if (pieces_array[target] == (Piece(~colour) | Pieces::Knight)) {
             checkers[number_checkers] = target;
             number_checkers++;
             continue;
@@ -698,21 +704,21 @@ void Board::update_checkers() {
     Square target;
     if (origin.to_west() != 0) {
         target = origin + (Direction::W + forwards(colour));
-        if (pieces_array[target] == (~colour | Pieces::Pawn)) {
+        if (pieces_array[target] == (Piece(~colour) | Pieces::Pawn)) {
             checkers[number_checkers] = target;
             number_checkers++;
         }
     }
     if (origin.to_east() != 0) {
         target = origin + (Direction::E + forwards(colour));
-        if (pieces_array[target] == (~colour | Pieces::Pawn)) {
+        if (pieces_array[target] == (Piece(~colour) | Pieces::Pawn)) {
             checkers[number_checkers] = target;
             number_checkers++;
         }
     }
     // Sliding_pieces
 
-    uint start_index = colour.is_white() ? 0 : 8;
+    uint start_index = colour==WHITE ? 0 : 8;
     slide_rook_pin(origin, Direction::N, origin.to_north(), colour, start_index + 0);
     slide_rook_pin(origin, Direction::E, origin.to_east(), colour, start_index + 1);
     slide_rook_pin(origin, Direction::S, origin.to_south(), colour, start_index + 2);

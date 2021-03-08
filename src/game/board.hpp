@@ -345,12 +345,14 @@ public:
 
     std::string print_move(Move move, std::vector<Move> &legal_moves);
     bool is_free(const Square target) const;
+    bool is_colour(const Colour c, const Square target) const;
     Square slide_to_edge(const Square origin, const Square direction, const uint to_edge) const;
     std::vector<Move> get_pseudolegal_moves() const;
+    std::vector<Move> get_evasion_moves() const;
     std::vector<Move> get_moves();
     std::vector<Move> get_captures();
     std::vector<Move> get_sorted_moves();
-    bool is_attacked(const Square square, const Piece colour) const;
+    bool is_attacked(const Square square, const Colour colour) const;
     bool is_in_check() const;
     void update_checkers();
 
@@ -366,7 +368,7 @@ public:
 
     void try_move(const std::string move_sting);
     bool try_uci_move(const std::string move_sting);
-    Square find_king(const Piece colour) const;
+    Square find_king(const Colour colour) const;
     void search_kings();
     void slide_bishop_pin(const Square origin, const Square direction, const uint to_edge, const Piece colour, const int idx);
     void slide_rook_pin(const Square origin, const Square direction, const uint to_edge, const Piece colour, const int idx);
@@ -394,8 +396,8 @@ private:
 constexpr int mating_score = 100100;
 bool is_mating(int score);
 std::string print_score(int);
-constexpr Square forwards(const Piece colour);
-constexpr Square back_rank(const Piece colour);
+constexpr Square forwards(const Colour colour);
+constexpr Square back_rank(const Colour colour);
 bool interposes(const Square origin, const Square target, const Square query);
 bool in_line(const Square, const Square, const Square);
 bool in_line(const Square, const Square);
