@@ -232,7 +232,7 @@ void Board::build_occupied_bb() {
 }
 
 bool Board::is_free(const Square target) const{  
-    return ((occupied >> target) % 2) == 0 ;
+    return (occupied & (uint64_t(1) << target)) == 0 ;
 };
 
 void Board::make_move(Move &move) {

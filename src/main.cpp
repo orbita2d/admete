@@ -62,7 +62,7 @@ int main(int argc, char* argv[])
     static int divide_flag = 0;
     static int print_flag = 0;
     unsigned int depth = 4;
-    std::string board_fen = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -";
+    std::string board_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
     int opt;
 	while (true) {
 		static struct option long_options[] = {

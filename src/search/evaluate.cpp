@@ -130,6 +130,24 @@ int evaluate(Board &board) {
     return evaluate(board, legal_moves);
 }
 
+int heuristic(Board &board) {
+    int side_multiplier = board.is_white_move() ? 1 : -1;
+    int value = 0;
+    for (uint i = 0; i < 64; i++) {
+        if(board.is_free(i)) {continue;}
+        Piece piece = board.pieces(i);
+        value += material[to_enum_colour(piece)][piece.get_piece() - 1];
+        value += PositionScores[to_enum_colour(piece)][piece.get_piece() - 1][i];
+    }
+    if (board.can_castle(WHITE)) {
+        value+=10;
+    } 
+    if (board.can_castle(BLACK)) {
+        value-=10;
+    } 
+    return value * side_multiplier;
+}
+
 int evaluate(Board &board, std::vector<Move> &legal_moves) {
     // evaluate the position relative to the current player.
     int side_multiplier = board.is_white_move() ? 1 : -1;

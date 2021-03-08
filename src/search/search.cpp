@@ -40,12 +40,16 @@ int alphabeta(Board& board, const uint depth, int alpha, int beta, PrincipleLine
 }
 
 int quiesce(Board& board, int alpha, int beta) {
-    // perform alpha-beta pruning search.
-    std::vector<Move> captures = board.get_captures();
-    if (captures.size() == 0) { 
-        return evaluate(board, captures); 
+    // perform quiesence search to evaluate only quiet positions.
+    int stand_pat = heuristic(board);
+    if (stand_pat >= beta) {
+        return stand_pat;
     }
-    int best_score = NEG_INF;
+    if (alpha < stand_pat) {
+        alpha = stand_pat;
+    }
+    int best_score = stand_pat;
+    std::vector<Move> captures = board.get_captures();
     for (Move move : captures) {
         board.make_move(move);
         int score = -quiesce(board, -beta, -alpha);
