@@ -113,13 +113,13 @@ public:
     constexpr bool is_piece(const PieceEnum p) const {
        return (value & PMASK) == p + 1;
     }
-    constexpr uint8_t get_value() const {return value; }
+    constexpr int get_value() const {return value; }
 
     std::string get_algebraic_character() const;
-    constexpr operator uint8_t() const {return value; }
+    constexpr operator int() const {return value; }
 
 private:
-    uint8_t value;
+    int value;
 };
 
 namespace Pieces {
