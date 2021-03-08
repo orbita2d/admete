@@ -268,10 +268,10 @@ void Board::make_move(Move &move) {
     if (move.is_king_castle()) {
         pieces_array[move.target] = pieces_array[move.origin];
         pieces_array[move.origin] = Pieces::Blank;
-        pieces_array[move.origin + Direction::E] = pieces_array[move.origin.rank() | Squares::FileH];
+        pieces_array[move.origin + Direction::E] = Piece(us) | Pieces::Rook;
         pieces_array[RookSquare[us][KINGSIDE]] = Pieces::Blank;
-        from_bb = from_bb ^ (uint64_t(1) << (move.origin.rank() | Squares::FileH));
-        to_bb = to_bb ^ (uint64_t(1) << (move.origin.rank() | Squares::FileF));
+        from_bb = from_bb ^ (uint64_t(1) << (RookSquare[us][KINGSIDE]));
+        to_bb = to_bb ^ (uint64_t(1) << (move.origin + Direction::E));
         // Update the bitboard.
         from_to_bb = from_bb ^ to_bb;
         occupied ^= from_to_bb;
@@ -281,10 +281,10 @@ void Board::make_move(Move &move) {
     } else if (move.is_queen_castle()) {
         pieces_array[move.target] = pieces_array[move.origin];
         pieces_array[move.origin] = Pieces::Blank;
-        pieces_array[move.origin + Direction::W] = pieces_array[move.origin.rank() | Squares::FileA];
+        pieces_array[move.origin + Direction::W] = Piece(us) | Pieces::Rook;
         pieces_array[RookSquare[us][QUEENSIDE]] = Pieces::Blank;
-        from_bb = from_bb ^ (uint64_t(1) << (move.origin.rank() | Squares::FileA));
-        to_bb = to_bb ^ (uint64_t(1) << (move.origin.rank() | Squares::FileD));
+        from_bb = from_bb ^ (uint64_t(1) << (RookSquare[us][QUEENSIDE]));
+        to_bb = to_bb ^ (uint64_t(1) << (move.origin + Direction::W));
         // Update the bitboard.
         from_to_bb = from_bb ^ to_bb;
         occupied ^= from_to_bb;
@@ -310,6 +310,7 @@ void Board::make_move(Move &move) {
         pieces_array[move.target] = pieces_array[move.origin];
         pieces_array[move.origin] = Pieces::Blank;
     } else {
+        // Quiet move
         pieces_array[move.target] = pieces_array[move.origin];
         pieces_array[move.origin] = Pieces::Blank;
         from_to_bb = from_bb ^ to_bb;
@@ -370,7 +371,7 @@ void Board::unmake_move(const Move move) {
     if (move.is_king_castle()) {
         pieces_array[move.origin] = pieces_array[move.target];
         pieces_array[move.target] = Pieces::Blank;
-        pieces_array[RookSquare[us][KINGSIDE]] = pieces_array[move.origin + Direction::E];
+        pieces_array[RookSquare[us][KINGSIDE]] = Piece(us) | Pieces::Rook;
         pieces_array[move.origin + Direction::E] = Pieces::Blank;
         from_bb = from_bb ^ (uint64_t(1) << (RookSquare[us][KINGSIDE]));
         to_bb = to_bb ^ (uint64_t(1) << (move.origin.rank() | Squares::FileF));
@@ -380,7 +381,7 @@ void Board::unmake_move(const Move move) {
     } else if (move.is_queen_castle()) {
         pieces_array[move.origin] = pieces_array[move.target];
         pieces_array[move.target] = Pieces::Blank;
-        pieces_array[RookSquare[us][QUEENSIDE]] = pieces_array[move.origin + Direction::W];
+        pieces_array[RookSquare[us][QUEENSIDE]] = Piece(us) | Pieces::Rook;
         pieces_array[move.origin + Direction::W] = Pieces::Blank;
         from_bb = from_bb ^ (uint64_t(1) << (RookSquare[us][QUEENSIDE]));
         to_bb = to_bb ^ (uint64_t(1) << (move.origin + Direction::W));
