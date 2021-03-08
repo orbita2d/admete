@@ -1,4 +1,3 @@
-#include <cstdint>
 #include <ostream>
 
 #pragma once
