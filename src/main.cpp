@@ -5,6 +5,7 @@
 #include "board.hpp"
 #include "search.hpp"
 #include "uci.hpp"
+#include "evaluate.hpp"
 
 void print_vector(const std::vector<Square> &moves) {
     for (Square move : moves) {
@@ -61,6 +62,7 @@ int main(int argc, char* argv[])
     static int evaluate_random_flag = 0;
     static int divide_flag = 0;
     static int print_flag = 0;
+    static int print_tables_flag = 0;
     unsigned int depth = 4;
     std::string board_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
     int opt;
@@ -75,6 +77,7 @@ int main(int argc, char* argv[])
 			{"depth",	required_argument, 0, 'd'},
 			{"board",	required_argument, 0, 'b'},
             {"print",	no_argument, &print_flag, 1},
+            {"print-tables", no_argument, &print_tables_flag, 1},
 			{0, 0, 0, 0}
 		};
 		int option_index = 0;
@@ -108,6 +111,11 @@ int main(int argc, char* argv[])
 
     if (print_flag) {
         board.print_board();
+    }
+
+    if (print_tables_flag) {
+        print_tables();
+        exit(EXIT_SUCCESS);
     }
 
     if (count_moves_flag) {
