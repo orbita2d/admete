@@ -60,6 +60,7 @@ int main(int argc, char* argv[])
     static int perft_flag = 0;
     static int evaluate_flag = 0;
     static int evaluate_random_flag = 0;
+    static int evaluate_static_flag = 0;
     static int divide_flag = 0;
     static int print_flag = 0;
     static int print_tables_flag = 0;
@@ -73,6 +74,7 @@ int main(int argc, char* argv[])
             {"perft", no_argument, &perft_flag, 1},
             {"eval", no_argument, &evaluate_flag, 1},
             {"eval-random", no_argument, &evaluate_random_flag, 1},
+			{"eval-static",	no_argument, &evaluate_static_flag, 1},
             {"divide", no_argument, &divide_flag, 1},
 			{"depth",	required_argument, 0, 'd'},
 			{"board",	required_argument, 0, 'b'},
@@ -137,6 +139,12 @@ int main(int argc, char* argv[])
         int score = iterative_deepening(board, depth, line);
         std::cout << print_score(score) << std::endl;
         print_line(line, board);
+        exit(EXIT_SUCCESS);
+    }
+
+    if (evaluate_static_flag) {
+        int score = heuristic_negamax(board);
+        std::cout << print_score(score) << std::endl;
         exit(EXIT_SUCCESS);
     }
 

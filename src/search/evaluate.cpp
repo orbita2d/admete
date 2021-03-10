@@ -9,12 +9,15 @@
 typedef std::array<int, 64> position_board;
 typedef std::array<position_board, 6> position_board_set;
 
-std::array<std::array<int, 6>, 2> material = {
-    {
-        {100, 300, 300, 500, 900, 0},
-        {-100, -300, -300, -500, -900, -0}
-    }
-    };
+enum GamePhase {
+    OPENING,
+    ENDGAME
+};
+constexpr int OPENING_MATERIAL = 7800;
+constexpr int ENDGAME_MATERIAL = 0;
+std::array<int, 6> material = {
+        {100, 300, 300, 500, 900, 0}
+};
 
 position_board fill_blank_positional_scores() {
     // want centralised bishops.
@@ -69,24 +72,43 @@ constexpr position_board pb_bishop = {  305, 300, 300, 300, 300, 300, 300, 305,
                                         305, 330, 300, 300, 300, 300, 330, 300, 
                                         300, 300, 290, 300, 300, 290, 300, 310};
 
-constexpr position_board pb_king = {      0,  0,  0,  0,  0,  0,  0,  0,
-                                          0,  0,  0,  0,  0,  0,  0,  0,
-                                          0,  0,  0,  0,  0,  0,  0,  0,
-                                          0,  0,  0,  0,  0,  0,  0,  0,
-                                          0,  0,  0,  0,  0,  0,  0,  0,
-                                          0,  0,  0,  0,  0,  0,  0,  0,
-                                          0,  0,  0,  0,  0,  0,  0,  0, 
-                                         10, 30, 20,  4,  4,  6, 30, 10 };
+constexpr position_board pb_king_opening = {    0,  0,  0,  0,  0,  0,  0,  0,
+                                                0,  0,  0,  0,  0,  0,  0,  0,
+                                                0,  0,  0,  0,  0,  0,  0,  0,
+                                                0,  0,  0,  0,  0,  0,  0,  0,
+                                                0,  0,  0,  0,  0,  0,  0,  0,
+                                                0,  0,  0,  0,  0,  0,  0,  0,
+                                                0,  0,  0,  0,  0,  0,  0,  0, 
+                                                10, 30, 20,  4,  4,  6, 30, 10 };
 
 
-constexpr position_board pb_pawn = {      0,   0,   0,   0,   0,   0,   0,   0,
-                                        260, 160, 160, 160, 160, 160, 160, 160,
-                                        120, 120, 120, 120, 120, 120, 120, 120,
-                                        108, 108, 108, 108, 108, 108, 108, 108,
-                                        105, 105, 105, 120, 120, 105, 105, 105,
-                                        103, 103, 103, 103, 103, 103, 103, 103,
-                                        100, 100, 100, 100, 100, 100, 100, 100, 
-                                          0,   0,   0,   0,   0,   0,   0,   0 };
+constexpr position_board pb_king_endgame = {    0,  0,  0,  0,  0,  0,  0,  0,
+                                                0, 10, 10, 10, 10, 10, 10,  0,
+                                                0, 10, 20, 20, 20, 20, 10,  0,
+                                                0, 10, 20, 30, 30, 20, 10,  0,
+                                                0, 10, 20, 30, 30, 20, 10,  0,
+                                                0, 10, 20, 20, 20, 20, 10,  0,
+                                                0, 10, 10, 10, 10, 10, 10,  0, 
+                                                0,  0,  0,  0,  0,  0,  0,  0 };
+
+
+constexpr position_board pb_pawn_opening = {      0,   0,   0,   0,   0,   0,   0,   0,
+                                                260, 260, 260, 260, 260, 260, 260, 260,
+                                                120, 120, 120, 120, 120, 120, 120, 120,
+                                                108, 108, 108, 108, 108, 108, 108, 108,
+                                                100, 105, 105, 130, 130, 105, 100, 100,
+                                                100, 100, 100, 100, 100, 100, 100, 100,
+                                                100, 100, 100, 100, 100, 100, 100, 100, 
+                                                  0,   0,   0,   0,   0,   0,   0,   0 };
+
+constexpr position_board pb_pawn_endgame = {      0,   0,   0,   0,   0,   0,   0,   0,
+                                                400, 400, 400, 400, 400, 400, 400, 400,
+                                                300, 300, 300, 300, 300, 300, 300, 300,
+                                                280, 280, 280, 280, 280, 280, 280, 280,
+                                                260, 260, 260, 260, 260, 260, 260, 260,
+                                                240, 240, 240, 240, 240, 240, 240, 240,
+                                                200, 200, 200, 200, 200, 200, 200, 200, 
+                                                0,   0,   0,   0,   0,   0,   0,   0 };
 
 
 constexpr position_board pb_queen = {   900, 900, 900, 900, 900, 900, 900, 900,
@@ -107,26 +129,42 @@ constexpr position_board pb_rook = {    500, 500, 500, 500, 500, 500, 500, 500,
                                         500, 500, 500, 500, 500, 500, 500, 500, 
                                         500, 500, 500, 500, 500, 500, 500, 500 };
 
-std::array<position_board_set, 2> fill_positional_scores() {
-    std::array<position_board_set, 2> scores;
+std::array<std::array<position_board_set, 2>, 2> fill_positional_scores() {
+    std::array<std::array<position_board_set, 2>, 2> scores;
 
-    scores[WHITE][PAWN] = pb_pawn;
-    scores[WHITE][KNIGHT] = fill_knight_positional_scores();
-    scores[WHITE][BISHOP] = pb_bishop;
-    scores[WHITE][ROOK] = pb_rook;
-    scores[WHITE][QUEEN] = pb_queen;
-    scores[WHITE][KING] = pb_king;
+    scores[OPENING][WHITE][PAWN] = pb_pawn_opening;
+    scores[OPENING][WHITE][KNIGHT] = fill_knight_positional_scores();
+    scores[OPENING][WHITE][BISHOP] = pb_bishop;
+    scores[OPENING][WHITE][ROOK] = pb_rook;
+    scores[OPENING][WHITE][QUEEN] = pb_queen;
+    scores[OPENING][WHITE][KING] = pb_king_opening;
 
-    scores[BLACK][PAWN] = reverse_board(pb_pawn);
-    scores[BLACK][KNIGHT] = reverse_board(fill_knight_positional_scores());
-    scores[BLACK][BISHOP] = reverse_board(pb_bishop);
-    scores[BLACK][ROOK] = reverse_board(pb_rook);
-    scores[BLACK][QUEEN] = reverse_board(pb_queen);
-    scores[BLACK][KING] = reverse_board(pb_king);
+    scores[OPENING][BLACK][PAWN] = reverse_board(pb_pawn_opening);
+    scores[OPENING][BLACK][KNIGHT] = reverse_board(fill_knight_positional_scores());
+    scores[OPENING][BLACK][BISHOP] = reverse_board(pb_bishop);
+    scores[OPENING][BLACK][ROOK] = reverse_board(pb_rook);
+    scores[OPENING][BLACK][QUEEN] = reverse_board(pb_queen);
+    scores[OPENING][BLACK][KING] = reverse_board(pb_king_opening);
+
+
+    scores[ENDGAME][WHITE][PAWN] = pb_pawn_endgame;
+    scores[ENDGAME][WHITE][KNIGHT] = fill_knight_positional_scores();
+    scores[ENDGAME][WHITE][BISHOP] = pb_bishop;
+    scores[ENDGAME][WHITE][ROOK] = pb_rook;
+    scores[ENDGAME][WHITE][QUEEN] = pb_queen;
+    scores[ENDGAME][WHITE][KING] = pb_king_endgame;
+
+    scores[ENDGAME][BLACK][PAWN] = reverse_board(pb_pawn_endgame);
+    scores[ENDGAME][BLACK][KNIGHT] = reverse_board(fill_knight_positional_scores());
+    scores[ENDGAME][BLACK][BISHOP] = reverse_board(pb_bishop);
+    scores[ENDGAME][BLACK][ROOK] = reverse_board(pb_rook);
+    scores[ENDGAME][BLACK][QUEEN] = reverse_board(pb_queen);
+    scores[ENDGAME][BLACK][KING] = reverse_board(pb_king_endgame);
 
     return scores;
 }
-std::array<position_board_set, 2> PositionScores = fill_positional_scores();
+
+std::array<std::array<position_board_set, 2>, 2> PositionScores = fill_positional_scores();
 
 void print_table(const position_board table) {
     for (int i = 0; i< 64; i++) {
@@ -139,24 +177,50 @@ void print_table(const position_board table) {
 }
 
 void print_tables() {
+    std::cout << "MATERIAL" << std::endl;
+    for (int i = 0; i<6; i++) {
+        std::cout << std::setfill(' ') << std::setw(4) << material[i] << " ";
+    }
+    std::cout << std::endl;
+    std::cout << "OPENING" << std::endl;
     std::cout << "PAWN" << std::endl;
-    print_table(PositionScores[WHITE][PAWN]);
-    print_table(PositionScores[BLACK][PAWN]);
+    print_table(PositionScores[OPENING][WHITE][PAWN]);
+    print_table(PositionScores[OPENING][BLACK][PAWN]);
     std::cout << "KNIGHT" << std::endl;
-    print_table(PositionScores[WHITE][KNIGHT]);
-    print_table(PositionScores[BLACK][KNIGHT]);
+    print_table(PositionScores[OPENING][WHITE][KNIGHT]);
+    print_table(PositionScores[OPENING][BLACK][KNIGHT]);
     std::cout << "BISHOP" << std::endl;
-    print_table(PositionScores[WHITE][BISHOP]);
-    print_table(PositionScores[BLACK][BISHOP]);
+    print_table(PositionScores[OPENING][WHITE][BISHOP]);
+    print_table(PositionScores[OPENING][BLACK][BISHOP]);
     std::cout << "ROOK" << std::endl;
-    print_table(PositionScores[WHITE][ROOK]);
-    print_table(PositionScores[BLACK][ROOK]);
+    print_table(PositionScores[OPENING][WHITE][ROOK]);
+    print_table(PositionScores[OPENING][BLACK][ROOK]);
     std::cout << "QUEEN" << std::endl;
-    print_table(PositionScores[WHITE][QUEEN]);
-    print_table(PositionScores[BLACK][QUEEN]);
+    print_table(PositionScores[OPENING][WHITE][QUEEN]);
+    print_table(PositionScores[OPENING][BLACK][QUEEN]);
     std::cout << "KING" << std::endl;
-    print_table(PositionScores[WHITE][KING]);
-    print_table(PositionScores[BLACK][KING]);
+    print_table(PositionScores[OPENING][WHITE][KING]);
+    print_table(PositionScores[OPENING][BLACK][KING]);
+
+    std::cout << "ENDGAME" << std::endl;
+    std::cout << "PAWN" << std::endl;
+    print_table(PositionScores[ENDGAME][WHITE][PAWN]);
+    print_table(PositionScores[ENDGAME][BLACK][PAWN]);
+    std::cout << "KNIGHT" << std::endl;
+    print_table(PositionScores[ENDGAME][WHITE][KNIGHT]);
+    print_table(PositionScores[ENDGAME][BLACK][KNIGHT]);
+    std::cout << "BISHOP" << std::endl;
+    print_table(PositionScores[ENDGAME][WHITE][BISHOP]);
+    print_table(PositionScores[ENDGAME][BLACK][BISHOP]);
+    std::cout << "ROOK" << std::endl;
+    print_table(PositionScores[ENDGAME][WHITE][ROOK]);
+    print_table(PositionScores[ENDGAME][BLACK][ROOK]);
+    std::cout << "QUEEN" << std::endl;
+    print_table(PositionScores[ENDGAME][WHITE][QUEEN]);
+    print_table(PositionScores[ENDGAME][BLACK][QUEEN]);
+    std::cout << "KING" << std::endl;
+    print_table(PositionScores[ENDGAME][WHITE][KING]);
+    print_table(PositionScores[ENDGAME][BLACK][KING]);
 }
 
 int evaluate(Board &board) {
@@ -165,20 +229,31 @@ int evaluate(Board &board) {
 }
 
 int heuristic(Board &board) {
-    int side_multiplier = board.is_white_move() ? 1 : -1;
-    int value = 0;
+    int material_value = 0;
+    int opening_value = 0;
+    int endgame_value = 0;
     for (uint i = 0; i < 64; i++) {
         if(board.is_free(i)) {continue;}
         Piece piece = board.pieces(i);
-        value += PositionScores[to_enum_colour(piece)][piece.get_piece() - 1][i];
+        material_value += material[to_enum_piece(piece)];
+        opening_value += PositionScores[OPENING][to_enum_colour(piece)][to_enum_piece(piece)][i];
+        endgame_value += PositionScores[ENDGAME][to_enum_colour(piece)][to_enum_piece(piece)][i];
     }
+    // Interpolate linearly between the game phases.
+    int value = opening_value + (material_value - OPENING_MATERIAL) * (endgame_value - opening_value) / (ENDGAME_MATERIAL - OPENING_MATERIAL);
+
     if (board.can_castle(WHITE)) {
         value+=10;
     } 
     if (board.can_castle(BLACK)) {
         value-=10;
     } 
-    return value * side_multiplier;
+    return value;
+}
+
+int heuristic_negamax(Board &board) {
+    int side_multiplier = board.is_white_move() ? 1 : -1;
+    return heuristic(board) * side_multiplier;
 }
 
 int evaluate(Board &board, std::vector<Move> &legal_moves) {
@@ -195,5 +270,5 @@ int evaluate(Board &board, std::vector<Move> &legal_moves) {
             return -10;
         }
     }
-    return heuristic(board);
+    return heuristic_negamax(board);
 }

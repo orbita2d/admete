@@ -1,7 +1,7 @@
 #include "board.hpp"
 
 void print_tables();
-int heuristic(Board &board);
+int heuristic_negamax(Board &board);
 int evaluate(Board &board);
 int evaluate(Board &board, std::vector<Move> &legal_moves);
 int evaluation_diff(Board &board, Move move);

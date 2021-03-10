@@ -41,7 +41,7 @@ int alphabeta(Board& board, const uint depth, int alpha, int beta, PrincipleLine
 
 int quiesce(Board& board, int alpha, int beta) {
     // perform quiesence search to evaluate only quiet positions.
-    int stand_pat = heuristic(board);
+    int stand_pat = heuristic_negamax(board);
     if (stand_pat >= beta) {
         return stand_pat;
     }
