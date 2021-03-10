@@ -62,6 +62,7 @@ int quiesce(Board& board, int alpha, int beta) {
     }
     return best_score;
 }
+
 int pv_search(Board& board, const uint depth, int alpha, int beta, PrincipleLine& principle, const uint pv_depth, PrincipleLine& line) {
     // perform alpha-beta pruning search with principle variation optimisation.
     std::vector<Move> legal_moves = board.get_sorted_moves();
@@ -78,6 +79,7 @@ int pv_search(Board& board, const uint depth, int alpha, int beta, PrincipleLine
     Move pv_move = principle.at(pv_depth - 1);
     board.make_move(pv_move);
     int best_score = -pv_search(board, depth - 1, -beta, -alpha, principle, pv_depth - 1, best_line);
+    alpha = best_score;
     best_line.push_back(pv_move);
     board.unmake_move(pv_move);
 
@@ -135,7 +137,6 @@ int iterative_deepening(Board& board, const uint depth, PrincipleLine& line) {
     return iterative_deepening(board, depth, POS_INF, line);
 }
 
-#include <iostream>
 int find_best_random(Board& board, const uint max_depth, const int random_weight, const int max_millis, PrincipleLine& line) {
     std::vector<Move> legal_moves = board.get_sorted_moves();
     int n = legal_moves.size();

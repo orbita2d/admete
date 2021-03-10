@@ -72,14 +72,14 @@ constexpr position_board pb_bishop = {  305, 300, 300, 300, 300, 300, 300, 305,
                                         305, 330, 300, 300, 300, 300, 330, 300, 
                                         300, 300, 290, 300, 300, 290, 300, 310};
 
-constexpr position_board pb_king_opening = {    0,  0,  0,  0,  0,  0,  0,  0,
-                                                0,  0,  0,  0,  0,  0,  0,  0,
-                                                0,  0,  0,  0,  0,  0,  0,  0,
-                                                0,  0,  0,  0,  0,  0,  0,  0,
-                                                0,  0,  0,  0,  0,  0,  0,  0,
-                                                0,  0,  0,  0,  0,  0,  0,  0,
-                                                0,  0,  0,  0,  0,  0,  0,  0, 
-                                                10, 30, 20,  4,  4,  6, 30, 10 };
+constexpr position_board pb_king_opening = {   -20, -20, -20, -20, -20, -20, -20, -20,
+                                               -20, -20, -20, -20, -20, -20, -20, -20,
+                                               -20, -20, -20, -20, -20, -20, -20, -20,
+                                               -20, -20, -20, -20, -20, -20, -20, -20,
+                                               -20, -20, -20, -20, -20, -20, -20, -20,
+                                               -20, -20, -20, -20, -20, -20, -20, -20,
+                                               -10, -20, -20, -20, -20, -20, -20, -20, 
+                                                10,  30,  20,   4,   4,   6,  30,  10 };
 
 
 constexpr position_board pb_king_endgame = {    0,  0,  0,  0,  0,  0,  0,  0,
@@ -258,7 +258,6 @@ int heuristic_negamax(Board &board) {
 
 int evaluate(Board &board, std::vector<Move> &legal_moves) {
     // evaluate the position relative to the current player.
-    int side_multiplier = board.is_white_move() ? 1 : -1;
     int value = 0;
     // First check if we have been mated.
     if (legal_moves.size() == 0) {
