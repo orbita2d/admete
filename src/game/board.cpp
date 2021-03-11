@@ -151,6 +151,7 @@ void Board::fen_decode(const std::string& fen){
     aux_info.halfmove_clock = halfmove;
     // Fullmove counter
     fullmove_counter = counter;
+    ply_counter = 0;
     initialise();
 };
 
