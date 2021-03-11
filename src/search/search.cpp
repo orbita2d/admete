@@ -48,19 +48,17 @@ int quiesce(Board& board, int alpha, int beta) {
     if (alpha < stand_pat) {
         alpha = stand_pat;
     }
-    int best_score = stand_pat;
     std::vector<Move> captures = board.get_captures();
     for (Move move : captures) {
         board.make_move(move);
         int score = -quiesce(board, -beta, -alpha);
         board.unmake_move(move);
-        best_score = std::max(best_score, score);
         alpha = std::max(alpha, score);
         if (alpha >= beta) {
             break; // beta-cutoff
         }
     }
-    return best_score;
+    return alpha;
 }
 
 int pv_search(Board& board, const uint depth, int alpha, int beta, PrincipleLine& principle, const uint pv_depth, PrincipleLine& line) {
@@ -111,12 +109,21 @@ int pv_search(Board& board, const uint depth, int alpha, int beta, PrincipleLine
 
 int iterative_deepening(Board& board, const uint max_depth, const int max_millis, PrincipleLine& line) {
     PrincipleLine principle;
-    int score = alphabeta(board, 2, NEG_INF, POS_INF, principle);
     // We want to limit our search to a fixed time.
     std::chrono::high_resolution_clock::time_point time_origin, time_now;
     time_origin = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double, std::milli> time_span, time_span_last;
     int branching_factor = 40;
+    int score = alphabeta(board, 2, NEG_INF, POS_INF, principle);
+    time_now = std::chrono::high_resolution_clock::now();
+    time_span = time_now - time_origin;
+    std::chrono::duration<double, std::milli> t_est = branching_factor * time_span;
+    if (int(t_est.count()) > max_millis) { 
+        // In positions with a lot of captures, the quiesence search could overrun at depth 4.
+        line = principle;
+        return score;
+    }
+    time_span_last = time_span;
     // Start at 2 ply for a best guess first move.
     for (int depth = 4; depth <= max_depth; depth+=2) {
         PrincipleLine temp_line;
@@ -126,7 +133,7 @@ int iterative_deepening(Board& board, const uint max_depth, const int max_millis
         if (is_mating(score)) { break; }
         time_now = std::chrono::high_resolution_clock::now();
         time_span = time_now - time_origin;
-        std::chrono::duration<double, std::milli> t_est = branching_factor * time_span;
+        t_est = branching_factor * time_span;
         // We've run out of time to calculate.
         if (int(t_est.count()) > max_millis) { break;}
         // Calculate the last branching factor
