@@ -1,7 +1,9 @@
 
 #include <iostream>
+#include <iomanip>
 #include <sstream>
 #include <string>
+#include <chrono>
 
 #include "uci.hpp"
 #include "board.hpp"
@@ -9,6 +11,7 @@
 
 #define ENGINE_NAME "admete"
 #define ENGINE_AUTH "orbita"
+typedef std::chrono::high_resolution_clock my_clock;
 
 void init_uci() {
     std::cerr << "uci mode" << std::endl;
@@ -122,14 +125,17 @@ void go(Board& board, std::istringstream& is) {
         }
     }
     const int our_time = board.is_white_move() ? wtime : btime;
-    const int cutoff_time = our_time / 300;
-    constexpr int max_depth = 6;
+    const int cutoff_time = our_time / 80;
+    constexpr int max_depth = 8;
     std::cerr << "searching: " << float(cutoff_time) / 1000  << std::endl;
     std::vector<Move> line;
     line.reserve(max_depth);
+    my_clock::time_point time_origin = my_clock::now();
     int score = iterative_deepening(board, max_depth, cutoff_time, line);
+    std::chrono::duration<double, std::milli> time_span = my_clock::now() - time_origin;
     Move first_move = line.back();
-    std::cerr << "found move: " << first_move.pretty_print() << ": " << print_score(score) << "(depth: " << line.size() << ")" << std::endl;
+    std::cerr << "found move: " << first_move.pretty_print() << ": " << print_score(score) << "(depth: " << line.size() << ") ";
+    std::cerr << "in " << std::setprecision(2) <<time_span.count() / 1000 << "s" << std::endl;
     bestmove(first_move);
     
 }

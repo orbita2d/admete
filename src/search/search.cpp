@@ -109,14 +109,14 @@ int pv_search(Board& board, const uint depth, int alpha, int beta, PrincipleLine
     return is_mating(best_score) ? best_score - 1 : best_score;
 }
 
-
 int iterative_deepening(Board& board, const uint max_depth, const int max_millis, PrincipleLine& line) {
     PrincipleLine principle;
     int score = alphabeta(board, 2, NEG_INF, POS_INF, principle);
     // We want to limit our search to a fixed time.
     std::chrono::high_resolution_clock::time_point time_origin, time_now;
     time_origin = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double, std::milli> time_span;
+    std::chrono::duration<double, std::milli> time_span, time_span_last;
+    int branching_factor = 40;
     // Start at 2 ply for a best guess first move.
     for (int depth = 4; depth <= max_depth; depth+=2) {
         PrincipleLine temp_line;
@@ -126,8 +126,14 @@ int iterative_deepening(Board& board, const uint max_depth, const int max_millis
         if (is_mating(score)) { break; }
         time_now = std::chrono::high_resolution_clock::now();
         time_span = time_now - time_origin;
+        std::chrono::duration<double, std::milli> t_est = branching_factor * time_span;
         // We've run out of time to calculate.
-        if (int(time_span.count()) > max_millis) { break;}
+        if (int(t_est.count()) > max_millis) { break;}
+        // Calculate the last branching factor
+        if (depth >= 6) {
+            branching_factor = int(time_span.count() / time_span_last.count());
+        }
+        time_span_last = time_span;
     }
     line = principle;
     return score;

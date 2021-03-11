@@ -3,8 +3,8 @@
 
 typedef std::vector<Move> PrincipleLine;
 
-constexpr int NEG_INF = -1000000;
-constexpr int POS_INF = +1000000;
+constexpr int NEG_INF = -1000000000;
+constexpr int POS_INF = +1000000000;
 
 // perft.cpp
 unsigned int perft_bulk(unsigned int depth, Board &board);
