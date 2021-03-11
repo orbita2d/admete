@@ -370,25 +370,20 @@ void Board::get_pseudolegal_moves(MoveList &quiet_moves, MoveList &captures) con
     }
 }
 
-template<MoveGen gen_type>
+template<MoveGen gen_type, Colour colour>
 void generate_moves(Board &board, MoveList &moves) {
     // By default, generate all legal moves
-    Colour colour = board.who_to_play();
-    moves.reserve(256);
+    moves.reserve(MAX_MOVES);
     Square king_square = board.find_king(colour);
     MoveList quiet_moves, captures, pseudolegal_moves;
-    quiet_moves.reserve(256);
-    captures.reserve(256);
-    if (colour == Colour::WHITE) {
-        generate_pseudolegal_moves<Colour::WHITE>(board, quiet_moves, captures);
-    } else {
-        generate_pseudolegal_moves<Colour::BLACK>(board, quiet_moves, captures);
-    }
+    quiet_moves.reserve(MAX_MOVES);
+    captures.reserve(MAX_MOVES);
+    generate_pseudolegal_moves<colour>(board, quiet_moves, captures);
     if (gen_type == CAPTURES) {
         pseudolegal_moves = captures;
     } else if (gen_type == LEGAL) {
+        pseudolegal_moves = captures;
         pseudolegal_moves.insert(pseudolegal_moves.end(), quiet_moves.begin(), quiet_moves.end());
-        pseudolegal_moves.insert(pseudolegal_moves.end(), captures.begin(), captures.end());
     }
     if (board.aux_info.is_check) {
         const std::array<Square, 2> checkers = board.checkers();
@@ -450,12 +445,7 @@ void generate_moves(Board &board, MoveList &moves) {
                 moves.push_back(move);
             }
         }
-
-        if (colour== WHITE) {
-            get_castle_moves<WHITE>(board, moves);
-        }  else {
-            get_castle_moves<BLACK>(board, moves);
-        }
+        get_castle_moves<colour>(board, moves);
         return;
     }
 
@@ -463,17 +453,22 @@ void generate_moves(Board &board, MoveList &moves) {
 
 MoveList Board::get_moves(){
     MoveList moves;
-    generate_moves<LEGAL>(*this, moves);
+    Colour colour = who_to_play();
+    if (colour == WHITE) {
+        generate_moves<LEGAL, WHITE>(*this, moves);
+    } else {
+        generate_moves<LEGAL, BLACK>(*this, moves);
+    }
     return moves;
 }
 
 MoveList Board::get_sorted_moves() {
     const MoveList legal_moves = get_moves();
     MoveList checks, promotions, captures, quiet_moves, sorted_moves;
-    checks.reserve(16);
-    promotions.reserve(16);
-    captures.reserve(16);
-    quiet_moves.reserve(16);
+    checks.reserve(MAX_MOVES);
+    promotions.reserve(MAX_MOVES);
+    captures.reserve(MAX_MOVES);
+    quiet_moves.reserve(MAX_MOVES);
     for (Move move : legal_moves) {
         make_move(move);
         if (aux_info.is_check) {
@@ -500,6 +495,11 @@ MoveList Board::get_sorted_moves() {
 
 MoveList Board::get_captures() {
     MoveList captures;
-    generate_moves<CAPTURES>(*this, captures);
+    Colour colour = who_to_play();
+    if (colour == WHITE) {
+        generate_moves<CAPTURES, WHITE>(*this, captures);
+    } else {
+        generate_moves<CAPTURES, BLACK>(*this, captures);
+    }
     return captures;
 }

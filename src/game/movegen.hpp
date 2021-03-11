@@ -7,5 +7,5 @@ enum MoveGen {
     EVASIONS
 };
 
-
+constexpr int MAX_MOVES = 256;
 typedef std::vector<Move> MoveList;
