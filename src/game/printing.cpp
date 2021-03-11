@@ -126,7 +126,7 @@ void Board::print_board() const{
         for (uint file = 0; file< 8; file++) {
             Square::square_t idx = 8*rank +file;
             if (idx == aux_info.en_passent_target & pieces(idx).is_blank() & aux_info.en_passent_target.get_value() != 0){
-                std::cout << "!";
+                std::cout << "! ";
             } else {
                 std::cout << pieces(idx).pretty_print() << " ";
             }
@@ -140,11 +140,11 @@ void Board::print_board_extra() const{
         for (uint file = 0; file< 8; file++) {
             Square::square_t idx = 8*rank +file;
             if (idx == aux_info.en_passent_target & aux_info.en_passent_target.get_value() != 0 & pieces(idx).is_blank()){
-                std::cout << '-';
+                std::cout << "! ";
             } else {
                 std::cout << pieces(idx).pretty_print();
             }
-            std::cout << ' ';
+            std::cout << " ";
         }
         if (rank == 0 & whos_move == Colour::BLACK){
             std::cout << "  ***";
@@ -210,11 +210,11 @@ std::string Board::print_move(Move move, std::vector<Move> &legal_moves){
             // Unambiguous move
             notation = moving_piece.get_algebraic_character();
         };
-    }
-    if (move.is_capture()) {
-        notation = notation + "x" + move.target.pretty_print();
-    } else {
-        notation = notation + move.target.pretty_print();
+        if (move.is_capture()) {
+            notation = notation + "x" + move.target.pretty_print();
+        } else {
+            notation = notation + move.target.pretty_print();
+        }
     }
     // To check for mate
     make_move(move);
@@ -256,7 +256,7 @@ Square::Square(const std::string rf) {
     uint rank = 7 - (toDigit(rf[1]) - 1);
     uint file = file_decode_map[rf[0]];
 
-    value = rank + 8 * file;
+    value = 8 * rank + file;
 }
 
 

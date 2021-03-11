@@ -13,7 +13,7 @@ int alphabeta(Board& board, const uint depth, int alpha, int beta, PrincipleLine
     if (legal_moves.size() == 0) { 
         return evaluate(board, legal_moves); 
     }
-    if (depth == 0) { return evaluate(board, legal_moves); }
+    if (depth == 0) { return quiesce(board, alpha, beta); }
     PrincipleLine best_line;
     int best_score = NEG_INF;
     for (Move move : legal_moves) {

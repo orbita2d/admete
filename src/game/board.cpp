@@ -78,7 +78,7 @@ void Board::fen_decode(const std::string& fen){
     stream >> std::ws;
     stream >> side_to_move >> std::ws;
     stream >> castling >> std::ws;
-    stream >>  en_passent >> std::ws;
+    stream >> en_passent >> std::ws;
     stream >> halfmove >> std::ws;
     stream >> counter >> std::ws;
 
@@ -246,8 +246,8 @@ void Board::make_move(Move &move) {
     // Iterate counters.
     if (whos_move == Colour::BLACK) {fullmove_counter++;}
     aux_info.pinned_pieces = pinned_pieces;
-    aux_info.checkers = checkers;
-    aux_info.number_checkers = number_checkers;
+    aux_info.checkers = _checkers;
+    aux_info.number_checkers = _number_checkers;
     aux_history[ply_counter] = aux_info;
     Colour us = whos_move;
     Colour them = ~ us;
@@ -438,8 +438,8 @@ void Board::unmake_move(const Move move) {
         pieces_array[move.origin] = Piece(us, PAWN);
     } 
     pinned_pieces = aux_info.pinned_pieces;
-    number_checkers = aux_info.number_checkers;
-    checkers = aux_info.checkers;
+    _number_checkers = aux_info.number_checkers;
+    _checkers = aux_info.checkers;
 }
 
 void Board::try_move(const std::string move_sting) {
@@ -653,8 +653,8 @@ void Board::slide_rook_pin(const Square origin, const Square direction, const ui
                 // Origin is attacked, but no pins here.
                 pinned_pieces[idx] = origin;
                 if ((pieces(target).is_rook() | pieces(target).is_queen())) {
-                    checkers[number_checkers] = target;
-                    number_checkers++;
+                    _checkers[_number_checkers] = target;
+                    _number_checkers++;
                 }
                 return;
             }
@@ -698,8 +698,8 @@ void Board::slide_bishop_pin(const Square origin, const Square direction, const 
                 // Origin is attacked, but no pins here.
                 pinned_pieces[idx] = origin;
                 if ((pieces(target).is_bishop() | pieces(target).is_queen())) {
-                    checkers[number_checkers] = target;
-                    number_checkers++;
+                    _checkers[_number_checkers] = target;
+                    _number_checkers++;
                 }
                 return;
             }
@@ -715,11 +715,11 @@ void Board::update_checkers() {
     const Colour them = ~us;
     // Want to (semi-efficiently) see if a square is attacked, ignoring pins.
     // First off, if the square is attacked by a knight, it's definitely in check.
-    number_checkers = 0;
+    _number_checkers = 0;
     for (Square target : knight_moves(origin)) {
         if (pieces(target) == Piece(them, KNIGHT)) {
-            checkers[number_checkers] = target;
-            number_checkers++;
+            _checkers[_number_checkers] = target;
+            _number_checkers++;
             continue;
         }
     }
@@ -730,15 +730,15 @@ void Board::update_checkers() {
         if (origin.to_west() != 0) {
             target = origin + (Direction::W + forwards(us));
             if (pieces(target) == Piece(them, PAWN)) {
-                checkers[number_checkers] = target;
-                number_checkers++;
+                _checkers[_number_checkers] = target;
+                _number_checkers++;
             }
         }
         if (origin.to_east() != 0) {
             target = origin + (Direction::E + forwards(us));
             if (pieces(target) == Piece(them, PAWN)) {
-                checkers[number_checkers] = target;
-                number_checkers++;
+                _checkers[_number_checkers] = target;
+                _number_checkers++;
             }
         }
     }
@@ -753,7 +753,7 @@ void Board::update_checkers() {
     slide_bishop_pin(origin, Direction::SE, origin.to_southeast(), us, start_index + 5);
     slide_bishop_pin(origin, Direction::SW, origin.to_southwest(), us, start_index + 6);
     slide_bishop_pin(origin, Direction::NW, origin.to_northwest(), us, start_index + 7);
-    aux_info.is_check = number_checkers > 0;
+    aux_info.is_check = _number_checkers > 0;
 }
 
 

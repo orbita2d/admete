@@ -6,3 +6,6 @@ enum MoveGen {
     CAPTURES,
     EVASIONS
 };
+
+
+typedef std::vector<Move> MoveList;

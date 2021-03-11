@@ -52,7 +52,7 @@ KnightMoveArray knight_moves(const Square origin){
     return knight_meta_array[origin];
 }
 
-void add_pawn_promotions(const Move move, std::vector<Move> &moves) {
+void add_pawn_promotions(const Move move, MoveList &moves) {
     // Add all variations of promotions to a move.
     Move my_move = move;
     my_move.make_knight_promotion();
@@ -66,7 +66,7 @@ void add_pawn_promotions(const Move move, std::vector<Move> &moves) {
 }
 
 template<Colour colour>
-void get_pawn_moves(const Board &board, const Square origin, std::vector<Move> &moves){
+void get_pawn_moves(const Board &board, const Square origin, MoveList &quiet_moves, MoveList &captures){
     Square target;
     Move move;
     if (colour == Colour::WHITE) {
@@ -76,9 +76,9 @@ void get_pawn_moves(const Board &board, const Square origin, std::vector<Move> &
         if (board.is_free(target)) {
             move = Move(origin, target);
             if (origin.rank() == Squares::Rank7) {
-                add_pawn_promotions(move, moves);
+                add_pawn_promotions(move, quiet_moves);
             } else {
-                moves.push_back(move);
+                quiet_moves.push_back(move);
             }
         }
         // Normal captures.
@@ -88,9 +88,9 @@ void get_pawn_moves(const Board &board, const Square origin, std::vector<Move> &
                 move = Move(origin, target);
                 move.make_capture();
                 if (origin.rank() == Squares::Rank7) {
-                    add_pawn_promotions(move, moves);
+                    add_pawn_promotions(move, captures);
                 } else {
-                    moves.push_back(move);
+                    captures.push_back(move);
                 }
             }
         }
@@ -101,9 +101,9 @@ void get_pawn_moves(const Board &board, const Square origin, std::vector<Move> &
                 move = Move(origin, target);
                 move.make_capture();
                 if (origin.rank() == Squares::Rank7) {
-                    add_pawn_promotions(move, moves);
+                    add_pawn_promotions(move, captures);
                 } else {
-                    moves.push_back(move);
+                    captures.push_back(move);
                 }
             }
         }
@@ -113,7 +113,7 @@ void get_pawn_moves(const Board &board, const Square origin, std::vector<Move> &
                 origin.to_east() != 0 & board.aux_info.en_passent_target == Square(origin + Direction::NE) ) {
                 move = Move(origin, board.aux_info.en_passent_target); 
                 move.make_en_passent();
-                moves.push_back(move);
+                captures.push_back(move);
             }
         }
 
@@ -123,7 +123,7 @@ void get_pawn_moves(const Board &board, const Square origin, std::vector<Move> &
             if (board.is_free(target) & board.is_free(origin + Direction::N)) {
                 move = Move(origin, target);
                 move.make_double_push();
-                moves.push_back(move);
+                quiet_moves.push_back(move);
             }
         }
     } else
@@ -134,9 +134,9 @@ void get_pawn_moves(const Board &board, const Square origin, std::vector<Move> &
         if (board.is_free(target)) {
             move = Move(origin, target);
             if (origin.rank() == Squares::Rank2) {
-                add_pawn_promotions(move, moves);
+                add_pawn_promotions(move, quiet_moves);
             } else {
-                moves.push_back(move);
+                quiet_moves.push_back(move);
             }
         }
         // Normal captures.
@@ -146,9 +146,9 @@ void get_pawn_moves(const Board &board, const Square origin, std::vector<Move> &
                 move = Move(origin, target);
                 move.make_capture();
                 if (origin.rank() == Squares::Rank2) {
-                    add_pawn_promotions(move, moves);
+                    add_pawn_promotions(move, captures);
                 } else {
-                    moves.push_back(move);
+                    captures.push_back(move);
                 }
             }
         }
@@ -159,9 +159,9 @@ void get_pawn_moves(const Board &board, const Square origin, std::vector<Move> &
                 move = Move(origin, target);
                 move.make_capture();
                 if (origin.rank() == Squares::Rank2) {
-                    add_pawn_promotions(move, moves);
+                    add_pawn_promotions(move, captures);
                 } else {
-                    moves.push_back(move);
+                    captures.push_back(move);
                 }
             }
         }
@@ -171,7 +171,7 @@ void get_pawn_moves(const Board &board, const Square origin, std::vector<Move> &
                 origin.to_east() != 0 & board.aux_info.en_passent_target == Square(origin + Direction::SE) ) {
                 move = Move(origin, board.aux_info.en_passent_target); 
                 move.make_en_passent();
-                moves.push_back(move);
+                captures.push_back(move);
             }
         }
 
@@ -181,27 +181,27 @@ void get_pawn_moves(const Board &board, const Square origin, std::vector<Move> &
             if (board.is_free(target) & board.is_free(origin + Direction::S)) {
                 move = Move(origin, target);
                 move.make_double_push();
-                moves.push_back(move);
+                quiet_moves.push_back(move);
             }
         }
     }
 }
 
 template<Colour colour, Direction direction>
-void get_sliding_moves(const Board &board, const Square origin, const uint to_edge, std::vector<Move> &moves) {
+void get_sliding_moves(const Board &board, const Square origin, const uint to_edge, MoveList &quiet_moves, MoveList &captures) {
     Square target = origin;
     Move move;
     for (uint i = 0; i < to_edge; i++) {
         target = target + direction;
         if (board.is_free(target)) {
             // Blank Square
-            moves.push_back(Move(origin, target));
+            quiet_moves.push_back(Move(origin, target));
             continue;
         } else if (board.is_colour(~colour, target)) {
             // Enemy piece
             move = Move(origin, target);
             move.make_capture();
-            moves.push_back(move);
+            captures.push_back(move);
             return;
         } else if (board.is_colour(colour, target)) {
             // Our piece, no more legal moves.
@@ -211,32 +211,32 @@ void get_sliding_moves(const Board &board, const Square origin, const uint to_ed
 }
 
 template<Colour colour>
-void get_rook_moves(const Board &board, const Square origin, std::vector<Move> &moves) {
-    get_sliding_moves<colour, Direction::N>(board, origin, origin.to_north(), moves);
-    get_sliding_moves<colour, Direction::E>(board, origin, origin.to_east(), moves);
-    get_sliding_moves<colour, Direction::S>(board, origin, origin.to_south(), moves);
-    get_sliding_moves<colour, Direction::W>(board, origin, origin.to_west(), moves);
+void get_rook_moves(const Board &board, const Square origin, MoveList &quiet_moves, MoveList &captures) {
+    get_sliding_moves<colour, Direction::N>(board, origin, origin.to_north(), quiet_moves, captures);
+    get_sliding_moves<colour, Direction::E>(board, origin, origin.to_east(), quiet_moves, captures);
+    get_sliding_moves<colour, Direction::S>(board, origin, origin.to_south(), quiet_moves, captures);
+    get_sliding_moves<colour, Direction::W>(board, origin, origin.to_west(), quiet_moves, captures);
 }
 
 
 template<Colour colour>
-void get_bishop_moves(const Board &board, const Square origin, std::vector<Move> &moves) {
-        get_sliding_moves<colour, Direction::NE>(board, origin, origin.to_northeast(), moves);
-        get_sliding_moves<colour, Direction::SE>(board, origin, origin.to_southeast(), moves);
-        get_sliding_moves<colour, Direction::SW>(board, origin, origin.to_southwest(), moves);
-        get_sliding_moves<colour, Direction::NW>(board, origin, origin.to_northwest(), moves);
+void get_bishop_moves(const Board &board, const Square origin, MoveList &quiet_moves, MoveList &captures) {
+        get_sliding_moves<colour, Direction::NE>(board, origin, origin.to_northeast(), quiet_moves, captures);
+        get_sliding_moves<colour, Direction::SE>(board, origin, origin.to_southeast(), quiet_moves, captures);
+        get_sliding_moves<colour, Direction::SW>(board, origin, origin.to_southwest(), quiet_moves, captures);
+        get_sliding_moves<colour, Direction::NW>(board, origin, origin.to_northwest(), quiet_moves, captures);
 }
 
 template<Colour colour>
-void get_queen_moves(const Board &board, const Square origin, std::vector<Move> &moves) {
+void get_queen_moves(const Board &board, const Square origin, MoveList &quiet_moves, MoveList &captures) {
     // Queen moves are the union superset of rook and bishop moves
-    get_bishop_moves<colour>(board, origin, moves);
-    get_rook_moves<colour>(board, origin, moves);
+    get_bishop_moves<colour>(board, origin, quiet_moves, captures);
+    get_rook_moves<colour>(board, origin, quiet_moves, captures);
 }
 
 
 template<Colour colour>
-void get_castle_moves(const Board &board, std::vector<Move> &moves) {
+void get_castle_moves(const Board &board, MoveList &moves) {
     Move move;
     if (colour == Colour::WHITE) {
         // You can't castle through check, or while in check
@@ -285,172 +285,191 @@ void get_castle_moves(const Board &board, std::vector<Move> &moves) {
 }
 
 template<Colour colour>
-void get_step_moves(const Board &board, const Square origin, const Square target, std::vector<Move> &moves) {
+void get_step_moves(const Board &board, const Square origin, const Square target, MoveList &quiet_moves, MoveList &captures) {
     if (board.is_colour(colour, target)) {
         // Piece on target is our colour.
         return;
-    } else if (board.pieces(target).is_colour(~colour)) {
+    } else if (board.is_colour(~colour, target)) {
         //Piece on target is their colour.
         Move move = Move(origin, target);
         move.make_capture();
-        moves.push_back(move);
+        captures.push_back(move);
         return;
     } else {
         // Space is blank.
         Move move = Move(origin, target);
-        moves.push_back(move);
+        quiet_moves.push_back(move);
         return;
     }
 }
 
 template<Colour colour>
-void get_king_moves(const Board &board, const Square origin, std::vector<Move> &moves) {
+void get_king_moves(const Board &board, const Square origin, MoveList &quiet_moves, MoveList &captures) {
     // We should really be careful that we aren't moving into check here.
     // Look to see if we are on an edge.
     if (origin.to_north() != 0) {
-        get_step_moves<colour>(board, origin, origin + Direction::N, moves);
+        get_step_moves<colour>(board, origin, origin + Direction::N, quiet_moves, captures);
     }
     if (origin.to_east() != 0) {
-        get_step_moves<colour>(board, origin, origin + Direction::E, moves);
+        get_step_moves<colour>(board, origin, origin + Direction::E, quiet_moves, captures);
     }
     if (origin.to_south() != 0) {
-        get_step_moves<colour>(board, origin, origin + Direction::S, moves);
+        get_step_moves<colour>(board, origin, origin + Direction::S, quiet_moves, captures);
     }
     if (origin.to_west() != 0) {
-        get_step_moves<colour>(board, origin, origin + Direction::W, moves);
+        get_step_moves<colour>(board, origin, origin + Direction::W, quiet_moves, captures);
     }
     if (origin.to_north() != 0 & origin.to_east() != 0) {
-        get_step_moves<colour>(board, origin, origin + Direction::NE, moves);
+        get_step_moves<colour>(board, origin, origin + Direction::NE, quiet_moves, captures);
     }
     if (origin.to_south() != 0 & origin.to_east() != 0) {
-        get_step_moves<colour>(board, origin, origin + Direction::SE, moves);
+        get_step_moves<colour>(board, origin, origin + Direction::SE, quiet_moves, captures);
     }
     if (origin.to_south() != 0 & origin.to_west() != 0) {
-        get_step_moves<colour>(board, origin, origin + Direction::SW, moves);
+        get_step_moves<colour>(board, origin, origin + Direction::SW, quiet_moves, captures);
     }
     if (origin.to_north() != 0 & origin.to_west() != 0) {
-        get_step_moves<colour>(board, origin, origin + Direction::NW, moves);
+        get_step_moves<colour>(board, origin, origin + Direction::NW, quiet_moves, captures);
     }
 }
 
 template<Colour colour>
-void get_knight_moves(const Board &board, const Square origin, std::vector<Move> &moves) {
+void get_knight_moves(const Board &board, const Square origin, MoveList &quiet_moves, MoveList &captures) {
     for (Square target : knight_moves(origin)) {
-        get_step_moves<colour>(board, origin, target, moves);
+        get_step_moves<colour>(board, origin, target, quiet_moves, captures);
     }
 };
 
 template<Colour colour>
-void generate_pseudolegal_moves(const Board &board, std::vector<Move> &moves) {
+void generate_pseudolegal_moves(const Board &board, MoveList &quiet_moves, MoveList &captures) {
     for (Square::square_t sq = 0; sq < 64; sq++) {
         Piece piece = board.pieces(sq);
         if (! piece.is_colour(colour)) {continue; }
         if (piece.is_knight()) {
-            get_knight_moves<colour>(board, sq, moves);
+            get_knight_moves<colour>(board, sq, quiet_moves, captures);
         } else if (piece.is_pawn()) {
-            get_pawn_moves<colour>(board, sq, moves);
+            get_pawn_moves<colour>(board, sq, quiet_moves, captures);
         } else if (piece.is_rook()) {
-            get_rook_moves<colour>(board, sq, moves);
+            get_rook_moves<colour>(board, sq, quiet_moves, captures);
         } else if (piece.is_bishop()) {
-            get_bishop_moves<colour>(board, sq, moves);
+            get_bishop_moves<colour>(board, sq, quiet_moves, captures);
         } else if (piece.is_queen()) {
-            get_queen_moves<colour>(board, sq, moves);
+            get_queen_moves<colour>(board, sq, quiet_moves, captures);
         } else if (piece.is_king()) {
-            get_king_moves<colour>(board, sq, moves);
+            get_king_moves<colour>(board, sq, quiet_moves, captures);
         }
     }
 }
 
 
-std::vector<Move> Board::get_pseudolegal_moves() const {    
-    std::vector<Move> moves;
-    moves.reserve(256);
+void Board::get_pseudolegal_moves(MoveList &quiet_moves, MoveList &captures) const {  
     if (whos_move == Colour::WHITE) {
-        generate_pseudolegal_moves<Colour::WHITE>(*this, moves);
+        generate_pseudolegal_moves<Colour::WHITE>(*this, quiet_moves, captures);
     } else {
-        generate_pseudolegal_moves<Colour::BLACK>(*this, moves);
+        generate_pseudolegal_moves<Colour::BLACK>(*this, quiet_moves, captures);
     }
-    return moves;
 }
 
-std::vector<Move> Board::get_moves(){
-    Colour colour = whos_move;
-    std::vector<Move> legal_moves;
-    legal_moves.reserve(256);
-    Square king_square = find_king(colour);
-    if (aux_info.is_check) {
-        const std::vector<Move> pseudolegal_moves  = get_pseudolegal_moves();
+template<MoveGen gen_type>
+void generate_moves(Board &board, MoveList &moves) {
+    // By default, generate all legal moves
+    Colour colour = board.who_to_play();
+    moves.reserve(256);
+    Square king_square = board.find_king(colour);
+    MoveList quiet_moves, captures, pseudolegal_moves;
+    quiet_moves.reserve(256);
+    captures.reserve(256);
+    if (colour == Colour::WHITE) {
+        generate_pseudolegal_moves<Colour::WHITE>(board, quiet_moves, captures);
+    } else {
+        generate_pseudolegal_moves<Colour::BLACK>(board, quiet_moves, captures);
+    }
+    if (gen_type == CAPTURES) {
+        pseudolegal_moves = captures;
+    } else if (gen_type == LEGAL) {
+        pseudolegal_moves.insert(pseudolegal_moves.end(), quiet_moves.begin(), quiet_moves.end());
+        pseudolegal_moves.insert(pseudolegal_moves.end(), captures.begin(), captures.end());
+    }
+    if (board.aux_info.is_check) {
+        const std::array<Square, 2> checkers = board.checkers();
+        const int number_checkers = board.number_checkers();
         for (Move move : pseudolegal_moves) {
             if (move.origin == king_square) {
                 // King moves have to be very careful.
-                make_move(move);
-                if (!is_attacked(move.target, colour)) {legal_moves.push_back(move); }
-                unmake_move(move);
+                board.make_move(move);
+                if (!board.is_attacked(move.target, colour)) {moves.push_back(move); }
+                board.unmake_move(move);
             } else if (number_checkers == 2) {
                 // double checks require a king move, which we've just seen this is not.
                 continue;
-            } else if (is_pinned(move.origin)) {
+            } else if (board.is_pinned(move.origin)) {
                 continue;
             } else if (move.target == checkers[0]) {
                 // this captures the checker, it's legal unless the peice in absolutely pinned.
-                legal_moves.push_back(move);
+                moves.push_back(move);
             } else if ( interposes(king_square, checkers[0], move.target)) {
                 // this interposes the check it's legal unless the peice in absolutely pinned.
-                legal_moves.push_back(move);
+                moves.push_back(move);
             } else if (move.is_ep_capture() & ((move.origin.rank()|move.target.file()) == checkers[0])){
                 // If it's an enpassent capture, the captures piece isn't at the target.
-                legal_moves.push_back(move);
+                moves.push_back(move);
             } else {
                 // All other moves are illegal.
                 continue;
             }
         }
-        return legal_moves;
+        return;
     } else {
-        const std::vector<Move> pseudolegal_moves = get_pseudolegal_moves();
         // Otherwise we can be smarter.
         for (Move move : pseudolegal_moves) {
             if (move.origin == king_square) {
                 // This is a king move, check where he's gone.
-                make_move(move);
-                if (!is_attacked(move.target, colour)) {legal_moves.push_back(move); }
-                unmake_move(move);  
+                board.make_move(move);
+                if (!board.is_attacked(move.target, colour)) {moves.push_back(move); }
+                board.unmake_move(move);  
             } else if (move.is_ep_capture()) {
                 // en_passent's are weird.
-                if (is_pinned(move.origin)) {
+                if (board.is_pinned(move.origin)) {
                     // If the pawn was pinned to the diagonal or file, the move is definitely illegal.
                     continue;
                 } else {
                     // This can open a rank. if the king is on that rank it could be a problem.
                     if (king_square.rank() == move.origin.rank()) {
-                        make_move(move);
-                        if (!is_attacked(king_square, colour)) {legal_moves.push_back(move); }
-                        unmake_move(move);
+                        board.make_move(move);
+                        if (!board.is_attacked(king_square, colour)) {moves.push_back(move); }
+                        board.unmake_move(move);
                     } else {
-                        legal_moves.push_back(move); 
+                        moves.push_back(move); 
                     }
                 }
-            } else if (is_pinned(move.origin)) {
+            } else if (board.is_pinned(move.origin)) {
                 // This piece is absoluetly pinned, only legal moves will maintain the pin or capture the pinner.
-                if (in_line(king_square, move.origin, move.target)) {legal_moves.push_back(move); }
+                if (in_line(king_square, move.origin, move.target)) {moves.push_back(move); }
             } else {
                 // Piece isn't pinned, it can do what it wants. 
-                legal_moves.push_back(move);
+                moves.push_back(move);
             }
         }
 
         if (colour== WHITE) {
-            get_castle_moves<WHITE>(*this, legal_moves);
+            get_castle_moves<WHITE>(board, moves);
         }  else {
-            get_castle_moves<BLACK>(*this, legal_moves);
+            get_castle_moves<BLACK>(board, moves);
         }
-        return legal_moves;
+        return;
     }
+
 }
 
-std::vector<Move> Board::get_sorted_moves() {
-    const std::vector<Move> legal_moves = get_moves();
-    std::vector<Move> checks, promotions, captures, quiet_moves, sorted_moves;
+MoveList Board::get_moves(){
+    MoveList moves;
+    generate_moves<LEGAL>(*this, moves);
+    return moves;
+}
+
+MoveList Board::get_sorted_moves() {
+    const MoveList legal_moves = get_moves();
+    MoveList checks, promotions, captures, quiet_moves, sorted_moves;
     checks.reserve(16);
     promotions.reserve(16);
     captures.reserve(16);
@@ -479,12 +498,8 @@ std::vector<Move> Board::get_sorted_moves() {
 }
 
 
-std::vector<Move> Board::get_captures() {
-    const std::vector<Move> legal_moves = get_moves();
-    std::vector<Move> captures;
-    captures.reserve(16);
-    for (Move move : legal_moves) {
-        if (move.is_capture()) {captures.push_back(move);}
-    }
+MoveList Board::get_captures() {
+    MoveList captures;
+    generate_moves<CAPTURES>(*this, captures);
     return captures;
 }

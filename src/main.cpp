@@ -6,6 +6,7 @@
 #include "search.hpp"
 #include "uci.hpp"
 #include "evaluate.hpp"
+#include "movegen.hpp"
 
 void print_vector(const std::vector<Square> &moves) {
     for (Square move : moves) {
@@ -46,7 +47,7 @@ void interactive(Board &board) {
         } else if (input == "tb") {
             board.unmake_last();
         } else if (input == "moves") {
-            print_vector(board.get_pseudolegal_moves());
+            print_vector(board.get_moves());
         } else {
         board.try_move(input);
         }
@@ -56,6 +57,7 @@ void interactive(Board &board) {
 int main(int argc, char* argv[])
 {
     static int count_moves_flag = 0;
+    static int count_captures_flag = 0;
     static int interactive_flag = 0;
     static int perft_flag = 0;
     static int evaluate_flag = 0;
@@ -70,6 +72,7 @@ int main(int argc, char* argv[])
 	while (true) {
 		static struct option long_options[] = {
 			{"count-moves",	no_argument, &count_moves_flag, 1},
+			{"capture-moves",	no_argument, &count_captures_flag, 1},
 			{"interactive",	no_argument, &interactive_flag, 1},
             {"perft", no_argument, &perft_flag, 1},
             {"eval", no_argument, &evaluate_flag, 1},
@@ -123,6 +126,16 @@ int main(int argc, char* argv[])
     if (count_moves_flag) {
         std::cout << board.fen_encode() << std::endl;
         count_moves(board);
+        exit(EXIT_SUCCESS);
+    }
+
+    if (count_captures_flag) {
+        std::cout << board.fen_encode() << std::endl;
+        std::cout << "Captures:" << std::endl;
+        MoveList moves = board.get_captures();
+        for (Move move : moves) {
+            std::cout << board.print_move(move, moves) << std::endl;
+        }
         exit(EXIT_SUCCESS);
     }
 

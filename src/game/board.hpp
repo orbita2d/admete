@@ -347,7 +347,7 @@ public:
     bool is_free(const Square target) const;
     bool is_colour(const Colour c, const Square target) const;
     Square slide_to_edge(const Square origin, const Square direction, const uint to_edge) const;
-    std::vector<Move> get_pseudolegal_moves() const;
+    void get_pseudolegal_moves(std::vector<Move> &quiet_moves, std::vector<Move> &captures) const;
     std::vector<Move> get_evasion_moves() const;
     std::vector<Move> get_moves();
     std::vector<Move> get_captures();
@@ -355,9 +355,12 @@ public:
     bool is_attacked(const Square square, const Colour colour) const;
     bool is_in_check() const;
     void update_checkers();
+    Colour who_to_play() const { return whos_move; }
 
+    std::array<Square, 2> checkers() const {return _checkers;}
+    int number_checkers() const {return _number_checkers;}
+    bool is_check() const{ return aux_info.is_check;};
 
-    bool in_check() const{ return aux_info.is_check;};
     std::array<Piece, 64> pieces() const{return pieces_array;}
     Piece pieces(Square sq) const{return pieces_array.at(sq);}
     Piece pieces(int sq) const{return pieces_array[sq];}
@@ -374,8 +377,8 @@ public:
     void slide_rook_pin(const Square origin, const Square direction, const uint to_edge, const Colour colour, const int idx);
     bool is_pinned(const Square origin) const;
     void build_occupied_bb();
-    bool is_black_move() const{ return whos_move; }
-    bool is_white_move() const{ return !whos_move; }
+    bool is_black_move() const{ return whos_move == BLACK; }
+    bool is_white_move() const{ return whos_move == WHITE; }
     bool can_castle(Colour c) const{ return aux_info.castling_rights[c][KINGSIDE] | aux_info.castling_rights[c][QUEENSIDE];}
     AuxilliaryInfo aux_info;
 private:
@@ -383,8 +386,8 @@ private:
     Bitboard occupied_bb;
     std::array<Bitboard, 2> colour_bb;
     std::array<Square, 16> pinned_pieces;
-    uint number_checkers;
-    std::array<Square, 2> checkers;
+    uint _number_checkers;
+    std::array<Square, 2> _checkers;
     Colour whos_move = WHITE;
     uint fullmove_counter = 1;
     uint ply_counter = 0;
