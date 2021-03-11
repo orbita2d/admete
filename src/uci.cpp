@@ -115,6 +115,7 @@ void go(Board& board, std::istringstream& is) {
 
     // That's a lot, let's just search to a fixed depth for now.
     int wtime = POS_INF, btime = POS_INF;
+    int winc = 0, binc = 0;
     std::string token;
     while (is >> token) {
         // munch through the command string
@@ -122,10 +123,15 @@ void go(Board& board, std::istringstream& is) {
             is >> wtime;
         } else if (token == "btime") {
             is >> btime;
+        } else if (token == "winc") {
+            is >> winc;
+        } else if (token == "binc") {
+            is >> binc;
         }
     }
     const int our_time = board.is_white_move() ? wtime : btime;
-    const int cutoff_time = our_time / 40;
+    const int our_inc  = board.is_white_move() ? winc : binc;
+    const int cutoff_time = our_time / 30 + our_inc *4/5;
     constexpr int max_depth = 8;
     std::cerr << "searching: " << float(cutoff_time) / 1000  << std::endl;
     std::vector<Move> line;
