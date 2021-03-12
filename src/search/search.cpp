@@ -15,6 +15,15 @@ int alphabeta(Board& board, const uint depth, int alpha, int beta, PrincipleLine
         return evaluate(board, legal_moves); 
     }
     if (depth == 0) { return quiesce(board, alpha, beta); }
+
+    long hash = board.hash();
+    if (transposition_table.probe(hash)) {
+        //std::cerr << "HIT:" << std::hex << hash << std::endl;
+        const TransElement hit = transposition_table.last_hit();
+        if (hit.depth() >= depth) {
+            return hit.evaluation();
+        }
+    }
     PrincipleLine best_line;
     int best_score = NEG_INF;
     for (Move move : legal_moves) {
@@ -37,6 +46,7 @@ int alphabeta(Board& board, const uint depth, int alpha, int beta, PrincipleLine
         }
     }
     line = best_line;
+    transposition_table.store(hash, best_score, 0, depth);
     return is_mating(best_score) ? best_score - 1 : best_score;
 }
 
@@ -49,6 +59,7 @@ int quiesce(Board& board, int alpha, int beta) {
     if (alpha < stand_pat) {
         alpha = stand_pat;
     }
+    
     std::vector<Move> captures = board.get_captures();
     for (Move move : captures) {
         board.make_move(move);
@@ -132,6 +143,7 @@ int iterative_deepening(Board& board, const uint max_depth, const int max_millis
         PrincipleLine temp_line;
         temp_line.clear();
         temp_line.reserve(depth);
+        transposition_table.clear();
         score = pv_search(board, depth, NEG_INF, POS_INF, principle, principle.size(), temp_line);
         principle = temp_line;
         if (is_mating(score)) { break; }
