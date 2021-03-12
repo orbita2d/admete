@@ -3,6 +3,7 @@
 #include "search.hpp"
 #include "evaluate.hpp"
 #include "transposition.hpp"
+#include <iostream>
 
 int alphabeta(Board& board, const uint depth, PrincipleLine& line) {
     return alphabeta(board, depth, NEG_INF, POS_INF, line);
@@ -47,7 +48,7 @@ int alphabeta(Board& board, const uint depth, int alpha, int beta, PrincipleLine
     }
     line = best_line;
     transposition_table.store(hash, best_score, 0, depth);
-    return is_mating(best_score) ? best_score - 1 : best_score;
+    return best_score;
 }
 
 int quiesce(Board& board, int alpha, int beta) {
@@ -116,7 +117,7 @@ int pv_search(Board& board, const uint depth, int alpha, int beta, PrincipleLine
         }
     }
     line = best_line;
-    return is_mating(best_score) ? best_score - 1 : best_score;
+    return best_score;
 }
 
 int iterative_deepening(Board& board, const uint max_depth, const int max_millis, PrincipleLine& line) {
@@ -159,6 +160,7 @@ int iterative_deepening(Board& board, const uint max_depth, const int max_millis
         time_span_last = time_span;
     }
     line = principle;
+    if (is_mating(score)) { score -= (line.size() + 1) / 2; }
     return score;
 }
 
