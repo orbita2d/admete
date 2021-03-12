@@ -45,7 +45,7 @@ TEST(ForcedMateTest, PvMateSearch) {
     EXPECT_EQ(iterative_deepening(board, depth, line),  +(mating_score - 2));
 }
 
-/*
+
 TEST(ForcedMateTest, MateInFour) {
     Board board = Board();
     std::vector<Move> line;
@@ -54,4 +54,3 @@ TEST(ForcedMateTest, MateInFour) {
     board.fen_decode("2r2b2/p2q1P1p/3p2k1/4pNP1/4P1RQ/7K/2pr4/5R2 w - - 1 0");
     EXPECT_EQ(iterative_deepening(board, depth, line),  +(mating_score - 4));
 }
-*/

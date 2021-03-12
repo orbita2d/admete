@@ -128,6 +128,7 @@ int iterative_deepening(Board& board, const uint max_depth, const int max_millis
     for (int depth = 4; depth <= max_depth; depth+=2) {
         PrincipleLine temp_line;
         temp_line.clear();
+        temp_line.reserve(depth);
         score = pv_search(board, depth, NEG_INF, POS_INF, principle, principle.size(), temp_line);
         principle = temp_line;
         if (is_mating(score)) { break; }
