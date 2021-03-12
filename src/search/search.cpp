@@ -2,6 +2,7 @@
 #include <chrono>
 #include "search.hpp"
 #include "evaluate.hpp"
+#include "transposition.hpp"
 
 int alphabeta(Board& board, const uint depth, PrincipleLine& line) {
     return alphabeta(board, depth, NEG_INF, POS_INF, line);
@@ -108,6 +109,8 @@ int pv_search(Board& board, const uint depth, int alpha, int beta, PrincipleLine
 }
 
 int iterative_deepening(Board& board, const uint max_depth, const int max_millis, PrincipleLine& line) {
+    // Initialise the transposition table.
+    transposition_table.clear();
     PrincipleLine principle;
     // We want to limit our search to a fixed time.
     std::chrono::high_resolution_clock::time_point time_origin, time_now;

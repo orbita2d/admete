@@ -6,6 +6,7 @@
 #include "piece.hpp"
 #include "bitboard.hpp"
 
+constexpr int N_SQUARE = 64;
 class Square {
 public:
     typedef signed int square_t;
@@ -327,10 +328,12 @@ struct AuxilliaryInfo {
 
 };
 
+void init_zobrist();
 class Board {
 public:
     Board() {
         pieces_array.fill(Pieces::Blank);
+        init_zobrist();
     };
 
     void fen_decode(const std::string& fen);
@@ -338,9 +341,7 @@ public:
     void initialise();
     void initialise_starting_position() { fen_decode("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"); }
 
-    void print_board_idx() const;
-    void print_board() const;
-    void print_board_extra() const;
+    void pretty() const;
     void print_bitboard(const Bitboard bb) const;
 
     std::string print_move(Move move, std::vector<Move> &legal_moves);
@@ -361,6 +362,7 @@ public:
     int number_checkers() const {return _number_checkers;}
     bool is_check() const{ return aux_info.is_check;};
 
+    long int hash() const;
     std::array<Piece, 64> pieces() const{return pieces_array;}
     Piece pieces(Square sq) const{return pieces_array.at(sq);}
     Piece pieces(int sq) const{return pieces_array[sq];}
@@ -379,7 +381,9 @@ public:
     void build_occupied_bb();
     bool is_black_move() const{ return whos_move == BLACK; }
     bool is_white_move() const{ return whos_move == WHITE; }
-    bool can_castle(Colour c) const{ return aux_info.castling_rights[c][KINGSIDE] | aux_info.castling_rights[c][QUEENSIDE];}
+    bool can_castle(const Colour c) const{ return aux_info.castling_rights[c][KINGSIDE] | aux_info.castling_rights[c][QUEENSIDE];}
+    bool can_castle(const Colour c, const CastlingSide s) const { return aux_info.castling_rights[c][s]; }
+    Square en_passent() const { return aux_info.en_passent_target; }
     AuxilliaryInfo aux_info;
 private:
     std::array<Piece, 64> pieces_array;

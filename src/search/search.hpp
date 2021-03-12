@@ -7,6 +7,7 @@ constexpr int NEG_INF = -1000000000;
 constexpr int POS_INF = +1000000000;
 
 // perft.cpp
+unsigned int perft(unsigned int depth, Board &board);
 unsigned int perft_bulk(unsigned int depth, Board &board);
 void perft_divide(unsigned int depth, Board &board);
 

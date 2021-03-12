@@ -4,6 +4,7 @@
 #include <sstream>
 #include <cstdint> //for uint8_t
 #include <stdexcept>
+#include <random>
 
 #include "board.hpp"
 
@@ -786,3 +787,75 @@ std::string print_score(int score) {
     return out;
 }
 
+/*
+function hash(board):
+    h := 0
+    for i from 1 to 64:      # loop over the board positions
+        if board[i] ≠ empty:
+            j := the piece at board[i], as listed in the constant indices, above
+            h := h XOR table[i][j]
+    return h
+*/
+
+long int zobrist_table[N_COLOUR][N_PIECE][N_SQUARE];
+long int zobrist_table_cr[N_COLOUR][2];
+long int zobrist_table_move[N_COLOUR];
+long int zobrist_table_ep[8];
+
+void init_zobrist() {
+    std::mt19937_64 generator(0x3243f6a8885a308d);
+     std::uniform_int_distribution<unsigned long> distribution;
+    // Fill table with random bitstrings
+    for (int c = 0; c < N_COLOUR; c++) {
+        for (int p = 0; p < N_PIECE; p++) {
+            for (int sq = 0; sq < N_SQUARE; sq++) {
+                zobrist_table[c][p][sq] = distribution(generator);
+            }
+        }
+    }
+    // en-passent files
+    for (int i = 0; i < 8; i++) {
+        zobrist_table_ep[i] = distribution(generator);
+    }
+    // who's move
+    zobrist_table_move[WHITE] = distribution(generator);
+    zobrist_table_move[BLACK] = distribution(generator);
+    zobrist_table_cr[WHITE][KINGSIDE] = distribution(generator);
+    zobrist_table_cr[WHITE][QUEENSIDE] = distribution(generator);
+    zobrist_table_cr[BLACK][KINGSIDE] = distribution(generator);
+    zobrist_table_cr[BLACK][QUEENSIDE] = distribution(generator);
+}
+
+long int hash_zobrist(const Board& board) {
+    long int hash = 0;
+    for (int sq = 0; sq < N_SQUARE; sq++){
+        if (!board.is_free(sq)) {
+            Piece p = board.pieces(sq);
+            hash ^= zobrist_table[to_enum_colour(p)][to_enum_piece(p)][sq];
+        }
+    }
+    hash ^= zobrist_table_move[board.who_to_play()];
+    // Castling rights
+    if (board.can_castle(WHITE, KINGSIDE)) {
+        hash ^= zobrist_table_cr[WHITE][KINGSIDE];
+    }
+    if (board.can_castle(WHITE, QUEENSIDE)) {
+        hash ^= zobrist_table_cr[WHITE][QUEENSIDE];
+    }
+    if (board.can_castle(BLACK, KINGSIDE)) {
+        hash ^= zobrist_table_cr[BLACK][KINGSIDE];
+    }
+    if (board.can_castle(BLACK, QUEENSIDE)) {
+        hash ^= zobrist_table_cr[BLACK][QUEENSIDE];
+    }
+    // en-passent
+    if (board.en_passent()) {
+        hash ^= zobrist_table_ep[board.en_passent().file_index()];
+    }
+    return hash;
+} 
+
+
+long int Board::hash() const{
+    return hash_zobrist(*this);
+}

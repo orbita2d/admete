@@ -6,11 +6,13 @@
 #define PMASK 0x07
 
 
+constexpr int N_COLOUR = 2;
 enum Colour : bool {
     WHITE,
     BLACK
 };
 
+constexpr int N_PIECE = 6;
 enum PieceEnum {
     PAWN,
     KNIGHT,

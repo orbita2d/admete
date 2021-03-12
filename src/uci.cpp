@@ -168,7 +168,7 @@ void uci() {
         } else if (token == "quit") {
             exit(EXIT_SUCCESS);
         } else if (token == "d") {
-            board.print_board_extra();
+            board.pretty();
         }
         else {
             std::cerr << "!#" << token << ":"<< command << std::endl;

@@ -40,7 +40,7 @@ void interactive(Board &board) {
     std::string input;
     while (true) {
         std::cout << std::endl;
-        board.print_board_extra();
+        board.pretty();
         std::cin >> input;
         if (input == "q") {
             exit(EXIT_SUCCESS);
@@ -115,7 +115,7 @@ int main(int argc, char* argv[])
     board.fen_decode(board_fen);
 
     if (print_flag) {
-        board.print_board();
+        board.pretty();
     }
 
     if (print_tables_flag) {
@@ -174,7 +174,7 @@ int main(int argc, char* argv[])
     if (perft_flag) {
         std::cout << board.fen_encode() << std::endl;
         for (unsigned int i = 1; i <= depth; i++) {
-            std::cout << perft_bulk(i, board) << std::endl;
+            std::cout << perft(i, board) << std::endl;
         }
         exit(EXIT_SUCCESS);
     }

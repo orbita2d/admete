@@ -111,31 +111,7 @@ std::string Board::fen_encode() const {
     return fen;
 }
 
-void Board::print_board_idx() const{
-    for (uint rank = 0; rank< 8; rank++) {
-        for (uint file = 0; file< 8; file++) {
-            uint idx = 8*rank +file;
-            std::cout << std::setw(2) << std::setfill('0')  << idx << ' ';
-        }
-            std::cout << std::endl;
-    }
-};
-
-void Board::print_board() const{
-    for (uint rank = 0; rank< 8; rank++) {
-        for (uint file = 0; file< 8; file++) {
-            Square::square_t idx = 8*rank +file;
-            if (idx == aux_info.en_passent_target & pieces(idx).is_blank() & aux_info.en_passent_target.get_value() != 0){
-                std::cout << "! ";
-            } else {
-                std::cout << pieces(idx).pretty_print() << " ";
-            }
-        }
-        std::cout << std::endl;
-    }
-}
-
-void Board::print_board_extra() const{
+void Board::pretty() const{
     for (uint rank = 0; rank< 8; rank++) {
         for (uint file = 0; file< 8; file++) {
             Square::square_t idx = 8*rank +file;
@@ -172,6 +148,8 @@ void Board::print_board_extra() const{
         }
         std::cout << std::endl;
     }
+    std::cout << fen_encode() << std::endl;
+    std::cout << std::hex << hash() << std::endl;
 };
 
 
