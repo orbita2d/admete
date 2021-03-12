@@ -117,6 +117,7 @@ int pv_search(Board& board, const uint depth, int alpha, int beta, PrincipleLine
         }
     }
     line = best_line;
+    transposition_table.store(board.hash(), best_score, 0, depth);
     return best_score;
 }
 
