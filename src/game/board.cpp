@@ -787,16 +787,6 @@ std::string print_score(int score) {
     return out;
 }
 
-/*
-function hash(board):
-    h := 0
-    for i from 1 to 64:      # loop over the board positions
-        if board[i] ≠ empty:
-            j := the piece at board[i], as listed in the constant indices, above
-            h := h XOR table[i][j]
-    return h
-*/
-
 long int zobrist_table[N_COLOUR][N_PIECE][N_SQUARE];
 long int zobrist_table_cr[N_COLOUR][2];
 long int zobrist_table_move[N_COLOUR];
@@ -854,6 +844,36 @@ long int hash_zobrist(const Board& board) {
     }
     return hash;
 } 
+
+long diff_zobrist(const Move move, const Piece piece) {
+    // Calculate the change in hash value caused by a move, without iterating through the entire board.
+    long hash = 0;
+    // Pieces moving
+    // Piece off origin square
+    const PieceEnum p = to_enum_piece(piece);
+    const Colour c = to_enum_colour(piece);
+    hash ^= zobrist_table[c][p][move.origin];
+    // Piece to target square
+    if (move.is_knight_promotion()) {
+        hash ^= zobrist_table[c][KNIGHT][move.target];
+    } else if (move.is_bishop_promotion()) {
+        hash ^= zobrist_table[c][BISHOP][move.target];
+    } else if (move.is_rook_promotion()) {
+        hash ^= zobrist_table[c][ROOK][move.target];
+    } else if (move.is_queen_promotion()) {
+        hash ^= zobrist_table[c][QUEEN][move.target];
+    } else {
+        hash ^= zobrist_table[c][p][move.target];
+    }
+    // Captured piece
+    if (move.is_ep_capture()) {
+        const Square captured_square = move.origin.rank() | move.target.file();
+        hash ^= zobrist_table[to_enum_colour(move.captured_peice)][to_enum_piece(move.captured_peice)][captured_square];
+    } else if (move.is_capture()) {
+        hash ^= zobrist_table[to_enum_colour(move.captured_peice)][to_enum_piece(move.captured_peice)][move.target];
+    }
+    // How do we do castling rights? hmm
+}
 
 
 long int Board::hash() const{

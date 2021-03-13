@@ -9,22 +9,33 @@ int alphabeta(Board& board, const uint depth, PrincipleLine& line) {
     return alphabeta(board, depth, NEG_INF, POS_INF, line);
 }
 
-int alphabeta(Board& board, const uint depth, int alpha, int beta, PrincipleLine& line) {
+int alphabeta(Board& board, const uint depth, const int alpha_start, const int beta_start, PrincipleLine& line) {
     // perform alpha-beta pruning search.
+    int alpha = alpha_start;
+    int beta = beta_start;
     std::vector<Move> legal_moves = board.get_sorted_moves();
     if (legal_moves.size() == 0) { 
         return evaluate(board, legal_moves); 
     }
     if (depth == 0) { return quiesce(board, alpha, beta); }
-
+    
     const long hash = board.hash();
     if (transposition_table.probe(hash)) {
-        //std::cerr << "HIT:" << std::hex << hash << std::endl;
         const TransElement hit = transposition_table.last_hit();
-        if (hit.depth() >= depth) {
-            return hit.evaluation();
+        if (hit.exact() >= hit.upper()) {
+            // The saved score is a lower bound for the score of the sub tree
+            if (hit.exact() >= beta) {
+                // beta cutoff
+                return hit.exact();
+            }
+        } else if (hit.exact() <= hit.lower()) {
+            // The saved score is an upper bound for the score of the subtree.
+        } else {
+            // The saved score is an exact value for the subtree
+            return hit.exact();
         }
     }
+    
     PrincipleLine best_line;
     int best_score = NEG_INF;
     for (Move move : legal_moves) {
@@ -37,7 +48,7 @@ int alphabeta(Board& board, const uint depth, int alpha, int beta, PrincipleLine
             best_line = temp_line;
             best_line.push_back(move);
         }
-        if (score == mating_score - depth) {
+        if (score == mating_score) {
             // Mate in 1.
             break;
         }
@@ -47,7 +58,7 @@ int alphabeta(Board& board, const uint depth, int alpha, int beta, PrincipleLine
         }
     }
     line = best_line;
-    transposition_table.store(hash, best_score, 0, depth);
+    transposition_table.store(hash, best_score, alpha_start, beta, 0, depth);
     return best_score;
 }
 
@@ -117,7 +128,7 @@ int pv_search(Board& board, const uint depth, int alpha, int beta, PrincipleLine
         }
     }
     line = best_line;
-    transposition_table.store(board.hash(), best_score, 0, depth);
+    //transposition_table.store(board.hash(), best_score, 0, depth);
     return best_score;
 }
 

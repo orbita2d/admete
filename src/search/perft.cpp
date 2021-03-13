@@ -37,7 +37,7 @@ unsigned int perft_bulk(unsigned int depth, Board &board) {
         nodes += perft_bulk(depth-1, board);
         board.unmake_move(move);
     }
-    transposition_table.store(hash, 0, nodes, depth);
+    transposition_table.store(hash, 0, 0, 0, nodes, depth);
     return nodes;
 }
 
