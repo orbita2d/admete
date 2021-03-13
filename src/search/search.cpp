@@ -171,13 +171,14 @@ int iterative_deepening(Board& board, const uint max_depth, const int max_millis
         // We've run out of time to calculate.
         if (int(t_est.count()) > max_millis) { break;}
         // Calculate the last branching factor
-        if (depth >= 4) {
+        if (depth >= 6) {
             branching_factor = int(time_span.count() / time_span_last.count());
         }
         time_span_last = time_span;
     }
     line = principle;
     if (is_mating(score)) { score -= (line.size() + 1) / 2; }
+    if (is_mating(-score)) { score += (line.size()) / 2; }
     return score;
 }
 
