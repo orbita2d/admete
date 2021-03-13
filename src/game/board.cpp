@@ -9,8 +9,6 @@
 #include "board.hpp"
 
 
-
-
 std::map<char, Piece> fen_decode_map = {
     {'p', Piece(BLACK, PAWN)},
     {'n', Piece(BLACK, KNIGHT)},

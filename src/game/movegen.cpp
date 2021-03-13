@@ -65,127 +65,65 @@ void add_pawn_promotions(const Move move, MoveList &moves) {
     moves.push_back(my_move);
 }
 
+#include <iostream>
 template<Colour colour>
 void get_pawn_moves(const Board &board, const Square origin, MoveList &quiet_moves, MoveList &captures){
     Square target;
     Move move;
-    if (colour == Colour::WHITE) {
-        // Moves are North
-        // Look for double pawn push possibility
-        if (origin.rank() == Squares::Rank2) {
-            target = origin + (Direction::N + Direction::N);
-            if (board.is_free(target) & board.is_free(origin + Direction::N)) {
-                move = Move(origin, target);
-                move.make_double_push();
-                quiet_moves.push_back(move);
-            }
-        }
-        // Normal pushes.
-        target = origin + (Direction::N);
-        if (board.is_free(target)) {
+    // Moves are North
+    // Look for double pawn push possibility
+    if (origin.rank() == relative_rank(colour, Squares::Rank2)) {
+        target = origin + (forwards(colour) + forwards(colour) );
+        if (board.is_free(target) & board.is_free(origin + forwards(colour) )) {
             move = Move(origin, target);
-            if (origin.rank() == Squares::Rank7) {
-                add_pawn_promotions(move, quiet_moves);
+            move.make_double_push();
+            quiet_moves.push_back(move);
+        }
+    }
+    // Normal pushes.
+    target = origin + (forwards(colour) );
+    if (board.is_free(target)) {
+        move = Move(origin, target);
+        if (origin.rank() == relative_rank(colour, Squares::Rank7)) {
+            add_pawn_promotions(move, quiet_moves);
+        } else {
+            quiet_moves.push_back(move);
+        }
+    }
+    // Normal captures.
+    if (origin.to_west() != 0) {
+        target = origin + (forwards(colour) + Direction::W);
+        if (board.is_colour(~colour, target)) {
+            move = Move(origin, target);
+            move.make_capture();
+            if (origin.rank() == relative_rank(colour, Squares::Rank7)) {
+                add_pawn_promotions(move, captures);
             } else {
-                quiet_moves.push_back(move);
-            }
-        }
-        // Normal captures.
-        if (origin.to_west() != 0) {
-            target = origin + (Direction::NW);
-            if (board.pieces(target).is_colour(Colour::BLACK)) {
-                move = Move(origin, target);
-                move.make_capture();
-                if (origin.rank() == Squares::Rank7) {
-                    add_pawn_promotions(move, captures);
-                } else {
-                    captures.push_back(move);
-                }
-            }
-        }
-
-        if (origin.to_east() != 0) {
-            target = origin + (Direction::NE);
-            if (board.pieces(target).is_colour(Colour::BLACK)) {
-                move = Move(origin, target);
-                move.make_capture();
-                if (origin.rank() == Squares::Rank7) {
-                    add_pawn_promotions(move, captures);
-                } else {
-                    captures.push_back(move);
-                }
-            }
-        }
-        // En-passent
-        if (origin.rank() == Squares::Rank5) {
-            if (origin.to_west() != 0 & board.aux_info.en_passent_target == Square(origin + Direction::NW) | 
-                origin.to_east() != 0 & board.aux_info.en_passent_target == Square(origin + Direction::NE) ) {
-                move = Move(origin, board.aux_info.en_passent_target); 
-                move.make_en_passent();
                 captures.push_back(move);
             }
         }
+    }
 
-    } else
-    {
-        // Moves are South
-
-        // Look for double pawn push possibility
-        if (origin.rank() == Squares::Rank7) {
-            target = origin + (Direction::S + Direction::S);
-            if (board.is_free(target) & board.is_free(origin + Direction::S)) {
-                move = Move(origin, target);
-                move.make_double_push();
-                quiet_moves.push_back(move);
-            }
-        }
-        
-        // Normal pushes.
-        target = origin + (Direction::S);
-        if (board.is_free(target)) {
+    if (origin.to_east() != 0) {
+        target = origin + (forwards(colour) + Direction::E);
+        if (board.is_colour(~colour, target)) {
             move = Move(origin, target);
-            if (origin.rank() == Squares::Rank2) {
-                add_pawn_promotions(move, quiet_moves);
+            move.make_capture();
+            if (origin.rank() == relative_rank(colour, Squares::Rank7)) {
+                add_pawn_promotions(move, captures);
             } else {
-                quiet_moves.push_back(move);
-            }
-        }
-        // Normal captures.
-        if (origin.to_west() != 0) {
-            target = origin + (Direction::SW);
-            if (board.pieces(target).is_colour(Colour::WHITE)) {
-                move = Move(origin, target);
-                move.make_capture();
-                if (origin.rank() == Squares::Rank2) {
-                    add_pawn_promotions(move, captures);
-                } else {
-                    captures.push_back(move);
-                }
-            }
-        }
-
-        if (origin.to_east() != 0) {
-            target = origin + (Direction::SE);
-            if (board.pieces(target).is_colour(Colour::WHITE)) {
-                move = Move(origin, target);
-                move.make_capture();
-                if (origin.rank() == Squares::Rank2) {
-                    add_pawn_promotions(move, captures);
-                } else {
-                    captures.push_back(move);
-                }
-            }
-        }
-        // En-passent
-        if (origin.rank() == Squares::Rank4) {
-            if (origin.to_west() != 0 & board.aux_info.en_passent_target == Square(origin + Direction::SW) | 
-                origin.to_east() != 0 & board.aux_info.en_passent_target == Square(origin + Direction::SE) ) {
-                move = Move(origin, board.aux_info.en_passent_target); 
-                move.make_en_passent();
                 captures.push_back(move);
             }
         }
-
+    }
+    // En-passent
+    if (origin.rank() == relative_rank(colour, Squares::Rank5)) {
+        if (origin.to_west() != 0 & board.aux_info.en_passent_target == Square(origin + forwards(colour) + Direction::W) | 
+            origin.to_east() != 0 & board.aux_info.en_passent_target == Square(origin + forwards(colour) + Direction::E) ) {
+            move = Move(origin, board.aux_info.en_passent_target); 
+            move.make_en_passent();
+            captures.push_back(move);
+        }
     }
 }
 

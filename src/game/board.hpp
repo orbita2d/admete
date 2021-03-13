@@ -405,7 +405,7 @@ constexpr int mating_score = 100100;
 bool is_mating(int score);
 std::string print_score(int);
 
-constexpr Square forwards(const Colour colour) {
+constexpr Direction forwards(const Colour colour) {
     if (colour == WHITE) {
         return Direction::N;
     } else {
@@ -425,3 +425,12 @@ bool interposes(const Square origin, const Square target, const Square query);
 bool in_line(const Square, const Square, const Square);
 bool in_line(const Square, const Square);
 
+
+constexpr Square relative_rank (const Colour c, const Square sq) {
+    // Square from black's perspective perspective;
+    if (c == Colour::WHITE) {
+        return sq;
+    } else {
+        return Square(56 - sq.rank()) | sq.file();
+    }
+}
