@@ -17,7 +17,7 @@ int alphabeta(Board& board, const uint depth, int alpha, int beta, PrincipleLine
     }
     if (depth == 0) { return quiesce(board, alpha, beta); }
 
-    long hash = board.hash();
+    const long hash = board.hash();
     if (transposition_table.probe(hash)) {
         //std::cerr << "HIT:" << std::hex << hash << std::endl;
         const TransElement hit = transposition_table.last_hit();
