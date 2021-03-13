@@ -55,13 +55,13 @@ KnightMoveArray knight_moves(const Square origin){
 void add_pawn_promotions(const Move move, MoveList &moves) {
     // Add all variations of promotions to a move.
     Move my_move = move;
-    my_move.make_knight_promotion();
-    moves.push_back(my_move);
-    my_move.make_bishop_promotion();
+    my_move.make_queen_promotion();
     moves.push_back(my_move);
     my_move.make_rook_promotion();
     moves.push_back(my_move);
-    my_move.make_queen_promotion();
+    my_move.make_knight_promotion();
+    moves.push_back(my_move);
+    my_move.make_bishop_promotion();
     moves.push_back(my_move);
 }
 
@@ -71,6 +71,15 @@ void get_pawn_moves(const Board &board, const Square origin, MoveList &quiet_mov
     Move move;
     if (colour == Colour::WHITE) {
         // Moves are North
+        // Look for double pawn push possibility
+        if (origin.rank() == Squares::Rank2) {
+            target = origin + (Direction::N + Direction::N);
+            if (board.is_free(target) & board.is_free(origin + Direction::N)) {
+                move = Move(origin, target);
+                move.make_double_push();
+                quiet_moves.push_back(move);
+            }
+        }
         // Normal pushes.
         target = origin + (Direction::N);
         if (board.is_free(target)) {
@@ -117,18 +126,20 @@ void get_pawn_moves(const Board &board, const Square origin, MoveList &quiet_mov
             }
         }
 
+    } else
+    {
+        // Moves are South
+
         // Look for double pawn push possibility
-        if (origin.rank() == Squares::Rank2) {
-            target = origin + (Direction::N + Direction::N);
-            if (board.is_free(target) & board.is_free(origin + Direction::N)) {
+        if (origin.rank() == Squares::Rank7) {
+            target = origin + (Direction::S + Direction::S);
+            if (board.is_free(target) & board.is_free(origin + Direction::S)) {
                 move = Move(origin, target);
                 move.make_double_push();
                 quiet_moves.push_back(move);
             }
         }
-    } else
-    {
-        // Moves are South
+        
         // Normal pushes.
         target = origin + (Direction::S);
         if (board.is_free(target)) {
@@ -175,15 +186,6 @@ void get_pawn_moves(const Board &board, const Square origin, MoveList &quiet_mov
             }
         }
 
-        // Look for double pawn push possibility
-        if (origin.rank() == Squares::Rank7) {
-            target = origin + (Direction::S + Direction::S);
-            if (board.is_free(target) & board.is_free(origin + Direction::S)) {
-                move = Move(origin, target);
-                move.make_double_push();
-                quiet_moves.push_back(move);
-            }
-        }
     }
 }
 
@@ -203,7 +205,7 @@ void get_sliding_moves(const Board &board, const Square origin, const uint to_ed
             move.make_capture();
             captures.push_back(move);
             return;
-        } else if (board.is_colour(colour, target)) {
+        } else {
             // Our piece, no more legal moves.
             return;
         }
