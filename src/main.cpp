@@ -44,8 +44,6 @@ void interactive(Board &board) {
         std::cin >> input;
         if (input == "q") {
             exit(EXIT_SUCCESS);
-        } else if (input == "tb") {
-            board.unmake_last();
         } else if (input == "moves") {
             print_vector(board.get_moves());
         } else {

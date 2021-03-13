@@ -368,7 +368,6 @@ public:
 
     void make_move(Move &move);
     void unmake_move(const Move move);
-    void unmake_last() {unmake_move(last_move); }
 
     void try_move(const std::string move_sting);
     bool try_uci_move(const std::string move_sting);
@@ -386,16 +385,16 @@ public:
     Square en_passent() const { return aux_info.en_passent_target; }
     AuxilliaryInfo aux_info;
 private:
-    std::array<Piece, 64> pieces_array;
+    std::array<Piece, N_SQUARE> pieces_array;
     Bitboard occupied_bb;
-    std::array<Bitboard, 2> colour_bb;
+    std::array<Bitboard, N_COLOUR> colour_bb;
+    std::array<Bitboard, N_PIECE> piece_bb;
     std::array<Square, 16> pinned_pieces;
     uint _number_checkers;
     std::array<Square, 2> _checkers;
     Colour whos_move = WHITE;
     uint fullmove_counter = 1;
     uint ply_counter = 0;
-    Move last_move;
     std::array<Square, 2> king_square;
     // Array of absolute pins for legal move generation. Max 8 pieces per king.
     std::array<AuxilliaryInfo, 256> aux_history;

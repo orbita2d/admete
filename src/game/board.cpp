@@ -206,6 +206,9 @@ void Board::build_occupied_bb() {
     occupied_bb = 0;
     colour_bb[WHITE] = 0;
     colour_bb[BLACK] = 0;
+    for (int i = 0; i < N_PIECE; i++) {
+        piece_bb[i] = 0;
+    }
     for (uint i = 0; i < 64; i++) {
         if (pieces(i).is_blank()) { continue; }
         occupied_bb |= sq_to_bb(i);
@@ -214,6 +217,8 @@ void Board::build_occupied_bb() {
         } else {
             colour_bb[BLACK] |= sq_to_bb(i);
         }
+        piece_bb[to_enum_piece(pieces(i))] |= sq_to_bb(i);
+
     }
 }
 
@@ -226,16 +231,17 @@ bool Board::is_colour(const Colour c, const Square target) const{
 };
 
 void Board::make_move(Move &move) {
-    last_move = move;
     // Iterate counters.
     if (whos_move == Colour::BLACK) {fullmove_counter++;}
     aux_info.pinned_pieces = pinned_pieces;
     aux_info.checkers = _checkers;
     aux_info.number_checkers = _number_checkers;
     aux_history[ply_counter] = aux_info;
-    Colour us = whos_move;
-    Colour them = ~ us;
-    if (move.is_capture() | pieces(move.origin).is_pawn()) {
+    const Colour us = whos_move;
+    const Colour them = ~ us;
+    const Piece moving_piece = pieces(move.origin);
+    const PieceEnum p = to_enum_piece(moving_piece);
+    if (move.is_capture() | moving_piece.is_pawn()) {
         aux_info.halfmove_clock = 0;
     } else {aux_info.halfmove_clock++ ;}
     // Track en-passent square
@@ -246,28 +252,29 @@ void Board::make_move(Move &move) {
         aux_info.en_passent_target = 0;
     }
 
-    if (pieces(move.origin).is_king()) {
+    if (moving_piece.is_king()) {
         king_square[us] = move.target;
         aux_info.castling_rights[us][KINGSIDE]  = false;
         aux_info.castling_rights[us][QUEENSIDE]  = false;
     }
 
-    Bitboard from_bb = sq_to_bb(move.origin);
-    Bitboard to_bb = sq_to_bb(move.target);
-    Bitboard from_to_bb;
+    const Bitboard from_bb = sq_to_bb(move.origin);
+    const Bitboard to_bb = sq_to_bb(move.target);
+    const Bitboard from_to_bb = from_bb ^ to_bb;
     // Castling is special
     if (move.is_king_castle()) {
         pieces_array[move.target] = pieces_array[move.origin];
         pieces_array[move.origin] = Pieces::Blank;
         pieces_array[move.origin + Direction::E] = Piece(us, ROOK);
         pieces_array[RookSquare[us][KINGSIDE]] = Pieces::Blank;
-        from_bb = from_bb ^ sq_to_bb(RookSquare[us][KINGSIDE]);
-        to_bb = to_bb ^ sq_to_bb(move.origin + Direction::E);
+        const Bitboard rook_from_to_bb = sq_to_bb(RookSquare[us][KINGSIDE]) ^ sq_to_bb(move.origin + Direction::E);
         // Update the bitboard.
-        from_to_bb = from_bb ^ to_bb;
         occupied_bb ^= from_to_bb;
+        occupied_bb ^= rook_from_to_bb;
         colour_bb[us] ^= from_to_bb;
-
+        colour_bb[us] ^= rook_from_to_bb;
+        piece_bb[KING] ^= from_to_bb;
+        piece_bb[ROOK] ^= rook_from_to_bb;
         aux_info.castling_rights[us][KINGSIDE] = false;
         aux_info.castling_rights[us][QUEENSIDE] = false;
     } else if (move.is_queen_castle()) {
@@ -275,56 +282,68 @@ void Board::make_move(Move &move) {
         pieces_array[move.origin] = Pieces::Blank;
         pieces_array[move.origin + Direction::W] = Piece(us, ROOK);
         pieces_array[RookSquare[us][QUEENSIDE]] = Pieces::Blank;
-        from_bb = from_bb ^ sq_to_bb(RookSquare[us][QUEENSIDE]);
-        to_bb = to_bb ^ sq_to_bb(move.origin + Direction::W);
+        const Bitboard rook_from_to_bb = sq_to_bb(RookSquare[us][QUEENSIDE]) ^ sq_to_bb(move.origin + Direction::W);
         // Update the bitboard.
-        from_to_bb = from_bb ^ to_bb;
         occupied_bb ^= from_to_bb;
+        occupied_bb ^= rook_from_to_bb;
         colour_bb[us] ^= from_to_bb;
+        colour_bb[us] ^= rook_from_to_bb;
+        piece_bb[KING] ^= from_to_bb;
+        piece_bb[ROOK] ^= rook_from_to_bb;
         aux_info.castling_rights[us][KINGSIDE] = false;
         aux_info.castling_rights[us][QUEENSIDE] = false;
     } else if(move.is_ep_capture()) {
         // En-passent is weird too.
         const Square captured_square = move.origin.rank() | move.target.file();
         // Update the bitboard.
-        from_to_bb = from_bb ^ to_bb;
         occupied_bb ^= from_to_bb;
         occupied_bb ^= sq_to_bb(captured_square);
         colour_bb[us] ^= from_to_bb;
         colour_bb[them] ^= sq_to_bb(captured_square);
+        piece_bb[PAWN] ^= from_to_bb;
+        piece_bb[PAWN] ^= sq_to_bb(captured_square);
         // Make sure to lookup and record the piece captured 
         move.captured_peice = pieces_array[captured_square];
         pieces_array[move.target] = pieces_array[move.origin];
         pieces_array[move.origin] = Pieces::Blank;
         pieces_array[captured_square] = Pieces::Blank;
     } else if (move.is_capture()){
+        // Make sure to lookup and record the piece captured 
+        move.captured_peice = pieces_array[move.target];
         // Update the bitboard.
-        from_to_bb = from_bb ^ to_bb;
         occupied_bb ^= from_bb;
         colour_bb[us] ^= from_to_bb;
         colour_bb[them] ^= to_bb;
-        // Make sure to lookup and record the piece captured 
-        move.captured_peice = pieces_array[move.target];
+        piece_bb[p] ^= from_to_bb;
+        piece_bb[to_enum_piece(move.captured_peice)] ^= from_to_bb;
         pieces_array[move.target] = pieces_array[move.origin];
         pieces_array[move.origin] = Pieces::Blank;
     } else {
         // Quiet move
         pieces_array[move.target] = pieces_array[move.origin];
         pieces_array[move.origin] = Pieces::Blank;
-        from_to_bb = from_bb ^ to_bb;
         occupied_bb ^= from_to_bb;
         colour_bb[us] ^= from_to_bb;
+        piece_bb[p] ^= from_to_bb;
     }
 
     // And now do the promotion if it is one.
     if (move.is_knight_promotion()) {
         pieces_array[move.target] = Piece(us, KNIGHT);
+        piece_bb[PAWN] ^= to_bb;
+        piece_bb[KNIGHT] ^= to_bb;
     } else if (move.is_bishop_promotion()){
         pieces_array[move.target] = Piece(us, BISHOP);
+        piece_bb[PAWN] ^= to_bb;
+        piece_bb[BISHOP] ^= to_bb;
     } else if (move.is_rook_promotion()){
         pieces_array[move.target] = Piece(us, ROOK);
+        piece_bb[PAWN] ^= to_bb;
+        piece_bb[ROOK] ^= to_bb;
     } else if (move.is_queen_promotion()){
         pieces_array[move.target] = Piece(us, QUEEN);
+        piece_bb[PAWN] ^= to_bb;
+        piece_bb[QUEEN] ^= to_bb;
     }
     
 
@@ -359,68 +378,89 @@ void Board::unmake_move(const Move move) {
     whos_move = ~ whos_move;
     Colour us = whos_move;
     Colour them = ~ us;
-    // Castling is special
 
-    if (pieces_array[move.target].is_king()) {
+    const Piece moving_piece = pieces(move.target);
+    const PieceEnum p = to_enum_piece(moving_piece);
+
+    if (moving_piece.is_king()) {
         king_square[us] = move.origin;
     }
 
-    Bitboard from_bb = sq_to_bb(move.origin);
-    Bitboard to_bb = sq_to_bb(move.target);
-    Bitboard from_to_bb;
+    const Bitboard from_bb = sq_to_bb(move.origin);
+    const Bitboard to_bb = sq_to_bb(move.target);
+    const Bitboard from_to_bb = from_bb ^ to_bb;
     if (move.is_king_castle()) {
-        pieces_array[move.origin] = pieces_array[move.target];
+        pieces_array[move.origin] = moving_piece;
         pieces_array[move.target] = Pieces::Blank;
         pieces_array[RookSquare[us][KINGSIDE]] = Piece(us, ROOK);
         pieces_array[move.origin + Direction::E] = Pieces::Blank;
-        from_bb = from_bb ^ sq_to_bb(RookSquare[us][KINGSIDE]);
-        to_bb = to_bb ^ sq_to_bb(move.origin.rank() | Squares::FileF);
+        const Bitboard rook_from_to_bb = sq_to_bb(RookSquare[us][KINGSIDE]) ^ sq_to_bb(move.origin + Direction::E);
         // Update the bitboard.
-        from_to_bb = from_bb ^ to_bb;
         occupied_bb ^= from_to_bb;
+        occupied_bb ^= rook_from_to_bb;
         colour_bb[us] ^= from_to_bb;
+        colour_bb[us] ^= rook_from_to_bb;
+        piece_bb[KING] ^= from_to_bb;
+        piece_bb[ROOK] ^= rook_from_to_bb;
     } else if (move.is_queen_castle()) {
-        pieces_array[move.origin] = pieces_array[move.target];
+        pieces_array[move.origin] = moving_piece;
         pieces_array[move.target] = Pieces::Blank;
         pieces_array[RookSquare[us][QUEENSIDE]] = Piece(us, ROOK);
         pieces_array[move.origin + Direction::W] = Pieces::Blank;
-        from_bb = from_bb ^ sq_to_bb(RookSquare[us][QUEENSIDE]);
-        to_bb = to_bb ^ sq_to_bb(move.origin + Direction::W);
+        const Bitboard rook_from_to_bb = sq_to_bb(RookSquare[us][QUEENSIDE]) ^ sq_to_bb(move.origin + Direction::W);
         // Update the bitboard.
-        from_to_bb = from_bb ^ to_bb;
         occupied_bb ^= from_to_bb;
+        occupied_bb ^= rook_from_to_bb;
         colour_bb[us] ^= from_to_bb;
+        colour_bb[us] ^= rook_from_to_bb;
+        piece_bb[KING] ^= from_to_bb;
+        piece_bb[ROOK] ^= rook_from_to_bb;
     } else if(move.is_ep_capture()) {
         // En-passent is weird too.
-        const Square captured_square = move.origin.rank() | move.target.file();
-        // Make sure to lookup and record the piece captured 
-        pieces_array[move.origin] = pieces_array[move.target];
-        pieces_array[move.target] = Pieces::Blank;
-        pieces_array[captured_square] = move.captured_peice;
-        from_to_bb = from_bb ^ to_bb;
+        const Square captured_square = move.origin.rank() | move.target.file();   
         occupied_bb ^= from_to_bb;
         occupied_bb ^= sq_to_bb(captured_square);
         colour_bb[us] ^= from_to_bb;
         colour_bb[them] ^= sq_to_bb(captured_square);
+        piece_bb[PAWN] ^= from_to_bb;
+        piece_bb[PAWN] ^= sq_to_bb(captured_square);
+        // Make sure to lookup and record the piece captured 
+        pieces_array[move.origin] = moving_piece;
+        pieces_array[move.target] = Pieces::Blank;
+        pieces_array[captured_square] = move.captured_peice;
     } else if (move.is_capture()){
         // Make sure to lookup and record the piece captured 
-        pieces_array[move.origin] = pieces_array[move.target];
+        pieces_array[move.origin] = moving_piece;
         pieces_array[move.target] = move.captured_peice;
+        // Update the bitboard.
         occupied_bb ^= from_bb;
-        from_to_bb = from_bb ^ to_bb;
         colour_bb[us] ^= from_to_bb;
         colour_bb[them] ^= to_bb;
+        piece_bb[p] ^= from_to_bb;
+        piece_bb[to_enum_piece(move.captured_peice)] ^= from_to_bb;
     } else {
-        pieces_array[move.origin] = pieces_array[move.target];
+        pieces_array[move.origin] = moving_piece;
         pieces_array[move.target] = Pieces::Blank;
-        from_to_bb = from_bb ^ to_bb;
         occupied_bb ^= from_to_bb;
         colour_bb[us] ^= from_to_bb;
+        piece_bb[p] ^= from_to_bb;
     }
     // And now do the promotion if it is one.
     if (move.is_promotion()) {
         pieces_array[move.origin] = Piece(us, PAWN);
+        // The quiet move method above moved a (promotion) from to->from
+        // We need to remove the (promotion) piece and add a pawn
+        piece_bb[PAWN] ^= from_bb;
     } 
+    if (move.is_knight_promotion()) {
+        piece_bb[KNIGHT] ^= from_bb;
+    } else if (move.is_bishop_promotion()){
+        piece_bb[BISHOP] ^= from_bb;
+    } else if (move.is_rook_promotion()){
+        piece_bb[ROOK] ^= from_bb;
+    } else if (move.is_queen_promotion()){
+        piece_bb[QUEEN] ^= from_bb;
+    }
     pinned_pieces = aux_info.pinned_pieces;
     _number_checkers = aux_info.number_checkers;
     _checkers = aux_info.checkers;
