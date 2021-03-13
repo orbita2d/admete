@@ -161,9 +161,7 @@ int iterative_deepening(Board& board, const uint max_depth, const int max_millis
     // Start at 2 ply for a best guess first move.
     for (int depth = 4; depth <= max_depth; depth+=2) {
         PrincipleLine temp_line;
-        temp_line.clear();
         temp_line.reserve(depth);
-        transposition_table.clear();
         score = pv_search(board, depth, NEG_INF, POS_INF, principle, principle.size(), temp_line);
         principle = temp_line;
         if (is_mating(score)) { break; }
@@ -173,7 +171,7 @@ int iterative_deepening(Board& board, const uint max_depth, const int max_millis
         // We've run out of time to calculate.
         if (int(t_est.count()) > max_millis) { break;}
         // Calculate the last branching factor
-        if (depth >= 6) {
+        if (depth >= 4) {
             branching_factor = int(time_span.count() / time_span_last.count());
         }
         time_span_last = time_span;
