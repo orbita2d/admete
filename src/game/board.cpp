@@ -9,21 +9,6 @@
 #include "board.hpp"
 
 
-constexpr Square forwards(const Colour colour) {
-    if (colour == WHITE) {
-        return Direction::N;
-    } else {
-        return Direction::S;
-    }
-}
-
-constexpr Square back_rank(const Colour colour) {
-    if (colour == WHITE) {
-        return Squares::Rank1;
-    } else {
-        return Squares::Rank8;
-    }
-}
 
 
 std::map<char, Piece> fen_decode_map = {

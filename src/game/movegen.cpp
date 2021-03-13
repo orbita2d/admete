@@ -240,50 +240,26 @@ void get_queen_moves(const Board &board, const Square origin, MoveList &quiet_mo
 template<Colour colour>
 void get_castle_moves(const Board &board, MoveList &moves) {
     Move move;
-    if (colour == Colour::WHITE) {
-        // You can't castle through check, or while in check
-        if (board.aux_info.castling_rights[WHITE][QUEENSIDE]  
-            & board.is_free(Squares::FileD | Squares::Rank1) 
-            & board.is_free(Squares::FileC | Squares::Rank1)
-            & board.is_free(Squares::FileB | Squares::Rank1)
-            & !board.is_attacked(Squares::FileD | Squares::Rank1, WHITE)
-            & !board.is_attacked(Squares::FileC | Squares::Rank1, WHITE)) {
-            move = Move(Squares::FileE | Squares::Rank1, Squares::FileC | Squares::Rank1);
-            move.make_queen_castle();
-            moves.push_back(move);
-        }
-        if (board.aux_info.castling_rights[WHITE][KINGSIDE]   
-            & board.is_free(Squares::FileF | Squares::Rank1) 
-            & board.is_free(Squares::FileG | Squares::Rank1)
-            & !board.is_attacked(Squares::FileF | Squares::Rank1, WHITE)
-            & !board.is_attacked(Squares::FileG | Squares::Rank1, WHITE)) {
-            move = Move(Squares::FileE | Squares::Rank1, Squares::FileG | Squares::Rank1);
-            move.make_king_castle();
-            moves.push_back(move);
-        }
-    } else
-    {
-        if (board.aux_info.castling_rights[BLACK][QUEENSIDE] 
-            & board.is_free(Squares::FileD | Squares::Rank8) 
-            & board.is_free(Squares::FileC | Squares::Rank8)
-            & board.is_free(Squares::FileB | Squares::Rank8)
-            & !board.is_attacked(Squares::FileD | Squares::Rank8, BLACK)
-            & !board.is_attacked(Squares::FileC | Squares::Rank8, BLACK)) {
-            move = Move(Squares::FileE | Squares::Rank8, Squares::FileC | Squares::Rank8);
-            move.make_queen_castle();
-            moves.push_back(move);
-        }
-        if (board.aux_info.castling_rights[BLACK][KINGSIDE]
-            & board.is_free(Squares::FileF | Squares::Rank8) 
-            & board.is_free(Squares::FileG | Squares::Rank8)
-            & !board.is_attacked(Squares::FileF | Squares::Rank8, BLACK)
-            & !board.is_attacked(Squares::FileG | Squares::Rank8, BLACK)) {
-            move = Move(Squares::FileE | Squares::Rank8, Squares::FileG | Squares::Rank8);
-            move.make_king_castle();
-            moves.push_back(move);
-        }
+    // You can't castle through check, or while in check
+    if (board.aux_info.castling_rights[colour][QUEENSIDE]  
+        & board.is_free(Squares::FileD | back_rank(colour)) 
+        & board.is_free(Squares::FileC | back_rank(colour))
+        & board.is_free(Squares::FileB | back_rank(colour))
+        & !board.is_attacked(Squares::FileD | back_rank(colour), colour)
+        & !board.is_attacked(Squares::FileC | back_rank(colour), colour)) {
+        move = Move(Squares::FileE | back_rank(colour), Squares::FileC | back_rank(colour));
+        move.make_queen_castle();
+        moves.push_back(move);
     }
-    
+    if (board.aux_info.castling_rights[colour][KINGSIDE]   
+        & board.is_free(Squares::FileF | back_rank(colour)) 
+        & board.is_free(Squares::FileG | back_rank(colour))
+        & !board.is_attacked(Squares::FileF | back_rank(colour), colour)
+        & !board.is_attacked(Squares::FileG | back_rank(colour), colour)) {
+        move = Move(Squares::FileE | back_rank(colour), Squares::FileG | back_rank(colour));
+        move.make_king_castle();
+        moves.push_back(move);
+    }
 }
 
 template<Colour colour>

@@ -404,8 +404,23 @@ private:
 constexpr int mating_score = 100100;
 bool is_mating(int score);
 std::string print_score(int);
-constexpr Square forwards(const Colour colour);
-constexpr Square back_rank(const Colour colour);
+
+constexpr Square forwards(const Colour colour) {
+    if (colour == WHITE) {
+        return Direction::N;
+    } else {
+        return Direction::S;
+    }
+}
+
+constexpr Square back_rank(const Colour colour) {
+    if (colour == WHITE) {
+        return Squares::Rank1;
+    } else {
+        return Squares::Rank8;
+    }
+}
+
 bool interposes(const Square origin, const Square target, const Square query);
 bool in_line(const Square, const Square, const Square);
 bool in_line(const Square, const Square);
