@@ -65,7 +65,6 @@ void add_pawn_promotions(const Move move, MoveList &moves) {
     moves.push_back(my_move);
 }
 
-#include <iostream>
 template<Colour colour>
 void get_pawn_moves(const Board &board, const Square origin, MoveList &quiet_moves, MoveList &captures){
     Square target;

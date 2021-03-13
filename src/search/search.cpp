@@ -25,19 +25,19 @@ int alphabeta(Board& board, const uint depth, const int alpha_start, const int b
         if (hit.depth() >= depth) {
             if (hit.lower()) {
                 // The saved score is a lower bound for the score of the sub tree
-                if (hit.exact() >= beta) {
+                if (hit.eval() >= beta) {
                     // beta cutoff
-                    return hit.exact();
+                    return hit.eval();
                 }
             } else if (hit.upper()) {
                 // The saved score is an upper bound for the score of the subtree.
-                if (hit.exact() <= alpha) {
+                if (hit.eval() <= alpha) {
                     // rare negamax alpha-cutoff
-                    return hit.exact();
+                    return hit.eval();
                 }
             } else {
                 // The saved score is an exact value for the subtree
-                return hit.exact();
+                return hit.eval();
             }
         }
     }
@@ -73,6 +73,11 @@ int quiesce(Board& board, int alpha, int beta) {
     int stand_pat = heuristic_negamax(board);
     if (stand_pat >= beta) {
         return stand_pat;
+    }
+    // Delta pruning
+    constexpr int DELTA = 900;
+    if (stand_pat < alpha - DELTA) {
+        return alpha;
     }
     if (alpha < stand_pat) {
         alpha = stand_pat;
