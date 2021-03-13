@@ -3,16 +3,16 @@
 
 struct TransElement {
     TransElement() = default;
-    TransElement(int eval, int l, int u, int n, int d) : _exact(eval), _lower(l), _upper(u), _nodes(n), _depth(d) {}; 
+    TransElement(int eval, int a, int b, int n, int d) : _exact(eval), _lower(eval >= b), _upper(eval <= a), _nodes(n), _depth(d) {}; 
     int nodes() const{ return _nodes; }
     int exact() const{ return _exact; }
-    int upper() const{ return _upper; }
-    int lower() const{ return _lower; }
+    bool lower() const{ return _lower; }
+    bool upper() const{ return _upper; }
     int depth() const{ return _depth; }
 private:
     int _exact = 0;
-    int _upper = 0;
-    int _lower = 0;
+    bool _upper = 0;
+    bool _lower = 0;
     int _nodes = 0;
     int _depth = 0;
 };

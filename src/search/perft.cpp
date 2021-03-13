@@ -25,7 +25,6 @@ unsigned int perft_bulk(unsigned int depth, Board &board) {
 
     long hash = board.hash();
     if (transposition_table.probe(hash)) {
-        //std::cerr << "HIT:" << std::hex << hash << std::endl;
         TransElement hit = transposition_table.last_hit();
         if (hit.depth() == depth) {
             return hit.nodes();

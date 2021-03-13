@@ -23,13 +23,13 @@ int alphabeta(Board& board, const uint depth, const int alpha_start, const int b
     if (transposition_table.probe(hash)) {
         const TransElement hit = transposition_table.last_hit();
         if (hit.depth() >= depth) {
-            if (hit.exact() >= hit.upper()) {
+            if (hit.lower()) {
                 // The saved score is a lower bound for the score of the sub tree
                 if (hit.exact() >= beta) {
                     // beta cutoff
                     return hit.exact();
                 }
-            } else if (hit.exact() <= hit.lower()) {
+            } else if (hit.upper()) {
                 // The saved score is an upper bound for the score of the subtree.
                 if (hit.exact() <= alpha) {
                     // rare negamax alpha-cutoff
