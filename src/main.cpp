@@ -156,7 +156,7 @@ int main(int argc, char* argv[])
     }
 
     if (evaluate_static_flag) {
-        int score = heuristic_negamax(board);
+        int score = negamax_heuristic(board);
         std::cout << print_score(score) << std::endl;
         exit(EXIT_SUCCESS);
     }

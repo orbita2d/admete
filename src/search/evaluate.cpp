@@ -251,7 +251,7 @@ int heuristic(Board &board) {
     return value;
 }
 
-int heuristic_negamax(Board &board) {
+int negamax_heuristic(Board &board) {
     int side_multiplier = board.is_white_move() ? 1 : -1;
     return heuristic(board) * side_multiplier;
 }
@@ -269,5 +269,5 @@ int evaluate(Board &board, std::vector<Move> &legal_moves) {
             return -10;
         }
     }
-    return heuristic_negamax(board);
+    return negamax_heuristic(board);
 }

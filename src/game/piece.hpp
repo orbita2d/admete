@@ -7,7 +7,7 @@
 
 
 constexpr int N_COLOUR = 2;
-enum Colour : bool {
+enum Colour {
     WHITE,
     BLACK
 };

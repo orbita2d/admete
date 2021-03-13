@@ -171,7 +171,7 @@ KnightMoveArray knight_moves(const Square origin);
 class Move {
 public:
     Move(const Square o, const Square t) : origin(o), target(t) {};
-    Move() = default;
+    constexpr Move() {};
 
     Square origin;
     Square target;
@@ -300,16 +300,17 @@ public:
     constexpr bool is_promotion() const {
         return promotion;
     }
-    Piece captured_peice;
+    Piece captured_peice = 0;
 private:
     bool promotion = 0;
     bool capture = 0;
     bool special1 = 0;
     bool special2 = 0;
 };
+constexpr Move NULL_MOVE = Move();
 std::ostream& operator<<(std::ostream& os, const Move move);
 
-enum CastlingSide : bool {
+enum CastlingSide {
     KINGSIDE,
     QUEENSIDE
 };
@@ -354,9 +355,7 @@ public:
     std::vector<Move> get_captures();
     std::vector<Move> get_sorted_moves();
     bool is_attacked(const Square square, const Colour colour) const;
-    bool is_in_check() const;
     void update_checkers();
-    Colour who_to_play() const { return whos_move; }
 
     std::array<Square, 2> checkers() const {return _checkers;}
     int number_checkers() const {return _number_checkers;}
@@ -379,6 +378,7 @@ public:
     void slide_rook_pin(const Square origin, const Square direction, const uint to_edge, const Colour colour, const int idx);
     bool is_pinned(const Square origin) const;
     void build_occupied_bb();
+    Colour who_to_play() const { return whos_move; }
     bool is_black_move() const{ return whos_move == BLACK; }
     bool is_white_move() const{ return whos_move == WHITE; }
     bool can_castle(const Colour c) const{ return aux_info.castling_rights[c][KINGSIDE] | aux_info.castling_rights[c][QUEENSIDE];}

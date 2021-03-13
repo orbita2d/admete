@@ -46,6 +46,7 @@ int alphabeta(Board& board, const uint depth, const int alpha_start, const int b
     int best_score = NEG_INF;
     for (Move move : legal_moves) {
         PrincipleLine temp_line;
+        temp_line.reserve(16);
         board.make_move(move);
         int score = -alphabeta(board, depth - 1, -beta, -alpha, temp_line);
         board.unmake_move(move);
@@ -70,7 +71,7 @@ int alphabeta(Board& board, const uint depth, const int alpha_start, const int b
 
 int quiesce(Board& board, int alpha, int beta) {
     // perform quiesence search to evaluate only quiet positions.
-    int stand_pat = heuristic_negamax(board);
+    int stand_pat = negamax_heuristic(board);
     if (stand_pat >= beta) {
         return stand_pat;
     }
@@ -122,6 +123,7 @@ int pv_search(Board& board, const uint depth, const int alpha_start, int beta, P
             continue;
         }
         PrincipleLine temp_line;
+        temp_line.reserve(16);
         board.make_move(move);
         int score = -alphabeta(board, depth - 1, -beta, -alpha, temp_line);
         board.unmake_move(move);

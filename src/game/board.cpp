@@ -587,13 +587,6 @@ Square Board::find_king(const Colour colour) const{
 }
 
 
-bool Board::is_in_check() const {
-    Colour colour = whos_move;
-    Square king_square = find_king(colour);
-    return is_attacked(king_square, colour);
-}
-
-
 bool Board::is_pinned(const Square origin) const{
     for (Square target : pinned_pieces) {
         if (origin == target) {
