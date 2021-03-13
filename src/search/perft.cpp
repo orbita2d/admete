@@ -24,19 +24,12 @@ unsigned int perft_bulk(unsigned int depth, Board &board) {
     }
 
     long hash = board.hash();
-    if (transposition_table.probe(hash)) {
-        TransElement hit = transposition_table.last_hit();
-        if (hit.depth() == depth) {
-            return hit.nodes();
-        }
-    }
     unsigned int nodes = 0;
     for (Move move : legal_moves) {
         board.make_move(move);
         nodes += perft_bulk(depth-1, board);
         board.unmake_move(move);
     }
-    transposition_table.store(hash, 0, 0, 0, nodes, depth);
     return nodes;
 }
 

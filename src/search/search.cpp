@@ -64,7 +64,7 @@ int alphabeta(Board& board, const uint depth, const int alpha_start, const int b
         }
     }
     line = best_line;
-    transposition_table.store(hash, best_score, alpha_start, beta, 0, depth);
+    transposition_table.store(hash, best_score, alpha_start, beta, depth);
     return best_score;
 }
 
@@ -91,8 +91,9 @@ int quiesce(Board& board, int alpha, int beta) {
     return alpha;
 }
 
-int pv_search(Board& board, const uint depth, int alpha, int beta, PrincipleLine& principle, const uint pv_depth, PrincipleLine& line) {
+int pv_search(Board& board, const uint depth, const int alpha_start, int beta, PrincipleLine& principle, const uint pv_depth, PrincipleLine& line) {
     // perform alpha-beta pruning search with principle variation optimisation.
+    int alpha = alpha_start;
     std::vector<Move> legal_moves = board.get_sorted_moves();
     if (depth == 0) { return evaluate(board, legal_moves); }
     if (legal_moves.size() == 0) { 
@@ -134,7 +135,7 @@ int pv_search(Board& board, const uint depth, int alpha, int beta, PrincipleLine
         }
     }
     line = best_line;
-    //transposition_table.store(board.hash(), best_score, 0, depth);
+    transposition_table.store(board.hash(), best_score, alpha_start, beta, depth);
     return best_score;
 }
 

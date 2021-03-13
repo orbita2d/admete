@@ -3,7 +3,7 @@
 #include "board.hpp"
 
 
-TEST(ForcedMateTest, MateInTwoAlphaBeta) {
+TEST(ForcedMateTest, MateInTwo) {
     Board board = Board();
     std::vector<Move> line;
     uint depth = 4;
@@ -34,15 +34,6 @@ TEST(ForcedMateTest, MateInThree) {
     line.reserve(depth);
     board.fen_decode("r1b1kb1r/pppp1ppp/5q2/4n3/3KP3/2N3PN/PPP4P/R1BQ1B1R b kq - 0 1");
     EXPECT_EQ(iterative_deepening(board, depth, line),  (mating_score - 3));
-}
-
-TEST(ForcedMateTest, PvMateSearch) {
-    Board board = Board();
-    std::vector<Move> line;
-    uint depth = 6;
-    line.reserve(depth);
-    board.fen_decode("r2q1b1r/1pN1n1pp/p1n3k1/4Pb2/2BP4/8/PPP3PP/R1BQ1RK1 w - - 1 0");
-    EXPECT_EQ(iterative_deepening(board, depth, line),  +(mating_score - 2));
 }
 
 
