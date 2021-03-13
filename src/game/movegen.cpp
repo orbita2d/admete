@@ -464,31 +464,24 @@ MoveList Board::get_moves(){
 
 MoveList Board::get_sorted_moves() {
     const MoveList legal_moves = get_moves();
-    MoveList checks, promotions, captures, quiet_moves, sorted_moves;
+    MoveList checks, non_checks, promotions, sorted_moves;
     checks.reserve(MAX_MOVES);
-    promotions.reserve(MAX_MOVES);
-    captures.reserve(MAX_MOVES);
-    quiet_moves.reserve(MAX_MOVES);
+    non_checks.reserve(MAX_MOVES);
+    // The moves from get_moves already have captures first
     for (Move move : legal_moves) {
         make_move(move);
         if (aux_info.is_check) {
             checks.push_back(move);
-        } else if (move.is_queen_promotion()) {
+        } else if (move.is_queen_promotion()){
             promotions.push_back(move);
-        } else if (move.is_knight_promotion()) {
-            promotions.push_back(move);
-        } else if (move.is_capture()) {
-            captures.push_back(move);
         } else {
-            quiet_moves.push_back(move);
+            non_checks.push_back(move);
         }
         unmake_move(move);
     }
-    sorted_moves.clear();
-    sorted_moves.insert(sorted_moves.end(), checks.begin(), checks.end());
+    sorted_moves = checks;
     sorted_moves.insert(sorted_moves.end(), promotions.begin(), promotions.end());
-    sorted_moves.insert(sorted_moves.end(), captures.begin(), captures.end());
-    sorted_moves.insert(sorted_moves.end(), quiet_moves.begin(), quiet_moves.end());
+    sorted_moves.insert(sorted_moves.end(), non_checks.begin(), non_checks.end());
     return sorted_moves;
 }
 
