@@ -22,17 +22,23 @@ int alphabeta(Board& board, const uint depth, const int alpha_start, const int b
     const long hash = board.hash();
     if (transposition_table.probe(hash)) {
         const TransElement hit = transposition_table.last_hit();
-        if (hit.exact() >= hit.upper()) {
-            // The saved score is a lower bound for the score of the sub tree
-            if (hit.exact() >= beta) {
-                // beta cutoff
+        if (hit.depth() >= depth) {
+            if (hit.exact() >= hit.upper()) {
+                // The saved score is a lower bound for the score of the sub tree
+                if (hit.exact() >= beta) {
+                    // beta cutoff
+                    return hit.exact();
+                }
+            } else if (hit.exact() <= hit.lower()) {
+                // The saved score is an upper bound for the score of the subtree.
+                if (hit.exact() <= alpha) {
+                    // rare negamax alpha-cutoff
+                    return hit.exact();
+                }
+            } else {
+                // The saved score is an exact value for the subtree
                 return hit.exact();
             }
-        } else if (hit.exact() <= hit.lower()) {
-            // The saved score is an upper bound for the score of the subtree.
-        } else {
-            // The saved score is an exact value for the subtree
-            return hit.exact();
         }
     }
     
