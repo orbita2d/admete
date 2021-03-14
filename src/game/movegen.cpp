@@ -117,8 +117,8 @@ void get_pawn_moves(const Board &board, const Square origin, MoveList &quiet_mov
     }
     // En-passent
     if (origin.rank() == relative_rank(colour, Squares::Rank5)) {
-        if (origin.to_west() != 0 & board.aux_info.en_passent_target == Square(origin + forwards(colour) + Direction::W) | 
-            origin.to_east() != 0 & board.aux_info.en_passent_target == Square(origin + forwards(colour) + Direction::E) ) {
+        if (((origin.to_west() != 0) & (board.aux_info.en_passent_target == Square(origin + forwards(colour) + Direction::W))) | 
+            ((origin.to_east() != 0) & (board.aux_info.en_passent_target == Square(origin + forwards(colour) + Direction::E))) ) {
             move = Move(origin, board.aux_info.en_passent_target); 
             move.make_en_passent();
             captures.push_back(move);
@@ -234,16 +234,16 @@ void get_king_moves(const Board &board, const Square origin, MoveList &quiet_mov
     if (origin.to_west() != 0) {
         get_step_moves<colour>(board, origin, origin + Direction::W, quiet_moves, captures);
     }
-    if (origin.to_north() != 0 & origin.to_east() != 0) {
+    if ((origin.to_north() != 0) & (origin.to_east() != 0)) {
         get_step_moves<colour>(board, origin, origin + Direction::NE, quiet_moves, captures);
     }
-    if (origin.to_south() != 0 & origin.to_east() != 0) {
+    if ((origin.to_south() != 0) & (origin.to_east() != 0)) {
         get_step_moves<colour>(board, origin, origin + Direction::SE, quiet_moves, captures);
     }
-    if (origin.to_south() != 0 & origin.to_west() != 0) {
+    if ((origin.to_south() != 0) & (origin.to_west() != 0)) {
         get_step_moves<colour>(board, origin, origin + Direction::SW, quiet_moves, captures);
     }
-    if (origin.to_north() != 0 & origin.to_west() != 0) {
+    if ((origin.to_north() != 0) & (origin.to_west() != 0)) {
         get_step_moves<colour>(board, origin, origin + Direction::NW, quiet_moves, captures);
     }
 }
