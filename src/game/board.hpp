@@ -218,9 +218,11 @@ public:
     bool is_check() const{ return aux_info.is_check;};
 
     long int hash() const;
-    std::array<Piece, 64> pieces() const{return pieces_array;}
-    Piece pieces(Square sq) const{return pieces_array.at(sq);}
-    Piece pieces(int sq) const{return pieces_array[sq];}
+    Piece pieces(const Square sq) const{return pieces_array.at(sq);}
+    Bitboard pieces() const {return occupied_bb;}
+    Bitboard pieces(const PieceEnum p) const{return piece_bb[p];}
+    Bitboard pieces(const Colour c) const{return colour_bb[c];}
+    Bitboard pieces(const Colour c, const PieceEnum p) const{return colour_bb[c] & piece_bb[p];}
 
     void make_move(Move &move);
     void unmake_move(const Move move);

@@ -10,3 +10,5 @@ set_property(TARGET search_library PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
 target_include_directories(search_library PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
+
+target_compile_options(search_library PRIVATE "-Wall" PRIVATE "-Wextra" PRIVATE "-std=c++17")

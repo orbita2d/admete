@@ -22,8 +22,6 @@ unsigned int perft_bulk(unsigned int depth, Board &board) {
     if (depth == 1) {
         return legal_moves.size();
     }
-
-    long hash = board.hash();
     unsigned int nodes = 0;
     for (Move move : legal_moves) {
         board.make_move(move);

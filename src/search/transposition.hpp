@@ -2,7 +2,7 @@
 
 struct TransElement {
     TransElement() = default;
-    TransElement(int eval, int a, int b, int d) : _exact(eval), _lower(eval >= b), _upper(eval <= a), _depth(d) {}; 
+    TransElement(int eval, int a, int b, int d) : _exact(eval), _depth(d), _upper(eval <= a), _lower(eval >= b) {}; 
     int eval() const{ return _exact; }
     bool lower() const{ return _lower; }
     bool upper() const{ return _upper; }

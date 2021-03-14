@@ -258,7 +258,6 @@ int negamax_heuristic(Board &board) {
 
 int evaluate(Board &board, std::vector<Move> &legal_moves) {
     // evaluate the position relative to the current player.
-    int value = 0;
     // First check if we have been mated.
     if (legal_moves.size() == 0) {
         if (board.aux_info.is_check) {

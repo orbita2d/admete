@@ -5,11 +5,11 @@
 #include "transposition.hpp"
 #include <iostream>
 
-int alphabeta(Board& board, const uint depth, PrincipleLine& line) {
+int alphabeta(Board& board, const int depth, PrincipleLine& line) {
     return alphabeta(board, depth, NEG_INF, POS_INF, line);
 }
 
-int alphabeta(Board& board, const uint depth, const int alpha_start, const int beta_start, PrincipleLine& line) {
+int alphabeta(Board& board, const int depth, const int alpha_start, const int beta_start, PrincipleLine& line) {
     // perform alpha-beta pruning search.
     int alpha = alpha_start;
     int beta = beta_start;
@@ -97,7 +97,7 @@ int quiesce(Board& board, int alpha, int beta) {
     return alpha;
 }
 
-int pv_search(Board& board, const uint depth, const int alpha_start, int beta, PrincipleLine& principle, const uint pv_depth, PrincipleLine& line) {
+int pv_search(Board& board, const int depth, const int alpha_start, int beta, PrincipleLine& principle, const uint pv_depth, PrincipleLine& line) {
     // perform alpha-beta pruning search with principle variation optimisation.
     int alpha = alpha_start;
     std::vector<Move> legal_moves = board.get_sorted_moves();
@@ -146,7 +146,7 @@ int pv_search(Board& board, const uint depth, const int alpha_start, int beta, P
     return best_score;
 }
 
-int iterative_deepening(Board& board, const uint max_depth, const int max_millis, PrincipleLine& line) {
+int iterative_deepening(Board& board, const int max_depth, const int max_millis, PrincipleLine& line) {
     // Initialise the transposition table.
     transposition_table.clear();
     PrincipleLine principle;
@@ -189,11 +189,11 @@ int iterative_deepening(Board& board, const uint max_depth, const int max_millis
     return score;
 }
 
-int iterative_deepening(Board& board, const uint depth, PrincipleLine& line) {
+int iterative_deepening(Board& board, const int depth, PrincipleLine& line) {
     return iterative_deepening(board, depth, POS_INF, line);
 }
 
-int find_best_random(Board& board, const uint max_depth, const int random_weight, const int max_millis, PrincipleLine& line) {
+int find_best_random(Board& board, const int max_depth, const int random_weight, const int max_millis, PrincipleLine& line) {
     std::vector<Move> legal_moves = board.get_sorted_moves();
     int n = legal_moves.size();
     std::vector<PrincipleLine> line_array(legal_moves.size());
