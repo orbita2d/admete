@@ -1,26 +1,10 @@
 #include <ostream>
-
+#include "types.hpp"
 #pragma once
 
 #define CMASK 0x18
 #define PMASK 0x07
 
-
-constexpr int N_COLOUR = 2;
-enum Colour {
-    WHITE,
-    BLACK
-};
-
-constexpr int N_PIECE = 6;
-enum PieceEnum {
-    PAWN,
-    KNIGHT,
-    BISHOP,
-    ROOK,
-    QUEEN,
-    KING
-};
 
 constexpr Colour operator~(Colour c) {
   return Colour(c ^ Colour::BLACK); // Toggle color

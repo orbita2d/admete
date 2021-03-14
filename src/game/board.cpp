@@ -223,11 +223,11 @@ void Board::build_occupied_bb() {
 }
 
 bool Board::is_free(const Square target) const{  
-    return (occupied_bb & sq_to_bb(target)) == 0 ;
+    return (occupied_bb & target) == 0 ;
 };
 
 bool Board::is_colour(const Colour c, const Square target) const{ 
-    return (colour_bb[c] & sq_to_bb(target)) != 0 ;
+    return (colour_bb[c] & target) != 0 ;
 };
 
 void Board::make_move(Move &move) {

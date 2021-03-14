@@ -9,3 +9,5 @@ target_link_libraries(tests
 
 add_test(NAME tests
         COMMAND tests)
+
+target_compile_options(tests PRIVATE "-std=c++17")
