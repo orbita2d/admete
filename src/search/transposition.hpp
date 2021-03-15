@@ -6,10 +6,10 @@ struct TransElement {
     int eval() const{ return _exact; }
     bool lower() const{ return _lower; }
     bool upper() const{ return _upper; }
-    int depth() const{ return _depth; }
+    unsigned int depth() const{ return _depth; }
 private:
     int _exact = 0;
-    int _depth = 0;
+    unsigned int _depth = 0;
     bool _upper = 0;
     bool _lower = 0;
 };
