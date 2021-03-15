@@ -218,61 +218,78 @@ void get_step_moves(const Board &board, const Square origin, const Square target
     }
 }
 
-template<Colour colour>
+template<Colour us>
 void get_king_moves(const Board &board, const Square origin, MoveList &quiet_moves, MoveList &captures) {
+    const Colour them = ~us;
     // We should really be careful that we aren't moving into check here.
     // Look to see if we are on an edge.
-    if (origin.to_north() != 0) {
-        get_step_moves<colour>(board, origin, origin + Direction::N, quiet_moves, captures);
+    const Bitboard my_attacks = attacks(KING, origin);
+    Bitboard quiet_bb = my_attacks & ~board.pieces();
+    Bitboard capt_bb = my_attacks & board.pieces(them);
+    while (quiet_bb) {
+        Square sq = pop_lsb(&quiet_bb);
+        Move move = Move(origin, sq);
+        quiet_moves.push_back(move);
     }
-    if (origin.to_east() != 0) {
-        get_step_moves<colour>(board, origin, origin + Direction::E, quiet_moves, captures);
-    }
-    if (origin.to_south() != 0) {
-        get_step_moves<colour>(board, origin, origin + Direction::S, quiet_moves, captures);
-    }
-    if (origin.to_west() != 0) {
-        get_step_moves<colour>(board, origin, origin + Direction::W, quiet_moves, captures);
-    }
-    if ((origin.to_north() != 0) & (origin.to_east() != 0)) {
-        get_step_moves<colour>(board, origin, origin + Direction::NE, quiet_moves, captures);
-    }
-    if ((origin.to_south() != 0) & (origin.to_east() != 0)) {
-        get_step_moves<colour>(board, origin, origin + Direction::SE, quiet_moves, captures);
-    }
-    if ((origin.to_south() != 0) & (origin.to_west() != 0)) {
-        get_step_moves<colour>(board, origin, origin + Direction::SW, quiet_moves, captures);
-    }
-    if ((origin.to_north() != 0) & (origin.to_west() != 0)) {
-        get_step_moves<colour>(board, origin, origin + Direction::NW, quiet_moves, captures);
+    while (capt_bb) {
+        Square sq = pop_lsb(&capt_bb);
+        Move move = Move(origin, sq);
+        move.make_capture();
+        captures.push_back(move);
     }
 }
 
-template<Colour colour>
+template<Colour us>
 void get_knight_moves(const Board &board, const Square origin, MoveList &quiet_moves, MoveList &captures) {
-    for (Square target : knight_moves(origin)) {
-        get_step_moves<colour>(board, origin, target, quiet_moves, captures);
+    const Colour them = ~us;
+    const Bitboard my_attacks = attacks(KNIGHT, origin);
+    Bitboard quiet_bb = my_attacks & ~board.pieces();
+    Bitboard capt_bb = my_attacks & board.pieces(them);
+    while (quiet_bb) {
+        Square sq = pop_lsb(&quiet_bb);
+        Move move = Move(origin, sq);
+        quiet_moves.push_back(move);
+    }
+    while (capt_bb) {
+        Square sq = pop_lsb(&capt_bb);
+        Move move = Move(origin, sq);
+        move.make_capture();
+        captures.push_back(move);
     }
 };
 
 template<Colour colour>
 void generate_pseudolegal_moves(const Board &board, MoveList &quiet_moves, MoveList &captures) {
-    for (Square::square_t sq = 0; sq < 64; sq++) {
-        Piece piece = board.pieces(sq);
-        if (! piece.is_colour(colour)) {continue; }
-        if (piece.is_knight()) {
-            get_knight_moves<colour>(board, sq, quiet_moves, captures);
-        } else if (piece.is_pawn()) {
-            get_pawn_moves<colour>(board, sq, quiet_moves, captures);
-        } else if (piece.is_rook()) {
-            get_rook_moves<colour>(board, sq, quiet_moves, captures);
-        } else if (piece.is_bishop()) {
-            get_bishop_moves<colour>(board, sq, quiet_moves, captures);
-        } else if (piece.is_queen()) {
-            get_queen_moves<colour>(board, sq, quiet_moves, captures);
-        } else if (piece.is_king()) {
-            get_king_moves<colour>(board, sq, quiet_moves, captures);
-        }
+    Bitboard occ;
+    occ = board.pieces(colour, PAWN);
+    while (occ) {
+        Square sq = pop_lsb(&occ);
+        get_pawn_moves<colour>(board, sq, quiet_moves, captures);
+    }
+    occ = board.pieces(colour, KNIGHT);
+    while (occ) {
+        Square sq = pop_lsb(&occ);
+        get_knight_moves<colour>(board, sq, quiet_moves, captures);
+    }
+    occ = board.pieces(colour, BISHOP);
+    while (occ) {
+        Square sq = pop_lsb(&occ);
+        get_bishop_moves<colour>(board, sq, quiet_moves, captures);
+    }
+    occ = board.pieces(colour, ROOK);
+    while (occ) {
+        Square sq = pop_lsb(&occ);
+        get_rook_moves<colour>(board, sq, quiet_moves, captures);
+    }
+    occ = board.pieces(colour, QUEEN);
+    while (occ) {
+        Square sq = pop_lsb(&occ);
+        get_queen_moves<colour>(board, sq, quiet_moves, captures);
+    }
+    occ = board.pieces(colour, KING);
+    while (occ) {
+        Square sq = pop_lsb(&occ);
+        get_king_moves<colour>(board, sq, quiet_moves, captures);
     }
 }
 
@@ -300,7 +317,7 @@ void generate_moves(Board &board, MoveList &moves) {
         pseudolegal_moves = captures;
         pseudolegal_moves.insert(pseudolegal_moves.end(), quiet_moves.begin(), quiet_moves.end());
     }
-    if (board.aux_info.is_check) {
+    if (board.is_check()) {
         const std::array<Square, 2> checkers = board.checkers();
         const int number_checkers = board.number_checkers();
         for (Move move : pseudolegal_moves) {

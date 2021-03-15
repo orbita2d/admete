@@ -150,10 +150,10 @@ bool in_line(const Square origin, const Square target){
 }
 
 bool in_line(const Square p1, const Square p2, const Square p3){
-    if (p1.file() == p2.file() & p1.file() == p3.file()) {return true; }
-    if (p1.rank() == p2.rank() & p1.rank() == p3.rank()) {return true; }
-    if (p1.diagonal() == p2.diagonal() & p1.diagonal() == p3.diagonal()) {return true; }
-    if (p1.anti_diagonal() == p2.anti_diagonal() & p1.anti_diagonal() == p3.anti_diagonal()) {return true; }
+    if ((p1.file() == p2.file()) & (p1.file() == p3.file())) {return true; }
+    if ((p1.rank() == p2.rank()) & (p1.rank() == p3.rank())) {return true; }
+    if ((p1.diagonal() == p2.diagonal()) & (p1.diagonal() == p3.diagonal())) {return true; }
+    if ((p1.anti_diagonal() == p2.anti_diagonal()) & (p1.anti_diagonal() == p3.anti_diagonal())) {return true; }
     return false;
 }
 
@@ -315,7 +315,7 @@ void Board::make_move(Move &move) {
         colour_bb[us] ^= from_to_bb;
         colour_bb[them] ^= to_bb;
         piece_bb[p] ^= from_to_bb;
-        piece_bb[to_enum_piece(move.captured_peice)] ^= from_to_bb;
+        piece_bb[to_enum_piece(move.captured_peice)] ^= to_bb;
         pieces_array[move.target] = pieces_array[move.origin];
         pieces_array[move.origin] = Pieces::Blank;
     } else {
@@ -437,7 +437,7 @@ void Board::unmake_move(const Move move) {
         colour_bb[us] ^= from_to_bb;
         colour_bb[them] ^= to_bb;
         piece_bb[p] ^= from_to_bb;
-        piece_bb[to_enum_piece(move.captured_peice)] ^= from_to_bb;
+        piece_bb[to_enum_piece(move.captured_peice)] ^= to_bb;
     } else {
         pieces_array[move.origin] = moving_piece;
         pieces_array[move.target] = Pieces::Blank;
@@ -515,11 +515,9 @@ bool Board::is_attacked(const Square origin, const Colour us) const{
     // Want to (semi-efficiently) see if a square is attacked, ignoring pins.
     // First off, if the square is attacked by a knight, it's definitely in check.
     const Colour them = ~us;
-    for (Square target : knight_moves(origin)) {
-        if (pieces(target) == Piece(them, KNIGHT)) {
-            return true;
-        }
-    }
+
+    if (attacks(KNIGHT, origin) & pieces(them, KNIGHT)) { return true;}
+    if (attacks(KING, origin) & pieces(them, KING)) { return true;}
 
     // Pawn square
     Square target;
@@ -559,48 +557,6 @@ bool Board::is_attacked(const Square origin, const Colour us) const{
     for (Square target : targets){
         target_piece = pieces(target);
         if ((target_piece == Piece(them, BISHOP)) | (target_piece == Piece(them, QUEEN))) {
-            return true;
-        }
-    }
-    
-    // King's can't be next to each other in a game, but this is how we enforce that.
-    if (origin.to_north() != 0) {
-        if (pieces(origin + Direction::N) == Piece(them, KING)) {
-            return true;
-        }
-        if (origin.to_east() != 0) {
-            if (pieces(origin + Direction::NE) == Piece(them, KING)) {
-                return true;
-            }
-        }
-        if (origin.to_west() != 0) {
-            if (pieces(origin + Direction::NW) == Piece(them, KING)) {
-                return true;
-            }
-        }
-    } 
-    if (origin.to_south() != 0) {
-        if (pieces(origin + Direction::S) == Piece(them, KING)) {
-            return true;
-        }
-        if (origin.to_east() != 0) {
-            if (pieces(origin + Direction::SE) == Piece(them, KING)) {
-                return true;
-            }
-        }
-        if (origin.to_west() != 0) {
-            if (pieces(origin + Direction::SW) == Piece(them, KING)) {
-                return true;
-            }
-        }
-    } 
-    if (origin.to_east() != 0) {
-        if (pieces(origin + Direction::E) == Piece(them, KING)) {
-            return true;
-        }
-    }
-    if (origin.to_west() != 0) {
-        if (pieces(origin + Direction::W) == Piece(them, KING)) {
             return true;
         }
     }
@@ -733,12 +689,10 @@ void Board::update_checkers() {
     // Want to (semi-efficiently) see if a square is attacked, ignoring pins.
     // First off, if the square is attacked by a knight, it's definitely in check.
     _number_checkers = 0;
-    for (Square target : knight_moves(origin)) {
-        if (pieces(target) == Piece(them, KNIGHT)) {
-            _checkers[_number_checkers] = target;
-            _number_checkers++;
-            continue;
-        }
+    const Bitboard knight_attacks = attacks(KNIGHT, origin) & pieces(them, KNIGHT);
+    if (knight_attacks) { 
+        _checkers[_number_checkers] = lsb(knight_attacks);
+        _number_checkers++;
     }
 
     // Pawn square
