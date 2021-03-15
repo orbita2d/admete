@@ -100,28 +100,63 @@ void get_sliding_moves(const Board &board, const Square origin, const uint to_ed
     };
 }
 
-template<Colour colour>
+template<Colour us>
 void get_rook_moves(const Board &board, const Square origin, MoveList &quiet_moves, MoveList &captures) {
-    get_sliding_moves<colour, Direction::N>(board, origin, origin.to_north(), quiet_moves, captures);
-    get_sliding_moves<colour, Direction::E>(board, origin, origin.to_east(), quiet_moves, captures);
-    get_sliding_moves<colour, Direction::S>(board, origin, origin.to_south(), quiet_moves, captures);
-    get_sliding_moves<colour, Direction::W>(board, origin, origin.to_west(), quiet_moves, captures);
+    const Colour them = ~us;
+    const Bitboard atk = rook_attacks(board.pieces(), origin);
+    Bitboard quiet_bb = atk & ~board.pieces();
+    Bitboard capt_bb = atk & board.pieces(them);
+    while (quiet_bb) {
+        Square sq = pop_lsb(&quiet_bb);
+        Move move = Move(origin, sq);
+        quiet_moves.push_back(move);
+    }
+    while (capt_bb) {
+        Square sq = pop_lsb(&capt_bb);
+        Move move = Move(origin, sq);
+        move.make_capture();
+        captures.push_back(move);
+    }
 }
 
 
-template<Colour colour>
+template<Colour us>
 void get_bishop_moves(const Board &board, const Square origin, MoveList &quiet_moves, MoveList &captures) {
-        get_sliding_moves<colour, Direction::NE>(board, origin, origin.to_northeast(), quiet_moves, captures);
-        get_sliding_moves<colour, Direction::SE>(board, origin, origin.to_southeast(), quiet_moves, captures);
-        get_sliding_moves<colour, Direction::SW>(board, origin, origin.to_southwest(), quiet_moves, captures);
-        get_sliding_moves<colour, Direction::NW>(board, origin, origin.to_northwest(), quiet_moves, captures);
+    const Colour them = ~us;
+    const Bitboard atk = bishop_attacks(board.pieces(), origin);
+    Bitboard quiet_bb = atk & ~board.pieces();
+    Bitboard capt_bb = atk & board.pieces(them);
+    while (quiet_bb) {
+        Square sq = pop_lsb(&quiet_bb);
+        Move move = Move(origin, sq);
+        quiet_moves.push_back(move);
+    }
+    while (capt_bb) {
+        Square sq = pop_lsb(&capt_bb);
+        Move move = Move(origin, sq);
+        move.make_capture();
+        captures.push_back(move);
+    }
 }
 
-template<Colour colour>
+template<Colour us>
 void get_queen_moves(const Board &board, const Square origin, MoveList &quiet_moves, MoveList &captures) {
     // Queen moves are the union superset of rook and bishop moves
-    get_bishop_moves<colour>(board, origin, quiet_moves, captures);
-    get_rook_moves<colour>(board, origin, quiet_moves, captures);
+    const Colour them = ~us;
+    const Bitboard atk = bishop_attacks(board.pieces(), origin) | rook_attacks(board.pieces(), origin);
+    Bitboard quiet_bb = atk & ~board.pieces();
+    Bitboard capt_bb = atk & board.pieces(them);
+    while (quiet_bb) {
+        Square sq = pop_lsb(&quiet_bb);
+        Move move = Move(origin, sq);
+        quiet_moves.push_back(move);
+    }
+    while (capt_bb) {
+        Square sq = pop_lsb(&capt_bb);
+        Move move = Move(origin, sq);
+        move.make_capture();
+        captures.push_back(move);
+    }
 }
 
 

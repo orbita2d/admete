@@ -1,5 +1,5 @@
 #include <iostream>
-
+#include <random>
 #include "bitboard.hpp"
 
 void Bitboards::pretty(const Bitboard bb) {
@@ -12,6 +12,138 @@ void Bitboards::pretty(const Bitboard bb) {
     }
     std::cout << std::endl;
 
+}
+class PRNG {
+public:
+    PRNG(long s) {
+        std::mt19937_64 generator(s);
+        _gen = generator;
+    }
+    long rand() {
+        std::uniform_int_distribution<long> distribution;
+        return distribution(_gen);
+    }
+    long sparse() {
+        // Average of 64/8 = 8 bits set
+        return rand() & rand() & rand();
+    }
+private:
+    std::mt19937_64 _gen;
+};
+
+int count_bits(Bitboard bb) {
+    int bits = 0;
+    for (int i = 0; i < N_SQUARE; i++) {
+        if (bb & sq_to_bb(i)) {bits++; }
+    }
+    return bits;
+}
+
+Bitboard direct_sliding_move(const Bitboard occ, const Square origin, const Direction dir, const uint to_edge) {
+    Square target = origin;
+    Bitboard bb = 0;
+    for (uint i = 0; i < to_edge; i++) {
+        target += dir;
+        bb |= sq_to_bb(target);
+        if (occ & target) { break; }
+    }
+    return bb;
+}
+
+Bitboard direct_bishop_attack(const Bitboard occ, Square origin) {
+    // Calculate bishop attacks for the magic bitboard precalculation.
+    Bitboard bb = 0;
+    bb |= direct_sliding_move(occ, origin, Direction::NW, origin.to_northwest());
+    bb |= direct_sliding_move(occ, origin, Direction::NE, origin.to_northeast());
+    bb |= direct_sliding_move(occ, origin, Direction::SW, origin.to_southwest());
+    bb |= direct_sliding_move(occ, origin, Direction::SE, origin.to_southeast());
+    return bb;
+}
+
+Bitboard direct_rook_attack(const Bitboard occ, Square origin) {
+    // Calculate bishop attacks for the magic bitboard precalculation.
+    Bitboard bb = 0;
+    bb |= direct_sliding_move(occ, origin, Direction::N, origin.to_north());
+    bb |= direct_sliding_move(occ, origin, Direction::W, origin.to_west());
+    bb |= direct_sliding_move(occ, origin, Direction::E, origin.to_east());
+    bb |= direct_sliding_move(occ, origin, Direction::S, origin.to_south());
+    return bb;
+}
+
+void search_magics(PieceEnum p, Bitboard table[], Magic magics[]) {
+    PRNG prng(0x3243f6a8885a308d);
+    // This is the most possible occupation combinations for a bishop or rook on any square (2^12), 6 bits on each ray at corner
+    Bitboard occupancy[4096], reference[4096];
+    int last_size = 0;
+    std::cerr << "Building magics . . ." << std::endl;
+    for (int sq = 0; sq<64; sq++) {
+        Square origin(sq);
+        Bitboard mask;
+        mask = (~(Bitboards::a_file_bb | Bitboards::h_file_bb) | Bitboards::file(sq));
+        mask &= ~(Bitboards::rank_1_bb | Bitboards::rank_8_bb) | Bitboards::rank(sq);
+        if (p == BISHOP) {
+            mask &= direct_bishop_attack(0, sq);
+        } else if (p == ROOK) {
+            mask &= direct_rook_attack(0, sq);
+        }
+        Magic& magic = magics[sq];
+        magic.mask = mask;
+        magic.shift = 64 - count_bits(mask);
+        if (sq == 0) {
+            // table decomposed to a pointer to the first element
+            magic.ptr = table;
+        } else {
+            // point to the first unset element of the table.
+            magic.ptr = magics[sq - 1].ptr + last_size;
+        }
+        // Maths, Carry-Ripler trick. 
+        Bitboard b = 0;
+        last_size = 0;
+        do {
+            occupancy[last_size] = b;
+            if (p == BISHOP) {
+                reference[last_size] = direct_bishop_attack(b, sq);
+            } else if (p == ROOK) {
+                reference[last_size] = direct_rook_attack(b, sq);
+            }
+            last_size++;
+            b = (b - mask) & mask;
+        } while (b);
+        Bitboard guess;
+        while (true) {
+            bool verify[4096] = { false };
+            bool fail_flag = false;
+            guess = prng.sparse();
+            magic.magic = guess;
+            // For this square, go through each occ combination (last_size many)
+            for (int i = 0; i < last_size; i++) {
+                // Map the occupancy onto a int 0 <= index < 4096
+                int index = magic.index(occupancy[i]);
+                if (verify[index] == false) {
+                    // This index hasn't been seen before.
+                    verify[index] = true;
+                    magic.ptr[index] = reference[i];
+                } else {
+                    // This index has been seen before, check if the hashing is constructive
+                    // (two different occupations with the same attack map, mapping to the same index)
+                    
+                    if (reference[i] == magic.ptr[index]) {
+                        // We can continue, this is constructive
+                        continue;
+                    } else {
+                        // Failed the verification test.
+                        fail_flag = true;
+                        break;
+                    }
+                    
+                }
+            }
+            // If we failed, the loop has to go around again.
+            if (!fail_flag) {break; }
+        }
+
+    }
+    std::cerr << "Done with magics." << std::endl;
 }
 
 void Bitboards::init() {
@@ -90,4 +222,7 @@ void Bitboards::init() {
         PawnAttacks[WHITE][origin] = shift<Direction::NW>(origin_bb) | shift<Direction::NE>(origin_bb);
         PawnAttacks[BLACK][origin] = shift<Direction::SW>(origin_bb) | shift<Direction::SE>(origin_bb);
     }
+    // Initialise magic bitboard tables.
+    search_magics(BISHOP, BishopTable, BishopMagics);
+    search_magics(ROOK, RookTable, RookMagics);
 }

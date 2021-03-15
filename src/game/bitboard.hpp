@@ -5,8 +5,9 @@
 typedef unsigned long int Bitboard;
 
 inline Bitboard PseudolegalAttacks[N_PIECE][N_SQUARE];
-// Pawn attacks vary by colour
 inline Bitboard PawnAttacks[N_COLOUR][N_SQUARE];
+inline Bitboard RankBBs[8] = {0x00000000000000FF, 0x000000000000ff00, 0x0000000000ff0000, 0x00000000ff000000, 0x000000ff00000000, 0x0000ff0000000000, 0x00ff000000000000, 0xff00000000000000};
+inline Bitboard FileBBs[8] = {0x0101010101010101, 0x0202020202020202, 0x0404040404040404, 0x0808080808080808, 0x1010101010101010, 0x2020202020202020, 0x4040404040404040, 0x8080808080808080};
 
 inline Bitboard sq_to_bb(const int s) {
     return Bitboard(1) << s;
@@ -28,6 +29,8 @@ namespace Bitboards
     void init();
     constexpr Bitboard h_file_bb = 0x0101010101010101;
     constexpr Bitboard a_file_bb = 0x8080808080808080;
+    constexpr Bitboard rank_1_bb = 0xff00000000000000;
+    constexpr Bitboard rank_8_bb = 0x00000000000000FF;
 
   template<Direction dir>
   constexpr Bitboard shift(const Bitboard bb) {
@@ -50,8 +53,45 @@ namespace Bitboards
   inline Bitboard pawn_attacks(const Colour c, const Square s) {
       return PawnAttacks[c][s];
   }
+
+  inline Bitboard rank(const Square s) {
+    return RankBBs[s.rank_index()];
+  }
+
+  inline Bitboard file(const Square s) {
+    return FileBBs[s.file_index()];
+  }
 }
 
+// Trying to implement the magic bitboard in https://www.chessprogramming.org/Magic_Bitboards "fancy"
+struct Magic {
+  // Pointer to attacks bitboard
+  Bitboard* ptr;
+  Bitboard mask;
+  Bitboard magic;
+  int shift;
+  int index(Bitboard occ) const{
+    return unsigned(((occ & mask) * magic) >> shift);
+  }
+};
+
+inline Bitboard BishopTable[0x1480]; // The length of these I grabbed from stockfish but cannot justify.
+inline Bitboard RookTable[0x19000];
+
+inline Magic BishopMagics[N_SQUARE];
+inline Magic RookMagics[N_SQUARE];
+
+inline Bitboard bishop_attacks(Bitboard occ, const Square sq)  {
+  const Magic magic = BishopMagics[sq];
+  Bitboard* aptr = magic.ptr;
+  return aptr[magic.index(occ)];
+}
+
+inline Bitboard rook_attacks(Bitboard occ, const Square sq)  {
+  const Magic magic = RookMagics[sq];
+  Bitboard* aptr = magic.ptr;
+  return aptr[magic.index(occ)];
+}
 
 // Following bit magic shamelessly stolen from Stockfish
 

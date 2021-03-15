@@ -111,9 +111,6 @@ int main(int argc, char* argv[])
 		}
 	}
     Bitboards::init();
-    for (int i = 0; i < 64; i++) {
-        Bitboards::pretty(Bitboards::pawn_attacks(WHITE, i));
-    }
     Board board = Board();
     board.fen_decode(board_fen);
 

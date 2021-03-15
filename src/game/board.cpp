@@ -736,7 +736,7 @@ long int zobrist_table_ep[8];
 
 void init_zobrist() {
     std::mt19937_64 generator(0x3243f6a8885a308d);
-     std::uniform_int_distribution<unsigned long> distribution;
+    std::uniform_int_distribution<unsigned long> distribution;
     // Fill table with random bitstrings
     for (int c = 0; c < N_COLOUR; c++) {
         for (int p = 0; p < N_PIECE; p++) {

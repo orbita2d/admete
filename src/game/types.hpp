@@ -2,6 +2,27 @@
 #include <string>
 #include <array>
 
+
+enum Direction : int {
+    N = -8,
+    E =  1,
+    S = 8,
+    W = -1,
+    NW = -9,
+    NE = -7,
+    SE = 9,
+    SW = 7,
+    NNW = -17,
+    NNE = -15,
+    ENE = -6,
+    ESE = 10,
+    SSE = 17,
+    SSW = 15,
+    WSW = 6,
+    WNW = -10
+};
+
+
 constexpr int N_SQUARE = 64;
 class Square {
 public:
@@ -85,6 +106,11 @@ public:
     constexpr operator square_t() const {
         return value;
     };
+    
+    inline Square &operator += (const Direction dir) {
+        value += dir;
+        return *this;
+    }
 
     /*
     constexpr Square operator+(Direction v) {
@@ -100,25 +126,6 @@ private:
     square_t value = 0;
 };
 std::ostream& operator<<(std::ostream& os, const Square square);
-
-enum Direction : int {
-    N = -8,
-    E =  1,
-    S = 8,
-    W = -1,
-    NW = -9,
-    NE = -7,
-    SE = 9,
-    SW = 7,
-    NNW = -17,
-    NNE = -15,
-    ENE = -6,
-    ESE = 10,
-    SSE = 17,
-    SSW = 15,
-    WSW = 6,
-    WNW = -10
-};
 
 namespace Squares {    
     static constexpr Square Rank1 = 7 * 8;
