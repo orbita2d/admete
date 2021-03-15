@@ -16,6 +16,11 @@ void Bitboards::pretty(const Bitboard bb) {
 
 void Bitboards::init() {
     // Zero-initialise
+    
+    for (int sq = 0; sq < N_SQUARE; sq++) {
+        PawnAttacks[WHITE][sq] = 0;
+        PawnAttacks[BLACK][sq] = 0;
+    }
     for (int p = 0; p < N_PIECE; p++) {
         for (int sq = 0; sq < N_SQUARE; sq++) {
             PseudolegalAttacks[p][sq] = 0;
@@ -23,6 +28,7 @@ void Bitboards::init() {
     }
     for (int i = 0; i < N_SQUARE; i++) {
         Square origin = Square(i);
+        Bitboard origin_bb = sq_to_bb(origin);
         // Knight attacks
         if (origin.to_north() >= 2){
             if(origin.to_west() >= 1) {
@@ -81,5 +87,7 @@ void Bitboards::init() {
                 PseudolegalAttacks[KING][origin] |= Square(origin + Direction::SW);
             }
         }
+        PawnAttacks[WHITE][origin] = shift<Direction::NW>(origin_bb) | shift<Direction::NE>(origin_bb);
+        PawnAttacks[BLACK][origin] = shift<Direction::SW>(origin_bb) | shift<Direction::SE>(origin_bb);
     }
 }

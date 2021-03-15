@@ -3,55 +3,6 @@
 
 // Move Generation
 
-std::array<KnightMoveArray, 64> GenerateKnightMoves(){
-    std::array<KnightMoveArray, 64> meta_array;
-    KnightMoveArray moves;
-    for (unsigned int i = 0; i < 64; i++){
-        moves = KnightMoveArray();
-        Square origin = Square(i);
-        if (origin.to_north() >= 2){
-            if(origin.to_west() >= 1) {
-                moves.push_back(origin + Direction::NNW);
-            }
-            if(origin.to_east() >= 1) {
-                moves.push_back(origin + Direction::NNE);
-            }
-        }
-        if (origin.to_east() >= 2){
-            if(origin.to_north() >= 1) {
-                moves.push_back(origin + Direction::ENE);
-            }
-            if(origin.to_south() >= 1) {
-                moves.push_back(origin + Direction::ESE);
-            }
-        }
-        if (origin.to_south() >= 2){
-            if(origin.to_east() >= 1) {
-                moves.push_back(origin + Direction::SSE);
-            }
-            if(origin.to_west() >= 1) {
-                moves.push_back(origin + Direction::SSW);
-            }
-        }
-        if (origin.to_west() >= 2){
-            if(origin.to_south() >= 1) {
-                moves.push_back(origin + Direction::WSW);
-            }
-            if(origin.to_north() >= 1) {
-                moves.push_back(origin + Direction::WNW);
-            }
-        }
-        meta_array[i] = moves;
-    }
-    return meta_array;
-}
-
-std::array<KnightMoveArray, 64> knight_meta_array = GenerateKnightMoves();
-
-KnightMoveArray knight_moves(const Square origin){
-    return knight_meta_array[origin];
-}
-
 void add_pawn_promotions(const Move move, MoveList &moves) {
     // Add all variations of promotions to a move.
     Move my_move = move;
@@ -223,7 +174,7 @@ void get_king_moves(const Board &board, const Square origin, MoveList &quiet_mov
     const Colour them = ~us;
     // We should really be careful that we aren't moving into check here.
     // Look to see if we are on an edge.
-    const Bitboard my_attacks = attacks(KING, origin);
+    const Bitboard my_attacks = Bitboards::attacks(KING, origin);
     Bitboard quiet_bb = my_attacks & ~board.pieces();
     Bitboard capt_bb = my_attacks & board.pieces(them);
     while (quiet_bb) {
@@ -242,7 +193,7 @@ void get_king_moves(const Board &board, const Square origin, MoveList &quiet_mov
 template<Colour us>
 void get_knight_moves(const Board &board, const Square origin, MoveList &quiet_moves, MoveList &captures) {
     const Colour them = ~us;
-    const Bitboard my_attacks = attacks(KNIGHT, origin);
+    const Bitboard my_attacks = Bitboards::attacks(KNIGHT, origin);
     Bitboard quiet_bb = my_attacks & ~board.pieces();
     Bitboard capt_bb = my_attacks & board.pieces(them);
     while (quiet_bb) {

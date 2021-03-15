@@ -516,25 +516,11 @@ bool Board::is_attacked(const Square origin, const Colour us) const{
     // First off, if the square is attacked by a knight, it's definitely in check.
     const Colour them = ~us;
 
-    if (attacks(KNIGHT, origin) & pieces(them, KNIGHT)) { return true;}
-    if (attacks(KING, origin) & pieces(them, KING)) { return true;}
+    if (Bitboards::attacks(KNIGHT, origin) & pieces(them, KNIGHT)) { return true;}
+    if (Bitboards::attacks(KING, origin) & pieces(them, KING)) { return true;}
+    // Our colour pawn attacks are the same as attacked-by pawn
+    if (Bitboards::pawn_attacks(us, origin) & pieces(them, PAWN)) { return true;}
 
-    // Pawn square
-    Square target;
-    if (origin.rank() != back_rank(them)) {
-        if (origin.to_west() != 0) {
-            target = origin + (Direction::W + forwards(us));
-            if (pieces(target) == Piece(them, PAWN)) {
-                return true;
-            }
-        }
-        if (origin.to_east() != 0) {
-            target = origin + (Direction::E + forwards(us));
-            if (pieces(target) == Piece(them, PAWN)) {
-                return true;
-            }
-        }
-    }
     // Sliding moves.
     Piece target_piece;
     std::array<Square, 4> targets;
@@ -689,30 +675,16 @@ void Board::update_checkers() {
     // Want to (semi-efficiently) see if a square is attacked, ignoring pins.
     // First off, if the square is attacked by a knight, it's definitely in check.
     _number_checkers = 0;
-    const Bitboard knight_attacks = attacks(KNIGHT, origin) & pieces(them, KNIGHT);
+    const Bitboard knight_attacks = Bitboards::attacks(KNIGHT, origin) & pieces(them, KNIGHT);
     if (knight_attacks) { 
         _checkers[_number_checkers] = lsb(knight_attacks);
         _number_checkers++;
     }
 
-    // Pawn square
-    Square target;
-    if (origin.rank() != back_rank(~us)) {
-        if (origin.to_west() != 0) {
-            target = origin + (Direction::W + forwards(us));
-            if (pieces(target) == Piece(them, PAWN)) {
-                _checkers[_number_checkers] = target;
-                _number_checkers++;
-            }
-        }
-        if (origin.to_east() != 0) {
-            target = origin + (Direction::E + forwards(us));
-            if (pieces(target) == Piece(them, PAWN)) {
-                _checkers[_number_checkers] = target;
-                _number_checkers++;
-            }
-        }
-    }
+    const Bitboard pawn_attacks = Bitboards::pawn_attacks(us, origin) & pieces(them, PAWN);
+    if (pawn_attacks) { 
+        _checkers[_number_checkers] = lsb(pawn_attacks);
+        _number_checkers++;}
     // Sliding_pieces
 
     uint start_index = us==WHITE ? 0 : 8;
