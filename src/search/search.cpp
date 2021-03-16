@@ -172,7 +172,7 @@ int iterative_deepening(Board& board, const unsigned int max_depth, const int ma
         time_span = time_now - time_origin;
         t_est = branching_factor * time_span;
         // Calculate the last branching factor
-        if (depth >= 6) {
+        if (depth >= 5) {
             branching_factor = int(time_span.count() / time_span_last.count());
         }
         // We've run out of time to calculate.
