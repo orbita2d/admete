@@ -77,28 +77,6 @@ void get_pawn_moves(const Board &board, const Square origin, MoveList &quiet_mov
     }
 }
 
-template<Colour colour, Direction direction>
-void get_sliding_moves(const Board &board, const Square origin, const uint to_edge, MoveList &quiet_moves, MoveList &captures) {
-    Square target = origin;
-    Move move;
-    for (uint i = 0; i < to_edge; i++) {
-        target = target + direction;
-        if (board.is_free(target)) {
-            // Blank Square
-            quiet_moves.push_back(Move(origin, target));
-            continue;
-        } else if (board.is_colour(~colour, target)) {
-            // Enemy piece
-            move = Move(origin, target);
-            move.make_capture();
-            captures.push_back(move);
-            return;
-        } else {
-            // Our piece, no more legal moves.
-            return;
-        }
-    };
-}
 
 template<Colour us>
 void get_rook_moves(const Board &board, const Square origin, MoveList &quiet_moves, MoveList &captures) {
@@ -182,25 +160,6 @@ void get_castle_moves(const Board &board, MoveList &moves) {
         move = Move(Squares::FileE | back_rank(colour), Squares::FileG | back_rank(colour));
         move.make_king_castle();
         moves.push_back(move);
-    }
-}
-
-template<Colour colour>
-void get_step_moves(const Board &board, const Square origin, const Square target, MoveList &quiet_moves, MoveList &captures) {
-    if (board.is_colour(colour, target)) {
-        // Piece on target is our colour.
-        return;
-    } else if (board.is_colour(~colour, target)) {
-        //Piece on target is their colour.
-        Move move = Move(origin, target);
-        move.make_capture();
-        captures.push_back(move);
-        return;
-    } else {
-        // Space is blank.
-        Move move = Move(origin, target);
-        quiet_moves.push_back(move);
-        return;
     }
 }
 

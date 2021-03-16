@@ -75,7 +75,6 @@ void search_magics(PieceEnum p, Bitboard table[], Magic magics[]) {
     // This is the most possible occupation combinations for a bishop or rook on any square (2^12), 6 bits on each ray at corner
     Bitboard occupancy[4096], reference[4096];
     int last_size = 0;
-    std::cerr << "Building magics . . ." << std::endl;
     for (int sq = 0; sq<64; sq++) {
         Square origin(sq);
         Bitboard mask;
@@ -143,7 +142,6 @@ void search_magics(PieceEnum p, Bitboard table[], Magic magics[]) {
         }
 
     }
-    std::cerr << "Done with magics." << std::endl;
 }
 
 void Bitboards::init() {
@@ -152,6 +150,9 @@ void Bitboards::init() {
     for (int sq = 0; sq < N_SQUARE; sq++) {
         PawnAttacks[WHITE][sq] = 0;
         PawnAttacks[BLACK][sq] = 0;
+        for (int s2 = 0; s2 < N_SQUARE; s2++) {
+            LineBBs[sq][s2] = 0;
+        }
     }
     for (int p = 0; p < N_PIECE; p++) {
         for (int sq = 0; sq < N_SQUARE; sq++) {
@@ -225,4 +226,22 @@ void Bitboards::init() {
     // Initialise magic bitboard tables.
     search_magics(BISHOP, BishopTable, BishopMagics);
     search_magics(ROOK, RookTable, RookMagics);
+    for (int i = 0; i < N_SQUARE ; i++) {
+        Square s1(i);
+        PseudolegalAttacks[BISHOP][s1] = bishop_attacks(0, s1);
+        PseudolegalAttacks[ROOK][s1] = rook_attacks(0, s1);
+        PseudolegalAttacks[QUEEN][s1] = PseudolegalAttacks[BISHOP][s1] | PseudolegalAttacks[ROOK][s1];
+    }
+    for (int i = 0; i < N_SQUARE ; i++) {
+        Square s1(i);
+        for (int j = 0; j< N_SQUARE; j++) {
+            Square s2(j);
+            if (PseudolegalAttacks[BISHOP][s1] & s2) {// do squares share diagonal?
+                LineBBs[s1][s2] = (PseudolegalAttacks[BISHOP][s1] & PseudolegalAttacks[BISHOP][s2]) | (sq_to_bb(s1) | sq_to_bb(s2));
+            }
+            if (PseudolegalAttacks[ROOK][s1] & s2) {// do squares share rank or file?
+                LineBBs[s1][s2] = (PseudolegalAttacks[ROOK][s1] & PseudolegalAttacks[ROOK][s2]) | (sq_to_bb(s1) | sq_to_bb(s2));
+            }
+        }
+    }
 }

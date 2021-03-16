@@ -150,36 +150,13 @@ private:
 constexpr Move NULL_MOVE = Move();
 std::ostream& operator<<(std::ostream& os, const Move move);
 
-class KnightMoveArray {
-    // Class just to hold the iterator for a knight move so it doesn't have to be a vector.
-public:
-    KnightMoveArray() = default;
-    Square operator[](const unsigned int i) { return move_array[i];};
-    Square operator[](const unsigned int i) const { return move_array[i];};
-    unsigned int len = 0;
-    typedef Square * iterator;
-    typedef const Square * const_iterator;
-    iterator begin() { return &move_array[0]; }
-    iterator end() { return &move_array[len]; }
-    void push_back(const Square in) {
-        move_array[len] = in;
-        len++;
-    }
-private:
-    std::array<Square, 8> move_array; 
-};
-
-
-KnightMoveArray knight_moves(const Square origin);
-
-
 struct AuxilliaryInfo {
     // Information that is game history dependent, that would otherwise need to be encoded in a move.
     // Access linke castling_rights[WHITE][KINGSIDE]
     std::array<std::array<bool, 2>, 2> castling_rights;
     uint halfmove_clock = 0;
     Square en_passent_target;
-    std::array<Square, 16> pinned_pieces;
+    Bitboard pinned;
     uint number_checkers;
     std::array<Square, 2> checkers;
     bool is_check = false;
@@ -231,8 +208,6 @@ public:
     bool try_uci_move(const std::string move_sting);
     Square find_king(const Colour colour) const;
     void search_kings();
-    void slide_bishop_pin(const Square origin, const Square direction, const uint to_edge, const Colour colour, const int idx);
-    void slide_rook_pin(const Square origin, const Square direction, const uint to_edge, const Colour colour, const int idx);
     bool is_pinned(const Square origin) const;
     void build_occupied_bb();
     Colour who_to_play() const { return whos_move; }
@@ -245,9 +220,9 @@ public:
 private:
     std::array<Piece, N_SQUARE> pieces_array;
     Bitboard occupied_bb;
+    Bitboard pinned_bb;
     std::array<Bitboard, N_COLOUR> colour_bb;
     std::array<Bitboard, N_PIECE> piece_bb;
-    std::array<Square, 16> pinned_pieces;
     uint _number_checkers;
     std::array<Square, 2> _checkers;
     Colour whos_move = WHITE;

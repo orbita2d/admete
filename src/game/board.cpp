@@ -233,7 +233,7 @@ bool Board::is_colour(const Colour c, const Square target) const{
 void Board::make_move(Move &move) {
     // Iterate counters.
     if (whos_move == Colour::BLACK) {fullmove_counter++;}
-    aux_info.pinned_pieces = pinned_pieces;
+    aux_info.pinned = pinned_bb;
     aux_info.checkers = _checkers;
     aux_info.number_checkers = _number_checkers;
     aux_history[ply_counter] = aux_info;
@@ -461,9 +461,11 @@ void Board::unmake_move(const Move move) {
     } else if (move.is_queen_promotion()){
         piece_bb[QUEEN] ^= from_bb;
     }
-    pinned_pieces = aux_info.pinned_pieces;
+    pinned_bb = aux_info.pinned;
     _number_checkers = aux_info.number_checkers;
     _checkers = aux_info.checkers;
+    // I should not calculate this every time
+    //update_checkers();
 }
 
 void Board::try_move(const std::string move_sting) {
@@ -496,21 +498,6 @@ bool Board::try_uci_move(const std::string move_sting) {
     return false;
 }
 
-Square Board::slide_to_edge(const Square origin, const Square direction, const uint to_edge) const {
-    // Look along a direction until you get to the edge of the board or a piece.
-    Square target = origin;
-    for (uint i = 0; i < to_edge; i++) {
-        target = target + direction;
-        if (is_free(target)) {
-            // Blank Square
-            continue;
-        } else {
-            return target;
-        }
-    };
-    return target;
-}
-
 bool Board::is_attacked(const Square origin, const Colour us) const{
     // Want to (semi-efficiently) see if a square is attacked, ignoring pins.
     // First off, if the square is attacked by a knight, it's definitely in check.
@@ -522,30 +509,8 @@ bool Board::is_attacked(const Square origin, const Colour us) const{
     if (Bitboards::pawn_attacks(us, origin) & pieces(them, PAWN)) { return true;}
 
     // Sliding moves.
-    Piece target_piece;
-    std::array<Square, 4> targets;
-    targets[0] = slide_to_edge(origin, Direction::N, origin.to_north());
-    targets[1] = slide_to_edge(origin, Direction::E, origin.to_east());
-    targets[2] = slide_to_edge(origin, Direction::S, origin.to_south());
-    targets[3] = slide_to_edge(origin, Direction::W, origin.to_west());
-    for (Square target : targets){
-        target_piece = pieces(target);
-        if ((target_piece == Piece(them, ROOK)) | (target_piece == Piece(them, QUEEN))) {
-            return true;
-        }
-    }
-    
-    // Diagonals
-    targets[0] = slide_to_edge(origin, Direction::NE, std::min(origin.to_north(), origin.to_east()));
-    targets[1] = slide_to_edge(origin, Direction::SE, std::min(origin.to_south(), origin.to_east()));
-    targets[2] = slide_to_edge(origin, Direction::SW, std::min(origin.to_south(), origin.to_west()));
-    targets[3] = slide_to_edge(origin, Direction::NW, std::min(origin.to_north(), origin.to_west()));
-    for (Square target : targets){
-        target_piece = pieces(target);
-        if ((target_piece == Piece(them, BISHOP)) | (target_piece == Piece(them, QUEEN))) {
-            return true;
-        }
-    }
+    if ((rook_attacks(pieces(), origin)) & (pieces(them, ROOK) | pieces(them, QUEEN))) { return true;}
+    if ((bishop_attacks(pieces(), origin)) & (pieces(them, BISHOP) | pieces(them, QUEEN))) { return true;}
     
     // Nothing so far, that's good, no checks.
     return false;
@@ -570,102 +535,7 @@ Square Board::find_king(const Colour colour) const{
 
 
 bool Board::is_pinned(const Square origin) const{
-    for (Square target : pinned_pieces) {
-        if (origin == target) {
-            return true;
-        }
-    }
-    return false;
-}
-
-void Board::slide_rook_pin(const Square origin, const Square direction, const uint to_edge, const Colour colour, const int idx) {
-    // Slide from the origin in a direction, to look for a peice pinned by some sliding piece of ~colour
-    Square target = origin;
-    // Flag of if we have found a piece in the way yet.
-    bool flag = false;
-    Square found_piece;
-    // First look south
-    for (uint i = 0; i < to_edge; i++) {
-        target = target + direction;
-        if (is_free(target)) {
-            // Blank Square
-            continue;
-        }
-        if (is_colour(colour, target)) {
-            // It's our piece.
-            if (flag) {
-                // This piece isn't pinned.
-                pinned_pieces[idx] = origin;
-                return;
-            } else {
-                flag = true;
-                found_piece = target;
-                continue;
-            }
-        } else {
-            // It's their piece.
-            if (flag) {
-                // The last piece we found may be pinned.
-                pinned_pieces[idx] = (pieces(target).is_rook() | pieces(target).is_queen()) ? found_piece : origin;
-                return;
-            } else {
-                // Origin is attacked, but no pins here.
-                pinned_pieces[idx] = origin;
-                if ((pieces(target).is_rook() | pieces(target).is_queen())) {
-                    _checkers[_number_checkers] = target;
-                    _number_checkers++;
-                }
-                return;
-            }
-        }
-    };
-    pinned_pieces[idx] =  origin;
-    return;
-}
-
-void Board::slide_bishop_pin(const Square origin, const Square direction, const uint to_edge, const Colour colour, const int idx) {
-    // Slide from the origin in a direction, to look for a peice pinned by some sliding piece of ~colour
-    Square target = origin;
-    // Flag of if we have found a piece in the way yet.
-    bool flag = false;
-    Square found_piece;
-    // First look south
-    for (uint i = 0; i < to_edge; i++) {
-        target = target + direction;
-        if (is_free(target)) {
-            // Blank Square
-            continue;
-        }
-        if (is_colour(colour, target)) {
-            // It's our piece.
-            if (flag) {
-                // This piece isn't pinned.
-                pinned_pieces[idx] = origin;
-                return;
-            } else {
-                flag = true;
-                found_piece = target;
-                continue;
-            }
-        } else {
-            // It's their piece.
-            if (flag) {
-                // The last piece we found may be pinned.
-                pinned_pieces[idx] = (pieces(target).is_bishop() | pieces(target).is_queen()) ? found_piece : origin;
-                return;
-            } else {
-                // Origin is attacked, but no pins here.
-                pinned_pieces[idx] = origin;
-                if ((pieces(target).is_bishop() | pieces(target).is_queen())) {
-                    _checkers[_number_checkers] = target;
-                    _number_checkers++;
-                }
-                return;
-            }
-        }
-    };
-    pinned_pieces[idx] =  origin;
-    return;
+    return pinned_bb & origin;
 }
 
 void Board::update_checkers() {
@@ -675,27 +545,45 @@ void Board::update_checkers() {
     // Want to (semi-efficiently) see if a square is attacked, ignoring pins.
     // First off, if the square is attacked by a knight, it's definitely in check.
     _number_checkers = 0;
-    const Bitboard knight_attacks = Bitboards::attacks(KNIGHT, origin) & pieces(them, KNIGHT);
-    if (knight_attacks) { 
-        _checkers[_number_checkers] = lsb(knight_attacks);
+    Bitboard atk = Bitboards::attacks(KNIGHT, origin) & pieces(them, KNIGHT);
+    if (atk) { 
+        _checkers[_number_checkers] = lsb(atk);
         _number_checkers++;
     }
 
-    const Bitboard pawn_attacks = Bitboards::pawn_attacks(us, origin) & pieces(them, PAWN);
-    if (pawn_attacks) { 
-        _checkers[_number_checkers] = lsb(pawn_attacks);
-        _number_checkers++;}
-    // Sliding_pieces
+    atk = Bitboards::pawn_attacks(us, origin) & pieces(them, PAWN);
+    if (atk) { 
+        _checkers[_number_checkers] = lsb(atk);
+        _number_checkers++;
+    }
 
-    uint start_index = us==WHITE ? 0 : 8;
-    slide_rook_pin(origin, Direction::N, origin.to_north(), us, start_index + 0);
-    slide_rook_pin(origin, Direction::E, origin.to_east(), us, start_index + 1);
-    slide_rook_pin(origin, Direction::S, origin.to_south(), us, start_index + 2);
-    slide_rook_pin(origin, Direction::W, origin.to_west(), us, start_index + 3);
-    slide_bishop_pin(origin, Direction::NE, origin.to_northeast(), us, start_index + 4);
-    slide_bishop_pin(origin, Direction::SE, origin.to_southeast(), us, start_index + 5);
-    slide_bishop_pin(origin, Direction::SW, origin.to_southwest(), us, start_index + 6);
-    slide_bishop_pin(origin, Direction::NW, origin.to_northwest(), us, start_index + 7);
+    // Sliding moves.
+    
+    //int test_c = _number_checkers;
+    atk = (rook_attacks(pieces(), origin)) & (pieces(them, ROOK) | pieces(them, QUEEN));
+    if (atk) { 
+        _checkers[_number_checkers] = lsb(atk);
+        _number_checkers++;
+    }
+    atk = (bishop_attacks(pieces(), origin)) & (pieces(them, BISHOP) | pieces(them, QUEEN));
+    if (atk) { 
+        _checkers[_number_checkers] = lsb(atk);
+        _number_checkers++;
+    }
+
+    pinned_bb = 0;
+    Bitboard pinner = (rook_xrays(pieces(), origin)) & (pieces(them, ROOK) | pieces(them, QUEEN));
+    while (pinner) { 
+        Square sq = pop_lsb(&pinner);
+        Bitboard pinned = (Bitboards::between(origin, sq) & pieces(us));
+        pinned_bb |= pinned;
+    }
+    pinner = (bishop_xrays(pieces(), origin)) & (pieces(them, BISHOP) | pieces(them, QUEEN));
+    while (pinner) { 
+        Square sq = pop_lsb(&pinner);
+        Bitboard pinned = (Bitboards::between(origin, sq) & pieces(us));
+        pinned_bb |= pinned;
+    }
     aux_info.is_check = _number_checkers > 0;
 }
 
