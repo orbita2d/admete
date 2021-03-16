@@ -9,12 +9,15 @@ inline Bitboard PawnAttacks[N_COLOUR][N_SQUARE];
 inline Bitboard RankBBs[8] = {0x00000000000000FF, 0x000000000000ff00, 0x0000000000ff0000, 0x00000000ff000000, 0x000000ff00000000, 0x0000ff0000000000, 0x00ff000000000000, 0xff00000000000000};
 inline Bitboard FileBBs[8] = {0x0101010101010101, 0x0202020202020202, 0x0404040404040404, 0x0808080808080808, 0x1010101010101010, 0x2020202020202020, 0x4040404040404040, 0x8080808080808080};
 inline Bitboard LineBBs[N_SQUARE][N_SQUARE];
+constexpr Bitboard CastleBBs[N_COLOUR][N_CASTLE] = {{0x6000000000000000, 0xe00000000000000}, {0x60, 0xe}};
+inline Bitboard SquareBBs[N_SQUARE];
 
 inline Bitboard sq_to_bb(const int s) {
+  // The space-time balance doesn't work out here, cheaper to calculate than look up.
     return Bitboard(1) << s;
 }
 inline Bitboard sq_to_bb(const Square s) {
-    return Bitboard(1) << s.get_value();
+    return Bitboard(1) << s;
 }
 
 inline Bitboard  operator&( Bitboard  b, Square s) { return b &  sq_to_bb(s); }
@@ -75,6 +78,10 @@ namespace Bitboards
     } else {
       return 0;
     }
+  }
+
+  constexpr Bitboard castle(const Colour c, const CastlingSide cs) {
+    return CastleBBs[c][cs];
   }
 }
 

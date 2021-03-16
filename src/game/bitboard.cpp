@@ -159,6 +159,10 @@ void Bitboards::init() {
             PseudolegalAttacks[p][sq] = 0;
         }
     }
+    for (int sq = 0; sq < N_SQUARE; sq++) {
+        SquareBBs[sq] = Bitboard(1) << sq;
+    }
+
     for (int i = 0; i < N_SQUARE; i++) {
         Square origin = Square(i);
         Bitboard origin_bb = sq_to_bb(origin);

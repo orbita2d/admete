@@ -509,8 +509,12 @@ bool Board::is_attacked(const Square origin, const Colour us) const{
     if (Bitboards::pawn_attacks(us, origin) & pieces(them, PAWN)) { return true;}
 
     // Sliding moves.
-    if ((rook_attacks(pieces(), origin)) & (pieces(them, ROOK) | pieces(them, QUEEN))) { return true;}
-    if ((bishop_attacks(pieces(), origin)) & (pieces(them, BISHOP) | pieces(them, QUEEN))) { return true;}
+    // 
+    //const Bitboard occ = pieces() ^ pieces(them, KING) ^ pieces(us, KING);
+    const Bitboard occ = pieces();
+
+    if ((rook_attacks(occ, origin)) & (pieces(them, ROOK) | pieces(them, QUEEN))) { return true;}
+    if ((bishop_attacks(occ, origin)) & (pieces(them, BISHOP) | pieces(them, QUEEN))) { return true;}
     
     // Nothing so far, that's good, no checks.
     return false;

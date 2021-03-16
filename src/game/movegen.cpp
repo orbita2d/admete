@@ -142,24 +142,29 @@ template<Colour colour>
 void get_castle_moves(const Board &board, MoveList &moves) {
     Move move;
     // You can't castle through check, or while in check
-    if (board.aux_info.castling_rights[colour][QUEENSIDE]  
-        & board.is_free(Squares::FileD | back_rank(colour)) 
-        & board.is_free(Squares::FileC | back_rank(colour))
-        & board.is_free(Squares::FileB | back_rank(colour))
-        & !board.is_attacked(Squares::FileD | back_rank(colour), colour)
-        & !board.is_attacked(Squares::FileC | back_rank(colour), colour)) {
-        move = Move(Squares::FileE | back_rank(colour), Squares::FileC | back_rank(colour));
-        move.make_queen_castle();
-        moves.push_back(move);
+    if (board.aux_info.castling_rights[colour][QUEENSIDE]) 
+    {
+        if (!(Bitboards::castle(colour, QUEENSIDE) & board.pieces())) {
+            if (!board.is_attacked(Squares::FileD | back_rank(colour), colour)
+                & !board.is_attacked(Squares::FileC | back_rank(colour), colour)) 
+            {
+                move = Move(Squares::FileE | back_rank(colour), Squares::FileC | back_rank(colour));
+                move.make_queen_castle();
+                moves.push_back(move);
+            }
+        }
     }
-    if (board.aux_info.castling_rights[colour][KINGSIDE]   
-        & board.is_free(Squares::FileF | back_rank(colour)) 
-        & board.is_free(Squares::FileG | back_rank(colour))
-        & !board.is_attacked(Squares::FileF | back_rank(colour), colour)
-        & !board.is_attacked(Squares::FileG | back_rank(colour), colour)) {
-        move = Move(Squares::FileE | back_rank(colour), Squares::FileG | back_rank(colour));
-        move.make_king_castle();
-        moves.push_back(move);
+    if (board.aux_info.castling_rights[colour][KINGSIDE]) 
+    {
+        if (!(Bitboards::castle(colour, KINGSIDE) & board.pieces())) {
+            if (!board.is_attacked(Squares::FileF | back_rank(colour), colour)
+                & !board.is_attacked(Squares::FileG | back_rank(colour), colour)) 
+            {
+                move = Move(Squares::FileE | back_rank(colour), Squares::FileG | back_rank(colour));
+                move.make_king_castle();
+                moves.push_back(move);
+            }
+        }
     }
 }
 

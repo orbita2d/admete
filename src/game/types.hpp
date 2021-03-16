@@ -149,6 +149,7 @@ namespace Squares {
     static constexpr std::array<Square, 8> by_dirx = {N, E, S, W, NE, SE, SW, NW};
 }
 
+constexpr int N_CASTLE = 2;
 enum CastlingSide {
     KINGSIDE,
     QUEENSIDE
