@@ -7,9 +7,9 @@ constexpr int NEG_INF = -1000000000;
 constexpr int POS_INF = +1000000000;
 
 // perft.cpp
-unsigned int perft(unsigned int depth, Board &board);
-unsigned int perft_bulk(unsigned int depth, Board &board);
-void perft_divide(unsigned int depth, Board &board);
+unsigned long perft(unsigned long depth, Board &board);
+unsigned long perft_bulk(unsigned long depth, Board &board);
+void perft_divide(unsigned long depth, Board &board);
 
 // search.cpp
 int alphabeta(Board& board, const unsigned int depth, int alpha, int beta, PrincipleLine& line);

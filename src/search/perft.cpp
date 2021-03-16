@@ -3,8 +3,9 @@
 #include "transposition.hpp"
 #include <iostream>
 
-unsigned int perft(unsigned int depth, Board &board) {
+unsigned long perft(unsigned long depth, Board &board) {
     transposition_table.clear();
+    transposition_table.min_depth(0);
     // Transposition tables very tricky here because the keys cannot distinguish by depth
     /*           R
                 / \ 
@@ -16,25 +17,35 @@ unsigned int perft(unsigned int depth, Board &board) {
     return perft_bulk(depth, board);
 }
 
-unsigned int perft_bulk(unsigned int depth, Board &board) {
+unsigned long perft_bulk(unsigned long depth, Board &board) {
 
     std::vector<Move> legal_moves = board.get_moves();
     if (depth == 1) {
         return legal_moves.size();
     }
-    unsigned int nodes = 0;
+
+    const long hash = board.hash();
+    if (transposition_table.probe(hash)) {
+        const TransElement hit = transposition_table.last_hit();
+        if (hit.depth() == depth) {
+            // The saved score is an exact value for the subtree
+            return hit.eval();
+        }
+    }
+    unsigned long nodes = 0;
     for (Move move : legal_moves) {
         board.make_move(move);
         nodes += perft_bulk(depth-1, board);
         board.unmake_move(move);
     }
+    transposition_table.store(hash, nodes, NEG_INF, POS_INF, depth);
     return nodes;
 }
 
-void perft_divide(unsigned int depth, Board &board) {
+void perft_divide(unsigned long depth, Board &board) {
     std::vector<Move> legal_moves = board.get_moves();
-    unsigned int nodes = 0;
-    unsigned int child_nodes;
+    unsigned long nodes = 0;
+    unsigned long child_nodes;
     for (auto move : legal_moves) {
         board.make_move(move);
         child_nodes =  perft(depth-1, board);
