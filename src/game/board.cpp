@@ -468,8 +468,8 @@ bool Board::is_attacked(const Square origin, const Colour us) const{
     // Sliding attacks should xray the king.
     const Bitboard occ = pieces() ^ pieces(us, KING);
 
-    if ((rook_attacks(occ, origin)) & (pieces(them, ROOK) | pieces(them, QUEEN))) { return true;}
-    if ((bishop_attacks(occ, origin)) & (pieces(them, BISHOP) | pieces(them, QUEEN))) { return true;}
+    if ((rook_attacks(occ, origin)) & (pieces(them, ROOK, QUEEN))) { return true;}
+    if ((bishop_attacks(occ, origin)) & (pieces(them, BISHOP, QUEEN))) { return true;}
     
     // Nothing so far, that's good, no checks.
     return false;
@@ -504,34 +504,21 @@ void Board::update_checkers() {
     // Want to (semi-efficiently) see if a square is attacked, ignoring pins.
     // First off, if the square is attacked by a knight, it's definitely in check.
     _number_checkers = 0;
+
+    const Bitboard occ = pieces();
+
     Bitboard atk = Bitboards::attacks(KNIGHT, origin) & pieces(them, KNIGHT);
-    if (atk) { 
-        _checkers[_number_checkers] = lsb(atk);
-        _number_checkers++;
-    }
-
-    atk = Bitboards::pawn_attacks(us, origin) & pieces(them, PAWN);
-    if (atk) { 
-        _checkers[_number_checkers] = lsb(atk);
-        _number_checkers++;
-    }
-
-    // Sliding moves.
-    
-    atk = (rook_attacks(pieces(), origin)) & (pieces(them, ROOK) | pieces(them, QUEEN));
-    if (atk) { 
-        _checkers[_number_checkers] = lsb(atk);
-        _number_checkers++;
-    }
-    atk = (bishop_attacks(pieces(), origin)) & (pieces(them, BISHOP) | pieces(them, QUEEN));
-    if (atk) { 
-        _checkers[_number_checkers] = lsb(atk);
+    atk |= Bitboards::pawn_attacks(us, origin) & pieces(them, PAWN);
+    atk |= rook_attacks(occ, origin) & (pieces(them, ROOK, QUEEN));
+    atk |= bishop_attacks(occ, origin) & (pieces(them, BISHOP, QUEEN));
+    while (atk) {
+        _checkers[_number_checkers] = pop_lsb(&atk);
         _number_checkers++;
     }
 
     pinned_bb = 0;
-    Bitboard pinner = rook_xrays(pieces(), origin) & pieces(them, ROOK, QUEEN);
-    pinner |=   bishop_xrays(pieces(), origin) & pieces(them, BISHOP, QUEEN);
+    Bitboard pinner = rook_xrays(occ, origin) & pieces(them, ROOK, QUEEN);
+    pinner |=   bishop_xrays(occ, origin) & pieces(them, BISHOP, QUEEN);
     while (pinner) { 
         Square sq = pop_lsb(&pinner);
         Bitboard pinned = (Bitboards::between(origin, sq) & pieces(us));
