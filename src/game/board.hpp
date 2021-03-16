@@ -200,6 +200,7 @@ public:
     Bitboard pieces(const PieceEnum p) const{return piece_bb[p];}
     Bitboard pieces(const Colour c) const{return colour_bb[c];}
     Bitboard pieces(const Colour c, const PieceEnum p) const{return colour_bb[c] & piece_bb[p];}
+    Bitboard pieces(const Colour c, const PieceEnum p1, const PieceEnum p2) const{return colour_bb[c] & (piece_bb[p1] |piece_bb[p2]);}
 
     void make_move(Move &move);
     void unmake_move(const Move move);

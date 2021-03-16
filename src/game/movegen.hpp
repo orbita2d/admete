@@ -1,7 +1,8 @@
 #include "board.hpp"
 
-enum MoveGen {
+enum GenType {
     PSEUDOLEGAL,
+    QUIET,
     LEGAL,
     CAPTURES,
     EVASIONS
