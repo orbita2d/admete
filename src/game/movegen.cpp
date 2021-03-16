@@ -273,9 +273,7 @@ void generate_moves(Board &board, MoveList &moves) {
         for (Move move : pseudolegal_moves) {
             if (move.origin == king_square) {
                 // King moves have to be very careful.
-                board.make_move(move);
                 if (!board.is_attacked(move.target, colour)) {moves.push_back(move); }
-                board.unmake_move(move);
             } else if (number_checkers == 2) {
                 // double checks require a king move, which we've just seen this is not.
                 continue;
@@ -301,9 +299,7 @@ void generate_moves(Board &board, MoveList &moves) {
         for (Move move : pseudolegal_moves) {
             if (move.origin == king_square) {
                 // This is a king move, check where he's gone.
-                board.make_move(move);
                 if (!board.is_attacked(move.target, colour)) {moves.push_back(move); }
-                board.unmake_move(move);  
             } else if (move.is_ep_capture()) {
                 // en_passent's are weird.
                 if (board.is_pinned(move.origin)) {

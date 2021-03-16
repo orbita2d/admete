@@ -252,7 +252,7 @@ void Board::make_move(Move &move) {
         aux_info.en_passent_target = 0;
     }
 
-    if (moving_piece.is_king()) {
+    if (p == KING) {
         king_square[us] = move.target;
         aux_info.castling_rights[us][KINGSIDE]  = false;
         aux_info.castling_rights[us][QUEENSIDE]  = false;
@@ -382,7 +382,7 @@ void Board::unmake_move(const Move move) {
     const Piece moving_piece = pieces(move.target);
     const PieceEnum p = to_enum_piece(moving_piece);
 
-    if (moving_piece.is_king()) {
+    if (p == KING) {
         king_square[us] = move.origin;
     }
 
@@ -464,8 +464,6 @@ void Board::unmake_move(const Move move) {
     pinned_bb = aux_info.pinned;
     _number_checkers = aux_info.number_checkers;
     _checkers = aux_info.checkers;
-    // I should not calculate this every time
-    //update_checkers();
 }
 
 void Board::try_move(const std::string move_sting) {
@@ -502,7 +500,7 @@ bool Board::is_attacked(const Square origin, const Colour us) const{
     // Want to (semi-efficiently) see if a square is attacked, ignoring pins.
     // First off, if the square is attacked by a knight, it's definitely in check.
     const Colour them = ~us;
-
+    
     if (Bitboards::attacks(KNIGHT, origin) & pieces(them, KNIGHT)) { return true;}
     if (Bitboards::attacks(KING, origin) & pieces(them, KING)) { return true;}
     // Our colour pawn attacks are the same as attacked-by pawn
@@ -510,8 +508,8 @@ bool Board::is_attacked(const Square origin, const Colour us) const{
 
     // Sliding moves.
     // 
-    //const Bitboard occ = pieces() ^ pieces(them, KING) ^ pieces(us, KING);
-    const Bitboard occ = pieces();
+    // Sliding attacks should xray the king.
+    const Bitboard occ = pieces() ^ pieces(us, KING);
 
     if ((rook_attacks(occ, origin)) & (pieces(them, ROOK) | pieces(them, QUEEN))) { return true;}
     if ((bishop_attacks(occ, origin)) & (pieces(them, BISHOP) | pieces(them, QUEEN))) { return true;}
