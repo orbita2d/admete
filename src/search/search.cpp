@@ -160,14 +160,9 @@ int iterative_deepening(Board& board, const unsigned int max_depth, const int ma
     time_now = std::chrono::high_resolution_clock::now();
     time_span = time_now - time_origin;
     std::chrono::duration<double, std::milli> t_est = branching_factor * time_span;
-    if (int(t_est.count()) > max_millis) { 
-        // In positions with a lot of captures, the quiesence search could overrun at depth 4.
-        line = principle;
-        return score;
-    }
     time_span_last = time_span;
     // Start at 2 ply for a best guess first move.
-    for (unsigned int depth = 3; depth <= max_depth; depth+=1) {
+    for (unsigned int depth = 4; depth <= max_depth; depth+=1) {
         PrincipleLine temp_line;
         temp_line.reserve(depth);
         score = pv_search(board, depth, NEG_INF, POS_INF, principle, principle.size(), temp_line);
@@ -179,7 +174,7 @@ int iterative_deepening(Board& board, const unsigned int max_depth, const int ma
         // We've run out of time to calculate.
         if (int(t_est.count()) > max_millis) { break;}
         // Calculate the last branching factor
-        if (depth >= 4) {
+        if (depth >= 6) {
             branching_factor = int(time_span.count() / time_span_last.count());
         }
         time_span_last = time_span;
