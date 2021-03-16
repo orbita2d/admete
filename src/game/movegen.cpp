@@ -156,6 +156,8 @@ void gen_castle_moves(const Board &board, MoveList &moves) {
     // You can't castle through check, or while in check
     if (board.aux_info.castling_rights[colour][QUEENSIDE]) 
     {
+        // Check for overlap of squares that need to be free, and occupied bb.
+        // In the future we should keep a 
         if (!(Bitboards::castle(colour, QUEENSIDE) & board.pieces())) {
             if (!board.is_attacked(Squares::FileD | back_rank(colour), colour)
                 & !board.is_attacked(Squares::FileC | back_rank(colour), colour)) 
