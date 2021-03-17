@@ -9,10 +9,9 @@ int alphabeta(Board& board, const unsigned int depth, PrincipleLine& line) {
     return alphabeta(board, depth, NEG_INF, POS_INF, line);
 }
 
-int alphabeta(Board& board, const unsigned int depth, const int alpha_start, const int beta_start, PrincipleLine& line) {
+int alphabeta(Board& board, const unsigned int depth, const int alpha_start, const int beta, PrincipleLine& line) {
     // perform alpha-beta pruning search.
     int alpha = alpha_start;
-    int beta = beta_start;
     std::vector<Move> legal_moves = board.get_sorted_moves();
     if (legal_moves.size() == 0) { 
         return evaluate(board, legal_moves); 
@@ -69,8 +68,9 @@ int alphabeta(Board& board, const unsigned int depth, const int alpha_start, con
     return best_score;
 }
 
-int quiesce(Board& board, int alpha, int beta) {
+int quiesce(Board& board, const int alpha_start, const int beta) {
     // perform quiesence search to evaluate only quiet positions.
+    int alpha = alpha_start;
     int stand_pat = negamax_heuristic(board);
     if (stand_pat >= beta) {
         return stand_pat;
@@ -97,7 +97,7 @@ int quiesce(Board& board, int alpha, int beta) {
     return alpha;
 }
 
-int pv_search(Board& board, const unsigned int depth, const int alpha_start, int beta, PrincipleLine& principle, const uint pv_depth, PrincipleLine& line) {
+int pv_search(Board& board, const unsigned int depth, const int alpha_start, const int beta, PrincipleLine& principle, const uint pv_depth, PrincipleLine& line) {
     // perform alpha-beta pruning search with principle variation optimisation.
     int alpha = alpha_start;
     std::vector<Move> legal_moves = board.get_sorted_moves();
