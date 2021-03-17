@@ -431,7 +431,7 @@ void Board::try_move(const std::string move_sting) {
             make_move(move);
             flag = true;
             break;
-        } else if (move_sting == move.pretty_print()){
+        } else if (move_sting == move.pretty()){
             make_move(move);
             flag = true;
             break;
@@ -445,7 +445,7 @@ void Board::try_move(const std::string move_sting) {
 bool Board::try_uci_move(const std::string move_sting) {
     std::vector<Move> legal_moves = get_moves();
     for (Move move : legal_moves) {
-        if (move_sting == move.pretty_print()) {
+        if (move_sting == move.pretty()) {
             make_move(move);
             return true;
         }
@@ -646,6 +646,10 @@ long diff_zobrist(const Move move, const Piece piece) {
     // How do we do castling rights? hmm
 }
 
+
+Piece Board::pieces(const Square sq) const{
+    return pieces_array.at(sq);
+}
 
 long int Board::hash() const{
     return Zorbist::hash(*this);

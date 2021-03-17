@@ -65,8 +65,8 @@ void bestmove(Move move) {
 	Directly before that the engine should send a final "info" command with the final search information,
 	the the GUI has the complete statistics about the last search.
     */
-   std::cerr << "bestmove " << move.pretty_print() << std::endl;
-   std::cout << "bestmove " << move.pretty_print() << std::endl;
+   std::cerr << "bestmove " << move.pretty() << std::endl;
+   std::cout << "bestmove " << move.pretty() << std::endl;
 }
 
 void go(Board& board, std::istringstream& is) {
@@ -140,7 +140,7 @@ void go(Board& board, std::istringstream& is) {
     int score = iterative_deepening(board, max_depth, cutoff_time, line);
     std::chrono::duration<double, std::milli> time_span = my_clock::now() - time_origin;
     Move first_move = line.back();
-    std::cerr << "found move: " << first_move.pretty_print() << ": " << print_score(score) << "(depth: " << line.size() << ") ";
+    std::cerr << "found move: " << first_move.pretty() << ": " << print_score(score) << "(depth: " << line.size() << ") ";
     std::cerr << "in " << std::setprecision(2) <<time_span.count() / 1000 << "s" << std::endl;
     bestmove(first_move);
     

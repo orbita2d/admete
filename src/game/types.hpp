@@ -163,12 +163,13 @@ enum Colour {
     BLACK
 };
 
-constexpr int N_PIECE = 6;
 enum PieceEnum {
     PAWN,
     KNIGHT,
     BISHOP,
     ROOK,
     QUEEN,
-    KING
+    KING,
+    N_PIECE,
+    NO_PIECE
 };

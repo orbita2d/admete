@@ -49,7 +49,7 @@ void perft_divide(unsigned long depth, Board &board) {
     for (auto move : legal_moves) {
         board.make_move(move);
         child_nodes =  perft(depth-1, board);
-        std::cout << move.pretty_print() << ": "<< std::dec << child_nodes << std::endl;
+        std::cout << move.pretty() << ": "<< std::dec << child_nodes << std::endl;
         nodes += child_nodes;
         board.unmake_move(move);
     }

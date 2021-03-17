@@ -8,7 +8,19 @@
 #include "piece.hpp"
 #include "bitboard.hpp"
 
-class Move {
+enum MoveType {
+    QUIETmv = 0,
+    CAPTURE = 1,
+    PROMOTION = 2,
+    SPECIAL1 = 4,
+    SPECIAL2 = 8,
+    EN_PASSENT = 9,
+    DOUBLE_PUSH = 8,
+    KING_CASTLE = 4,
+    QUEEN_CASTLE = 12
+};
+
+struct Move {
 public:
     Move(const Square o, const Square t) : origin(o), target(t) {};
     constexpr Move() {};
@@ -16,7 +28,7 @@ public:
     Square origin;
     Square target;
 
-    std::string pretty_print() const{
+    std::string pretty() const{
         std::string move_string;
         move_string = std::string(origin) + std::string(target);
         if (is_knight_promotion()) {move_string= move_string + "n";}
@@ -29,123 +41,72 @@ public:
     bool operator==(const Move that) {
         return  origin == that.origin &&
                 target == that.target &&
-                special1 == that.special1 && 
-                special2 == that.special2;
+                type == that.type;
     }
 
     void make_quiet() {
-        promotion = false;
-        capture = false;
-        special1 = false;
-        special2 = false;
+        type = QUIETmv;
     }
     void make_double_push() {
-        promotion = false;
-        capture = false;
-        special1 = false;
-        special2 = true;
+        type = DOUBLE_PUSH;
     }
     void make_king_castle() {
-        promotion = false;
-        capture = false;
-        special1 = true;
-        special2 = false;
+        type = KING_CASTLE;
     }
     void make_queen_castle() {
-        promotion = false;
-        capture = false;
-        special1 = true;
-        special2 = true;
+        type = QUEEN_CASTLE;
     }
     void make_capture() {
-        promotion = false;
-        capture = true;
-        special1 = false;
-        special2 = false;
+        type = CAPTURE;
     }
     void make_en_passent() {
-        promotion = false;
-        capture = true;
-        special1 = false;
-        special2 = true;
+        type = EN_PASSENT;
     }
 
     void make_bishop_promotion() {
-        promotion = true;
-        special1 = false;
-        special2 = false;
+        type = (MoveType)((type & CAPTURE) | (PROMOTION)) ;
     }
     void make_knight_promotion() {
-        promotion = true;
-        special1 = false;
-        special2 = true;
+        type = (MoveType)((type & CAPTURE) | (PROMOTION | SPECIAL2)) ;
     }
     void make_rook_promotion() {
-        promotion = true;
-        special1 = true;
-        special2 = false;
+        type = (MoveType)((type & CAPTURE) | (PROMOTION | SPECIAL1)) ;
     }
     void make_queen_promotion() {
-        promotion = true;
-        special1 = true;
-        special2 = true;
+        type = (MoveType)((type & CAPTURE) | (PROMOTION | SPECIAL1 | SPECIAL2)) ;
     }
     constexpr bool is_capture() const {
-        return capture;
+        return type & CAPTURE;
     }
     constexpr bool is_ep_capture() const {
-        return ((promotion == false) & 
-                (capture == true) & 
-                (special1 == false) & 
-                (special2 == true));
+        return type == EN_PASSENT;
     }
     constexpr bool is_double_push() const {
-        return ((promotion == false) & 
-                (capture == false) & 
-                (special1 == false) & 
-                (special2 == true));
+        return type == DOUBLE_PUSH;
     }
     constexpr bool is_king_castle() const {
-        return ((promotion == false) & 
-                (capture == false) & 
-                (special1 == true) & 
-                (special2 == false));
+        return type == KING_CASTLE;
     }
     constexpr bool is_queen_castle() const {
-        return ((promotion == false) & 
-                (capture == false) & 
-                (special1 == true) & 
-                (special2 == true));
+        return type == QUEEN_CASTLE;
     }
     constexpr bool is_knight_promotion() const {
-        return ((promotion == true) & 
-                (special1 == false) & 
-                (special2 == false));
+        return (type & ~CAPTURE) == (PROMOTION);
     }
     constexpr bool is_bishop_promotion() const {
-        return ((promotion == true) & 
-                (special1 == false) & 
-                (special2 == true));
+        return (type & ~CAPTURE) == (PROMOTION | SPECIAL2);
     }
     constexpr bool is_rook_promotion() const {
-        return ((promotion == true) & 
-                (special1 == true) & 
-                (special2 == false));
+        return (type & ~CAPTURE) == (PROMOTION | SPECIAL1 );
     }
     constexpr bool is_queen_promotion() const {
-        return ((promotion == true) & 
-                (special1 == true) & 
-                (special2 == true));
+        return (type & ~CAPTURE) == (PROMOTION | SPECIAL1 | SPECIAL2);
     }
     constexpr bool is_promotion() const {
-        return promotion;
+        return (type & PROMOTION);
     }
     Piece captured_peice = 0;
-private:
-    bool promotion = 0;
-    bool capture = 0;
-    bool special1 = 0;
-    bool special2 = 0;
+    MoveType type = QUIETmv;
 };
 constexpr Move NULL_MOVE = Move();
 std::ostream& operator<<(std::ostream& os, const Move move);
@@ -193,7 +154,7 @@ public:
     bool is_check() const{ return aux_info.is_check;};
 
     long int hash() const;
-    Piece pieces(const Square sq) const{return pieces_array.at(sq);}
+    Piece pieces(const Square sq) const;
     Bitboard pieces() const {return occupied_bb;}
     Bitboard pieces(const PieceEnum p) const{return piece_bb[p];}
     Bitboard pieces(const Colour c) const{return colour_bb[c];}

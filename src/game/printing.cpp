@@ -249,6 +249,6 @@ std::ostream& operator<<(std::ostream& os, const Square move) {
 
 
 std::ostream& operator<<(std::ostream& os, const Move move) {
-    os << move.pretty_print();
+    os << move.pretty();
     return os;
 }
