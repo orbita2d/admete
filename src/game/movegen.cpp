@@ -319,7 +319,7 @@ void generate_moves(Board &board, MoveList &moves) {
         // Otherwise we can be smarter.
         for (Move move : pseudolegal_moves) {
             if (move.origin == king_square) {
-                // This is a king move, check where he's gone.
+                // This is a see if the square is attacked.
                 if (!board.is_attacked(move.target, us)) {moves.push_back(move); }
             } else if (move.is_ep_capture()) {
                 // en_passent's are weird.
