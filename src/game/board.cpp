@@ -520,10 +520,11 @@ bool Board::gives_check(Move move){
     if (check_squares(move.moving_peice) & move.target) {
         return true;
     }
+    Square ks = find_king(~whos_move);
     // Check for discovered check
     if (blockers() & move.origin) {
         // A blocker moved, does it still block the same ray?
-        if (!in_line(move.origin, find_king(~whos_move), move.target)) { return true;} 
+        if (!in_line(move.origin, ks, move.target)) { return true;} 
     }
 
     bool flag = false;
@@ -537,10 +538,20 @@ bool Board::gives_check(Move move){
     } else if (move.is_ep_capture()) {
         // If the en passent reveals a file, this will be handled by the blocker
         // The only way this could be problematic is if the en-passent unblocks a rank.
-        if ( move.target.file() == find_king(~whos_move).file()) {
-            make_move(move);
-            if (is_check()) { flag = true; }
-            unmake_move(move);
+        if ( move.origin.rank() == ks.rank()) {
+            Bitboard mask = Bitboards::line(ks, move.origin);
+            // Look for a rook in the rank
+            Bitboard occ = pieces();
+            // Rook attacks from the king
+            Bitboard atk = rook_attacks(occ, ks);
+            // Rook xrays from the king
+            atk = rook_attacks(occ ^ (occ & atk), ks);
+            // Rook double xrays from the king
+            atk = rook_attacks(occ ^ (occ & atk), ks);
+            atk &= mask;
+            if (atk & pieces(whos_move, ROOK)) {
+                flag = true; 
+            }
         }
     }
     if (flag) {return true;}
