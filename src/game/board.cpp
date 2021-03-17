@@ -25,6 +25,8 @@ std::map<char, Piece> fen_decode_map = {
 };
 
 void Board::fen_decode(const std::string& fen){
+    ply_counter = 0;
+    aux_info = aux_history.begin();
     uint N = fen.length(), board_position;
     uint rank = 0, file = 0;
     char my_char;
@@ -103,10 +105,10 @@ void Board::fen_decode(const std::string& fen){
         throw std::domain_error("Unrecognised <Side to move> character");
     }
 
-    aux_info.castling_rights[WHITE][KINGSIDE] = false;
-    aux_info.castling_rights[WHITE][QUEENSIDE] = false;
-    aux_info.castling_rights[BLACK][KINGSIDE] = false;
-    aux_info.castling_rights[BLACK][QUEENSIDE] = false;
+    aux_info->castling_rights[WHITE][KINGSIDE] = false;
+    aux_info->castling_rights[WHITE][QUEENSIDE] = false;
+    aux_info->castling_rights[BLACK][KINGSIDE] = false;
+    aux_info->castling_rights[BLACK][QUEENSIDE] = false;
     // Castling rights
     if (castling.length() > 4) {
         throw std::domain_error("<Castling> length > 4");
@@ -118,19 +120,19 @@ void Board::fen_decode(const std::string& fen){
             switch (castling[i])
             {
             case 'q':
-                aux_info.castling_rights[BLACK][QUEENSIDE] = true;
+                aux_info->castling_rights[BLACK][QUEENSIDE] = true;
                 break;
 
             case 'Q':
-                aux_info.castling_rights[WHITE][QUEENSIDE] = true;
+                aux_info->castling_rights[WHITE][QUEENSIDE] = true;
                 break;
 
             case 'k':
-                aux_info.castling_rights[BLACK][KINGSIDE] = true;
+                aux_info->castling_rights[BLACK][KINGSIDE] = true;
                 break;
 
             case 'K':
-                aux_info.castling_rights[WHITE][KINGSIDE] = true;
+                aux_info->castling_rights[WHITE][KINGSIDE] = true;
                 break;
 
             default:
@@ -145,16 +147,15 @@ void Board::fen_decode(const std::string& fen){
     }
     if (en_passent[0] == '-') {
         // No en passent, continue
-        aux_info.en_passent_target = 0;
+        aux_info->en_passent_target = 0;
     } else {
-        aux_info.en_passent_target = Square(en_passent);
+        aux_info->en_passent_target = Square(en_passent);
     }
 
     // Halfmove clock
-    aux_info.halfmove_clock = halfmove;
+    aux_info->halfmove_clock = halfmove;
     // Fullmove counter
     fullmove_counter = counter;
-    ply_counter = 0;
     initialise();
 };
 
@@ -175,6 +176,7 @@ bool interposes(const Square origin, const Square target, const Square query) {
 void Board::initialise() {
     search_kings();
     update_checkers();
+    update_check_squares();
 }
 
 
@@ -189,29 +191,31 @@ bool Board::is_colour(const Colour c, const Square target) const{
 void Board::make_move(Move &move) {
     // Iterate counters.
     if (whos_move == Colour::BLACK) {fullmove_counter++;}
-    aux_info.pinned = pinned_bb;
-    aux_info.checkers = _checkers;
-    aux_info.number_checkers = _number_checkers;
-    aux_history[ply_counter] = aux_info;
+    aux_info->pinned = pinned_bb;
+    aux_info->checkers = _checkers;
+    aux_info->number_checkers = _number_checkers;
+    aux_history[ply_counter + 1] = *aux_info;
+    ply_counter ++;
+    aux_info = &aux_history[ply_counter];
     const Colour us = whos_move;
     const Colour them = ~ us;
     const PieceEnum p = move.moving_peice;
 
     if (move.is_capture() | (p == PAWN)) {
-        aux_info.halfmove_clock = 0;
-    } else {aux_info.halfmove_clock++ ;}
+        aux_info->halfmove_clock = 0;
+    } else {aux_info->halfmove_clock++ ;}
     // Track en-passent square
     if (move.is_double_push()) {
         // Little hacky but this is the square in between.
-        aux_info.en_passent_target = (move.origin.get_value() + move.target.get_value())/2;
+        aux_info->en_passent_target = (move.origin.get_value() + move.target.get_value())/2;
     } else {
-        aux_info.en_passent_target = 0;
+        aux_info->en_passent_target = 0;
     }
 
     if (p == KING) {
         king_square[us] = move.target;
-        aux_info.castling_rights[us][KINGSIDE]  = false;
-        aux_info.castling_rights[us][QUEENSIDE]  = false;
+        aux_info->castling_rights[us][KINGSIDE]  = false;
+        aux_info->castling_rights[us][QUEENSIDE]  = false;
     }
 
     const Bitboard from_bb = sq_to_bb(move.origin);
@@ -227,8 +231,8 @@ void Board::make_move(Move &move) {
         colour_bb[us] ^= rook_from_to_bb;
         piece_bb[KING] ^= from_to_bb;
         piece_bb[ROOK] ^= rook_from_to_bb;
-        aux_info.castling_rights[us][KINGSIDE] = false;
-        aux_info.castling_rights[us][QUEENSIDE] = false;
+        aux_info->castling_rights[us][KINGSIDE] = false;
+        aux_info->castling_rights[us][QUEENSIDE] = false;
     } else if (move.is_queen_castle()) {
         const Bitboard rook_from_to_bb = sq_to_bb(RookSquare[us][QUEENSIDE]) ^ sq_to_bb(move.origin + Direction::W);
         // Update the bitboard.
@@ -238,8 +242,8 @@ void Board::make_move(Move &move) {
         colour_bb[us] ^= rook_from_to_bb;
         piece_bb[KING] ^= from_to_bb;
         piece_bb[ROOK] ^= rook_from_to_bb;
-        aux_info.castling_rights[us][KINGSIDE] = false;
-        aux_info.castling_rights[us][QUEENSIDE] = false;
+        aux_info->castling_rights[us][KINGSIDE] = false;
+        aux_info->castling_rights[us][QUEENSIDE] = false;
     } else if(move.is_ep_capture()) {
         // En-passent is weird too.
         const Square captured_square = move.origin.rank() | move.target.file();
@@ -286,30 +290,30 @@ void Board::make_move(Move &move) {
 
     // Check if we've moved our rook.
     if (move.origin == RookSquare[us][KINGSIDE]) {
-        aux_info.castling_rights[us][KINGSIDE]  = false;
+        aux_info->castling_rights[us][KINGSIDE]  = false;
     } else if (move.origin == RookSquare[us][QUEENSIDE]) {
-        aux_info.castling_rights[us][QUEENSIDE]  = false;
+        aux_info->castling_rights[us][QUEENSIDE]  = false;
     }
     // Check for rook captures.
     if (move.target == RookSquare[them][KINGSIDE]) {
-        aux_info.castling_rights[them][KINGSIDE] = false;
+        aux_info->castling_rights[them][KINGSIDE] = false;
     }
     if (move.target == RookSquare[them][QUEENSIDE]) {
-        aux_info.castling_rights[them][QUEENSIDE] = false;
+        aux_info->castling_rights[them][QUEENSIDE] = false;
     }
 
     // Switch whos turn it is to play
     whos_move = ~ whos_move;
 
     update_checkers();
-    ply_counter ++;
+    update_check_squares();
 }
 
 void Board::unmake_move(const Move move) {
     // Iterate counters.
     if (whos_move == Colour::WHITE) {fullmove_counter--;}
     ply_counter--;
-    aux_info = aux_history[ply_counter];
+    aux_info = &aux_history[ply_counter];
 
     // Switch whos turn it is to play
     whos_move = ~ whos_move;
@@ -381,9 +385,9 @@ void Board::unmake_move(const Move move) {
         piece_bb[QUEEN] ^= to_bb;
         piece_bb[PAWN] ^= to_bb; 
     }
-    pinned_bb = aux_info.pinned;
-    _number_checkers = aux_info.number_checkers;
-    _checkers = aux_info.checkers;
+    pinned_bb = aux_info->pinned;
+    _number_checkers = aux_info->number_checkers;
+    _checkers = aux_info->checkers;
 }
 
 void Board::try_move(const std::string move_sting) {
@@ -480,9 +484,69 @@ void Board::update_checkers() {
         Bitboard pinned = (Bitboards::between(origin, sq) & pieces(us));
         pinned_bb |= pinned;
     }
-    aux_info.is_check = _number_checkers > 0;
+    aux_info->is_check = _number_checkers > 0;
 }
 
+void Board::update_check_squares() {
+    const Colour us = whos_move;
+    const Colour them = ~us;
+    const Square origin = find_king(them);
+
+    const Bitboard occ = pieces();
+
+    // Sqaures for direct checks
+    aux_info->check_squares[PAWN] = Bitboards::pawn_attacks(them, origin);
+    aux_info->check_squares[KNIGHT] = Bitboards::attacks(KNIGHT, origin);
+    aux_info->check_squares[BISHOP] = bishop_attacks(occ, origin);
+    aux_info->check_squares[ROOK] = rook_attacks(occ, origin);
+    aux_info->check_squares[QUEEN] = aux_info->check_squares[BISHOP] | aux_info->check_squares[ROOK];
+    aux_info->check_squares[KING] = 0;
+
+    // Blockers
+    Bitboard blk = 0;
+    Bitboard pinner = rook_xrays(occ, origin) & pieces(us, ROOK, QUEEN);
+    pinner |=   bishop_xrays(occ, origin) & pieces(us, BISHOP, QUEEN);
+    while (pinner) { 
+        Square sq = pop_lsb(&pinner);
+        Bitboard pinned = (Bitboards::between(origin, sq) & pieces(us));
+        blk |= pinned;
+    }
+    aux_info->blockers = blk;
+}
+
+bool Board::gives_check(Move move){
+    // Does a move give check?
+    // Check for direct check.
+    if (check_squares(move.moving_peice) & move.target) {
+        return true;
+    }
+    // Check for discovered check
+    if (blockers() & move.origin) {
+        // A blocker moved, does it still block the same ray?
+        if (!in_line(move.origin, find_king(~whos_move), move.target)) { return true;} 
+    }
+
+    bool flag = false;
+    if (move.is_promotion()) {
+        if (check_squares(get_promoted(move)) & move.target) { return true; }
+    } else if (move.is_king_castle()) {
+        // The only piece that could give check here is the rook.
+        if (check_squares(ROOK) & RookSquare[whos_move][KINGSIDE]) { return true; }
+    } else if (move.is_queen_castle()) {
+        if (check_squares(ROOK) & RookSquare[whos_move][QUEENSIDE]) { return true; }
+    } else if (move.is_ep_capture()) {
+        // If the en passent reveals a file, this will be handled by the blocker
+        // The only way this could be problematic is if the en-passent unblocks a rank.
+        if ( move.target.file() == find_king(~whos_move).file()) {
+            make_move(move);
+            if (is_check()) { flag = true; }
+            unmake_move(move);
+        }
+    }
+    if (flag) {return true;}
+
+    return false;
+}
 
 bool is_mating(int score) {
     return (score > (mating_score-500));

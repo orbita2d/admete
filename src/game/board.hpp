@@ -110,6 +110,19 @@ public:
     MoveType type = QUIETmv;
 };
 constexpr Move NULL_MOVE = Move();
+
+constexpr PieceEnum get_promoted(const Move m) {
+    if (m.is_knight_promotion()) {
+        return KNIGHT;
+    } else if (m.is_bishop_promotion()) {
+        return BISHOP;
+    } else if (m.is_rook_promotion()) {
+        return ROOK;
+    } else if (m.is_queen_promotion()) {
+        return QUEEN;
+    }
+    return NO_PIECE;
+}
 std::ostream& operator<<(std::ostream& os, const Move move);
 
 struct AuxilliaryInfo {
@@ -122,12 +135,18 @@ struct AuxilliaryInfo {
     uint number_checkers;
     std::array<Square, 2> checkers;
     bool is_check = false;
+    // Squares where, if a particular piece was placed, it would give check.
+    Bitboard check_squares[N_PIECE];
+    // Pieces belonging to the player to move, that if moved would give discovered check.
+    Bitboard blockers;
 
 };
 
 class Board {
 public:
-    Board() {};
+    Board() {
+        aux_info = aux_history.begin();
+    };
 
     void fen_decode(const std::string& fen);
     std::string fen_encode() const;
@@ -147,10 +166,14 @@ public:
     std::vector<Move> get_sorted_moves();
     bool is_attacked(const Square square, const Colour colour) const;
     void update_checkers();
+    void update_check_squares();
+    bool gives_check(Move move);
+    Bitboard check_squares(const PieceEnum p) const {return aux_info->check_squares[p];};
+    Bitboard blockers() const {return aux_info->blockers;};
 
     std::array<Square, 2> checkers() const {return _checkers;}
     int number_checkers() const {return _number_checkers;}
-    bool is_check() const{ return aux_info.is_check;};
+    bool is_check() const{ return aux_info->is_check;};
 
     long int hash() const;
     Piece pieces(const Square sq) const;
@@ -173,11 +196,11 @@ public:
     Colour who_to_play() const { return whos_move; }
     bool is_black_move() const{ return whos_move == BLACK; }
     bool is_white_move() const{ return whos_move == WHITE; }
-    bool can_castle(const Colour c) const{ return aux_info.castling_rights[c][KINGSIDE] | aux_info.castling_rights[c][QUEENSIDE];}
-    bool can_castle(const Colour c, const CastlingSide s) const { return aux_info.castling_rights[c][s]; }
-    Square en_passent() const { return aux_info.en_passent_target; }
-    AuxilliaryInfo aux_info;
+    bool can_castle(const Colour c) const{ return aux_info->castling_rights[c][KINGSIDE] | aux_info->castling_rights[c][QUEENSIDE];}
+    bool can_castle(const Colour c, const CastlingSide s) const { return aux_info->castling_rights[c][s]; }
+    Square en_passent() const { return aux_info->en_passent_target; }
 private:
+    AuxilliaryInfo* aux_info;
     Bitboard occupied_bb;
     Bitboard pinned_bb;
     std::array<Bitboard, N_COLOUR> colour_bb;
@@ -188,7 +211,6 @@ private:
     uint fullmove_counter = 1;
     uint ply_counter = 0;
     std::array<Square, 2> king_square;
-    // Array of absolute pins for legal move generation. Max 8 pieces per king.
     std::array<AuxilliaryInfo, 256> aux_history;
 };
 

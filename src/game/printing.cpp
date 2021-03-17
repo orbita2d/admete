@@ -79,16 +79,16 @@ std::string Board::fen_encode() const {
     ss << (whos_move == Colour::WHITE ? "w" : "b");
     ss << " ";
     
-    if (aux_info.castling_rights[WHITE][KINGSIDE]) {
+    if (aux_info->castling_rights[WHITE][KINGSIDE]) {
         ss << "K";
     }
-    if (aux_info.castling_rights[WHITE][QUEENSIDE]) {
+    if (aux_info->castling_rights[WHITE][QUEENSIDE]) {
         ss << "Q";
     }
-    if (aux_info.castling_rights[BLACK][KINGSIDE]) {
+    if (aux_info->castling_rights[BLACK][KINGSIDE]) {
         ss << "k";
     }
-    if (aux_info.castling_rights[BLACK][QUEENSIDE]) {
+    if (aux_info->castling_rights[BLACK][QUEENSIDE]) {
         ss << "q";
     }
     
@@ -97,13 +97,13 @@ std::string Board::fen_encode() const {
     }
     ss << " ";
     // En passent
-    if (aux_info.en_passent_target == Square(0)) {
+    if (aux_info->en_passent_target == Square(0)) {
         ss << "-";
     } else {
-        ss << aux_info.en_passent_target.pretty_print();
+        ss << aux_info->en_passent_target.pretty_print();
     }
 
-    ss << " " << aux_info.halfmove_clock<< " " << fullmove_counter;
+    ss << " " << aux_info->halfmove_clock<< " " << fullmove_counter;
     std::string fen, tmp;
     while(ss >> tmp) {
         fen = fen + tmp + " ";
@@ -115,7 +115,7 @@ void Board::pretty() const{
     for (uint rank = 0; rank< 8; rank++) {
         for (uint file = 0; file< 8; file++) {
             Square::square_t idx = 8*rank +file;
-            if ((idx == aux_info.en_passent_target) & (aux_info.en_passent_target.get_value() != 0) & pieces(idx).is_blank()){
+            if ((idx == aux_info->en_passent_target) & (aux_info->en_passent_target.get_value() != 0) & pieces(idx).is_blank()){
                 std::cout << "! ";
             } else {
                 std::cout << pieces(idx).pretty_print();
@@ -130,16 +130,16 @@ void Board::pretty() const{
         }
         if (rank == 1){
             std::cout << "  ";
-            if (aux_info.castling_rights[BLACK][KINGSIDE]) { std::cout << 'k'; }
-            if (aux_info.castling_rights[BLACK][QUEENSIDE]) { std::cout << 'q'; }
+            if (aux_info->castling_rights[BLACK][KINGSIDE]) { std::cout << 'k'; }
+            if (aux_info->castling_rights[BLACK][QUEENSIDE]) { std::cout << 'q'; }
         }
         if (rank == 6){
             std::cout << "  ";
-            if (aux_info.castling_rights[WHITE][KINGSIDE]) { std::cout << 'K'; }
-            if (aux_info.castling_rights[WHITE][QUEENSIDE]) { std::cout << 'Q'; }
+            if (aux_info->castling_rights[WHITE][KINGSIDE]) { std::cout << 'K'; }
+            if (aux_info->castling_rights[WHITE][QUEENSIDE]) { std::cout << 'Q'; }
         }
         if (rank == 3){
-            std::cout << "  " << std::setw(3) << std::setfill(' ') << aux_info.halfmove_clock;
+            std::cout << "  " << std::setw(3) << std::setfill(' ') << aux_info->halfmove_clock;
             
         }
         if (rank == 4){
@@ -197,7 +197,7 @@ std::string Board::print_move(Move move, std::vector<Move> &legal_moves){
     // To check for mate
     make_move(move);
     bool can_not_move = (get_moves().size() == 0);
-    bool now_is_check = aux_info.is_check;
+    bool now_is_check = aux_info->is_check;
     bool now_whos_move = whos_move;
     unmake_move(move);
     if (can_not_move) {

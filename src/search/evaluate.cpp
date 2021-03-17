@@ -270,7 +270,7 @@ int evaluate(Board &board, std::vector<Move> &legal_moves) {
     // evaluate the position relative to the current player.
     // First check if we have been mated.
     if (legal_moves.size() == 0) {
-        if (board.aux_info.is_check) {
+        if (board.is_check()) {
             // This is checkmate
             return -mating_score;
         } else {

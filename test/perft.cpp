@@ -29,7 +29,7 @@ TEST(PerftTest, kiwipete) {
     EXPECT_EQ(perft(2, board), 2039);
     EXPECT_EQ(perft(3, board), 97862);
     EXPECT_EQ(perft(4, board), 4085603);
-    //EXPECT_EQ(perft(5, board),  193690690);
+    //EXPECT_EQ(perft(5, board), 193690690);
 }
 
 TEST(PerftTest, wikithree) {

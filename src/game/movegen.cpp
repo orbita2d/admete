@@ -70,9 +70,9 @@ void gen_pawn_moves(const Board &board, const Square origin, MoveList &moves){
         }
         // En-passent
         if (origin.rank() == relative_rank(us, Squares::Rank5)) {
-            if (((origin.to_west() != 0) & (board.aux_info.en_passent_target == Square(origin + forwards(us) + Direction::W))) | 
-                ((origin.to_east() != 0) & (board.aux_info.en_passent_target == Square(origin + forwards(us) + Direction::E))) ) {
-                move = Move(PAWN, origin, board.aux_info.en_passent_target); 
+            if (((origin.to_west() != 0) & (board.en_passent() == Square(origin + forwards(us) + Direction::W))) | 
+                ((origin.to_east() != 0) & (board.en_passent() == Square(origin + forwards(us) + Direction::E))) ) {
+                move = Move(PAWN, origin, board.en_passent()); 
                 move.make_en_passent();
                 moves.push_back(move);
             }
@@ -154,7 +154,7 @@ void gen_castle_moves(const Board &board, MoveList &moves) {
     // Check if castling is legal, and if so add it to the move list. Assumes we aren't in check
     Move move;
     // You can't castle through check, or while in check
-    if (board.aux_info.castling_rights[colour][QUEENSIDE]) 
+    if (board.can_castle(colour, QUEENSIDE)) 
     {
         // Check for overlap of squares that need to be free, and occupied bb.
         // In the future we should keep a 
@@ -168,7 +168,7 @@ void gen_castle_moves(const Board &board, MoveList &moves) {
             }
         }
     }
-    if (board.aux_info.castling_rights[colour][KINGSIDE]) 
+    if (board.can_castle(colour, KINGSIDE)) 
     {
         if (!(Bitboards::castle(colour, KINGSIDE) & board.pieces())) {
             if (!board.is_attacked(Squares::FileF | back_rank(colour), colour)
@@ -306,7 +306,7 @@ void generate_moves(Board &board, MoveList &moves) {
                 // this interposes the check it's legal unless the peice in absolutely pinned.
                 moves.push_back(move);
             } else if (move.is_ep_capture() & ((move.origin.rank()|move.target.file()) == checkers[0])){
-                // If it's an enpassent capture, the captures piece isn't at the target.
+                // If it's an enpassent capture, the captured piece isn't at the target.
                 moves.push_back(move);
             } else {
                 // All other moves are illegal.
@@ -367,15 +367,13 @@ MoveList Board::get_sorted_moves() {
     non_checks.reserve(MAX_MOVES);
     // The moves from get_moves already have captures first
     for (Move move : legal_moves) {
-        make_move(move);
-        if (aux_info.is_check) {
+        if (gives_check(move)) {
             checks.push_back(move);
         } else if (move.is_queen_promotion()){
             promotions.push_back(move);
         } else {
             non_checks.push_back(move);
         }
-        unmake_move(move);
     }
     sorted_moves = checks;
     sorted_moves.insert(sorted_moves.end(), promotions.begin(), promotions.end());
