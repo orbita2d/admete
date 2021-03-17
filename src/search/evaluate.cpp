@@ -232,13 +232,23 @@ int heuristic(Board &board) {
     int material_value = 0;
     int opening_value = 0;
     int endgame_value = 0;
-    for (uint i = 0; i < 64; i++) {
-        if(board.is_free(i)) {continue;}
-        Piece piece = board.pieces(i);
-        material_value += material[to_enum_piece(piece)];
-        opening_value += PositionScores[OPENING][to_enum_colour(piece)][to_enum_piece(piece)][i];
-        endgame_value += PositionScores[ENDGAME][to_enum_colour(piece)][to_enum_piece(piece)][i];
+    for (int p = 0; p < N_PIECE; p++) {
+        Bitboard occ = board.pieces(WHITE, (PieceEnum)p);
+        while (occ) {
+            material_value += material[p];
+            Square sq = pop_lsb(&occ);
+            opening_value += PositionScores[OPENING][WHITE][p][sq];
+            endgame_value += PositionScores[ENDGAME][WHITE][p][sq];
+        }
+        occ = board.pieces(BLACK, (PieceEnum)p);
+        while (occ) {
+            material_value += material[p];
+            Square sq = pop_lsb(&occ);
+            opening_value += PositionScores[OPENING][BLACK][p][sq];
+            endgame_value += PositionScores[ENDGAME][BLACK][p][sq];
+        }
     }
+
     // Interpolate linearly between the game phases.
     int value = opening_value + (material_value - OPENING_MATERIAL) * (endgame_value - opening_value) / (ENDGAME_MATERIAL - OPENING_MATERIAL);
 
