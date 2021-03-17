@@ -164,7 +164,7 @@ public:
     std::vector<Move> get_moves();
     std::vector<Move> get_captures();
     std::vector<Move> get_sorted_moves();
-    bool is_attacked(const Square square, const Colour colour) const;
+    bool is_attacked(const Square square, const Colour us) const;
     void update_checkers();
     void update_check_squares();
     bool gives_check(Move move);
@@ -189,7 +189,7 @@ public:
 
     void try_move(const std::string move_sting);
     bool try_uci_move(const std::string move_sting);
-    Square find_king(const Colour colour) const;
+    Square find_king(const Colour us) const;
     void search_kings();
     bool is_pinned(const Square origin) const;
     void build_occupied_bb();
@@ -218,16 +218,16 @@ constexpr int mating_score = 100100;
 bool is_mating(int score);
 std::string print_score(int);
 
-constexpr Direction forwards(const Colour colour) {
-    if (colour == WHITE) {
+constexpr Direction forwards(const Colour us) {
+    if (us == WHITE) {
         return Direction::N;
     } else {
         return Direction::S;
     }
 }
 
-constexpr Square back_rank(const Colour colour) {
-    if (colour == WHITE) {
+constexpr Square back_rank(const Colour us) {
+    if (us == WHITE) {
         return Squares::Rank1;
     } else {
         return Squares::Rank8;

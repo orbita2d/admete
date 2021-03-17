@@ -448,8 +448,8 @@ void Board::search_kings() {
 }
 
 
-Square Board::find_king(const Colour colour) const{
-    return king_square[colour];
+Square Board::find_king(const Colour us) const{
+    return king_square[us];
 }
 
 
@@ -532,9 +532,9 @@ bool Board::gives_check(Move move){
         if (check_squares(get_promoted(move)) & move.target) { return true; }
     } else if (move.is_king_castle()) {
         // The only piece that could give check here is the rook.
-        if (check_squares(ROOK) & RookSquare[whos_move][KINGSIDE]) { return true; }
+        if (check_squares(ROOK) & RookSquare[who_to_play()][KINGSIDE]) { return true; }
     } else if (move.is_queen_castle()) {
-        if (check_squares(ROOK) & RookSquare[whos_move][QUEENSIDE]) { return true; }
+        if (check_squares(ROOK) & RookSquare[who_to_play()][QUEENSIDE]) { return true; }
     } else if (move.is_ep_capture()) {
         // If the en passent reveals a file, this will be handled by the blocker
         // The only way this could be problematic is if the en-passent unblocks a rank.
@@ -549,7 +549,7 @@ bool Board::gives_check(Move move){
             // Rook double xrays from the king
             atk = rook_attacks(occ ^ (occ & atk), ks);
             atk &= mask;
-            if (atk & pieces(whos_move, ROOK)) {
+            if (atk & pieces(who_to_play(), ROOK, QUEEN)) {
                 flag = true; 
             }
         }

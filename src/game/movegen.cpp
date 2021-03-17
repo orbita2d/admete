@@ -149,32 +149,32 @@ void gen_queen_moves(const Board &board, const Square origin, MoveList &moves) {
 }
 
 
-template<Colour colour>
+template<Colour us>
 void gen_castle_moves(const Board &board, MoveList &moves) {
     // Check if castling is legal, and if so add it to the move list. Assumes we aren't in check
     Move move;
     // You can't castle through check, or while in check
-    if (board.can_castle(colour, QUEENSIDE)) 
+    if (board.can_castle(us, QUEENSIDE)) 
     {
         // Check for overlap of squares that need to be free, and occupied bb.
         // In the future we should keep a 
-        if (!(Bitboards::castle(colour, QUEENSIDE) & board.pieces())) {
-            if (!board.is_attacked(Squares::FileD | back_rank(colour), colour)
-                & !board.is_attacked(Squares::FileC | back_rank(colour), colour)) 
+        if (!(Bitboards::castle(us, QUEENSIDE) & board.pieces())) {
+            if (!board.is_attacked(Squares::FileD | back_rank(us), us)
+                & !board.is_attacked(Squares::FileC | back_rank(us), us)) 
             {
-                move = Move(KING, Squares::FileE | back_rank(colour), Squares::FileC | back_rank(colour));
+                move = Move(KING, Squares::FileE | back_rank(us), Squares::FileC | back_rank(us));
                 move.make_queen_castle();
                 moves.push_back(move);
             }
         }
     }
-    if (board.can_castle(colour, KINGSIDE)) 
+    if (board.can_castle(us, KINGSIDE)) 
     {
-        if (!(Bitboards::castle(colour, KINGSIDE) & board.pieces())) {
-            if (!board.is_attacked(Squares::FileF | back_rank(colour), colour)
-                & !board.is_attacked(Squares::FileG | back_rank(colour), colour)) 
+        if (!(Bitboards::castle(us, KINGSIDE) & board.pieces())) {
+            if (!board.is_attacked(Squares::FileF | back_rank(us), us)
+                & !board.is_attacked(Squares::FileG | back_rank(us), us)) 
             {
-                move = Move(KING, Squares::FileE | back_rank(colour), Squares::FileG | back_rank(colour));
+                move = Move(KING, Squares::FileE | back_rank(us), Squares::FileG | back_rank(us));
                 move.make_king_castle();
                 moves.push_back(move);
             }
@@ -228,38 +228,38 @@ void gen_knight_moves(const Board &board, const Square origin, MoveList &moves) 
     }
 };
 
-template<Colour colour, GenType gen>
+template<Colour us, GenType gen>
 void generate_pseudolegal_moves(const Board &board, MoveList &moves) {
     Bitboard occ;
-    occ = board.pieces(colour, PAWN);
+    occ = board.pieces(us, PAWN);
     while (occ) {
         Square sq = pop_lsb(&occ);
-        gen_pawn_moves<colour, gen>(board, sq, moves);
+        gen_pawn_moves<us, gen>(board, sq, moves);
     }
-    occ = board.pieces(colour, KNIGHT);
+    occ = board.pieces(us, KNIGHT);
     while (occ) {
         Square sq = pop_lsb(&occ);
-        gen_knight_moves<colour, gen>(board, sq, moves);
+        gen_knight_moves<us, gen>(board, sq, moves);
     }
-    occ = board.pieces(colour, BISHOP);
+    occ = board.pieces(us, BISHOP);
     while (occ) {
         Square sq = pop_lsb(&occ);
-        gen_bishop_moves<colour, gen>(board, sq, moves);
+        gen_bishop_moves<us, gen>(board, sq, moves);
     }
-    occ = board.pieces(colour, ROOK);
+    occ = board.pieces(us, ROOK);
     while (occ) {
         Square sq = pop_lsb(&occ);
-        gen_rook_moves<colour, gen>(board, sq, moves);
+        gen_rook_moves<us, gen>(board, sq, moves);
     }
-    occ = board.pieces(colour, QUEEN);
+    occ = board.pieces(us, QUEEN);
     while (occ) {
         Square sq = pop_lsb(&occ);
-        gen_queen_moves<colour, gen>(board, sq, moves);
+        gen_queen_moves<us, gen>(board, sq, moves);
     }
-    occ = board.pieces(colour, KING);
+    occ = board.pieces(us, KING);
     while (occ) {
         Square sq = pop_lsb(&occ);
-        gen_king_moves<colour, gen>(board, sq, moves);
+        gen_king_moves<us, gen>(board, sq, moves);
     }
 }
 
@@ -274,18 +274,19 @@ void Board::get_pseudolegal_moves(MoveList &quiet_moves, MoveList &captures) con
     }
 }
 
-template<Colour colour, GenType gen>
+template<Colour us, GenType gen>
 void generate_moves(Board &board, MoveList &moves) {
     // Generate all legal moves
+    const Colour them = ~us;
     moves.reserve(MAX_MOVES);
-    Square king_square = board.find_king(colour);
+    Square king_square = board.find_king(us);
     MoveList pseudolegal_moves;
     pseudolegal_moves.reserve(MAX_MOVES);
     if (gen == CAPTURES) {
-        generate_pseudolegal_moves<colour, CAPTURES>(board, pseudolegal_moves);
+        generate_pseudolegal_moves<us, CAPTURES>(board, pseudolegal_moves);
     } else if (gen == LEGAL) {
-        generate_pseudolegal_moves<colour, CAPTURES>(board, pseudolegal_moves);
-        generate_pseudolegal_moves<colour, QUIET>(board, pseudolegal_moves);
+        generate_pseudolegal_moves<us, CAPTURES>(board, pseudolegal_moves);
+        generate_pseudolegal_moves<us, QUIET>(board, pseudolegal_moves);
     }
     if (board.is_check()) {
         const std::array<Square, 2> checkers = board.checkers();
@@ -293,7 +294,7 @@ void generate_moves(Board &board, MoveList &moves) {
         for (Move move : pseudolegal_moves) {
             if (move.origin == king_square) {
                 // King moves have to be very careful.
-                if (!board.is_attacked(move.target, colour)) {moves.push_back(move); }
+                if (!board.is_attacked(move.target, us)) {moves.push_back(move); }
             } else if (number_checkers == 2) {
                 // double checks require a king move, which we've just seen this is not.
                 continue;
@@ -319,7 +320,7 @@ void generate_moves(Board &board, MoveList &moves) {
         for (Move move : pseudolegal_moves) {
             if (move.origin == king_square) {
                 // This is a king move, check where he's gone.
-                if (!board.is_attacked(move.target, colour)) {moves.push_back(move); }
+                if (!board.is_attacked(move.target, us)) {moves.push_back(move); }
             } else if (move.is_ep_capture()) {
                 // en_passent's are weird.
                 if (board.is_pinned(move.origin)) {
@@ -328,9 +329,20 @@ void generate_moves(Board &board, MoveList &moves) {
                 } else {
                     // This can open a rank. if the king is on that rank it could be a problem.
                     if (king_square.rank() == move.origin.rank()) {
-                        board.make_move(move);
-                        if (!board.is_attacked(king_square, colour)) {moves.push_back(move); }
-                        board.unmake_move(move);
+                        Bitboard mask = Bitboards::line(king_square, move.origin);
+                        Bitboard occ = board.pieces();
+                        // Rook attacks from the king
+                        Bitboard atk = rook_attacks(occ, king_square);
+                        // Rook xrays from the king
+                        atk = rook_attacks(occ ^ (occ & atk), king_square);
+                        // Rook double xrays from the king
+                        atk = rook_attacks(occ ^ (occ & atk), king_square);
+                        atk &= mask;
+                        if (atk & board.pieces(them, ROOK, QUEEN)) {
+                            continue;
+                        } else {
+                            moves.push_back(move); 
+                        }
                     } else {
                         moves.push_back(move); 
                     }
@@ -343,7 +355,7 @@ void generate_moves(Board &board, MoveList &moves) {
                 moves.push_back(move);
             }
         }
-        gen_castle_moves<colour>(board, moves);
+        gen_castle_moves<us>(board, moves);
         return;
     }
 
@@ -351,8 +363,8 @@ void generate_moves(Board &board, MoveList &moves) {
 
 MoveList Board::get_moves(){
     MoveList moves;
-    Colour colour = who_to_play();
-    if (colour == WHITE) {
+    Colour us = who_to_play();
+    if (us == WHITE) {
         generate_moves<WHITE, LEGAL>(*this, moves);
     } else {
         generate_moves<BLACK, LEGAL>(*this, moves);
@@ -384,8 +396,8 @@ MoveList Board::get_sorted_moves() {
 
 MoveList Board::get_captures() {
     MoveList captures;
-    Colour colour = who_to_play();
-    if (colour == WHITE) {
+    Colour us = who_to_play();
+    if (us == WHITE) {
         generate_moves<WHITE, CAPTURES>(*this, captures);
     } else {
         generate_moves<BLACK, CAPTURES>(*this, captures);

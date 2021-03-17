@@ -46,8 +46,8 @@ public:
         return uint8_t(get_colour()) == (colour.value & mask);
     }
 
-    constexpr bool is_colour(Colour colour) const {
-        if (colour == Colour::WHITE) {
+    constexpr bool is_colour(Colour us) const {
+        if (us == Colour::WHITE) {
             return is_white();
         } else {
             return is_black();
