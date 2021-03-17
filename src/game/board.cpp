@@ -476,15 +476,8 @@ bool Board::is_attacked(const Square origin, const Colour us) const{
 }
 
 void Board::search_kings() {
-    for (Square::square_t i = 0; i < 64; i++) {
-        if (pieces(i).is_king()) { 
-            if (pieces(i).is_white()) {
-                king_square[WHITE] = i;
-            } else {
-                king_square[BLACK] = i;
-            }
-        }
-    }
+    king_square[WHITE] = lsb(pieces(WHITE, KING));
+    king_square[BLACK] = lsb(pieces(BLACK, KING));
 }
 
 
@@ -562,7 +555,7 @@ long int zobrist_table_cr[N_COLOUR][2];
 long int zobrist_table_move[N_COLOUR];
 long int zobrist_table_ep[8];
 
-void init_zobrist() {
+void Zorbist::init() {
     std::mt19937_64 generator(0x3243f6a8885a308d);
     std::uniform_int_distribution<unsigned long> distribution;
     // Fill table with random bitstrings
@@ -586,14 +579,22 @@ void init_zobrist() {
     zobrist_table_cr[BLACK][QUEENSIDE] = distribution(generator);
 }
 
-long int hash_zobrist(const Board& board) {
+long int Zorbist::hash(const Board& board) {
     long int hash = 0;
-    for (int sq = 0; sq < N_SQUARE; sq++){
-        if (!board.is_free(sq)) {
-            Piece p = board.pieces(sq);
-            hash ^= zobrist_table[to_enum_colour(p)][to_enum_piece(p)][sq];
+
+    for (int p = 0; p < N_PIECE; p++) {
+        Bitboard occ = board.pieces(WHITE, (PieceEnum)p);
+        while (occ) {
+            Square sq = pop_lsb(&occ);
+            hash ^= zobrist_table[WHITE][p][sq];
+        }
+        occ = board.pieces(BLACK, (PieceEnum)p);
+        while (occ) {
+            Square sq = pop_lsb(&occ);
+            hash ^= zobrist_table[BLACK][p][sq];
         }
     }
+    
     hash ^= zobrist_table_move[board.who_to_play()];
     // Castling rights
     if (board.can_castle(WHITE, KINGSIDE)) {
@@ -647,5 +648,5 @@ long diff_zobrist(const Move move, const Piece piece) {
 
 
 long int Board::hash() const{
-    return hash_zobrist(*this);
+    return Zorbist::hash(*this);
 }

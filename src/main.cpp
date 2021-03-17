@@ -111,6 +111,7 @@ int main(int argc, char* argv[])
 		}
 	}
     Bitboards::init();
+    Zorbist::init();
     Board board = Board();
     board.fen_decode(board_fen);
 

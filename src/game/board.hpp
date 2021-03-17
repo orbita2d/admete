@@ -163,12 +163,10 @@ struct AuxilliaryInfo {
 
 };
 
-void init_zobrist();
 class Board {
 public:
     Board() {
         pieces_array.fill(Pieces::Blank);
-        init_zobrist();
     };
 
     void fen_decode(const std::string& fen);
@@ -267,4 +265,9 @@ constexpr Square relative_rank (const Colour c, const Square sq) {
     } else {
         return Square(56 - sq.rank()) | sq.file();
     }
+}
+
+namespace Zorbist {
+    void init();
+    long hash(const Board& board);
 }
