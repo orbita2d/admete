@@ -22,7 +22,7 @@ enum MoveType {
 
 struct Move {
 public:
-    Move(const Square o, const Square t) : origin(o), target(t) {};
+    Move(const PieceEnum p, const Square o, const Square t) : origin(o), target(t), moving_peice(p) {};
     constexpr Move() {};
 
     Square origin;
@@ -106,6 +106,7 @@ public:
         return (type & PROMOTION);
     }
     Piece captured_peice = 0;
+    PieceEnum moving_peice = NO_PIECE;
     MoveType type = QUIETmv;
 };
 constexpr Move NULL_MOVE = Move();
@@ -126,9 +127,7 @@ struct AuxilliaryInfo {
 
 class Board {
 public:
-    Board() {
-        pieces_array.fill(Pieces::Blank);
-    };
+    Board() {};
 
     void fen_decode(const std::string& fen);
     std::string fen_encode() const;
@@ -179,7 +178,6 @@ public:
     Square en_passent() const { return aux_info.en_passent_target; }
     AuxilliaryInfo aux_info;
 private:
-    std::array<Piece, N_SQUARE> pieces_array;
     Bitboard occupied_bb;
     Bitboard pinned_bb;
     std::array<Bitboard, N_COLOUR> colour_bb;

@@ -26,7 +26,7 @@ void gen_pawn_moves(const Board &board, const Square origin, MoveList &moves){
         if (origin.rank() == relative_rank(us, Squares::Rank2)) {
             target = origin + (forwards(us) + forwards(us) );
             if (board.is_free(target) & board.is_free(origin + forwards(us) )) {
-                move = Move(origin, target);
+                move = Move(PAWN, origin, target);
                 move.make_double_push();
                 moves.push_back(move);
             }
@@ -34,7 +34,7 @@ void gen_pawn_moves(const Board &board, const Square origin, MoveList &moves){
         // Normal pushes.
         target = origin + (forwards(us) );
         if (board.is_free(target)) {
-            move = Move(origin, target);
+            move = Move(PAWN, origin, target);
             if (origin.rank() == relative_rank(us, Squares::Rank7)) {
                 add_pawn_promotions(move, moves);
             } else {
@@ -46,7 +46,7 @@ void gen_pawn_moves(const Board &board, const Square origin, MoveList &moves){
         if (origin.to_west() != 0) {
             target = origin + (forwards(us) + Direction::W);
             if (board.is_colour(~us, target)) {
-                move = Move(origin, target);
+                move = Move(PAWN, origin, target);
                 move.make_capture();
                 if (origin.rank() == relative_rank(us, Squares::Rank7)) {
                     add_pawn_promotions(move, moves);
@@ -59,7 +59,7 @@ void gen_pawn_moves(const Board &board, const Square origin, MoveList &moves){
         if (origin.to_east() != 0) {
             target = origin + (forwards(us) + Direction::E);
             if (board.is_colour(~us, target)) {
-                move = Move(origin, target);
+                move = Move(PAWN, origin, target);
                 move.make_capture();
                 if (origin.rank() == relative_rank(us, Squares::Rank7)) {
                     add_pawn_promotions(move, moves);
@@ -72,7 +72,7 @@ void gen_pawn_moves(const Board &board, const Square origin, MoveList &moves){
         if (origin.rank() == relative_rank(us, Squares::Rank5)) {
             if (((origin.to_west() != 0) & (board.aux_info.en_passent_target == Square(origin + forwards(us) + Direction::W))) | 
                 ((origin.to_east() != 0) & (board.aux_info.en_passent_target == Square(origin + forwards(us) + Direction::E))) ) {
-                move = Move(origin, board.aux_info.en_passent_target); 
+                move = Move(PAWN, origin, board.aux_info.en_passent_target); 
                 move.make_en_passent();
                 moves.push_back(move);
             }
@@ -89,14 +89,14 @@ void gen_rook_moves(const Board &board, const Square origin, MoveList &moves) {
         atk &= ~board.pieces();
         while (atk) {
             Square sq = pop_lsb(&atk);
-            Move move = Move(origin, sq);
+            Move move = Move(ROOK, origin, sq);
             moves.push_back(move);
         }
     } else if (gen == CAPTURES) {
         atk &= board.pieces(them);
         while (atk) {
             Square sq = pop_lsb(&atk);
-            Move move = Move(origin, sq);
+            Move move = Move(ROOK, origin, sq);
             move.make_capture();
             moves.push_back(move);
         }
@@ -112,14 +112,14 @@ void gen_bishop_moves(const Board &board, const Square origin, MoveList &moves) 
         atk &= ~board.pieces();
         while (atk) {
             Square sq = pop_lsb(&atk);
-            Move move = Move(origin, sq);
+            Move move = Move(BISHOP, origin, sq);
             moves.push_back(move);
         }
     } else if (gen == CAPTURES) {
         atk &= board.pieces(them);
         while (atk) {
             Square sq = pop_lsb(&atk);
-            Move move = Move(origin, sq);
+            Move move = Move(BISHOP, origin, sq);
             move.make_capture();
             moves.push_back(move);
         }
@@ -134,14 +134,14 @@ void gen_queen_moves(const Board &board, const Square origin, MoveList &moves) {
         atk &= ~board.pieces();
         while (atk) {
             Square sq = pop_lsb(&atk);
-            Move move = Move(origin, sq);
+            Move move = Move(QUEEN, origin, sq);
             moves.push_back(move);
         }
     } else if (gen == CAPTURES) {
         atk &= board.pieces(them);
         while (atk) {
             Square sq = pop_lsb(&atk);
-            Move move = Move(origin, sq);
+            Move move = Move(QUEEN, origin, sq);
             move.make_capture();
             moves.push_back(move);
         }
@@ -162,7 +162,7 @@ void gen_castle_moves(const Board &board, MoveList &moves) {
             if (!board.is_attacked(Squares::FileD | back_rank(colour), colour)
                 & !board.is_attacked(Squares::FileC | back_rank(colour), colour)) 
             {
-                move = Move(Squares::FileE | back_rank(colour), Squares::FileC | back_rank(colour));
+                move = Move(KING, Squares::FileE | back_rank(colour), Squares::FileC | back_rank(colour));
                 move.make_queen_castle();
                 moves.push_back(move);
             }
@@ -174,7 +174,7 @@ void gen_castle_moves(const Board &board, MoveList &moves) {
             if (!board.is_attacked(Squares::FileF | back_rank(colour), colour)
                 & !board.is_attacked(Squares::FileG | back_rank(colour), colour)) 
             {
-                move = Move(Squares::FileE | back_rank(colour), Squares::FileG | back_rank(colour));
+                move = Move(KING, Squares::FileE | back_rank(colour), Squares::FileG | back_rank(colour));
                 move.make_king_castle();
                 moves.push_back(move);
             }
@@ -192,14 +192,14 @@ void gen_king_moves(const Board &board, const Square origin, MoveList &moves) {
         atk &= ~board.pieces();
         while (atk) {
             Square sq = pop_lsb(&atk);
-            Move move = Move(origin, sq);
+            Move move = Move(KING, origin, sq);
             moves.push_back(move);
         }
     } else if (gen == CAPTURES) {
         atk &= board.pieces(them);
         while (atk) {
             Square sq = pop_lsb(&atk);
-            Move move = Move(origin, sq);
+            Move move = Move(KING, origin, sq);
             move.make_capture();
             moves.push_back(move);
         }
@@ -214,14 +214,14 @@ void gen_knight_moves(const Board &board, const Square origin, MoveList &moves) 
         atk &= ~board.pieces();
         while (atk) {
             Square sq = pop_lsb(&atk);
-            Move move = Move(origin, sq);
+            Move move = Move(KNIGHT, origin, sq);
             moves.push_back(move);
         }
     } else if (gen == CAPTURES) {
         atk &= board.pieces(them);
         while (atk) {
             Square sq = pop_lsb(&atk);
-            Move move = Move(origin, sq);
+            Move move = Move(KNIGHT, origin, sq);
             move.make_capture();
             moves.push_back(move);
         }
