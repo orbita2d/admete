@@ -155,7 +155,7 @@ int iterative_deepening(Board& board, const unsigned int max_depth, const int ma
     std::chrono::high_resolution_clock::time_point time_origin, time_now;
     time_origin = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double, std::milli> time_span, time_span_last;
-    int branching_factor = 40;
+    int branching_factor = 10;
     int score = alphabeta(board, 2, NEG_INF, POS_INF, principle);
     time_now = std::chrono::high_resolution_clock::now();
     time_span = time_now - time_origin;
