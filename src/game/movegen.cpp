@@ -265,17 +265,6 @@ void generate_pseudolegal_moves(const Board &board, MoveList &moves) {
     }
 }
 
-
-void Board::get_pseudolegal_moves(MoveList &quiet_moves, MoveList &captures) const {  
-    if (whos_move == WHITE) {
-        generate_pseudolegal_moves<WHITE, CAPTURES>(*this, captures);
-        generate_pseudolegal_moves<WHITE, QUIET>(*this, quiet_moves);
-    } else {
-        generate_pseudolegal_moves<BLACK, CAPTURES>(*this, captures);
-        generate_pseudolegal_moves<BLACK, QUIET>(*this, quiet_moves);
-    }
-}
-
 template<Colour us, GenType gen>
 void generate_moves(Board &board, MoveList &moves) {
     // Generate all legal moves

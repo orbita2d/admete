@@ -9,4 +9,3 @@ enum GenType {
 };
 
 constexpr int MAX_MOVES = 256;
-typedef std::vector<Move> MoveList;

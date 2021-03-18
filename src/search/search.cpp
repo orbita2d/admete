@@ -12,7 +12,7 @@ int alphabeta(Board& board, const unsigned int depth, PrincipleLine& line, long 
 int alphabeta(Board& board, const unsigned int depth, const int alpha_start, const int beta, PrincipleLine& line, long &nodes) {
     // perform alpha-beta pruning search.
     int alpha = alpha_start;
-    std::vector<Move> legal_moves = board.get_sorted_moves();
+    MoveList legal_moves = board.get_sorted_moves();
     if (legal_moves.size() == 0) { 
         nodes++;
         return evaluate(board, legal_moves); 
@@ -87,7 +87,7 @@ int quiesce(Board& board, const int alpha_start, const int beta, long &nodes) {
         alpha = stand_pat;
     }
     
-    std::vector<Move> captures = board.get_captures();
+    MoveList captures = board.get_captures();
     for (Move move : captures) {
         board.make_move(move);
         int score = -quiesce(board, -beta, -alpha, nodes);
@@ -103,7 +103,7 @@ int quiesce(Board& board, const int alpha_start, const int beta, long &nodes) {
 int pv_search(Board& board, const unsigned int depth, const int alpha_start, const int beta, PrincipleLine& principle, const uint pv_depth, PrincipleLine& line, long& nodes) {
     // perform alpha-beta pruning search with principle variation optimisation.
     int alpha = alpha_start;
-    std::vector<Move> legal_moves = board.get_sorted_moves();
+    MoveList legal_moves = board.get_sorted_moves();
     if (depth == 0) { nodes++; return evaluate(board, legal_moves); }
     if (legal_moves.size() == 0) { 
         nodes++;

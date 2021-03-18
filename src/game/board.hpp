@@ -8,122 +8,6 @@
 #include "piece.hpp"
 #include "bitboard.hpp"
 
-enum MoveType {
-    QUIETmv = 0,
-    CAPTURE = 1,
-    PROMOTION = 2,
-    SPECIAL1 = 4,
-    SPECIAL2 = 8,
-    EN_PASSENT = 9,
-    DOUBLE_PUSH = 8,
-    KING_CASTLE = 4,
-    QUEEN_CASTLE = 12
-};
-
-struct Move {
-public:
-    Move(const PieceEnum p, const Square o, const Square t) : origin(o), target(t), moving_peice(p) {};
-    constexpr Move() {};
-
-    Square origin;
-    Square target;
-
-    std::string pretty() const{
-        std::string move_string;
-        move_string = std::string(origin) + std::string(target);
-        if (is_knight_promotion()) {move_string= move_string + "n";}
-        else if (is_bishop_promotion()) {move_string= move_string + "b";}
-        else if (is_rook_promotion()) {move_string= move_string + "r";}
-        else if (is_queen_promotion()) {move_string= move_string + "q";}
-        return move_string;
-    }
-
-    bool operator==(const Move that) {
-        return  origin == that.origin &&
-                target == that.target &&
-                type == that.type;
-    }
-
-    void make_quiet() {
-        type = QUIETmv;
-    }
-    void make_double_push() {
-        type = DOUBLE_PUSH;
-    }
-    void make_king_castle() {
-        type = KING_CASTLE;
-    }
-    void make_queen_castle() {
-        type = QUEEN_CASTLE;
-    }
-    void make_capture() {
-        type = CAPTURE;
-    }
-    void make_en_passent() {
-        type = EN_PASSENT;
-    }
-
-    void make_bishop_promotion() {
-        type = (MoveType)((type & CAPTURE) | (PROMOTION)) ;
-    }
-    void make_knight_promotion() {
-        type = (MoveType)((type & CAPTURE) | (PROMOTION | SPECIAL2)) ;
-    }
-    void make_rook_promotion() {
-        type = (MoveType)((type & CAPTURE) | (PROMOTION | SPECIAL1)) ;
-    }
-    void make_queen_promotion() {
-        type = (MoveType)((type & CAPTURE) | (PROMOTION | SPECIAL1 | SPECIAL2)) ;
-    }
-    constexpr bool is_capture() const {
-        return type & CAPTURE;
-    }
-    constexpr bool is_ep_capture() const {
-        return type == EN_PASSENT;
-    }
-    constexpr bool is_double_push() const {
-        return type == DOUBLE_PUSH;
-    }
-    constexpr bool is_king_castle() const {
-        return type == KING_CASTLE;
-    }
-    constexpr bool is_queen_castle() const {
-        return type == QUEEN_CASTLE;
-    }
-    constexpr bool is_knight_promotion() const {
-        return (type & ~CAPTURE) == (PROMOTION);
-    }
-    constexpr bool is_bishop_promotion() const {
-        return (type & ~CAPTURE) == (PROMOTION | SPECIAL2);
-    }
-    constexpr bool is_rook_promotion() const {
-        return (type & ~CAPTURE) == (PROMOTION | SPECIAL1 );
-    }
-    constexpr bool is_queen_promotion() const {
-        return (type & ~CAPTURE) == (PROMOTION | SPECIAL1 | SPECIAL2);
-    }
-    constexpr bool is_promotion() const {
-        return (type & PROMOTION);
-    }
-    Piece captured_peice = 0;
-    PieceEnum moving_peice = NO_PIECE;
-    MoveType type = QUIETmv;
-};
-constexpr Move NULL_MOVE = Move();
-
-constexpr PieceEnum get_promoted(const Move m) {
-    if (m.is_knight_promotion()) {
-        return KNIGHT;
-    } else if (m.is_bishop_promotion()) {
-        return BISHOP;
-    } else if (m.is_rook_promotion()) {
-        return ROOK;
-    } else if (m.is_queen_promotion()) {
-        return QUEEN;
-    }
-    return NO_PIECE;
-}
-std::ostream& operator<<(std::ostream& os, const Move move);
 
 struct AuxilliaryInfo {
     // Information that is game history dependent, that would otherwise need to be encoded in a move.
@@ -160,7 +44,6 @@ public:
     bool is_free(const Square target) const;
     bool is_colour(const Colour c, const Square target) const;
     Square slide_to_edge(const Square origin, const Square direction, const uint to_edge) const;
-    void get_pseudolegal_moves(std::vector<Move> &quiet_moves, std::vector<Move> &captures) const;
     std::vector<Move> get_evasion_moves() const;
     std::vector<Move> get_moves();
     std::vector<Move> get_captures();
