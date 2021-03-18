@@ -47,48 +47,37 @@ void gen_pawn_moves(const Board &board, const Square origin, MoveList &moves){
         }
     } else if (gen == CAPTURES) {
         // Normal captures.
-        if (origin.to_west() != 0) {
-            target = origin + (forwards(us) + Direction::W);
-            if (board.is_colour(~us, target)) {
-                move = Move(PAWN, origin, target);
-                move.make_capture();
-                if (origin.rank() == relative_rank(us, Squares::Rank7)) {
-                    add_pawn_promotions(move, moves);
-                } else {
-                    moves.push_back(move);
-                }
+        Bitboard atk = Bitboards::pawn_attacks(us, origin);
+        atk &= board.pieces(them);
+        while (atk) {
+            Square sq = pop_lsb(&atk);
+            Move move = Move(PAWN, origin, sq);
+            move.make_capture();
+            if (origin.rank() == relative_rank(us, Squares::Rank7)) {
+                add_pawn_promotions(move, moves);
+            } else {
+                moves.push_back(move);
             }
         }
 
-        if (origin.to_east() != 0) {
-            target = origin + (forwards(us) + Direction::E);
-            if (board.is_colour(~us, target)) {
-                move = Move(PAWN, origin, target);
-                move.make_capture();
-                if (origin.rank() == relative_rank(us, Squares::Rank7)) {
-                    add_pawn_promotions(move, moves);
-                } else {
-                    moves.push_back(move);
-                }
-            }
-        }
         // En-passent
         if (origin.rank() == relative_rank(us, Squares::Rank5)) {
-            if (((origin.to_west() != 0) & (board.en_passent() == Square(origin + forwards(us) + Direction::W))) | 
-                ((origin.to_east() != 0) & (board.en_passent() == Square(origin + forwards(us) + Direction::E))) ) {
-                    Square ks = board.find_king(us);
-                     // This can open a rank. if the king is on that rank it could be a problem.
+            atk = Bitboards::pawn_attacks(us, origin) & board.en_passent();
+            if (atk) {
+                target = lsb(atk);
+                Square ks = board.find_king(us);
+                    // This can open a rank. if the king is on that rank it could be a problem.
                 if (ks.rank() == origin.rank()) {
                     Bitboard mask = Bitboards::line(ks, origin);
                     Bitboard occ = board.pieces();
                     // Rook attacks from the king
-                    Bitboard atk = rook_attacks(occ, ks);
+                    Bitboard r_atk = rook_attacks(occ, ks);
                     // Rook xrays from the king
-                    atk = rook_attacks(occ ^ (occ & atk), ks);
+                    r_atk = rook_attacks(occ ^ (occ & r_atk), ks);
                     // Rook double xrays from the king
-                    atk = rook_attacks(occ ^ (occ & atk), ks);
-                    atk &= mask;
-                    if (!(atk & board.pieces(them, ROOK, QUEEN))) {
+                    r_atk = rook_attacks(occ ^ (occ & r_atk), ks);
+                    r_atk &= mask;
+                    if (!(r_atk & board.pieces(them, ROOK, QUEEN))) {
                         move = Move(PAWN, origin, board.en_passent()); 
                         move.make_en_passent();
                         moves.push_back(move);
@@ -123,7 +112,7 @@ void gen_pawn_moves(const Board &board, const Square origin, MoveList &moves, Bi
             }
         }
         // Normal pushes.
-        target = origin + (forwards(us) );
+        target = origin + forwards(us);
         if (target_mask & target) {
             if (board.is_free(target)) {
                 move = Move(PAWN, origin, target);
@@ -136,64 +125,47 @@ void gen_pawn_moves(const Board &board, const Square origin, MoveList &moves, Bi
         }
     } else if (gen == CAPTURES) {
         // Normal captures.
-        if (origin.to_west() != 0) {
-            target = origin + (forwards(us) + Direction::W);
-            if (target_mask & target) {
-                if (board.is_colour(~us, target)) {
-                    move = Move(PAWN, origin, target);
-                    move.make_capture();
-                    if (origin.rank() == relative_rank(us, Squares::Rank7)) {
-                        add_pawn_promotions(move, moves);
-                    } else {
-                        moves.push_back(move);
-                    }
-                }
-            }
-        }
-
-        if (origin.to_east() != 0) {
-            target = origin + (forwards(us) + Direction::E);
-            if (target_mask & target) {
-                if (board.is_colour(~us, target)) {
-                    move = Move(PAWN, origin, target);
-                    move.make_capture();
-                    if (origin.rank() == relative_rank(us, Squares::Rank7)) {
-                        add_pawn_promotions(move, moves);
-                    } else {
-                        moves.push_back(move);
-                    }
-                }
+        Bitboard atk = Bitboards::pawn_attacks(us, origin);
+        atk &= board.pieces(them);
+        atk &= target_mask;
+        while (atk) {
+            Square sq = pop_lsb(&atk);
+            Move move = Move(PAWN, origin, sq);
+            move.make_capture();
+            if (origin.rank() == relative_rank(us, Squares::Rank7)) {
+                add_pawn_promotions(move, moves);
+            } else {
+                moves.push_back(move);
             }
         }
         // En-passent
+        // This is a really weird case where the target square is not where you end up. target_mask is always pieces we need to capture if this is called with captures
         if (origin.rank() == relative_rank(us, Squares::Rank5)) {
+            atk = Bitboards::pawn_attacks(us, origin) & board.en_passent();
             target = board.en_passent();
-            const Square ep_square = (origin.rank()|target.file());
-            if (target_mask & ep_square) {
-                if (((origin.to_west() != 0) & (target == Square(origin + forwards(us) + Direction::W))) | 
-                    ((origin.to_east() != 0) & (target == Square(origin + forwards(us) + Direction::E))) ) {
-                    Square ks = board.find_king(us);
-                     // This can open a rank. if the king is on that rank it could be a problem.
-                    if (ks.rank() == origin.rank()) {
-                        Bitboard mask = Bitboards::line(ks, origin);
-                        Bitboard occ = board.pieces();
-                        // Rook attacks from the king
-                        Bitboard atk = rook_attacks(occ, ks);
-                        // Rook xrays from the king
-                        atk = rook_attacks(occ ^ (occ & atk), ks);
-                        // Rook double xrays from the king
-                        atk = rook_attacks(occ ^ (occ & atk), ks);
-                        atk &= mask;
-                        if (!(atk & board.pieces(them, ROOK, QUEEN))) {
-                            move = Move(PAWN, origin, board.en_passent()); 
-                            move.make_en_passent();
-                            moves.push_back(move);
-                        } 
-                    } else {
-                            move = Move(PAWN, origin, board.en_passent()); 
-                            move.make_en_passent();
-                            moves.push_back(move);
-                    }
+            const Square ep_square = origin.rank()|target.file();
+            if ((bool)atk && (bool)(target_mask & ep_square)) {
+                Square ks = board.find_king(us);
+                // This can open a rank. if the king is on that rank it could be a problem.
+                if (ks.rank() == origin.rank()) {
+                    Bitboard mask = Bitboards::line(ks, origin);
+                    Bitboard occ = board.pieces();
+                    // Rook attacks from the king
+                    Bitboard r_atk = rook_attacks(occ, ks);
+                    // Rook xrays from the king
+                    r_atk = rook_attacks(occ ^ (occ & r_atk), ks);
+                    // Rook double xrays from the king
+                    r_atk = rook_attacks(occ ^ (occ & r_atk), ks);
+                    r_atk &= mask;
+                    if (!(r_atk & board.pieces(them, ROOK, QUEEN))) {
+                        move = Move(PAWN, origin, board.en_passent()); 
+                        move.make_en_passent();
+                        moves.push_back(move);
+                    } 
+                } else {
+                        move = Move(PAWN, origin, board.en_passent()); 
+                        move.make_en_passent();
+                        moves.push_back(move);
                 }
             }
         }
