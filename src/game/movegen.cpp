@@ -176,6 +176,48 @@ void generate_pseudolegal_moves(const Board &board, MoveList &moves) {
     }
 }
 
+template<>
+void generate_pseudolegal_moves<EVASIONS>(const Board &board, MoveList &moves) {
+    Colour us = board.who_to_play();
+    Bitboard occ;
+    occ = board.pieces(us, PAWN);
+    while (occ) {
+        Square sq = pop_lsb(&occ);
+        gen_pawn_moves<QUIET>(board, sq, moves);
+        gen_pawn_moves<CAPTURES>(board, sq, moves);
+    }
+    occ = board.pieces(us, KNIGHT);
+    while (occ) {
+        Square sq = pop_lsb(&occ);
+        gen_moves<QUIET, KNIGHT>(board, sq, moves);
+        gen_moves<CAPTURES, KNIGHT>(board, sq, moves);
+    }
+    occ = board.pieces(us, BISHOP);
+    while (occ) {
+        Square sq = pop_lsb(&occ);
+        gen_moves<QUIET, BISHOP>(board, sq, moves);
+        gen_moves<CAPTURES, BISHOP>(board, sq, moves);
+    }
+    occ = board.pieces(us, ROOK);
+    while (occ) {
+        Square sq = pop_lsb(&occ);
+        gen_moves<QUIET, ROOK>(board, sq, moves);
+        gen_moves<CAPTURES, ROOK>(board, sq, moves);
+    }
+    occ = board.pieces(us, QUEEN);
+    while (occ) {
+        Square sq = pop_lsb(&occ);
+        gen_moves<QUIET, QUEEN>(board, sq, moves);
+        gen_moves<CAPTURES, QUEEN>(board, sq, moves);
+    }
+    occ = board.pieces(us, KING);
+    while (occ) {
+        Square sq = pop_lsb(&occ);
+        gen_moves<QUIET, KING>(board, sq, moves);
+        gen_moves<CAPTURES, KING>(board, sq, moves);
+    }
+}
+
 template<GenType gen>
 void generate_moves(Board &board, MoveList &moves) {
     // Generate all legal moves
@@ -189,6 +231,10 @@ void generate_moves(Board &board, MoveList &moves) {
         // Double check. Generate king moves.
         gen_moves<QUIET, KING>(board, king_square, pseudolegal_moves);
         gen_moves<CAPTURES, KING>(board, king_square, pseudolegal_moves);
+    } else if (number_checkers == 1) {
+        //generate_pseudolegal_moves<CAPTURES>(board, pseudolegal_moves);
+        //generate_pseudolegal_moves<QUIET>(board, pseudolegal_moves);
+        generate_pseudolegal_moves<EVASIONS>(board, pseudolegal_moves);
     } else if (gen == CAPTURES) {
         generate_pseudolegal_moves<CAPTURES>(board, pseudolegal_moves);
     } else if (gen == LEGAL) {

@@ -64,6 +64,10 @@ int alphabeta(Board& board, const unsigned int depth, const int alpha_start, con
             break; // beta-cutoff
         }
     }
+    if (is_mating(best_score)) {
+        // Keep track of how many the mate is in.
+        best_score--;
+    }
     line = best_line;
     transposition_table.store(hash, best_score, alpha_start, beta, depth);
     return best_score;
@@ -146,6 +150,10 @@ int pv_search(Board& board, const unsigned int depth, const int alpha_start, con
         }
     }
     line = best_line;
+    if (is_mating(best_score)) {
+        // Keep track of how many the mate is in.
+        best_score--;
+    }
     transposition_table.store(board.hash(), best_score, alpha_start, beta, depth);
     return best_score;
 }
@@ -184,8 +192,6 @@ int iterative_deepening(Board& board, const unsigned int max_depth, const int ma
         time_span_last = time_span;
     }
     line = principle;
-    if (is_mating(score)) { score -= (line.size() + 1) / 2; }
-    if (is_mating(-score)) { score += (line.size()) / 2; }
     return score;
 }
 
