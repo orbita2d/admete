@@ -139,6 +139,7 @@ struct AuxilliaryInfo {
     Bitboard check_squares[N_PIECE];
     // Pieces belonging to the player to move, that if moved would give discovered check.
     Bitboard blockers;
+    int material;
 
 };
 
@@ -199,6 +200,7 @@ public:
     bool can_castle(const Colour c) const{ return aux_info->castling_rights[c][KINGSIDE] | aux_info->castling_rights[c][QUEENSIDE];}
     bool can_castle(const Colour c, const CastlingSide s) const { return aux_info->castling_rights[c][s]; }
     Square en_passent() const { return aux_info->en_passent_target; }
+    int material() const { return aux_info->material; }
 private:
     AuxilliaryInfo* aux_info;
     Bitboard occupied_bb;

@@ -125,6 +125,13 @@ inline Bitboard rook_xrays(Bitboard occ, const Square sq)  {
   return rook_attacks(occ ^ (occ & atk), sq);
 }
 
+inline int count_bits(Bitboard bb) {
+    int bits = 0;
+    for (int i = 0; i < N_SQUARE; i++) {
+        if (bb & sq_to_bb(i)) {bits++; }
+    }
+    return bits;
+}
 // Following bit magic shamelessly stolen from Stockfish
 
 /// lsb() and msb() return the least/most significant bit in a non-zero bitboard

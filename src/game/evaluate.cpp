@@ -228,6 +228,56 @@ int evaluate(Board &board) {
     return evaluate(board, legal_moves);
 }
 
+int heuristic_diff(Colour us, Move &move, int material_value) {
+    int opening_value = 0;
+    int endgame_value = 0;
+    Colour them = ~us;
+    PieceEnum p = move.moving_peice;
+    // Remove the piece from the origin
+    opening_value -= PositionScores[OPENING][us][p][move.origin];
+    endgame_value -= PositionScores[ENDGAME][us][p][move.origin];
+    // Add the piece from the origin
+    opening_value += PositionScores[OPENING][us][p][move.target];
+    endgame_value += PositionScores[ENDGAME][us][p][move.target];
+
+    if (move.is_promotion()) {
+        PieceEnum promoted = get_promoted(move);
+        opening_value += PositionScores[OPENING][us][promoted][move.target];
+        endgame_value += PositionScores[ENDGAME][us][promoted][move.target];
+    } 
+    if (move.is_king_castle()) {
+        opening_value -= PositionScores[OPENING][us][ROOK][RookSquare[us][KINGSIDE]];
+        endgame_value -= PositionScores[ENDGAME][us][ROOK][RookSquare[us][KINGSIDE]];
+        opening_value += PositionScores[OPENING][us][ROOK][move.origin + Direction::E];
+        endgame_value += PositionScores[ENDGAME][us][ROOK][move.origin + Direction::E];
+    } else if (move.is_queen_castle()) {
+        opening_value -= PositionScores[OPENING][us][ROOK][RookSquare[us][QUEENSIDE]];
+        endgame_value -= PositionScores[ENDGAME][us][ROOK][RookSquare[us][QUEENSIDE]];
+        opening_value += PositionScores[OPENING][us][ROOK][move.origin + Direction::W];
+        endgame_value += PositionScores[ENDGAME][us][ROOK][move.origin + Direction::W];
+    } else if (move.is_ep_capture()) {
+        const Square captured_square = move.origin.rank()|move.target.file();
+        opening_value -= PositionScores[OPENING][them][PAWN][captured_square];
+        endgame_value -= PositionScores[ENDGAME][them][PAWN][captured_square];
+    } else if (move.is_capture()) {
+        const PieceEnum cp = to_enum_piece(move.captured_peice);
+        opening_value -= PositionScores[OPENING][them][cp][move.target];
+        endgame_value -= PositionScores[ENDGAME][them][cp][move.target];
+    }
+    
+    int value = opening_value + (material_value - OPENING_MATERIAL) * (endgame_value - opening_value) / (ENDGAME_MATERIAL - OPENING_MATERIAL);
+    return value;
+}
+
+int count_material(Board &board) {
+    int material_value = 0;
+    for (int p = 0; p < N_PIECE; p++) {
+        Bitboard occ = board.pieces((PieceEnum)p);
+        material_value += material[p] * count_bits(occ);
+    }
+    return material_value;
+}
+
 int heuristic(Board &board) {
     int material_value = 0;
     int opening_value = 0;
@@ -248,16 +298,8 @@ int heuristic(Board &board) {
             endgame_value += PositionScores[ENDGAME][BLACK][p][sq];
         }
     }
-
     // Interpolate linearly between the game phases.
     int value = opening_value + (material_value - OPENING_MATERIAL) * (endgame_value - opening_value) / (ENDGAME_MATERIAL - OPENING_MATERIAL);
-
-    if (board.can_castle(WHITE)) {
-        value+=10;
-    } 
-    if (board.can_castle(BLACK)) {
-        value-=10;
-    } 
     return value;
 }
 

@@ -150,8 +150,9 @@ int main(int argc, char* argv[])
         std::cout << board.fen_encode() << std::endl;
         std::vector<Move> line;
         line.reserve(depth);
-        int score = iterative_deepening(board, depth, line);
-        std::cout << print_score(score) << std::endl;
+        long nodes;
+        int score = iterative_deepening(board, depth, POS_INF, line, nodes);
+        std::cout << print_score(score) << " ( " << nodes << " ) " << std::endl;
         print_line(line, board);
         exit(EXIT_SUCCESS);
     }
@@ -159,16 +160,6 @@ int main(int argc, char* argv[])
     if (evaluate_static_flag) {
         int score = negamax_heuristic(board);
         std::cout << print_score(score) << std::endl;
-        exit(EXIT_SUCCESS);
-    }
-
-    if (evaluate_random_flag) {
-        std::cout << board.fen_encode() << std::endl;
-        std::vector<Move> line;
-        line.reserve(depth);
-        int score = find_best_random(board, depth, 10, 4000, line);
-        std::cout << print_score(score) << std::endl;
-        print_line(line, board);
         exit(EXIT_SUCCESS);
     }
 

@@ -31,13 +31,6 @@ private:
     std::mt19937_64 _gen;
 };
 
-int count_bits(Bitboard bb) {
-    int bits = 0;
-    for (int i = 0; i < N_SQUARE; i++) {
-        if (bb & sq_to_bb(i)) {bits++; }
-    }
-    return bits;
-}
 
 Bitboard direct_sliding_move(const Bitboard occ, const Square origin, const Direction dir, const uint to_edge) {
     Square target = origin;

@@ -7,6 +7,7 @@
 #include <random>
 
 #include "board.hpp"
+#include "evaluate.hpp"
 
 
 std::map<char, Piece> fen_decode_map = {
@@ -177,6 +178,7 @@ void Board::initialise() {
     search_kings();
     update_checkers();
     update_check_squares();
+    aux_info->material = count_material(*this);
 }
 
 
@@ -304,9 +306,9 @@ void Board::make_move(Move &move) {
 
     // Switch whos turn it is to play
     whos_move = ~ whos_move;
-
     update_checkers();
     update_check_squares();
+
 }
 
 void Board::unmake_move(const Move move) {
@@ -527,7 +529,6 @@ bool Board::gives_check(Move move){
         if (!in_line(move.origin, ks, move.target)) { return true;} 
     }
 
-    bool flag = false;
     if (move.is_promotion()) {
         if (check_squares(get_promoted(move)) & move.target) { return true; }
     } else if (move.is_king_castle()) {
@@ -550,11 +551,10 @@ bool Board::gives_check(Move move){
             atk = rook_attacks(occ ^ (occ & atk), ks);
             atk &= mask;
             if (atk & pieces(who_to_play(), ROOK, QUEEN)) {
-                flag = true; 
+                return true; 
             }
         }
     }
-    if (flag) {return true;}
 
     return false;
 }

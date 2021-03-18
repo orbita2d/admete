@@ -135,9 +135,10 @@ void go(Board& board, std::istringstream& is) {
     constexpr int max_depth = 8;
     std::cerr << "searching: " << float(cutoff_time) / 1000  << std::endl;
     std::vector<Move> line;
+    long nodes = 0;
     line.reserve(max_depth);
     my_clock::time_point time_origin = my_clock::now();
-    int score = iterative_deepening(board, max_depth, cutoff_time, line);
+    int score = iterative_deepening(board, max_depth, cutoff_time, line, nodes);
     std::chrono::duration<double, std::milli> time_span = my_clock::now() - time_origin;
     Move first_move = line.back();
     std::cerr << "found move: " << first_move.pretty() << ": " << print_score(score) << "(depth: " << line.size() << ") ";

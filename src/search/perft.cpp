@@ -3,6 +3,18 @@
 #include "transposition.hpp"
 #include <iostream>
 
+unsigned long perft_comparison(unsigned long depth, Board &board) {
+    // Transposition tables very tricky here because the keys cannot distinguish by depth
+    /*           R
+                / \ 
+               0   1
+             /  \ /  \
+            00 01 10 11
+        If 10 and 0 have the same key (because it's the same position, possible with depth >= 5, especially in the endgame), it will count 10 as having two children 
+    */
+    return perft_bulk(depth, board);
+}
+
 unsigned long perft(unsigned long depth, Board &board) {
     transposition_table.clear();
     transposition_table.min_depth(0);

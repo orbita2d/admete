@@ -1,5 +1,7 @@
 #include "movegen.hpp"
 #include "board.hpp"
+#include "evaluate.hpp"
+#include <algorithm>
 
 // Move Generation
 
@@ -372,24 +374,33 @@ MoveList Board::get_moves(){
     return moves;
 }
 
+struct SMove
+{
+    SMove(Move m) : move(m){};
+    // Struct for move with score
+    Move move;
+    int score = 0;
+};
+
+bool cmp(SMove &m1, SMove &m2) {
+    return m1.score < m2.score;
+}
+
 MoveList Board::get_sorted_moves() {
     const MoveList legal_moves = get_moves();
-    MoveList checks, non_checks, promotions, sorted_moves;
+    MoveList checks, quiet_moves, sorted_moves;
     checks.reserve(MAX_MOVES);
-    non_checks.reserve(MAX_MOVES);
+    quiet_moves.reserve(MAX_MOVES);
     // The moves from get_moves already have captures first
     for (Move move : legal_moves) {
         if (gives_check(move)) {
             checks.push_back(move);
-        } else if (move.is_queen_promotion()){
-            promotions.push_back(move);
         } else {
-            non_checks.push_back(move);
+            quiet_moves.push_back(move);
         }
     }
     sorted_moves = checks;
-    sorted_moves.insert(sorted_moves.end(), promotions.begin(), promotions.end());
-    sorted_moves.insert(sorted_moves.end(), non_checks.begin(), non_checks.end());
+    sorted_moves.insert(sorted_moves.end(), quiet_moves.begin(), quiet_moves.end());
     return sorted_moves;
 }
 
