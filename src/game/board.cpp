@@ -179,6 +179,7 @@ void Board::initialise() {
     update_checkers();
     update_check_squares();
     aux_info->material = count_material(*this);
+    hash_history[0] = Zorbist::hash(*this);
 }
 
 
@@ -308,7 +309,7 @@ void Board::make_move(Move &move) {
     whos_move = ~ whos_move;
     update_checkers();
     update_check_squares();
-
+    hash_history[ply_counter] = Zorbist::hash(*this);
 }
 
 void Board::unmake_move(const Move move) {
@@ -700,6 +701,34 @@ Piece Board::pieces(const Square sq) const{
     return Pieces::Blank;
 }
 
+bool Board::is_draw() const {
+    // Check to see if current position is draw by repetition
+    return false;
+    long current = hash_history[ply_counter];
+    int repetition_before_root = 0;
+    int repetition_after_root = 0;
+
+    for (unsigned int i = 0; i < get_root(); i++) {
+        if (hash_history[i] == current) {
+            repetition_before_root ++;
+        }
+    }
+    for (unsigned int i = get_root(); i < ply_counter; i++) {
+        if (hash_history[i] == current) {
+            repetition_after_root ++;
+        }
+    }
+    if (repetition_after_root > 0) {
+        // After even one repetition, this can be labeled a draw
+        return true;
+    }
+    if (repetition_before_root + repetition_after_root >= 2) {
+        // This is a draw if there are 2 repetitions total.
+        return true;
+    }
+    return false;
+};
+
 long int Board::hash() const{
-    return Zorbist::hash(*this);
+    return hash_history[ply_counter];
 }

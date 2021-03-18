@@ -341,7 +341,7 @@ void generate_pseudolegal_moves(const Board &board, MoveList &moves) {
         Square sq = pop_lsb(&occ);
         gen_moves<gen, BISHOP>(board, sq, moves);
     }
-    // Bisops which are
+    // Bisops which are pinned
     occ = board.pieces(us, BISHOP) & board.pinned();
     while (occ) {
         Square sq = pop_lsb(&occ);

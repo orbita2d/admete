@@ -13,6 +13,7 @@ int alphabeta(Board& board, const unsigned int depth, const int alpha_start, con
     // perform alpha-beta pruning search.
     int alpha = alpha_start;
     MoveList legal_moves = board.get_sorted_moves();
+    if (board.is_draw()) { return 0; }
     if (legal_moves.size() == 0) { 
         nodes++;
         return evaluate(board, legal_moves); 
@@ -90,7 +91,7 @@ int quiesce(Board& board, const int alpha_start, const int beta, long &nodes) {
     if (alpha < stand_pat) {
         alpha = stand_pat;
     }
-    
+    if (board.is_draw()) { return 0; }
     MoveList captures = board.get_captures();
     for (Move move : captures) {
         board.make_move(move);
@@ -108,6 +109,7 @@ int pv_search(Board& board, const unsigned int depth, const int alpha_start, con
     // perform alpha-beta pruning search with principle variation optimisation.
     int alpha = alpha_start;
     MoveList legal_moves = board.get_sorted_moves();
+    if (board.is_draw()) { return 0; }
     if (depth == 0) { nodes++; return evaluate(board, legal_moves); }
     if (legal_moves.size() == 0) { 
         nodes++;
@@ -161,8 +163,9 @@ int pv_search(Board& board, const unsigned int depth, const int alpha_start, con
 int iterative_deepening(Board& board, const unsigned int max_depth, const int max_millis, PrincipleLine& line, long &nodes) {
     // Initialise the transposition table.
     transposition_table.clear();
-    transposition_table.min_depth(0);
+    transposition_table.min_depth(100);
     PrincipleLine principle;
+    board.set_root();
     // We want to limit our search to a fixed time.
     std::chrono::high_resolution_clock::time_point time_origin, time_now;
     time_origin = std::chrono::high_resolution_clock::now();
