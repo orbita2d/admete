@@ -19,7 +19,7 @@ public:
     constexpr Piece(int aPiece) : value(uint8_t(aPiece)) { };
     constexpr Piece(bool is_black) : value(is_black ? 0x10 : 0x08) {};
     constexpr Piece(Colour c) : value( c == Colour::WHITE ? 0x08 : 0x10) {};
-    constexpr Piece(Colour c, PieceEnum p) : value( (c == Colour::WHITE ? 0x08 : 0x10) | (p + 1) ) {};
+    constexpr Piece(Colour c, PieceType p) : value( (c == Colour::WHITE ? 0x08 : 0x10) | (p + 1) ) {};
 
     constexpr bool operator==(Piece that) const { return value == that.value; }
     constexpr bool operator!=(Piece that) const { return value != that.value; }
@@ -96,7 +96,7 @@ public:
         return (value & PMASK) == 0x06;
     }
 
-    constexpr bool is_piece(const PieceEnum p) const {
+    constexpr bool is_piece(const PieceType p) const {
        return (value & PMASK) == p + 1;
     }
     constexpr int get_value() const {return value; }
@@ -123,8 +123,8 @@ namespace Pieces {
 inline Colour to_enum_colour(const Piece p) {
     return p.is_white() ? WHITE : BLACK;
 }
-inline PieceEnum to_enum_piece(const Piece p) {
-    return PieceEnum((p.get_value() & PMASK) - 1);
+inline PieceType to_enum_piece(const Piece p) {
+    return PieceType((p.get_value() & PMASK) - 1);
 }
 std::ostream& operator<<(std::ostream& os, const Piece piece);
 
@@ -142,7 +142,7 @@ enum MoveType {
 
 struct Move {
 public:
-    Move(const PieceEnum p, const Square o, const Square t) : origin(o), target(t), moving_peice(p) {};
+    Move(const PieceType p, const Square o, const Square t) : origin(o), target(t), moving_peice(p) {};
     constexpr Move() {};
 
     Square origin;
@@ -226,12 +226,12 @@ public:
         return (type & PROMOTION);
     }
     Piece captured_peice = 0;
-    PieceEnum moving_peice = NO_PIECE;
+    PieceType moving_peice = NO_PIECE;
     MoveType type = QUIETmv;
 };
 constexpr Move NULL_MOVE = Move();
 
-constexpr PieceEnum get_promoted(const Move m) {
+constexpr PieceType get_promoted(const Move m) {
     if (m.is_knight_promotion()) {
         return KNIGHT;
     } else if (m.is_bishop_promotion()) {

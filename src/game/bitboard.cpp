@@ -63,7 +63,7 @@ Bitboard direct_rook_attack(const Bitboard occ, Square origin) {
     return bb;
 }
 
-void search_magics(PieceEnum p, Bitboard table[], Magic magics[]) {
+void search_magics(PieceType p, Bitboard table[], Magic magics[]) {
     PRNG prng(0x3243f6a8885a308d);
     // This is the most possible occupation combinations for a bishop or rook on any square (2^12), 6 bits on each ray at corner
     Bitboard occupancy[4096], reference[4096];

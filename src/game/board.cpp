@@ -201,7 +201,7 @@ void Board::make_move(Move &move) {
     aux_info = &aux_history[ply_counter];
     const Colour us = whos_move;
     const Colour them = ~ us;
-    const PieceEnum p = move.moving_peice;
+    const PieceType p = move.moving_peice;
 
     if (move.is_capture() | (p == PAWN)) {
         aux_info->halfmove_clock = 0;
@@ -322,7 +322,7 @@ void Board::unmake_move(const Move move) {
     Colour us = whos_move;
     Colour them = ~ us;
 
-    const PieceEnum p =  move.moving_peice;
+    const PieceType p =  move.moving_peice;
     if (p == KING) {
         king_square[us] = move.origin;
     }
@@ -621,12 +621,12 @@ long int Zorbist::hash(const Board& board) {
     long int hash = 0;
 
     for (int p = 0; p < N_PIECE; p++) {
-        Bitboard occ = board.pieces(WHITE, (PieceEnum)p);
+        Bitboard occ = board.pieces(WHITE, (PieceType)p);
         while (occ) {
             Square sq = pop_lsb(&occ);
             hash ^= zobrist_table[WHITE][p][sq];
         }
-        occ = board.pieces(BLACK, (PieceEnum)p);
+        occ = board.pieces(BLACK, (PieceType)p);
         while (occ) {
             Square sq = pop_lsb(&occ);
             hash ^= zobrist_table[BLACK][p][sq];
@@ -659,7 +659,7 @@ long diff_zobrist(const Move move, const Piece piece) {
     long hash = 0;
     // Pieces moving
     // Piece off origin square
-    const PieceEnum p = to_enum_piece(piece);
+    const PieceType p = to_enum_piece(piece);
     const Colour c = to_enum_colour(piece);
     hash ^= zobrist_table[c][p][move.origin];
     // Piece to target square
@@ -688,13 +688,13 @@ long diff_zobrist(const Move move, const Piece piece) {
 Piece Board::pieces(const Square sq) const{
     Bitboard square_bb = sq_to_bb(sq);
     for (int p = 0; p < N_PIECE; p++) {
-        Bitboard occ = pieces(WHITE, (PieceEnum) p);
+        Bitboard occ = pieces(WHITE, (PieceType) p);
         if (square_bb & occ) {
-            return Piece(WHITE, (PieceEnum) p);
+            return Piece(WHITE, (PieceType) p);
         }
-        occ = pieces(BLACK, (PieceEnum) p);
+        occ = pieces(BLACK, (PieceType) p);
         if (square_bb & occ) {
-            return Piece(BLACK, (PieceEnum) p);
+            return Piece(BLACK, (PieceType) p);
         }
     }
     return Pieces::Blank;

@@ -163,7 +163,7 @@ enum Colour {
     BLACK
 };
 
-enum PieceEnum {
+enum PieceType {
     PAWN,
     KNIGHT,
     BISHOP,

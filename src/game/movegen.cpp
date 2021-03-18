@@ -83,73 +83,27 @@ void gen_pawn_moves(const Board &board, const Square origin, MoveList &moves){
 }
 
 
-template<Colour us, GenType gen>
-void gen_rook_moves(const Board &board, const Square origin, MoveList &moves) {
+template<Colour us, GenType gen, PieceType pt>
+void gen_moves(const Board &board, const Square origin, MoveList &moves) {
     const Colour them = ~us;
-    Bitboard atk = rook_attacks(board.pieces(), origin);
+    Bitboard atk = Bitboards::attacks<pt>(board.pieces(), origin);
     if (gen == QUIET) {
         atk &= ~board.pieces();
         while (atk) {
             Square sq = pop_lsb(&atk);
-            Move move = Move(ROOK, origin, sq);
+            Move move = Move(pt, origin, sq);
             moves.push_back(move);
         }
     } else if (gen == CAPTURES) {
         atk &= board.pieces(them);
         while (atk) {
             Square sq = pop_lsb(&atk);
-            Move move = Move(ROOK, origin, sq);
+            Move move = Move(pt, origin, sq);
             move.make_capture();
             moves.push_back(move);
         }
     }
 }
-
-
-template<Colour us, GenType gen>
-void gen_bishop_moves(const Board &board, const Square origin, MoveList &moves) {
-    const Colour them = ~us;
-    Bitboard atk = bishop_attacks(board.pieces(), origin);
-    if (gen == QUIET) {
-        atk &= ~board.pieces();
-        while (atk) {
-            Square sq = pop_lsb(&atk);
-            Move move = Move(BISHOP, origin, sq);
-            moves.push_back(move);
-        }
-    } else if (gen == CAPTURES) {
-        atk &= board.pieces(them);
-        while (atk) {
-            Square sq = pop_lsb(&atk);
-            Move move = Move(BISHOP, origin, sq);
-            move.make_capture();
-            moves.push_back(move);
-        }
-    }
-}
-template<Colour us, GenType gen>
-void gen_queen_moves(const Board &board, const Square origin, MoveList &moves) {
-    // Queen moves are the union superset of rook and bishop moves
-    const Colour them = ~us;
-    Bitboard atk = bishop_attacks(board.pieces(), origin) | rook_attacks(board.pieces(), origin);
-    if (gen == QUIET) {
-        atk &= ~board.pieces();
-        while (atk) {
-            Square sq = pop_lsb(&atk);
-            Move move = Move(QUEEN, origin, sq);
-            moves.push_back(move);
-        }
-    } else if (gen == CAPTURES) {
-        atk &= board.pieces(them);
-        while (atk) {
-            Square sq = pop_lsb(&atk);
-            Move move = Move(QUEEN, origin, sq);
-            move.make_capture();
-            moves.push_back(move);
-        }
-    }
-}
-
 
 template<Colour us>
 void gen_castle_moves(const Board &board, MoveList &moves) {
@@ -185,52 +139,6 @@ void gen_castle_moves(const Board &board, MoveList &moves) {
 }
 
 template<Colour us, GenType gen>
-void gen_king_moves(const Board &board, const Square origin, MoveList &moves) {
-    const Colour them = ~us;
-    // We should really be careful that we aren't moving into check here.
-    // Look to see if we are on an edge.
-    Bitboard atk =  Bitboards::attacks(KING, origin);
-    if (gen == QUIET) {
-        atk &= ~board.pieces();
-        while (atk) {
-            Square sq = pop_lsb(&atk);
-            Move move = Move(KING, origin, sq);
-            moves.push_back(move);
-        }
-    } else if (gen == CAPTURES) {
-        atk &= board.pieces(them);
-        while (atk) {
-            Square sq = pop_lsb(&atk);
-            Move move = Move(KING, origin, sq);
-            move.make_capture();
-            moves.push_back(move);
-        }
-    }
-}
-
-template<Colour us, GenType gen>
-void gen_knight_moves(const Board &board, const Square origin, MoveList &moves) {
-    const Colour them = ~us;
-    Bitboard atk = Bitboards::attacks(KNIGHT, origin);
-    if (gen == QUIET) {
-        atk &= ~board.pieces();
-        while (atk) {
-            Square sq = pop_lsb(&atk);
-            Move move = Move(KNIGHT, origin, sq);
-            moves.push_back(move);
-        }
-    } else if (gen == CAPTURES) {
-        atk &= board.pieces(them);
-        while (atk) {
-            Square sq = pop_lsb(&atk);
-            Move move = Move(KNIGHT, origin, sq);
-            move.make_capture();
-            moves.push_back(move);
-        }
-    }
-};
-
-template<Colour us, GenType gen>
 void generate_pseudolegal_moves(const Board &board, MoveList &moves) {
     Bitboard occ;
     occ = board.pieces(us, PAWN);
@@ -241,27 +149,27 @@ void generate_pseudolegal_moves(const Board &board, MoveList &moves) {
     occ = board.pieces(us, KNIGHT);
     while (occ) {
         Square sq = pop_lsb(&occ);
-        gen_knight_moves<us, gen>(board, sq, moves);
+        gen_moves<us, gen, KNIGHT>(board, sq, moves);
     }
     occ = board.pieces(us, BISHOP);
     while (occ) {
         Square sq = pop_lsb(&occ);
-        gen_bishop_moves<us, gen>(board, sq, moves);
+        gen_moves<us, gen, BISHOP>(board, sq, moves);
     }
     occ = board.pieces(us, ROOK);
     while (occ) {
         Square sq = pop_lsb(&occ);
-        gen_rook_moves<us, gen>(board, sq, moves);
+        gen_moves<us, gen, ROOK>(board, sq, moves);
     }
     occ = board.pieces(us, QUEEN);
     while (occ) {
         Square sq = pop_lsb(&occ);
-        gen_queen_moves<us, gen>(board, sq, moves);
+        gen_moves<us, gen, QUEEN>(board, sq, moves);
     }
     occ = board.pieces(us, KING);
     while (occ) {
         Square sq = pop_lsb(&occ);
-        gen_king_moves<us, gen>(board, sq, moves);
+        gen_moves<us, gen, KING>(board, sq, moves);
     }
 }
 
@@ -275,8 +183,8 @@ void generate_moves(Board &board, MoveList &moves) {
     const int number_checkers = board.number_checkers();
     if (number_checkers == 2) {
         // Double check. Generate king moves.
-        gen_king_moves<us, QUIET>(board, king_square, pseudolegal_moves);
-        gen_king_moves<us, CAPTURES>(board, king_square, pseudolegal_moves);
+        gen_moves<us, QUIET, KING>(board, king_square, pseudolegal_moves);
+        gen_moves<us, CAPTURES, KING>(board, king_square, pseudolegal_moves);
     } else if (gen == CAPTURES) {
         generate_pseudolegal_moves<us, CAPTURES>(board, pseudolegal_moves);
     } else if (gen == LEGAL) {

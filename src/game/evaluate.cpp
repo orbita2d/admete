@@ -232,7 +232,7 @@ int heuristic_diff(Colour us, Move &move, int material_value) {
     int opening_value = 0;
     int endgame_value = 0;
     Colour them = ~us;
-    PieceEnum p = move.moving_peice;
+    PieceType p = move.moving_peice;
     // Remove the piece from the origin
     opening_value -= PositionScores[OPENING][us][p][move.origin];
     endgame_value -= PositionScores[ENDGAME][us][p][move.origin];
@@ -241,7 +241,7 @@ int heuristic_diff(Colour us, Move &move, int material_value) {
     endgame_value += PositionScores[ENDGAME][us][p][move.target];
 
     if (move.is_promotion()) {
-        PieceEnum promoted = get_promoted(move);
+        PieceType promoted = get_promoted(move);
         opening_value += PositionScores[OPENING][us][promoted][move.target];
         endgame_value += PositionScores[ENDGAME][us][promoted][move.target];
     } 
@@ -260,7 +260,7 @@ int heuristic_diff(Colour us, Move &move, int material_value) {
         opening_value -= PositionScores[OPENING][them][PAWN][captured_square];
         endgame_value -= PositionScores[ENDGAME][them][PAWN][captured_square];
     } else if (move.is_capture()) {
-        const PieceEnum cp = to_enum_piece(move.captured_peice);
+        const PieceType cp = to_enum_piece(move.captured_peice);
         opening_value -= PositionScores[OPENING][them][cp][move.target];
         endgame_value -= PositionScores[ENDGAME][them][cp][move.target];
     }
@@ -272,7 +272,7 @@ int heuristic_diff(Colour us, Move &move, int material_value) {
 int count_material(Board &board) {
     int material_value = 0;
     for (int p = 0; p < N_PIECE; p++) {
-        Bitboard occ = board.pieces((PieceEnum)p);
+        Bitboard occ = board.pieces((PieceType)p);
         material_value += material[p] * count_bits(occ);
     }
     return material_value;
@@ -283,14 +283,14 @@ int heuristic(Board &board) {
     int opening_value = 0;
     int endgame_value = 0;
     for (int p = 0; p < N_PIECE; p++) {
-        Bitboard occ = board.pieces(WHITE, (PieceEnum)p);
+        Bitboard occ = board.pieces(WHITE, (PieceType)p);
         while (occ) {
             material_value += material[p];
             Square sq = pop_lsb(&occ);
             opening_value += PositionScores[OPENING][WHITE][p][sq];
             endgame_value += PositionScores[ENDGAME][WHITE][p][sq];
         }
-        occ = board.pieces(BLACK, (PieceEnum)p);
+        occ = board.pieces(BLACK, (PieceType)p);
         while (occ) {
             material_value += material[p];
             Square sq = pop_lsb(&occ);

@@ -52,7 +52,7 @@ public:
     void update_checkers();
     void update_check_squares();
     bool gives_check(Move move);
-    Bitboard check_squares(const PieceEnum p) const {return aux_info->check_squares[p];};
+    Bitboard check_squares(const PieceType p) const {return aux_info->check_squares[p];};
     Bitboard blockers() const {return aux_info->blockers;};
 
     std::array<Square, 2> checkers() const {return _checkers;}
@@ -62,10 +62,10 @@ public:
     long int hash() const;
     Piece pieces(const Square sq) const;
     Bitboard pieces() const {return occupied_bb;}
-    Bitboard pieces(const PieceEnum p) const{return piece_bb[p];}
+    Bitboard pieces(const PieceType p) const{return piece_bb[p];}
     Bitboard pieces(const Colour c) const{return colour_bb[c];}
-    Bitboard pieces(const Colour c, const PieceEnum p) const{return colour_bb[c] & piece_bb[p];}
-    Bitboard pieces(const Colour c, const PieceEnum p1, const PieceEnum p2) const{return colour_bb[c] & (piece_bb[p1] |piece_bb[p2]);}
+    Bitboard pieces(const Colour c, const PieceType p) const{return colour_bb[c] & piece_bb[p];}
+    Bitboard pieces(const Colour c, const PieceType p1, const PieceType p2) const{return colour_bb[c] & (piece_bb[p1] |piece_bb[p2]);}
     Bitboard pinned() const {return pinned_bb;}
 
     void make_move(Move &move);

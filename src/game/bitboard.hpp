@@ -27,64 +27,6 @@ inline Bitboard& operator|=(Bitboard& b, Square s) { return b |= sq_to_bb(s); }
 inline Bitboard& operator^=(Bitboard& b, Square s) { return b ^= sq_to_bb(s); }
 
 
-namespace Bitboards
-{
-  void pretty(Bitboard);
-  void init();
-  constexpr Bitboard h_file_bb = 0x0101010101010101;
-  constexpr Bitboard a_file_bb = 0x8080808080808080;
-  constexpr Bitboard rank_1_bb = 0xff00000000000000;
-  constexpr Bitboard rank_8_bb = 0x00000000000000FF;
-  constexpr Bitboard omega = ~Bitboard(0);
-
-
-  template<Direction dir>
-  constexpr Bitboard shift(const Bitboard bb) {
-    // Bitboards are stored big-endian but who can remember that, so this hides the implementation a little
-    if      (dir == Direction::N ) { return (bb >> 8);}
-    else if (dir == Direction::S ) { return (bb << 8);}
-    else if (dir == Direction::E ) { return (bb << 1) & ~Bitboards::h_file_bb;}
-    else if (dir == Direction::W ) { return (bb >> 1) & ~Bitboards::a_file_bb;}
-    else if (dir == Direction::NW) { return (bb >> 9) & ~Bitboards::a_file_bb;}
-    else if (dir == Direction::NE) { return (bb >> 7) & ~Bitboards::h_file_bb;}
-    else if (dir == Direction::SW) { return (bb << 7) & ~Bitboards::a_file_bb;}
-    else if (dir == Direction::SE) { return (bb << 9) & ~Bitboards::h_file_bb;}
-  }
-
-  inline Bitboard attacks(const PieceEnum p, const Square s) {
-      // Get the value from the pseudolegal attacks table
-      return PseudolegalAttacks[p][s];
-  }
-
-  inline Bitboard pawn_attacks(const Colour c, const Square s) {
-      return PawnAttacks[c][s];
-  }
-
-  inline Bitboard rank(const Square s) {
-    return RankBBs[s.rank_index()];
-  }
-
-  inline Bitboard file(const Square s) {
-    return FileBBs[s.file_index()];
-  }
-  inline Bitboard line(const Square s1, const Square s2) {
-    return LineBBs[s1][s2];
-  }
-  inline Bitboard between(const Square s1, const Square s2) {
-    Bitboard bb = line(s1, s2);
-    if (line) {
-      bb &= ((omega << s1) ^ (omega << s2));
-      return bb & (bb - 1);
-    } else {
-      return 0;
-    }
-  }
-
-  constexpr Bitboard castle(const Colour c, const CastlingSide cs) {
-    return CastleBBs[c][cs];
-  }
-}
-
 // Trying to implement the magic bitboard in https://www.chessprogramming.org/Magic_Bitboards "fancy"
 struct Magic {
   // Pointer to attacks bitboard
@@ -124,6 +66,82 @@ inline Bitboard rook_xrays(Bitboard occ, const Square sq)  {
   const Bitboard atk = rook_attacks(occ, sq);
   return rook_attacks(occ ^ (occ & atk), sq);
 }
+
+namespace Bitboards
+{
+  void pretty(Bitboard);
+  void init();
+  constexpr Bitboard h_file_bb = 0x0101010101010101;
+  constexpr Bitboard a_file_bb = 0x8080808080808080;
+  constexpr Bitboard rank_1_bb = 0xff00000000000000;
+  constexpr Bitboard rank_8_bb = 0x00000000000000FF;
+  constexpr Bitboard omega = ~Bitboard(0);
+
+
+  template<Direction dir>
+  constexpr Bitboard shift(const Bitboard bb) {
+    // Bitboards are stored big-endian but who can remember that, so this hides the implementation a little
+    if      (dir == Direction::N ) { return (bb >> 8);}
+    else if (dir == Direction::S ) { return (bb << 8);}
+    else if (dir == Direction::E ) { return (bb << 1) & ~Bitboards::h_file_bb;}
+    else if (dir == Direction::W ) { return (bb >> 1) & ~Bitboards::a_file_bb;}
+    else if (dir == Direction::NW) { return (bb >> 9) & ~Bitboards::a_file_bb;}
+    else if (dir == Direction::NE) { return (bb >> 7) & ~Bitboards::h_file_bb;}
+    else if (dir == Direction::SW) { return (bb << 7) & ~Bitboards::a_file_bb;}
+    else if (dir == Direction::SE) { return (bb << 9) & ~Bitboards::h_file_bb;}
+  }
+
+  inline Bitboard attacks(const PieceType p, const Square s) {
+      // Get the value from the pseudolegal attacks table
+      return PseudolegalAttacks[p][s];
+  }
+
+  template<PieceType p>
+  inline Bitboard attacks(const Bitboard occ, const Square sq) {
+      // Get the value from the pseudolegal attacks table
+      switch (p)
+      {
+      case ROOK:
+        return rook_attacks(occ, sq); 
+      case BISHOP:
+        return bishop_attacks(occ, sq);    
+      case QUEEN:
+        return bishop_attacks(occ, sq) | rook_attacks(occ, sq);
+      default:
+        return PseudolegalAttacks[p][sq];
+      }
+  }
+
+
+  inline Bitboard pawn_attacks(const Colour c, const Square s) {
+      return PawnAttacks[c][s];
+  }
+
+  inline Bitboard rank(const Square s) {
+    return RankBBs[s.rank_index()];
+  }
+
+  inline Bitboard file(const Square s) {
+    return FileBBs[s.file_index()];
+  }
+  inline Bitboard line(const Square s1, const Square s2) {
+    return LineBBs[s1][s2];
+  }
+  inline Bitboard between(const Square s1, const Square s2) {
+    Bitboard bb = line(s1, s2);
+    if (line) {
+      bb &= ((omega << s1) ^ (omega << s2));
+      return bb & (bb - 1);
+    } else {
+      return 0;
+    }
+  }
+
+  constexpr Bitboard castle(const Colour c, const CastlingSide cs) {
+    return CastleBBs[c][cs];
+  }
+}
+
 
 inline int count_bits(Bitboard bb) {
     int bits = 0;
