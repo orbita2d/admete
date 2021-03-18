@@ -18,8 +18,9 @@ void add_pawn_promotions(const Move move, MoveList &moves) {
     moves.push_back(my_move);
 }
 
-template<Colour us, GenType gen>
+template<GenType gen>
 void gen_pawn_moves(const Board &board, const Square origin, MoveList &moves){
+    Colour us = board.who_to_play();
     Square target;
     Move move;
     // Moves are North
@@ -83,8 +84,9 @@ void gen_pawn_moves(const Board &board, const Square origin, MoveList &moves){
 }
 
 
-template<Colour us, GenType gen, PieceType pt>
+template<GenType gen, PieceType pt>
 void gen_moves(const Board &board, const Square origin, MoveList &moves) {
+    Colour us = board.who_to_play();
     const Colour them = ~us;
     Bitboard atk = Bitboards::attacks<pt>(board.pieces(), origin);
     if (gen == QUIET) {
@@ -138,44 +140,46 @@ void gen_castle_moves(const Board &board, MoveList &moves) {
     }
 }
 
-template<Colour us, GenType gen>
+template<GenType gen>
 void generate_pseudolegal_moves(const Board &board, MoveList &moves) {
+    Colour us = board.who_to_play();
     Bitboard occ;
     occ = board.pieces(us, PAWN);
     while (occ) {
         Square sq = pop_lsb(&occ);
-        gen_pawn_moves<us, gen>(board, sq, moves);
+        gen_pawn_moves<gen>(board, sq, moves);
     }
     occ = board.pieces(us, KNIGHT);
     while (occ) {
         Square sq = pop_lsb(&occ);
-        gen_moves<us, gen, KNIGHT>(board, sq, moves);
+        gen_moves<gen, KNIGHT>(board, sq, moves);
     }
     occ = board.pieces(us, BISHOP);
     while (occ) {
         Square sq = pop_lsb(&occ);
-        gen_moves<us, gen, BISHOP>(board, sq, moves);
+        gen_moves<gen, BISHOP>(board, sq, moves);
     }
     occ = board.pieces(us, ROOK);
     while (occ) {
         Square sq = pop_lsb(&occ);
-        gen_moves<us, gen, ROOK>(board, sq, moves);
+        gen_moves<gen, ROOK>(board, sq, moves);
     }
     occ = board.pieces(us, QUEEN);
     while (occ) {
         Square sq = pop_lsb(&occ);
-        gen_moves<us, gen, QUEEN>(board, sq, moves);
+        gen_moves<gen, QUEEN>(board, sq, moves);
     }
     occ = board.pieces(us, KING);
     while (occ) {
         Square sq = pop_lsb(&occ);
-        gen_moves<us, gen, KING>(board, sq, moves);
+        gen_moves<gen, KING>(board, sq, moves);
     }
 }
 
-template<Colour us, GenType gen>
+template<GenType gen>
 void generate_moves(Board &board, MoveList &moves) {
     // Generate all legal moves
+    Colour us = board.who_to_play();
     const Colour them = ~us;
     Square king_square = board.find_king(us);
     MoveList pseudolegal_moves;
@@ -183,13 +187,13 @@ void generate_moves(Board &board, MoveList &moves) {
     const int number_checkers = board.number_checkers();
     if (number_checkers == 2) {
         // Double check. Generate king moves.
-        gen_moves<us, QUIET, KING>(board, king_square, pseudolegal_moves);
-        gen_moves<us, CAPTURES, KING>(board, king_square, pseudolegal_moves);
+        gen_moves<QUIET, KING>(board, king_square, pseudolegal_moves);
+        gen_moves<CAPTURES, KING>(board, king_square, pseudolegal_moves);
     } else if (gen == CAPTURES) {
-        generate_pseudolegal_moves<us, CAPTURES>(board, pseudolegal_moves);
+        generate_pseudolegal_moves<CAPTURES>(board, pseudolegal_moves);
     } else if (gen == LEGAL) {
-        generate_pseudolegal_moves<us, CAPTURES>(board, pseudolegal_moves);
-        generate_pseudolegal_moves<us, QUIET>(board, pseudolegal_moves);
+        generate_pseudolegal_moves<CAPTURES>(board, pseudolegal_moves);
+        generate_pseudolegal_moves<QUIET>(board, pseudolegal_moves);
     }
     moves.reserve(pseudolegal_moves.size());
     if (board.is_check()) {
@@ -258,7 +262,11 @@ void generate_moves(Board &board, MoveList &moves) {
                 moves.push_back(move);
             }
         }
-        gen_castle_moves<us>(board, moves);
+        if (us == WHITE) {
+            gen_castle_moves<WHITE>(board, moves);
+        } else {
+            gen_castle_moves<BLACK>(board, moves);
+        }
         return;
     }
 
@@ -268,9 +276,9 @@ MoveList Board::get_moves(){
     MoveList moves;
     Colour us = who_to_play();
     if (us == WHITE) {
-        generate_moves<WHITE, LEGAL>(*this, moves);
+        generate_moves<LEGAL>(*this, moves);
     } else {
-        generate_moves<BLACK, LEGAL>(*this, moves);
+        generate_moves<LEGAL>(*this, moves);
     }
     return moves;
 }
@@ -310,9 +318,9 @@ MoveList Board::get_captures() {
     MoveList captures;
     Colour us = who_to_play();
     if (us == WHITE) {
-        generate_moves<WHITE, CAPTURES>(*this, captures);
+        generate_moves<CAPTURES>(*this, captures);
     } else {
-        generate_moves<BLACK, CAPTURES>(*this, captures);
+        generate_moves<CAPTURES>(*this, captures);
     }
     return captures;
 }
