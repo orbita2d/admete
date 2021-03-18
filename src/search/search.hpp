@@ -7,8 +7,8 @@ constexpr int NEG_INF = -1000000000;
 constexpr int POS_INF = +1000000000;
 
 // perft.cpp
+unsigned long perft_comparison(unsigned long depth, Board &board);
 unsigned long perft(unsigned long depth, Board &board);
-unsigned long perft_bulk(unsigned long depth, Board &board);
 void perft_divide(unsigned long depth, Board &board);
 
 // search.cpp

@@ -1,4 +1,5 @@
 #include <iostream>
+#include <chrono>
 #include <getopt.h> // For get_opt_long()
 
 #include "piece.hpp"
@@ -59,6 +60,7 @@ int main(int argc, char* argv[])
     static int count_captures_flag = 0;
     static int interactive_flag = 0;
     static int perft_flag = 0;
+    static int perftcomp_flag = 0;
     static int evaluate_flag = 0;
     static int evaluate_random_flag = 0;
     static int evaluate_static_flag = 0;
@@ -74,6 +76,7 @@ int main(int argc, char* argv[])
 			{"capture-moves",	no_argument, &count_captures_flag, 1},
 			{"interactive",	no_argument, &interactive_flag, 1},
             {"perft", no_argument, &perft_flag, 1},
+            {"perft-compare", no_argument, &perftcomp_flag, 1},
             {"eval", no_argument, &evaluate_flag, 1},
             {"eval-random", no_argument, &evaluate_random_flag, 1},
 			{"eval-static",	no_argument, &evaluate_static_flag, 1},
@@ -168,6 +171,20 @@ int main(int argc, char* argv[])
         for (unsigned int i = 1; i <= depth; i++) {
             std::cout << perft(i, board) << std::endl;
         }
+        exit(EXIT_SUCCESS);
+    }
+
+    if (perftcomp_flag) {
+        std::cout << board.fen_encode() << std::endl;
+        std::chrono::high_resolution_clock::time_point time_origin, time_now;
+        time_origin = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double, std::milli> time_span;
+        long nodes = perft_comparison(depth, board);
+        time_now = std::chrono::high_resolution_clock::now();
+        time_span = time_now - time_origin;
+        std::cout << "nodes: " << nodes << " in " << time_span.count() /1000 << "seconds" << std::endl;
+        std::cout <<  int(1000*(nodes / time_span.count())) << " nodes per second" << std::endl;
+
         exit(EXIT_SUCCESS);
     }
 

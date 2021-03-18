@@ -3,16 +3,12 @@
 #include "transposition.hpp"
 #include <iostream>
 
+unsigned long perft_bulk(unsigned long depth, Board &board);
+unsigned long perft_spenny(unsigned long depth, Board &board);
+
 unsigned long perft_comparison(unsigned long depth, Board &board) {
-    // Transposition tables very tricky here because the keys cannot distinguish by depth
-    /*           R
-                / \ 
-               0   1
-             /  \ /  \
-            00 01 10 11
-        If 10 and 0 have the same key (because it's the same position, possible with depth >= 5, especially in the endgame), it will count 10 as having two children 
-    */
-    return perft_bulk(depth, board);
+    // Perft with no bulk counting, no transposition tables for nodes/second calculation.
+    return perft_spenny(depth, board);
 }
 
 unsigned long perft(unsigned long depth, Board &board) {
@@ -66,4 +62,20 @@ void perft_divide(unsigned long depth, Board &board) {
         board.unmake_move(move);
     }
     std::cout << "nodes searched: " << nodes << std::endl;
+}
+
+unsigned long perft_spenny(unsigned long depth, Board &board) {
+
+    std::vector<Move> legal_moves = board.get_moves();
+    if (depth == 0) {
+        return 1;
+    }
+
+    unsigned long nodes = 0;
+    for (Move move : legal_moves) {
+        board.make_move(move);
+        nodes += perft_spenny(depth-1, board);
+        board.unmake_move(move);
+    }
+    return nodes;
 }
