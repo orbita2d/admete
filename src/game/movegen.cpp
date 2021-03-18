@@ -280,19 +280,23 @@ template<Colour us, GenType gen>
 void generate_moves(Board &board, MoveList &moves) {
     // Generate all legal moves
     const Colour them = ~us;
-    moves.reserve(MAX_MOVES);
     Square king_square = board.find_king(us);
     MoveList pseudolegal_moves;
     pseudolegal_moves.reserve(MAX_MOVES);
-    if (gen == CAPTURES) {
+    const int number_checkers = board.number_checkers();
+    if (number_checkers == 2) {
+        // Double check. Generate king moves.
+        gen_king_moves<us, QUIET>(board, king_square, pseudolegal_moves);
+        gen_king_moves<us, CAPTURES>(board, king_square, pseudolegal_moves);
+    } else if (gen == CAPTURES) {
         generate_pseudolegal_moves<us, CAPTURES>(board, pseudolegal_moves);
     } else if (gen == LEGAL) {
         generate_pseudolegal_moves<us, CAPTURES>(board, pseudolegal_moves);
         generate_pseudolegal_moves<us, QUIET>(board, pseudolegal_moves);
     }
+    moves.reserve(pseudolegal_moves.size());
     if (board.is_check()) {
         const std::array<Square, 2> checkers = board.checkers();
-        const int number_checkers = board.number_checkers();
         for (Move move : pseudolegal_moves) {
             if (move.origin == king_square) {
                 // King moves have to be very careful.

@@ -169,7 +169,7 @@ int main(int argc, char* argv[])
     if (perft_flag) {
         std::cout << board.fen_encode() << std::endl;
         for (unsigned int i = 1; i <= depth; i++) {
-            std::cout << perft(i, board) << std::endl;
+            std::cout << std::dec << perft(i, board) << std::endl;
         }
         exit(EXIT_SUCCESS);
     }
