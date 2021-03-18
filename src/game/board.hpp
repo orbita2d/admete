@@ -56,6 +56,7 @@ public:
     Bitboard blockers() const {return aux_info->blockers;};
 
     std::array<Square, 2> checkers() const {return _checkers;}
+    Square checkers(int i) const {return _checkers[i];}
     int number_checkers() const {return _number_checkers;}
     bool is_check() const{ return aux_info->is_check;};
 
