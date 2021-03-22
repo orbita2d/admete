@@ -163,7 +163,7 @@ int pv_search(Board& board, const unsigned int depth, const int alpha_start, con
 int iterative_deepening(Board& board, const unsigned int max_depth, const int max_millis, PrincipleLine& line, long &nodes) {
     // Initialise the transposition table.
     transposition_table.clear();
-    transposition_table.min_depth(100);
+    transposition_table.min_depth(0);
     PrincipleLine principle;
     board.set_root();
     // We want to limit our search to a fixed time.

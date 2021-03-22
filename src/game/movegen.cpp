@@ -83,9 +83,9 @@ void gen_pawn_moves(const Board &board, const Square origin, MoveList &moves){
                         moves.push_back(move);
                     } 
                 } else {
-                        move = Move(PAWN, origin, board.en_passent()); 
-                        move.make_en_passent();
-                        moves.push_back(move);
+                    move = Move(PAWN, origin, board.en_passent()); 
+                    move.make_en_passent();
+                    moves.push_back(move);
                 }
             }
         }
@@ -139,7 +139,8 @@ void gen_pawn_moves(const Board &board, const Square origin, MoveList &moves, Bi
             }
         }
         // En-passent
-        // This is a really weird case where the target square is not where you end up. target_mask is always pieces we need to capture if this is called with captures
+        // This is a really weird case where the target square is not where you end up.
+        // target_mask is always pieces we need to capture if this is called with captures
         if (origin.rank() == relative_rank(us, Squares::Rank5)) {
             atk = Bitboards::pawn_attacks(us, origin) & board.en_passent();
             target = board.en_passent();
@@ -344,57 +345,84 @@ void generate_pseudolegal_moves(const Board &board, MoveList &moves) {
         Bitboard target_squares = Bitboards::line(sq, ks);
         gen_moves<gen, QUEEN>(board, sq, moves, target_squares);
     }
-    occ = board.pieces(us, KING);
-    while (occ) {
-        Square sq = pop_lsb(&occ);
-        gen_moves<gen, KING>(board, sq, moves);
-    }
+    gen_moves<gen, KING>(board, ks, moves);
+    
 }
 
 template<>
 void generate_pseudolegal_moves<EVASIONS>(const Board &board, MoveList &moves) {
     Colour us = board.who_to_play();
+    Colour them = ~us;
     Bitboard occ;
     const Bitboard can_move = ~board.pinned();
     occ = board.pieces(us, KING);
+    Square ks = board.find_king(us);
+    gen_moves<QUIET, KING>(board, ks, moves);
+    gen_moves<CAPTURES, KING>(board, ks, moves);
+
+    Bitboard pieces_bb = board.pieces();
+    // We can capture the checker
+    Square ts = board.checkers(0);
+    Bitboard target_square = sq_to_bb(ts);
+    occ = Bitboards::attacks<KNIGHT>(pieces_bb,  ts) & board.pieces(us, KNIGHT) & can_move;
     while (occ) {
         Square sq = pop_lsb(&occ);
-        gen_moves<QUIET, KING>(board, sq, moves);
-        gen_moves<CAPTURES, KING>(board, sq, moves);
+        Move move = Move(KNIGHT, sq, ts);
+        move.make_capture();
+        moves.push_back(move);
     }
-    // We can block the check
-    Bitboard between_squares = Bitboards::between(board.find_king(us), board.checkers(0));
-    // We can capture the checker
-    Bitboard target_square = sq_to_bb(board.checkers(0));
+    const Bitboard bq_atk = Bitboards::attacks<BISHOP>(pieces_bb,  ts) & can_move;
+    occ = bq_atk & board.pieces(us, BISHOP);
+    while (occ) {
+        Square sq = pop_lsb(&occ);
+        Move move = Move(BISHOP, sq, ts);
+        move.make_capture();
+        moves.push_back(move);
+    }
+    const Bitboard rq_atk = Bitboards::attacks<ROOK>(pieces_bb,  ts) & can_move;
+    occ = rq_atk & board.pieces(us, ROOK);
+    while (occ) {
+        Square sq = pop_lsb(&occ);
+        Move move = Move(ROOK, sq, ts);
+        move.make_capture();
+        moves.push_back(move);
+    }
+    occ = (rq_atk | bq_atk) & board.pieces(us, QUEEN);
+    while (occ) {
+        Square sq = pop_lsb(&occ);
+        Move move = Move(QUEEN, sq, ts);
+        move.make_capture();
+        moves.push_back(move);
+    }
+
+    // Or we can block the check
+    Bitboard between_squares = Bitboards::between(ks, ts);
     occ = board.pieces(us, PAWN) & can_move;
     while (occ) {
         Square sq = pop_lsb(&occ);
         gen_pawn_moves<QUIET>(board, sq, moves, between_squares);
+        // Weird pawn en-passent checks just make my life so much harder.
         gen_pawn_moves<CAPTURES>(board, sq, moves, target_square);
     }
     occ = board.pieces(us, KNIGHT) & can_move;
     while (occ) {
         Square sq = pop_lsb(&occ);
         gen_moves<QUIET, KNIGHT>(board, sq, moves, between_squares);
-        gen_moves<CAPTURES, KNIGHT>(board, sq, moves, target_square);
     }
     occ = board.pieces(us, BISHOP) & can_move;
     while (occ) {
         Square sq = pop_lsb(&occ);
         gen_moves<QUIET, BISHOP>(board, sq, moves, between_squares);
-        gen_moves<CAPTURES, BISHOP>(board, sq, moves, target_square);
     }
     occ = board.pieces(us, ROOK) & can_move;
     while (occ) {
         Square sq = pop_lsb(&occ);
         gen_moves<QUIET, ROOK>(board, sq, moves, between_squares);
-        gen_moves<CAPTURES, ROOK>(board, sq, moves, target_square);
     }
     occ = board.pieces(us, QUEEN) & can_move;
     while (occ) {
         Square sq = pop_lsb(&occ);
         gen_moves<QUIET, QUEEN>(board, sq, moves, between_squares);
-        gen_moves<CAPTURES, QUEEN>(board, sq, moves, target_square);
     }
 }
 
