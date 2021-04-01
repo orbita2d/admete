@@ -18,9 +18,8 @@ void add_pawn_promotions(const Move move, MoveList &moves) {
     moves.push_back(my_move);
 }
 
-template<GenType gen>
+template<Colour us, GenType gen>
 void gen_pawn_moves(const Board &board, const Square origin, MoveList &moves){
-    Colour us = board.who_to_play();
     Colour them = ~us;
     Square target;
     Move move;
@@ -92,9 +91,8 @@ void gen_pawn_moves(const Board &board, const Square origin, MoveList &moves){
     }
 }
 
-template<GenType gen>
+template<Colour us, GenType gen>
 void gen_pawn_moves(const Board &board, const Square origin, MoveList &moves, Bitboard target_mask){
-    Colour us = board.who_to_play();
     Colour them = ~us;
     Square target;
     Move move;
@@ -293,14 +291,22 @@ void generate_pseudolegal_moves(const Board &board, MoveList &moves) {
     occ = board.pieces(us, PAWN) & ~board.pinned();
     while (occ) {
         Square sq = pop_lsb(&occ);
-        gen_pawn_moves<gen>(board, sq, moves);
+        if (us == WHITE) {
+            gen_pawn_moves<WHITE, gen>(board, sq, moves);
+        } else {
+            gen_pawn_moves<BLACK, gen>(board, sq, moves);
+        }
     }
     // Pawns which are
     occ = board.pieces(us, PAWN) & board.pinned();
     while (occ) {
         Square sq = pop_lsb(&occ);
         Bitboard target_squares = Bitboards::line(sq, ks);
-        gen_pawn_moves<gen>(board, sq, moves, target_squares);
+        if (us == WHITE) {
+            gen_pawn_moves<WHITE, gen>(board, sq, moves, target_squares);
+        } else {
+            gen_pawn_moves<BLACK, gen>(board, sq, moves, target_squares);
+        }
     }
     // Pinned knights cannot move
     occ = board.pieces(us, KNIGHT) & ~board.pinned();
@@ -400,9 +406,15 @@ void generate_pseudolegal_moves<EVASIONS>(const Board &board, MoveList &moves) {
     occ = board.pieces(us, PAWN) & can_move;
     while (occ) {
         Square sq = pop_lsb(&occ);
-        gen_pawn_moves<QUIET>(board, sq, moves, between_squares);
-        // Weird pawn en-passent checks just make my life so much harder.
-        gen_pawn_moves<CAPTURES>(board, sq, moves, target_square);
+        if (us == WHITE) {
+            gen_pawn_moves<WHITE, QUIET>(board, sq, moves, between_squares);
+            // Weird pawn en-passent checks just make my life so much harder.
+            gen_pawn_moves<WHITE, CAPTURES>(board, sq, moves, target_square);
+        } else {
+            gen_pawn_moves<BLACK, QUIET>(board, sq, moves, between_squares);
+            // Weird pawn en-passent checks just make my life so much harder.
+            gen_pawn_moves<BLACK, CAPTURES>(board, sq, moves, target_square);
+        }
     }
     occ = board.pieces(us, KNIGHT) & can_move;
     while (occ) {

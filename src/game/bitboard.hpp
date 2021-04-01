@@ -71,10 +71,16 @@ namespace Bitboards
 {
   void pretty(Bitboard);
   void init();
-  constexpr Bitboard h_file_bb = 0x0101010101010101;
-  constexpr Bitboard a_file_bb = 0x8080808080808080;
-  constexpr Bitboard rank_1_bb = 0xff00000000000000;
-  constexpr Bitboard rank_8_bb = 0x00000000000000FF;
+  constexpr Bitboard h_file = 0x0101010101010101;
+  constexpr Bitboard a_file = 0x8080808080808080;
+  constexpr Bitboard rank_1 = 0xff00000000000000;
+  constexpr Bitboard rank_2 = 0x00ff000000000000;
+  constexpr Bitboard rank_3 = 0x0000ff0000000000;
+  constexpr Bitboard rank_4 = 0x000000ff00000000;
+  constexpr Bitboard rank_5 = 0x00000000ff000000;
+  constexpr Bitboard rank_6 = 0x0000000000ff0000;
+  constexpr Bitboard rank_7 = 0x000000000000ff00;
+  constexpr Bitboard rank_8 = 0x00000000000000ff;
   constexpr Bitboard omega = ~Bitboard(0);
 
 
@@ -83,12 +89,12 @@ namespace Bitboards
     // Bitboards are stored big-endian but who can remember that, so this hides the implementation a little
     if      (dir == Direction::N ) { return (bb >> 8);}
     else if (dir == Direction::S ) { return (bb << 8);}
-    else if (dir == Direction::E ) { return (bb << 1) & ~Bitboards::h_file_bb;}
-    else if (dir == Direction::W ) { return (bb >> 1) & ~Bitboards::a_file_bb;}
-    else if (dir == Direction::NW) { return (bb >> 9) & ~Bitboards::a_file_bb;}
-    else if (dir == Direction::NE) { return (bb >> 7) & ~Bitboards::h_file_bb;}
-    else if (dir == Direction::SW) { return (bb << 7) & ~Bitboards::a_file_bb;}
-    else if (dir == Direction::SE) { return (bb << 9) & ~Bitboards::h_file_bb;}
+    else if (dir == Direction::E ) { return (bb << 1) & ~Bitboards::h_file;}
+    else if (dir == Direction::W ) { return (bb >> 1) & ~Bitboards::a_file;}
+    else if (dir == Direction::NW) { return (bb >> 9) & ~Bitboards::a_file;}
+    else if (dir == Direction::NE) { return (bb >> 7) & ~Bitboards::h_file;}
+    else if (dir == Direction::SW) { return (bb << 7) & ~Bitboards::a_file;}
+    else if (dir == Direction::SE) { return (bb << 9) & ~Bitboards::h_file;}
   }
 
   inline Bitboard attacks(const PieceType p, const Square s) {

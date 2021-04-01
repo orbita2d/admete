@@ -71,8 +71,8 @@ void search_magics(PieceType p, Bitboard table[], Magic magics[]) {
     for (int sq = 0; sq<64; sq++) {
         Square origin(sq);
         Bitboard mask;
-        mask = (~(Bitboards::a_file_bb | Bitboards::h_file_bb) | Bitboards::file(sq));
-        mask &= ~(Bitboards::rank_1_bb | Bitboards::rank_8_bb) | Bitboards::rank(sq);
+        mask = (~(Bitboards::a_file | Bitboards::h_file) | Bitboards::file(sq));
+        mask &= ~(Bitboards::rank_1 | Bitboards::rank_8) | Bitboards::rank(sq);
         if (p == BISHOP) {
             mask &= direct_bishop_attack(0, sq);
         } else if (p == ROOK) {
