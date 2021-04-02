@@ -1,7 +1,7 @@
 #include <time.h>
 #include <chrono>
 #include "search.hpp"
-#include "evaluate.hpp"
+#include "../game/evaluate.hpp"
 #include "transposition.hpp"
 #include <iostream>
 
@@ -135,7 +135,15 @@ int pv_search(Board& board, const unsigned int depth, const int alpha_start, con
         PrincipleLine temp_line;
         temp_line.reserve(16);
         board.make_move(move);
-        int score = -alphabeta(board, depth - 1, -beta, -alpha, temp_line, nodes);
+        //int score = -alphabeta(board, depth - 1, -beta, -alpha, temp_line, nodes);
+        // Search with a null window
+        int score = -alphabeta(board, depth - 1, -alpha -1, -alpha, temp_line, nodes);
+        if (score > alpha) {
+            // Do a full search
+            temp_line.clear();
+            temp_line.reserve(16);
+            score = -alphabeta(board, depth - 1, -beta, -alpha, temp_line, nodes);
+        }
         board.unmake_move(move);
         if (score > best_score) {
             best_score = score;
