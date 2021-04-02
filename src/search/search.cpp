@@ -135,10 +135,13 @@ int pv_search(Board& board, const unsigned int depth, const int alpha_start, con
         PrincipleLine temp_line;
         temp_line.reserve(16);
         board.make_move(move);
+        //int score = -alphabeta(board, depth - 1, -beta, -alpha, temp_line, nodes);
         // Search with a null window
         int score = -alphabeta(board, depth - 1, -alpha -1, -alpha, temp_line, nodes);
-        if (score > alpha && score < beta && depth > 1) {
+        if (score > alpha) {
             // Do a full search
+            temp_line.clear();
+            temp_line.reserve(16);
             score = -alphabeta(board, depth - 1, -beta, -alpha, temp_line, nodes);
         }
         board.unmake_move(move);

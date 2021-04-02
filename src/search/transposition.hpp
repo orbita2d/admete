@@ -11,7 +11,7 @@ struct TransElement {
     TransElement(int eval, int a, int b, int d) : score(eval), _depth(d), info((eval <= a) ? UPPER : (eval >= b) ? LOWER : EXACT) {}; 
     int eval() const{ return score; }
     bool lower() const{ return info == LOWER; }
-    bool upper() const{ return info == LOWER; }
+    bool upper() const{ return info == UPPER; }
     unsigned int depth() const{ return _depth; }
 private:
     int score = 0;
