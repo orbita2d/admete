@@ -46,7 +46,7 @@ unsigned long perft_bulk(unsigned long depth, Board &board) {
         nodes += perft_bulk(depth-1, board);
         board.unmake_move(move);
     }
-    transposition_table.store(hash, nodes, NEG_INF, POS_INF, depth);
+    transposition_table.store(hash, nodes, NEG_INF, POS_INF, depth, NULL_MOVE);
     return nodes;
 }
 

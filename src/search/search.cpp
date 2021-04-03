@@ -20,6 +20,7 @@ int alphabeta(Board& board, const unsigned int depth, const int alpha_start, con
     }
     if (depth == 0) { return quiesce(board, alpha, beta, nodes); }
     
+    Move hash_move = NULL_MOVE;
     const long hash = board.hash();
     if (transposition_table.probe(hash)) {
         const TransElement hit = transposition_table.last_hit();
@@ -41,11 +42,27 @@ int alphabeta(Board& board, const unsigned int depth, const int alpha_start, con
                 return hit.eval();
             }
         }
+        hash_move = hit.move();
     }
     
     PrincipleLine best_line;
     int best_score = NEG_INF;
+    if (!(hash_move == NULL_MOVE)) {
+        board.make_move(hash_move);
+        best_score = -alphabeta(board, depth - 1, -beta, -alpha, best_line, nodes);
+        alpha = std::max(alpha, best_score);
+        best_line.push_back(hash_move);
+        board.unmake_move(hash_move);
+        if (alpha >= beta) {
+            line = best_line;
+            transposition_table.store(hash, best_score, alpha_start, beta, depth, hash_move);
+            return best_score;
+        }
+    }
     for (Move move : legal_moves) {
+        if (move == hash_move) {
+            continue;
+        }
         PrincipleLine temp_line;
         temp_line.reserve(16);
         board.make_move(move);
@@ -70,7 +87,7 @@ int alphabeta(Board& board, const unsigned int depth, const int alpha_start, con
         best_score--;
     }
     line = best_line;
-    transposition_table.store(hash, best_score, alpha_start, beta, depth);
+    transposition_table.store(hash, best_score, alpha_start, beta, depth, best_line.back());
     return best_score;
 }
 
@@ -163,7 +180,7 @@ int pv_search(Board& board, const unsigned int depth, const int alpha_start, con
         // Keep track of how many the mate is in.
         best_score--;
     }
-    transposition_table.store(board.hash(), best_score, alpha_start, beta, depth);
+    transposition_table.store(board.hash(), best_score, alpha_start, beta, depth, best_line.back());
     return best_score;
 }
 
@@ -187,7 +204,6 @@ int iterative_deepening(Board& board, const unsigned int max_depth, const int ma
     for (unsigned int depth = 4; depth <= max_depth; depth+=1) {
         PrincipleLine temp_line;
         temp_line.reserve(depth);
-        nodes = 0l;
         score = pv_search(board, depth, NEG_INF, POS_INF, principle, principle.size(), temp_line, nodes);
         principle = temp_line;
         if (is_mating(score)) { break; }

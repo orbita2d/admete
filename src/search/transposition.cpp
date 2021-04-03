@@ -10,11 +10,11 @@ bool TranspositionTable::probe(const long hash) {
     }
 }
 
-void TranspositionTable::store(const long hash, const int eval, const int lower, const int upper, const unsigned int depth) {
+void TranspositionTable::store(const long hash, const int eval, const int lower, const int upper, const unsigned int depth, const Move move) {
     if (depth < min_depth()) {
         // Only store subtrees at least as deep as this minimum. 
         return;
     }
-    const TransElement elem = TransElement(eval, lower, upper, depth);
+    const TransElement elem = TransElement(eval, lower, upper, depth, move);
     _data[hash] = elem;
 }
