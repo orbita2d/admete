@@ -22,6 +22,7 @@ int alphabeta(Board& board, const unsigned int depth, const int alpha_start, con
     if (depth == 0) { return quiesce(board, alpha, beta, nodes); }
     
     Move hash_move = NULL_MOVE;
+    Move killer_move = NULL_MOVE;
     const long hash = board.hash();
     if (transposition_table.probe(hash)) {
         const TransElement hit = transposition_table.last_hit();
@@ -61,8 +62,12 @@ int alphabeta(Board& board, const unsigned int depth, const int alpha_start, con
             return best_score;
         }
     }
+
     for (Move move : legal_moves) {
         if (move == hash_move) {
+            continue;
+        }
+        if (move == killer_move) {
             continue;
         }
         PrincipleLine temp_line;

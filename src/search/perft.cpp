@@ -3,15 +3,15 @@
 #include "transposition.hpp"
 #include <iostream>
 
-unsigned long perft_bulk(unsigned long depth, Board &board);
-unsigned long perft_spenny(unsigned long depth, Board &board);
+unsigned long perft_bulk(depth_t depth, Board &board);
+unsigned long perft_spenny(depth_t depth, Board &board);
 
-unsigned long perft_comparison(unsigned long depth, Board &board) {
+unsigned long perft_comparison(depth_t depth, Board &board) {
     // Perft with no bulk counting, no transposition tables for nodes/second calculation.
     return perft_spenny(depth, board);
 }
 
-unsigned long perft(unsigned long depth, Board &board) {
+unsigned long perft(depth_t depth, Board &board) {
     transposition_table.clear();
     transposition_table.min_depth(0);
     // Transposition tables very tricky here because the keys cannot distinguish by depth
@@ -25,7 +25,7 @@ unsigned long perft(unsigned long depth, Board &board) {
     return perft_bulk(depth, board);
 }
 
-unsigned long perft_bulk(unsigned long depth, Board &board) {
+unsigned long perft_bulk(depth_t depth, Board &board) {
 
     std::vector<Move> legal_moves = board.get_moves();
     if (depth == 1) {
@@ -50,7 +50,7 @@ unsigned long perft_bulk(unsigned long depth, Board &board) {
     return nodes;
 }
 
-void perft_divide(unsigned long depth, Board &board) {
+void perft_divide(depth_t depth, Board &board) {
     std::vector<Move> legal_moves = board.get_moves();
     unsigned long nodes = 0;
     unsigned long child_nodes;
@@ -64,7 +64,7 @@ void perft_divide(unsigned long depth, Board &board) {
     std::cout << "nodes searched: " << nodes << std::endl;
 }
 
-unsigned long perft_spenny(unsigned long depth, Board &board) {
+unsigned long perft_spenny(depth_t depth, Board &board) {
 
     std::vector<Move> legal_moves = board.get_moves();
     if (depth == 0) {

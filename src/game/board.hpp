@@ -85,9 +85,10 @@ public:
     bool can_castle(const Colour c, const CastlingSide s) const { return aux_info->castling_rights[c][s]; }
     Square en_passent() const { return aux_info->en_passent_target; }
     int material() const { return aux_info->material; }
-    void set_root() { root_node_index = ply_counter; }
-    unsigned int get_root() const{ return root_node_index; }
+    void set_root() { root_node_ply = ply_counter; }
+    ply_t get_root() const{ return root_node_ply; }
     bool is_draw() const;
+    ply_t ply() const { return ply_counter;}
 private:
     AuxilliaryInfo* aux_info;
     Bitboard occupied_bb;
@@ -98,11 +99,11 @@ private:
     std::array<Square, 2> _checkers;
     Colour whos_move = WHITE;
     uint fullmove_counter = 1;
-    uint ply_counter = 0;
+    ply_t ply_counter = 0;
     std::array<Square, 2> king_square;
-    std::array<AuxilliaryInfo, 256> aux_history;
-    std::array<long, 256> hash_history;
-    unsigned int root_node_index;
+    std::array<AuxilliaryInfo, MAX_PLY> aux_history;
+    std::array<long, MAX_PLY> hash_history;
+    ply_t root_node_ply;
 };
 
 constexpr int mating_score = 100100;
