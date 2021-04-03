@@ -131,7 +131,7 @@ void go(Board& board, std::istringstream& is) {
     }
     const int our_time = board.is_white_move() ? wtime : btime;
     const int our_inc  = board.is_white_move() ? winc : binc;
-    const int cutoff_time = our_time / 20 + our_inc*3/5;
+    const int cutoff_time = our_time / 30 + our_inc*3/5;
     constexpr int max_depth = 8;
     std::cerr << "searching: " << float(cutoff_time) / 1000  << std::endl;
     std::vector<Move> line;
