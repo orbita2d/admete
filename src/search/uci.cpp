@@ -184,12 +184,28 @@ void uci() {
 
 }
 
-void uci_info(unsigned long depth, int eval, unsigned long nodes, unsigned long nps) {
+void uci_info(unsigned long depth, int eval, unsigned long nodes, unsigned long nps, PrincipleLine principle) {
     if (!::uci_enable) {return;}
+    std::cout << std::dec;
     std::cout << "info";
     std::cout << " depth " << depth;
-    std::cout << " score cp " << eval;
+
+    if (is_mating(eval)) {
+        //Make for white.
+        int n = mating_score - eval;
+        std::cout << " score mate " << n;
+    }else if (is_mating(-eval)) {
+        //Make for black.
+        int n = (eval + mating_score);
+        std::cout << " score mate " << -n;
+    } else {
+        std::cout << " score cp " << eval;
+    }
     std::cout << " nodes " << nodes;
     std::cout << " nps " << nps;
+    std::cout << " pv ";
+    for (PrincipleLine::reverse_iterator it = principle.rbegin(); it != principle.rend(); ++it) {
+        std::cout << it->pretty() << " ";
+    }
     std::cout << std::endl;
 }

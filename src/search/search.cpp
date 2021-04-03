@@ -214,9 +214,13 @@ int iterative_deepening(Board& board, const unsigned int max_depth, const int ma
         nodes = 0ul;
         score = pv_search(board, depth, NEG_INF, POS_INF, principle, principle.size(), temp_line, nodes);
         principle = temp_line;
-        if (is_mating(score)) { break; }
         time_now = my_clock::now();
         time_span = time_now - time_origin;
+
+        unsigned long nps = int(1000*(nodes / time_span.count()));
+        uci_info(depth, score, nodes, nps, principle);
+
+        if (is_mating(score)) { break; }
         t_est = branching_factor * time_span;
         // Calculate the last branching factor
         if (depth >= 5) {
@@ -225,8 +229,6 @@ int iterative_deepening(Board& board, const unsigned int max_depth, const int ma
         // We've run out of time to calculate.
         if (int(t_est.count()) > max_millis) { break;}
         time_span_last = time_span;
-        unsigned long nps = int(1000*(nodes / time_span.count()));
-        uci_info(depth, board.is_white_move() ? score : -score, nodes, nps);
     }
     line = principle;
     return score;
