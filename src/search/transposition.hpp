@@ -1,5 +1,6 @@
-#include <map>
+#include <unordered_map>
 #include "../game/piece.hpp"
+#include <iostream>
 
 enum TransState {
     EXACT = 0,
@@ -22,9 +23,10 @@ private:
     Move hash_move = NULL_MOVE;
 };
 
-
 typedef std::pair<long, TransElement> tt_pair;
-typedef std::map<long, TransElement> tt_map ;
+typedef std::unordered_map<long, TransElement> tt_map ;
+// Limit array to 64MB
+constexpr size_t tt_max = (1<<20);
 
 class TranspositionTable {
 public:
@@ -32,13 +34,14 @@ public:
     bool probe(const long);
     TransElement last_hit() const { return _last_hit; };
     void store(const long hash, const int eval, const int lower, const int upper, const unsigned int depth, const Move move);
-    void clear() {_data.clear(); }
+    void clear() {_data.clear(); index = 0ul; }
     unsigned int min_depth() {return _min_depth; }
     void min_depth(unsigned int d) { _min_depth = d; }
 private:
     tt_map _data;
     TransElement _last_hit;
     unsigned int _min_depth = 0;
+    size_t index;
 };
 
 static TranspositionTable transposition_table;

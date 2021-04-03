@@ -1,4 +1,7 @@
 #include "transposition.hpp"
+#include <array>
+
+std::array<long, tt_max> key_array;
 
 bool TranspositionTable::probe(const long hash) {
     tt_map::iterator it = _data.find(hash);
@@ -11,10 +14,18 @@ bool TranspositionTable::probe(const long hash) {
 }
 
 void TranspositionTable::store(const long hash, const int eval, const int lower, const int upper, const unsigned int depth, const Move move) {
-    if (depth < min_depth()) {
-        // Only store subtrees at least as deep as this minimum. 
-        return;
-    }
     const TransElement elem = TransElement(eval, lower, upper, depth, move);
-    _data[hash] = elem;
+    if (index < tt_max) {
+        // We are doing the first fill of the table;
+        _data[hash] = elem;
+        key_array[index] = hash;
+    } else {
+        // Replace oldest value
+        const size_t i = index % tt_max;
+        const long old_hash = key_array[i];
+        key_array[i] = hash;
+        _data.erase(old_hash);
+        _data[hash] = elem;
+    }
+    index++;
 }
