@@ -118,7 +118,6 @@ int main(int argc, char* argv[])
     Zorbist::init();
     Board board = Board();
     board.fen_decode(board_fen);
-    std::cerr << std::dec << "TransElement: " << sizeof(TransElement)<< " bytes" << std::endl;
     if (print_flag) {
         board.pretty();
     }

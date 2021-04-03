@@ -192,31 +192,30 @@ int pv_search(Board& board, const unsigned int depth, const int alpha_start, con
     return best_score;
 }
 
+typedef std::chrono::high_resolution_clock my_clock;
 int iterative_deepening(Board& board, const unsigned int max_depth, const int max_millis, PrincipleLine& line, long &nodes) {
     // Initialise the transposition table.
     transposition_table.clear();
     transposition_table.min_depth(0);
     PrincipleLine principle;
     board.set_root();
+    
+    int score;
+
     // We want to limit our search to a fixed time.
-    std::chrono::high_resolution_clock::time_point time_origin, time_now;
-    time_origin = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double, std::milli> time_span, time_span_last;
+    my_clock::time_point time_origin, time_now;
+    time_origin = my_clock::now();
+    std::chrono::duration<double, std::milli> time_span, time_span_last, t_est;
     int branching_factor = 10;
-    int score = alphabeta(board, 2, NEG_INF, POS_INF, principle, nodes);
-    time_now = std::chrono::high_resolution_clock::now();
-    time_span = time_now - time_origin;
-    std::chrono::duration<double, std::milli> t_est = branching_factor * time_span;
-    time_span_last = time_span;
-    // Start at 2 ply for a best guess first move.
-    for (unsigned int depth = 4; depth <= max_depth; depth+=1) {
+
+    for (unsigned int depth = 2; depth <= max_depth; depth+=1) {
         PrincipleLine temp_line;
         temp_line.reserve(depth);
         nodes = 0ul;
         score = pv_search(board, depth, NEG_INF, POS_INF, principle, principle.size(), temp_line, nodes);
         principle = temp_line;
         if (is_mating(score)) { break; }
-        time_now = std::chrono::high_resolution_clock::now();
+        time_now = my_clock::now();
         time_span = time_now - time_origin;
         t_est = branching_factor * time_span;
         // Calculate the last branching factor

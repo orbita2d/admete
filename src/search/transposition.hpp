@@ -26,7 +26,7 @@ private:
 
 typedef std::pair<long, TransElement> tt_pair;
 typedef std::unordered_map<long, TransElement> tt_map ;
-// Limit array to 16MB
+// Limit transposition table to 16MB
 constexpr size_t tt_max = (1<<24) / sizeof(TransElement);
 
 class TranspositionTable {
