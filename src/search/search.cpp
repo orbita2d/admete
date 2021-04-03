@@ -218,7 +218,7 @@ int iterative_deepening(Board& board, const unsigned int max_depth, const int ma
         time_span = time_now - time_origin;
 
         unsigned long nps = int(1000*(nodes / time_span.count()));
-        uci_info(depth, score, nodes, nps, principle);
+        uci_info(depth, score, nodes, nps, principle, (int) time_span.count());
 
         if (is_mating(score)) { break; }
         t_est = branching_factor * time_span;

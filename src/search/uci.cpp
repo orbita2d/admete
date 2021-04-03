@@ -146,8 +146,6 @@ void go(Board& board, std::istringstream& is) {
     int score = iterative_deepening(board, max_depth, cutoff_time, line, nodes);
     std::chrono::duration<double, std::milli> time_span = my_clock::now() - time_origin;
     Move first_move = line.back();
-    std::cerr << "found move: " << first_move.pretty() << ": " << print_score(score) << "(depth: " << line.size() << ") ";
-    std::cerr << "in " << std::setprecision(2) <<time_span.count() / 1000 << "s" << std::endl;
     bestmove(first_move);
     
 }
@@ -184,7 +182,7 @@ void uci() {
 
 }
 
-void uci_info(unsigned long depth, int eval, unsigned long nodes, unsigned long nps, PrincipleLine principle) {
+void uci_info(unsigned long depth, int eval, unsigned long nodes, unsigned long nps, PrincipleLine principle, unsigned int time) {
     if (!::uci_enable) {return;}
     std::cout << std::dec;
     std::cout << "info";
@@ -207,5 +205,6 @@ void uci_info(unsigned long depth, int eval, unsigned long nodes, unsigned long 
     for (PrincipleLine::reverse_iterator it = principle.rbegin(); it != principle.rend(); ++it) {
         std::cout << it->pretty() << " ";
     }
+    std::cout << " time " << time;
     std::cout << std::endl;
 }
