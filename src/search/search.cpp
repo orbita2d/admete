@@ -187,6 +187,7 @@ int iterative_deepening(Board& board, const unsigned int max_depth, const int ma
     for (unsigned int depth = 4; depth <= max_depth; depth+=1) {
         PrincipleLine temp_line;
         temp_line.reserve(depth);
+        nodes = 0l;
         score = pv_search(board, depth, NEG_INF, POS_INF, principle, principle.size(), temp_line, nodes);
         principle = temp_line;
         if (is_mating(score)) { break; }

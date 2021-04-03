@@ -703,7 +703,6 @@ Piece Board::pieces(const Square sq) const{
 
 bool Board::is_draw() const {
     // Check to see if current position is draw by repetition
-    return false;
     long current = hash_history[ply_counter];
     int repetition_before_root = 0;
     int repetition_after_root = 0;
