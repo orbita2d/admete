@@ -9,6 +9,7 @@
 #include "evaluate.hpp"
 #include "movegen.hpp"
 #include "bitboard.hpp"
+#include "transposition.hpp"
 
 void print_vector(const std::vector<Square> &moves) {
     for (Square move : moves) {
@@ -117,7 +118,7 @@ int main(int argc, char* argv[])
     Zorbist::init();
     Board board = Board();
     board.fen_decode(board_fen);
-
+    std::cerr << std::dec << "TransElement: " << sizeof(TransElement)<< " bytes" << std::endl;
     if (print_flag) {
         board.pretty();
     }

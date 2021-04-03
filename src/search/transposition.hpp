@@ -8,19 +8,20 @@ enum TransState {
     UPPER = 2
 };
 
+// 16 bytes
 struct TransElement {
     TransElement() = default;
-    TransElement(int eval, int a, int b, int d, Move m) : score(eval), _depth(d), info((eval <= a) ? UPPER : (eval >= b) ? LOWER : EXACT) , hash_move(m) {}; 
+    TransElement(int eval, int a, int b, int d, Move m) : score(eval), _depth(d), info((eval <= a) ? UPPER : (eval >= b) ? LOWER : EXACT) , hash_move(pack_move(m)) {}; 
     int eval() const{ return score; }
     bool lower() const{ return info == LOWER; }
     bool upper() const{ return info == UPPER; }
     unsigned int depth() const{ return _depth; }
-    Move move() const { return hash_move; }
+    Move move(MoveList &moves) const { return unpack_move(hash_move, moves); }
 private:
     int score = 0;
     unsigned int _depth = 0;
     TransState info = EXACT;
-    Move hash_move = NULL_MOVE;
+    DenseMove hash_move = NULL_DMOVE;
 };
 
 typedef std::pair<long, TransElement> tt_pair;

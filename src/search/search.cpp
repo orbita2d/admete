@@ -1,6 +1,7 @@
 #include <time.h>
 #include <chrono>
 #include "search.hpp"
+#include "uci.hpp"
 #include "../game/evaluate.hpp"
 #include "transposition.hpp"
 #include <iostream>
@@ -42,7 +43,7 @@ int alphabeta(Board& board, const unsigned int depth, const int alpha_start, con
                 return hit.eval();
             }
         }
-        hash_move = hit.move();
+        hash_move = hit.move(legal_moves);
     }
     
     PrincipleLine best_line;
@@ -106,12 +107,6 @@ int quiesce(Board& board, const int alpha_start, const int beta, long &nodes) {
     if (stand_pat >= beta) {
         nodes++;
         return stand_pat;
-    }
-    // Delta pruning
-    constexpr int DELTA = 900;
-    if (stand_pat < alpha - DELTA) {
-        nodes++;
-        return alpha;
     }
     if (alpha < stand_pat) {
         alpha = stand_pat;
@@ -212,6 +207,7 @@ int iterative_deepening(Board& board, const unsigned int max_depth, const int ma
     for (unsigned int depth = 4; depth <= max_depth; depth+=1) {
         PrincipleLine temp_line;
         temp_line.reserve(depth);
+        nodes = 0ul;
         score = pv_search(board, depth, NEG_INF, POS_INF, principle, principle.size(), temp_line, nodes);
         principle = temp_line;
         if (is_mating(score)) { break; }
@@ -225,6 +221,8 @@ int iterative_deepening(Board& board, const unsigned int max_depth, const int ma
         // We've run out of time to calculate.
         if (int(t_est.count()) > max_millis) { break;}
         time_span_last = time_span;
+        unsigned long nps = int(1000*(nodes / time_span.count()));
+        uci_info(depth, board.is_white_move() ? score : -score, nodes, nps);
     }
     line = principle;
     return score;

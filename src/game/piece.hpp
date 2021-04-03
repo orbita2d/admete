@@ -140,6 +140,13 @@ enum MoveType {
     QUEEN_CASTLE = 12
 };
 
+struct DenseMove {
+    constexpr DenseMove(const Square o, const Square t) : v((o.get_value() << 8) | t.get_value()) {};
+    Square origin() const {return v >> 8;}
+    Square target() const {return v & 255;}
+    int v = 0;
+};
+
 struct Move {
 public:
     Move(const PieceType p, const Square o, const Square t) : origin(o), target(t), moving_peice(p) {};
@@ -229,6 +236,8 @@ public:
     PieceType moving_peice = NO_PIECE;
     MoveType type = QUIETmv;
 };
+
+constexpr DenseMove NULL_DMOVE = DenseMove(0, 0);
 constexpr Move NULL_MOVE = Move();
 
 constexpr PieceType get_promoted(const Move m) {
@@ -246,3 +255,14 @@ constexpr PieceType get_promoted(const Move m) {
 std::ostream& operator<<(std::ostream& os, const Move move);
 
 typedef std::vector<Move> MoveList;
+
+inline DenseMove pack_move(const Move m) {
+    return DenseMove(m.origin, m.target);
+}
+
+inline Move unpack_move(const DenseMove m, const MoveList& moves) {
+    for (auto move: moves) {
+        if (move.origin == m.origin() && move.target == m.target()) { return move;}
+    }
+    return NULL_MOVE;
+}

@@ -13,6 +13,8 @@
 #define ENGINE_AUTH "orbita"
 typedef std::chrono::high_resolution_clock my_clock;
 
+bool uci_enable = false;
+
 void init_uci() {
     std::cerr << "uci mode" << std::endl;
     std::cout << "id name " << ENGINE_NAME << std::endl;
@@ -20,6 +22,7 @@ void init_uci() {
     std::cout << "setoption name Nullmove value false" << std::endl;
     std::cout << "uciok" << std::endl;
     std::cerr << "uci okay" << std::endl;
+    ::uci_enable = true;
 }
 
 void position(Board& board, std::istringstream& is) {
@@ -116,6 +119,7 @@ void go(Board& board, std::istringstream& is) {
     // That's a lot, let's just search to a fixed depth for now.
     int wtime = POS_INF, btime = POS_INF;
     int winc = 0, binc = 0;
+    unsigned int max_depth = 8;
     std::string token;
     while (is >> token) {
         // munch through the command string
@@ -127,12 +131,13 @@ void go(Board& board, std::istringstream& is) {
             is >> winc;
         } else if (token == "binc") {
             is >> binc;
+        } else if (token == "depth") {
+            is >> max_depth;
         }
     }
     const int our_time = board.is_white_move() ? wtime : btime;
     const int our_inc  = board.is_white_move() ? winc : binc;
     const int cutoff_time = our_time / 30 + our_inc*3/5;
-    constexpr int max_depth = 8;
     std::cerr << "searching: " << float(cutoff_time) / 1000  << std::endl;
     std::vector<Move> line;
     long nodes = 0;
@@ -146,6 +151,7 @@ void go(Board& board, std::istringstream& is) {
     bestmove(first_move);
     
 }
+
 void uci() {
     init_uci();
     std::string command, token;
@@ -176,4 +182,14 @@ void uci() {
         }
     }
 
+}
+
+void uci_info(unsigned long depth, int eval, unsigned long nodes, unsigned long nps) {
+    if (!::uci_enable) {return;}
+    std::cout << "info";
+    std::cout << " depth " << depth;
+    std::cout << " score cp " << eval;
+    std::cout << " nodes " << nodes;
+    std::cout << " nps " << nps;
+    std::cout << std::endl;
 }
