@@ -202,7 +202,7 @@ void Board::make_move(Move &move) {
     aux_info = &aux_history[ply_counter];
     const Colour us = whos_move;
     const Colour them = ~ us;
-    const PieceType p = move.moving_peice;
+    const PieceType p = move.moving_piece;
 
     if (move.is_capture() | (p == PAWN)) {
         aux_info->halfmove_clock = 0;
@@ -258,16 +258,16 @@ void Board::make_move(Move &move) {
         piece_bb[PAWN] ^= from_to_bb;
         piece_bb[PAWN] ^= sq_to_bb(captured_square);
         // Make sure to lookup and record the piece captured 
-        move.captured_peice = pieces(captured_square);
+        move.captured_piece = pieces(captured_square);
     } else if (move.is_capture()){
         // Make sure to lookup and record the piece captured 
-        move.captured_peice = pieces(move.target);
+        move.captured_piece = pieces(move.target);
         // Update the bitboard.
         occupied_bb ^= from_bb;
         colour_bb[us] ^= from_to_bb;
         colour_bb[them] ^= to_bb;
         piece_bb[p] ^= from_to_bb;
-        piece_bb[to_enum_piece(move.captured_peice)] ^= to_bb;
+        piece_bb[to_enum_piece(move.captured_piece)] ^= to_bb;
     } else {
         // Quiet move
         occupied_bb ^= from_to_bb;
@@ -323,7 +323,7 @@ void Board::unmake_move(const Move move) {
     Colour us = whos_move;
     Colour them = ~ us;
 
-    const PieceType p =  move.moving_peice;
+    const PieceType p =  move.moving_piece;
     if (p == KING) {
         king_square[us] = move.origin;
     }
@@ -366,7 +366,7 @@ void Board::unmake_move(const Move move) {
         colour_bb[us] ^= from_to_bb;
         colour_bb[them] ^= to_bb;
         piece_bb[p] ^= from_to_bb;
-        piece_bb[to_enum_piece(move.captured_peice)] ^= to_bb;
+        piece_bb[to_enum_piece(move.captured_piece)] ^= to_bb;
     } else {
         occupied_bb ^= from_to_bb;
         colour_bb[us] ^= from_to_bb;
@@ -520,7 +520,7 @@ void Board::update_check_squares() {
 bool Board::gives_check(Move move){
     // Does a move give check?
     // Check for direct check.
-    if (check_squares(move.moving_peice) & move.target) {
+    if (check_squares(move.moving_piece) & move.target) {
         return true;
     }
     Square ks = find_king(~whos_move);
@@ -678,9 +678,9 @@ long diff_zobrist(const Move move, const Piece piece) {
     // Captured piece
     if (move.is_ep_capture()) {
         const Square captured_square = move.origin.rank() | move.target.file();
-        hash ^= zobrist_table[to_enum_colour(move.captured_peice)][to_enum_piece(move.captured_peice)][captured_square];
+        hash ^= zobrist_table[to_enum_colour(move.captured_piece)][to_enum_piece(move.captured_piece)][captured_square];
     } else if (move.is_capture()) {
-        hash ^= zobrist_table[to_enum_colour(move.captured_peice)][to_enum_piece(move.captured_peice)][move.target];
+        hash ^= zobrist_table[to_enum_colour(move.captured_piece)][to_enum_piece(move.captured_piece)][move.target];
     }
     // How do we do castling rights? hmm
 }

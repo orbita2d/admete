@@ -149,11 +149,12 @@ struct DenseMove {
 
 struct Move {
 public:
-    Move(const PieceType p, const Square o, const Square t) : origin(o), target(t), moving_peice(p) {};
+    Move(const PieceType p, const Square o, const Square t) : origin(o), target(t), moving_piece(p) {};
     constexpr Move() {};
 
     Square origin;
     Square target;
+    int score = 0;
 
     std::string pretty() const{
         std::string move_string;
@@ -232,8 +233,8 @@ public:
     constexpr bool is_promotion() const {
         return (type & PROMOTION);
     }
-    Piece captured_peice = 0;
-    PieceType moving_peice = NO_PIECE;
+    Piece captured_piece = 0;
+    PieceType moving_piece = NO_PIECE;
     MoveType type = QUIETmv;
 };
 

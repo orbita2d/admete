@@ -19,6 +19,9 @@ std::array<int, 6> material = {
         {100, 300, 300, 500, 900, 0}
 };
 
+int piece_value(const PieceType p) {
+    return material[p];
+}
 position_board fill_blank_positional_scores() {
     // want centralised bishops.
     position_board pb;
@@ -232,7 +235,7 @@ int heuristic_diff(Colour us, Move &move, int material_value) {
     int opening_value = 0;
     int endgame_value = 0;
     Colour them = ~us;
-    PieceType p = move.moving_peice;
+    PieceType p = move.moving_piece;
     // Remove the piece from the origin
     opening_value -= PositionScores[OPENING][us][p][move.origin];
     endgame_value -= PositionScores[ENDGAME][us][p][move.origin];
@@ -260,7 +263,7 @@ int heuristic_diff(Colour us, Move &move, int material_value) {
         opening_value -= PositionScores[OPENING][them][PAWN][captured_square];
         endgame_value -= PositionScores[ENDGAME][them][PAWN][captured_square];
     } else if (move.is_capture()) {
-        const PieceType cp = to_enum_piece(move.captured_peice);
+        const PieceType cp = to_enum_piece(move.captured_piece);
         opening_value -= PositionScores[OPENING][them][cp][move.target];
         endgame_value -= PositionScores[ENDGAME][them][cp][move.target];
     }
