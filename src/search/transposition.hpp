@@ -51,12 +51,10 @@ class KillerTable {
     // Table for the killer heuristic;
 public:
     KillerTable() = default;
-    bool probe(const ply_t ply, MoveList &moves);
-    Move last_hit() const { return _last_hit; };
+    DenseMove probe(const ply_t ply);
     void store(const ply_t ply, const Move move);
 private:
-    std::array<Move, MAX_PLY> _data;
-    Move _last_hit;
+    std::array<DenseMove, MAX_PLY> _data;
 };
 
 static KillerTable killer_table;

@@ -31,15 +31,8 @@ void TranspositionTable::store(const long hash, const int eval, const int lower,
     index++;
 }
 
-bool KillerTable::probe(const ply_t ply, MoveList &moves) {
-    Move killer = _data[ply];
-    auto it = std::find(moves.begin(), moves.end(), killer);
-    if (it == moves.end()) {
-        return false;
-    } else {
-        _last_hit = *it;
-        return true;
-    }
+DenseMove KillerTable::probe(const ply_t ply) {
+    return _data[ply];
 }
 
 
@@ -47,5 +40,5 @@ void KillerTable::store(const ply_t ply, const Move move) {
     // Store the move, only if it's a quiet move.
     if (move.type != QUIETmv) { return; }
     // The move is quiet, store it in the table.
-    _data[ply] = move;
+    _data[ply] = pack_move(move);
 }

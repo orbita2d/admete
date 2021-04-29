@@ -141,6 +141,7 @@ enum MoveType {
 };
 
 struct DenseMove {
+    constexpr DenseMove() = default;
     constexpr DenseMove(const Square o, const Square t) : v((o.get_value() << 8) | t.get_value()) {};
     Square origin() const {return v >> 8;}
     Square target() const {return v & 255;}

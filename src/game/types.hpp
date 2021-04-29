@@ -176,4 +176,4 @@ enum PieceType {
 
 typedef unsigned int depth_t;
 typedef unsigned int ply_t;
-constexpr depth_t MAX_PLY = 256;
+constexpr depth_t MAX_PLY = 512;

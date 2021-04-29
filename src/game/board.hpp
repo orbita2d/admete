@@ -47,7 +47,7 @@ public:
     MoveList get_evasion_moves() const;
     MoveList get_moves();
     MoveList get_captures();
-    void sort_moves(MoveList &legal_moves, const DenseMove hash_move);
+    void sort_moves(MoveList &legal_moves, const DenseMove hash_move, const DenseMove killer_move);
 
     bool is_attacked(const Square square, const Colour us) const;
     void update_checkers();

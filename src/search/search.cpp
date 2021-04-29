@@ -24,7 +24,7 @@ int alphabeta(Board& board, const unsigned int depth, const int alpha_start, con
 
     // Lookup position in transposition table.
     DenseMove hash_move = NULL_DMOVE;
-    Move killer_move = NULL_MOVE;
+    DenseMove killer_move = killer_table.probe(board.ply());
     const long hash = board.hash();
     if (transposition_table.probe(hash)) {
         const TransElement hit = transposition_table.last_hit();
@@ -49,7 +49,7 @@ int alphabeta(Board& board, const unsigned int depth, const int alpha_start, con
         hash_move = hit.move();
     }
     
-    board.sort_moves(legal_moves, hash_move);
+    board.sort_moves(legal_moves, hash_move, killer_move);
     bool is_first_child = true;
     PrincipleLine best_line;
     int best_score = NEG_INF;
@@ -92,6 +92,7 @@ int alphabeta(Board& board, const unsigned int depth, const int alpha_start, con
         best_score--;
     }
     line = best_line;
+    killer_table.store(board.ply(), best_line.back());
     transposition_table.store(hash, best_score, alpha_start, beta, depth, best_line.back());
     return best_score;
 }
@@ -144,6 +145,7 @@ int pv_search(Board& board, const unsigned int depth, const int alpha_start, con
     best_line.push_back(pv_move);
     board.unmake_move(pv_move);
 
+    board.sort_moves(legal_moves, NULL_DMOVE, NULL_DMOVE);
     for (Move move : legal_moves) {
         if (move == pv_move) {
             continue;
