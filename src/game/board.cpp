@@ -258,16 +258,16 @@ void Board::make_move(Move &move) {
         piece_bb[PAWN] ^= from_to_bb;
         piece_bb[PAWN] ^= sq_to_bb(captured_square);
         // Make sure to lookup and record the piece captured 
-        move.captured_piece = pieces(captured_square);
+        move.captured_piece = piece_type(captured_square);
     } else if (move.is_capture()){
         // Make sure to lookup and record the piece captured 
-        move.captured_piece = pieces(move.target);
+        move.captured_piece = piece_type(move.target);
         // Update the bitboard.
         occupied_bb ^= from_bb;
         colour_bb[us] ^= from_to_bb;
         colour_bb[them] ^= to_bb;
         piece_bb[p] ^= from_to_bb;
-        piece_bb[to_enum_piece(move.captured_piece)] ^= to_bb;
+        piece_bb[move.captured_piece] ^= to_bb;
     } else {
         // Quiet move
         occupied_bb ^= from_to_bb;
@@ -366,7 +366,7 @@ void Board::unmake_move(const Move move) {
         colour_bb[us] ^= from_to_bb;
         colour_bb[them] ^= to_bb;
         piece_bb[p] ^= from_to_bb;
-        piece_bb[to_enum_piece(move.captured_piece)] ^= to_bb;
+        piece_bb[move.captured_piece] ^= to_bb;
     } else {
         occupied_bb ^= from_to_bb;
         colour_bb[us] ^= from_to_bb;
@@ -655,36 +655,16 @@ long int Zorbist::hash(const Board& board) {
     return hash;
 } 
 
-long diff_zobrist(const Move move, const Piece piece) {
-    // Calculate the change in hash value caused by a move, without iterating through the entire board.
-    long hash = 0;
-    // Pieces moving
-    // Piece off origin square
-    const PieceType p = to_enum_piece(piece);
-    const Colour c = to_enum_colour(piece);
-    hash ^= zobrist_table[c][p][move.origin];
-    // Piece to target square
-    if (move.is_knight_promotion()) {
-        hash ^= zobrist_table[c][KNIGHT][move.target];
-    } else if (move.is_bishop_promotion()) {
-        hash ^= zobrist_table[c][BISHOP][move.target];
-    } else if (move.is_rook_promotion()) {
-        hash ^= zobrist_table[c][ROOK][move.target];
-    } else if (move.is_queen_promotion()) {
-        hash ^= zobrist_table[c][QUEEN][move.target];
-    } else {
-        hash ^= zobrist_table[c][p][move.target];
+PieceType Board::piece_type(const Square sq) const{
+    Bitboard square_bb = sq_to_bb(sq);
+    for (int p = 0; p < N_PIECE; p++) {
+        Bitboard occ = pieces((PieceType) p);
+        if (square_bb & occ) {
+            return (PieceType) p;
+        }
     }
-    // Captured piece
-    if (move.is_ep_capture()) {
-        const Square captured_square = move.origin.rank() | move.target.file();
-        hash ^= zobrist_table[to_enum_colour(move.captured_piece)][to_enum_piece(move.captured_piece)][captured_square];
-    } else if (move.is_capture()) {
-        hash ^= zobrist_table[to_enum_colour(move.captured_piece)][to_enum_piece(move.captured_piece)][move.target];
-    }
-    // How do we do castling rights? hmm
+    return NO_PIECE;
 }
-
 
 Piece Board::pieces(const Square sq) const{
     Bitboard square_bb = sq_to_bb(sq);

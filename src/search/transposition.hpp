@@ -16,7 +16,7 @@ struct TransElement {
     bool lower() const{ return info == LOWER; }
     bool upper() const{ return info == UPPER; }
     depth_t depth() const{ return _depth; }
-    Move move(MoveList &moves) const { return unpack_move(hash_move, moves); }
+    DenseMove move() const { return hash_move; }
 private:
     int score = 0;
     depth_t _depth = 0;

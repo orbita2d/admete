@@ -40,14 +40,15 @@ public:
 
     void pretty() const;
 
-    std::string print_move(Move move, std::vector<Move> &legal_moves);
+    std::string print_move(Move move, MoveList &legal_moves);
     bool is_free(const Square target) const;
     bool is_colour(const Colour c, const Square target) const;
     Square slide_to_edge(const Square origin, const Square direction, const uint to_edge) const;
-    std::vector<Move> get_evasion_moves() const;
-    std::vector<Move> get_moves();
-    std::vector<Move> get_captures();
-    std::vector<Move> get_sorted_moves();
+    MoveList get_evasion_moves() const;
+    MoveList get_moves();
+    MoveList get_captures();
+    void sort_moves(MoveList &legal_moves, const DenseMove hash_move);
+
     bool is_attacked(const Square square, const Colour us) const;
     void update_checkers();
     void update_check_squares();
@@ -62,6 +63,7 @@ public:
 
     long int hash() const;
     Piece pieces(const Square sq) const;
+    PieceType piece_type(const Square sq) const;
     Bitboard pieces() const {return occupied_bb;}
     Bitboard pieces(const PieceType p) const{return piece_bb[p];}
     Bitboard pieces(const Colour c) const{return colour_bb[c];}

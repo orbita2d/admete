@@ -13,15 +13,17 @@ int alphabeta(Board& board, const unsigned int depth, PrincipleLine& line, long 
 int alphabeta(Board& board, const unsigned int depth, const int alpha_start, const int beta, PrincipleLine& line, long &nodes) {
     // perform alpha-beta pruning search.
     int alpha = alpha_start;
-    MoveList legal_moves = board.get_sorted_moves();
+    
+    MoveList legal_moves = board.get_moves();
     if (board.is_draw()) { return 0; }
     if (legal_moves.size() == 0) { 
         nodes++;
         return evaluate(board, legal_moves); 
     }
     if (depth == 0) { return quiesce(board, alpha, beta, nodes); }
-    
-    Move hash_move = NULL_MOVE;
+
+    // Lookup position in transposition table.
+    DenseMove hash_move = NULL_DMOVE;
     Move killer_move = NULL_MOVE;
     const long hash = board.hash();
     if (transposition_table.probe(hash)) {
@@ -44,42 +46,30 @@ int alphabeta(Board& board, const unsigned int depth, const int alpha_start, con
                 return hit.eval();
             }
         }
-        hash_move = hit.move(legal_moves);
+        hash_move = hit.move();
     }
     
+    board.sort_moves(legal_moves, hash_move);
+    bool is_first_child = true;
     PrincipleLine best_line;
     int best_score = NEG_INF;
-    // Try the hash move
-    if (!(hash_move == NULL_MOVE)) {
-        board.make_move(hash_move);
-        best_score = -alphabeta(board, depth - 1, -beta, -alpha, best_line, nodes);
-        alpha = std::max(alpha, best_score);
-        best_line.push_back(hash_move);
-        board.unmake_move(hash_move);
-        if (alpha >= beta) {
-            line = best_line;
-            transposition_table.store(hash, best_score, alpha_start, beta, depth, hash_move);
-            return best_score;
-        }
-    }
-
     for (Move move : legal_moves) {
-        if (move == hash_move) {
-            continue;
-        }
-        if (move == killer_move) {
-            continue;
-        }
         PrincipleLine temp_line;
         temp_line.reserve(16);
         board.make_move(move);
+        int score;
+        if (is_first_child) {
+            score = -alphabeta(board, depth - 1, -beta, -alpha, temp_line, nodes);
+        } else {
         // Search with a null window
-        int score = -alphabeta(board, depth - 1, -alpha -1, -alpha, temp_line, nodes);
+        score = -alphabeta(board, depth - 1, -beta, -alpha, temp_line, nodes);
         if (score > alpha && score < beta && depth > 1) {
             // Do a full search
             temp_line.clear();
             temp_line.reserve(16);
             score = -alphabeta(board, depth - 1, -beta, -alpha, temp_line, nodes);
+        }
+
         }
         board.unmake_move(move);
         if (score > best_score) {
@@ -95,6 +85,7 @@ int alphabeta(Board& board, const unsigned int depth, const int alpha_start, con
         if (alpha >= beta) {
             break; // beta-cutoff
         }
+        is_first_child = false;
     }
     if (is_mating(best_score)) {
         // Keep track of how many the mate is in.
@@ -133,7 +124,7 @@ int quiesce(Board& board, const int alpha_start, const int beta, long &nodes) {
 int pv_search(Board& board, const unsigned int depth, const int alpha_start, const int beta, PrincipleLine& principle, const uint pv_depth, PrincipleLine& line, long& nodes) {
     // perform alpha-beta pruning search with principle variation optimisation.
     int alpha = alpha_start;
-    MoveList legal_moves = board.get_sorted_moves();
+    MoveList legal_moves = board.get_moves();
     if (board.is_draw()) { return 0; }
     if (depth == 0) { nodes++; return evaluate(board, legal_moves); }
     if (legal_moves.size() == 0) { 

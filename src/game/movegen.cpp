@@ -491,9 +491,7 @@ bool cmp(Move &m1, Move &m2) {
     return m1.score > m2.score;
 }
 
-#include <iostream>
-MoveList Board::get_sorted_moves() {
-    MoveList legal_moves = get_moves();
+void Board::sort_moves(MoveList &legal_moves, const DenseMove hash_move) {
     MoveList checks, quiet_moves, captures, sorted_moves;
     size_t n_moves = legal_moves.size();
     checks.reserve(MAX_MOVES);
@@ -501,30 +499,30 @@ MoveList Board::get_sorted_moves() {
     captures.reserve(MAX_MOVES);
     // The moves from get_moves already have captures first
     for (Move move : legal_moves) {
-        if (gives_check(move)) {
+        if (move == hash_move) {
+            sorted_moves.push_back(move);
+        } else if (gives_check(move)) {
             checks.push_back(move);
         } else if(move.is_ep_capture()) {
             // En-passent is weird too.
             const Square captured_square = move.origin.rank() | move.target.file();
-            move.captured_piece = pieces(captured_square);
+            move.captured_piece = piece_type(captured_square);
         } else if (move.is_capture()){
             // Make sure to lookup and record the piece captured 
-            move.captured_piece = pieces(move.target);
-            // Magic number, part of move sorting heuristic.
-            move.score = piece_value(to_enum_piece(move.captured_piece)) - piece_value(move.moving_piece);
+            move.captured_piece = piece_type(move.target);
+            move.score = piece_value(move.captured_piece) - piece_value(move.moving_piece);
             captures.push_back(move);
         } else {
             quiet_moves.push_back(move);
         }
     }
-    sorted_moves = checks;
+    sorted_moves.insert(sorted_moves.end(), checks.begin(), checks.end());
     sorted_moves.reserve(MAX_MOVES);
     std::sort(captures.begin(), captures.end(), cmp);
     sorted_moves.insert(sorted_moves.end(), captures.begin(), captures.end());
     sorted_moves.insert(sorted_moves.end(), quiet_moves.begin(), quiet_moves.end());
-    return sorted_moves;
+    legal_moves = sorted_moves;
 }
-
 
 MoveList Board::get_captures() {
     MoveList moves;

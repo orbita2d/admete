@@ -233,7 +233,7 @@ public:
     constexpr bool is_promotion() const {
         return (type & PROMOTION);
     }
-    Piece captured_piece = 0;
+    PieceType captured_piece = NO_PIECE;
     PieceType moving_piece = NO_PIECE;
     MoveType type = QUIETmv;
 };
@@ -254,6 +254,13 @@ constexpr PieceType get_promoted(const Move m) {
     return NO_PIECE;
 }
 std::ostream& operator<<(std::ostream& os, const Move move);
+
+inline bool operator==(const Move m, const DenseMove dm) {
+    return (dm.origin() == m.origin && dm.target() == m.target);
+}
+inline bool operator==(const DenseMove dm, const Move m) {
+    return m == dm;
+}
 
 typedef std::vector<Move> MoveList;
 
