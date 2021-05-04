@@ -491,18 +491,19 @@ bool cmp(Move &m1, Move &m2) {
     return m1.score > m2.score;
 }
 
-void Board::sort_moves(MoveList &legal_moves, const DenseMove hash_move, const DenseMove killer_move) {
+void Board::sort_moves(MoveList &legal_moves, const DenseMove hash_dmove, const DenseMove killer_dmove) {
     MoveList checks, quiet_moves, captures, sorted_moves;
     size_t n_moves = legal_moves.size();
-    checks.reserve(MAX_MOVES);
-    quiet_moves.reserve(MAX_MOVES);
-    captures.reserve(MAX_MOVES);
+    checks.reserve(n_moves);
+    quiet_moves.reserve(n_moves);
+    captures.reserve(n_moves);
     Move killer = NULL_MOVE;
+    Move hash_move = NULL_MOVE;
     // The moves from get_moves already have captures first
     for (Move move : legal_moves) {
-        if (move == hash_move) {
-            sorted_moves.push_back(move);
-        } else if (move == killer_move) {
+        if (move == hash_dmove) {
+            hash_move = move;
+        } else if (move == killer_dmove) {
             killer = move;
         } else if (gives_check(move)) {
             checks.push_back(move);
@@ -519,15 +520,17 @@ void Board::sort_moves(MoveList &legal_moves, const DenseMove hash_move, const D
             quiet_moves.push_back(move);
         }
     }
-    sorted_moves.insert(sorted_moves.end(), checks.begin(), checks.end());
-    sorted_moves.reserve(MAX_MOVES);
-    std::sort(captures.begin(), captures.end(), cmp);
-    sorted_moves.insert(sorted_moves.end(), captures.begin(), captures.end());
-    if (!(killer == NULL_MOVE)) {
-        sorted_moves.push_back(killer);
+    legal_moves.clear();
+    if (!(hash_move == NULL_MOVE)) {
+        legal_moves.push_back(hash_move);
     }
-    sorted_moves.insert(sorted_moves.end(), quiet_moves.begin(), quiet_moves.end());
-    legal_moves = sorted_moves;
+    legal_moves.insert(legal_moves.end(), checks.begin(), checks.end());
+    std::sort(captures.begin(), captures.end(), cmp);
+    legal_moves.insert(legal_moves.end(), captures.begin(), captures.end());
+    if (!(killer == NULL_MOVE)) {
+        legal_moves.push_back(killer);
+    }
+    legal_moves.insert(legal_moves.end(), quiet_moves.begin(), quiet_moves.end());
 }
 
 MoveList Board::get_captures() {
