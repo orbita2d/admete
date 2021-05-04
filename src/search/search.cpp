@@ -43,6 +43,8 @@ int alphabeta(Board& board, const unsigned int depth, const int alpha_start, con
                 }
             } else {
                 // The saved score is an exact value for the subtree
+                const Move best_move = unpack_move(hit.move(), legal_moves);
+                line.push_back(best_move);
                 return hit.eval();
             }
         }
@@ -193,7 +195,6 @@ int pv_search(Board& board, const unsigned int depth, const int alpha_start, con
 typedef std::chrono::high_resolution_clock my_clock;
 int iterative_deepening(Board& board, const unsigned int max_depth, const int max_millis, PrincipleLine& line, long &nodes) {
     // Initialise the transposition table.
-    transposition_table.clear();
     transposition_table.min_depth(0);
     PrincipleLine principle;
     board.set_root();
