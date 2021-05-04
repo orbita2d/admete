@@ -92,8 +92,11 @@ int alphabeta(Board& board, const unsigned int depth, const int alpha_start, con
         best_score--;
     }
     line = best_line;
-    killer_table.store(board.ply(), best_line.back());
-    transposition_table.store(hash, best_score, alpha_start, beta, depth, best_line.back());
+    if (best_line.size() != 0) {
+        // The length can be zero on an ALL-node.
+        killer_table.store(board.ply(), best_line.back());
+        transposition_table.store(hash, best_score, alpha_start, beta, depth, best_line.back());
+    }
     return best_score;
 }
 
@@ -109,7 +112,9 @@ int quiesce(Board& board, const int alpha_start, const int beta, long &nodes) {
         alpha = stand_pat;
     }
     if (board.is_draw()) { return 0; }
+
     MoveList captures = board.get_captures();
+    board.sort_moves(captures, NULL_DMOVE, NULL_DMOVE);
     for (Move move : captures) {
         board.make_move(move);
         int score = -quiesce(board, -beta, -alpha, nodes);
