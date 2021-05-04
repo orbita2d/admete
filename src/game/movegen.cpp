@@ -492,11 +492,11 @@ bool cmp(Move &m1, Move &m2) {
 }
 
 void Board::sort_moves(MoveList &legal_moves, const DenseMove hash_dmove, const DenseMove killer_dmove) {
-    MoveList checks, quiet_moves, captures, sorted_moves;
+    MoveList checks, quiet_moves, good_captures, bad_captures, sorted_moves;
     size_t n_moves = legal_moves.size();
     checks.reserve(n_moves);
     quiet_moves.reserve(n_moves);
-    captures.reserve(n_moves);
+    good_captures.reserve(n_moves);
     Move killer = NULL_MOVE;
     Move hash_move = NULL_MOVE;
     // The moves from get_moves already have captures first
@@ -515,7 +515,12 @@ void Board::sort_moves(MoveList &legal_moves, const DenseMove hash_dmove, const 
             // Make sure to lookup and record the piece captured 
             move.captured_piece = piece_type(move.target);
             move.score = piece_value(move.captured_piece) - piece_value(move.moving_piece);
-            captures.push_back(move);
+            if (move.score >= 0) {
+                // Captures of a more valuable piece with a less valuable piece are almost always good.
+                good_captures.push_back(move);
+            } else {
+                bad_captures.push_back(move);
+            }
         } else {
             quiet_moves.push_back(move);
         }
@@ -525,8 +530,10 @@ void Board::sort_moves(MoveList &legal_moves, const DenseMove hash_dmove, const 
         legal_moves.push_back(hash_move);
     }
     legal_moves.insert(legal_moves.end(), checks.begin(), checks.end());
-    std::sort(captures.begin(), captures.end(), cmp);
-    legal_moves.insert(legal_moves.end(), captures.begin(), captures.end());
+    std::sort(good_captures.begin(), good_captures.end(), cmp);
+    std::sort(bad_captures.begin(), bad_captures.end(), cmp);
+    legal_moves.insert(legal_moves.end(), good_captures.begin(), good_captures.end());
+    legal_moves.insert(legal_moves.end(), bad_captures.begin(), bad_captures.end());
     if (!(killer == NULL_MOVE)) {
         legal_moves.push_back(killer);
     }
