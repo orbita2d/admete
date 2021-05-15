@@ -115,7 +115,10 @@ int quiesce(Board& board, const int alpha_start, const int beta, long &nodes) {
         alpha = stand_pat;
     }
     if (board.is_draw()) { return 0; }
-
+    // Delta_pruning
+    if (stand_pat < alpha - 900) {
+        return stand_pat;
+    }
     MoveList captures = board.get_captures();
     board.sort_moves(captures, NULL_DMOVE, NULL_DMOVE);
     for (Move move : captures) {
