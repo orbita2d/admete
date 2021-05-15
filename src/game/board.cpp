@@ -361,7 +361,7 @@ void Board::unmake_move(const Move move) {
         // Make sure to lookup and record the piece captured 
     } else if (move.is_capture()){
         // Make sure to lookup and record the piece captured 
-        // Update the bitboard.
+        // Update the bitboards.
         occupied_bb ^= from_bb;
         colour_bb[us] ^= from_to_bb;
         colour_bb[them] ^= to_bb;

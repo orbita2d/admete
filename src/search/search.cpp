@@ -45,6 +45,7 @@ int alphabeta(Board& board, const unsigned int depth, const int alpha_start, con
                 // The saved score is an exact value for the subtree
                 const Move best_move = unpack_move(hit.move(), legal_moves);
                 line.push_back(best_move);
+                line = unroll_tt_line(board);
                 return hit.eval();
             }
         }
@@ -212,7 +213,7 @@ int iterative_deepening(Board& board, const unsigned int max_depth, const int ma
         temp_line.reserve(depth);
         nodes = 0ul;
         score = pv_search(board, depth, NEG_INF, POS_INF, principle, principle.size(), temp_line, nodes);
-        principle = temp_line;
+        principle = unroll_tt_line(board, temp_line);
         time_now = my_clock::now();
         time_span = time_now - time_origin;
 
@@ -236,4 +237,46 @@ int iterative_deepening(Board& board, const unsigned int max_depth, const int ma
 int iterative_deepening(Board& board, const unsigned int depth, PrincipleLine& line) {
     long nodes = 0;
     return iterative_deepening(board, depth, POS_INF, line, nodes);
+}
+
+
+PrincipleLine unroll_tt_line(Board& board) {
+    PrincipleLine reverse_line, line;
+    reverse_line.reserve(32);
+    while (true) {
+        long hash = board.hash();
+        if (transposition_table.probe(hash)) {
+            MoveList legal_moves = board.get_moves();
+            TransElement hit = transposition_table.last_hit(); 
+            Move best_move = unpack_move(hit.move(), legal_moves);
+            if (best_move == NULL_MOVE) {
+                break;
+            }
+            board.make_move(best_move);
+            reverse_line.push_back(best_move);
+        } else { 
+            break; }
+    }
+    line.reserve(reverse_line.size());
+    for (PrincipleLine::reverse_iterator it = reverse_line.rbegin(); it != reverse_line.rend(); ++it) {
+        board.unmake_move(*it);
+        line.push_back(*it);
+    }
+    return line;
+}
+
+PrincipleLine unroll_tt_line(Board& board, PrincipleLine principle) {
+    PrincipleLine line, extenstion;
+    for (PrincipleLine::reverse_iterator it = principle.rbegin(); it != principle.rend(); ++it) {
+        std::vector<Move> legal_moves = board.get_moves();
+        board.make_move(*it);
+    }
+    extenstion = unroll_tt_line(board);
+    line = extenstion;
+    line.insert(line.end(), principle.begin(), principle.end());
+    for (Move move : principle) {
+        std::vector<Move> legal_moves = board.get_moves();
+        board.unmake_move(move);
+    }
+    return line;
 }

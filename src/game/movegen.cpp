@@ -487,7 +487,7 @@ MoveList Board::get_moves(){
 }
 
 bool cmp(Move &m1, Move &m2) {
-// Comparison for the sort function. We want to sort in reverse order.
+// Comparison for the sort function. We want to sort in reverse order, so better scoring moves come first.
     return m1.score > m2.score;
 }
 
@@ -510,7 +510,7 @@ void Board::sort_moves(MoveList &legal_moves, const DenseMove hash_dmove, const 
         } else if(move.is_ep_capture()) {
             // En-passent is weird too.
             const Square captured_square = move.origin.rank() | move.target.file();
-            move.captured_piece = piece_type(captured_square);
+            move.captured_piece = PAWN;
         } else if (move.is_capture()){
             // Make sure to lookup and record the piece captured 
             move.captured_piece = piece_type(move.target);

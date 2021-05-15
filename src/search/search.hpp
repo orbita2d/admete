@@ -18,3 +18,5 @@ int quiesce(Board& board, int alpha, int beta, long &nodes);
 int pv_search(Board& board, const depth_t depth, int alpha, int beta, PrincipleLine& principle, const uint pv_depth, PrincipleLine& line, long &nodes);
 int iterative_deepening(Board& board, const depth_t depth, const int max_millis, PrincipleLine& line, long &nodes);
 int iterative_deepening(Board& board, const depth_t depth, PrincipleLine& line);
+PrincipleLine unroll_tt_line(Board& board);
+PrincipleLine unroll_tt_line(Board& board, PrincipleLine principle);
