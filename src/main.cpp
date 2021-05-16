@@ -70,6 +70,8 @@ int main(int argc, char* argv[])
     static int print_tables_flag = 0;
     unsigned int depth = 4;
     std::string board_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    std::string tuning_table = "";
+    static int tuning_table_flag = 0;
     int opt;
 	while (true) {
 		static struct option long_options[] = {
@@ -86,6 +88,7 @@ int main(int argc, char* argv[])
 			{"board",	required_argument, 0, 'b'},
             {"print",	no_argument, &print_flag, 1},
             {"print-tables", no_argument, &print_tables_flag, 1},
+            {"load-tables", required_argument, 0, 'T'},
 			{0, 0, 0, 0}
 		};
 		int option_index = 0;
@@ -107,6 +110,10 @@ int main(int argc, char* argv[])
 		case 'b':
             board_fen = optarg;
 			break;
+		case 'T':
+            tuning_table_flag = 1;
+            tuning_table = optarg;
+			break;
 		case '?':
 			/* getopt_long already printed an error message. */
 			break;
@@ -116,6 +123,12 @@ int main(int argc, char* argv[])
 	}
     Bitboards::init();
     Zorbist::init();
+    Evaluation::init();
+
+    if (tuning_table_flag) {
+        Evaluation::load_tables(tuning_table);
+    }
+    
     Board board = Board();
     board.fen_decode(board_fen);
     if (print_flag) {

@@ -200,6 +200,7 @@ typedef std::chrono::high_resolution_clock my_clock;
 int iterative_deepening(Board& board, const unsigned int max_depth, const int max_millis, PrincipleLine& line, long &nodes) {
     // Initialise the transposition table.
     transposition_table.min_depth(0);
+    transposition_table.clear();
     PrincipleLine principle;
     board.set_root();
     
