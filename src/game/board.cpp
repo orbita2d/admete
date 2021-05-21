@@ -593,6 +593,7 @@ long int zobrist_table[N_COLOUR][N_PIECE][N_SQUARE];
 long int zobrist_table_cr[N_COLOUR][2];
 long int zobrist_table_move[N_COLOUR];
 long int zobrist_table_ep[8];
+long int zobrist_table_ply[MAX_PLY];
 
 void Zorbist::init() {
     std::mt19937_64 generator(0x3243f6a8885a308d);
@@ -616,6 +617,9 @@ void Zorbist::init() {
     zobrist_table_cr[WHITE][QUEENSIDE] = distribution(generator);
     zobrist_table_cr[BLACK][KINGSIDE] = distribution(generator);
     zobrist_table_cr[BLACK][QUEENSIDE] = distribution(generator);
+    for (ply_t ply = 0; ply < MAX_PLY; ply++) {
+        zobrist_table_ply[ply] = distribution(generator);
+    }
 }
 
 long int Zorbist::hash(const Board& board) {
@@ -652,6 +656,7 @@ long int Zorbist::hash(const Board& board) {
     if (board.en_passent()) {
         hash ^= zobrist_table_ep[board.en_passent().file_index()];
     }
+    hash ^= zobrist_table_ply[board.ply()];
     return hash;
 } 
 

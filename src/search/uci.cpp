@@ -16,12 +16,10 @@ typedef std::chrono::high_resolution_clock my_clock;
 bool uci_enable = false;
 
 void init_uci() {
-    std::cerr << "uci mode" << std::endl;
     std::cout << "id name " << ENGINE_NAME << std::endl;
     std::cout << "id author " << ENGINE_AUTH << std::endl;
     std::cout << "setoption name Nullmove value false" << std::endl;
     std::cout << "uciok" << std::endl;
-    std::cerr << "uci okay" << std::endl;
     ::uci_enable = true;
 }
 
@@ -47,6 +45,7 @@ void position(Board& board, std::istringstream& is) {
         }
     } else {
         // This is invalid. Just ignore it
+        std::cerr << "Invalid position string: \"" << token << "\n" << std::endl; 
         return;
     }
     board.fen_decode(fen);
@@ -68,7 +67,6 @@ void bestmove(Move move) {
 	Directly before that the engine should send a final "info" command with the final search information,
 	the the GUI has the complete statistics about the last search.
     */
-   std::cerr << "bestmove " << move.pretty() << std::endl;
    std::cout << "bestmove " << move.pretty() << std::endl;
 }
 
@@ -141,7 +139,7 @@ void go(Board& board, std::istringstream& is) {
     const int our_inc  = board.is_white_move() ? winc : binc;
     int cutoff_time = our_time == POS_INF ? POS_INF : our_time / 30 + our_inc*3/5;
     cutoff_time = cutoff_time < move_time ? cutoff_time : move_time;
-    std::cerr << "searching: " << float(cutoff_time) / 1000  << std::endl;
+    // std::cerr << "searching: " << float(cutoff_time) / 1000  << std::endl;
     std::vector<Move> line;
     long nodes = 0;
     line.reserve(max_depth);
@@ -168,10 +166,10 @@ void uci() {
         } else if (token == "ucinewgame") {
             board.initialise_starting_position();
         } else if (token == "position") {
-            std::cerr << command << std::endl;
+            //std::cerr << command << std::endl;
             position(board, is);
         } else if (token == "go") {
-            std::cerr << command << std::endl;
+            //std::cerr << command << std::endl;
             go(board, is);
         } else if (token == "quit") {
             exit(EXIT_SUCCESS);
@@ -179,7 +177,7 @@ void uci() {
             board.pretty();
         }
         else {
-            std::cerr << "!#" << token << ":"<< command << std::endl;
+            //std::cerr << "!#" << token << ":"<< command << std::endl;
         }
     }
 

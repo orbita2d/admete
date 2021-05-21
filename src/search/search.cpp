@@ -64,15 +64,14 @@ int alphabeta(Board& board, const unsigned int depth, const int alpha_start, con
         if (is_first_child) {
             score = -alphabeta(board, depth - 1, -beta, -alpha, temp_line, nodes);
         } else {
-        // Search with a null window
-        score = -alphabeta(board, depth - 1, -beta, -alpha, temp_line, nodes);
-        if (score > alpha && score < beta && depth > 1) {
-            // Do a full search
-            temp_line.clear();
-            temp_line.reserve(16);
+            // Search with a null window
             score = -alphabeta(board, depth - 1, -beta, -alpha, temp_line, nodes);
-        }
-
+            if (score > alpha && score < beta && depth > 1) {
+                // Do a full search
+                temp_line.clear();
+                temp_line.reserve(16);
+                score = -alphabeta(board, depth - 1, -beta, -alpha, temp_line, nodes);
+            }
         }
         board.unmake_move(move);
         if (score > best_score) {
@@ -200,7 +199,6 @@ typedef std::chrono::high_resolution_clock my_clock;
 int iterative_deepening(Board& board, const unsigned int max_depth, const int max_millis, PrincipleLine& line, long &nodes) {
     // Initialise the transposition table.
     transposition_table.min_depth(0);
-    transposition_table.clear();
     PrincipleLine principle;
     board.set_root();
     
