@@ -89,6 +89,7 @@ public:
     int material() const { return aux_info->material; }
     void set_root() { root_node_ply = ply_counter; }
     ply_t get_root() const{ return root_node_ply; }
+    ply_t repetitions(const ply_t start) const;
     bool is_draw() const;
     ply_t ply() const { return ply_counter;}
 private:

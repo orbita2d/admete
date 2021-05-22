@@ -656,7 +656,6 @@ long int Zorbist::hash(const Board& board) {
     if (board.en_passent()) {
         hash ^= zobrist_table_ep[board.en_passent().file_index()];
     }
-    hash ^= zobrist_table_ply[board.ply()];
     return hash;
 } 
 
@@ -715,4 +714,19 @@ bool Board::is_draw() const {
 
 long int Board::hash() const{
     return hash_history[ply_counter];
+}
+
+
+ply_t Board::repetitions(const ply_t start) const{
+    // Check to see if current position is draw by repetition
+    long current = hash_history[ply_counter];
+    ply_t n = 0;
+
+    for (unsigned int i = start; i < ply_counter; i++) {
+        if (hash_history[i] == current) {
+            n++;
+        }
+    }
+    return n;
+
 }

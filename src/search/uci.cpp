@@ -166,7 +166,7 @@ void uci() {
         } else if (token == "ucinewgame") {
             board.initialise_starting_position();
         } else if (token == "position") {
-            //std::cerr << command << std::endl;
+            std::cerr << command << std::endl;
             position(board, is);
         } else if (token == "go") {
             //std::cerr << command << std::endl;

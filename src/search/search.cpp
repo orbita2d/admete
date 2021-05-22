@@ -142,18 +142,21 @@ int pv_search(Board& board, const unsigned int depth, const int alpha_start, con
         nodes++;
         return evaluate(board, legal_moves); 
     }
-    if (pv_depth == 0) {
-        // End of the principle variation, just evaluate this node using alphabeta()
-        return alphabeta(board, depth, alpha, beta, line, nodes);
-    }
+
     PrincipleLine best_line;
-    // -1 here is because we are indexing at 0. If there is 1 move left, that's at index 0;
-    Move pv_move = principle.at(pv_depth - 1);
-    board.make_move(pv_move);
-    int best_score = -pv_search(board, depth - 1, -beta, -alpha, principle, pv_depth - 1, best_line, nodes);
-    alpha = best_score;
-    best_line.push_back(pv_move);
-    board.unmake_move(pv_move);
+    int best_score = NEG_INF;
+    Move pv_move = NULL_MOVE;
+    bool is_first_child = true;
+    if (pv_depth != 0) {
+        // -1 here is because we are indexing at 0. If there is 1 move left, that's at index 0;
+        pv_move = principle.at(pv_depth - 1);
+        board.make_move(pv_move);
+        best_score = -pv_search(board, depth - 1, -beta, -alpha, principle, pv_depth - 1, best_line, nodes);
+        alpha = best_score;
+        best_line.push_back(pv_move);
+        board.unmake_move(pv_move);
+        is_first_child = false;
+    }
 
     board.sort_moves(legal_moves, NULL_DMOVE, NULL_DMOVE);
     for (Move move : legal_moves) {
@@ -163,13 +166,19 @@ int pv_search(Board& board, const unsigned int depth, const int alpha_start, con
         PrincipleLine temp_line;
         temp_line.reserve(16);
         board.make_move(move);
-        // Search with a null window
-        int score = -alphabeta(board, depth - 1, -alpha -1, -alpha, temp_line, nodes);
-        if (score > alpha && score < beta && depth > 1) {
-            // Do a full search
-            temp_line.clear();
-            temp_line.reserve(16);
+        int score;
+        if (is_first_child) {
+            // If this is the first child (we've come to the end of the PV), run a full search on the node.
             score = -alphabeta(board, depth - 1, -beta, -alpha, temp_line, nodes);
+        } else {
+            // Search with a null window
+            score = -alphabeta(board, depth - 1, -beta, -alpha, temp_line, nodes);
+            if (score > alpha && score < beta && depth > 1) {
+                // Do a full search
+                temp_line.clear();
+                temp_line.reserve(16);
+                score = -alphabeta(board, depth - 1, -beta, -alpha, temp_line, nodes);
+            }
         }
         board.unmake_move(move);
         if (score > best_score) {
@@ -185,6 +194,7 @@ int pv_search(Board& board, const unsigned int depth, const int alpha_start, con
         if (alpha >= beta) {
             break; // beta-cutoff
         }
+        is_first_child = false;
     }
     line = best_line;
     if (is_mating(best_score)) {
@@ -245,8 +255,15 @@ int iterative_deepening(Board& board, const unsigned int depth, PrincipleLine& l
 PrincipleLine unroll_tt_line(Board& board) {
     PrincipleLine reverse_line, line;
     reverse_line.reserve(32);
+    // We need to be very carful not to get stuck in a loop.
+    // Record starting ply of line.
+    ply_t start = board.ply();
     while (true) {
         long hash = board.hash();
+        if (board.repetitions(start) > 0) {
+            // If we have seen this position before in the unrolling, we're in a loop, so break.
+            break;
+        }
         if (transposition_table.probe(hash)) {
             MoveList legal_moves = board.get_moves();
             TransElement hit = transposition_table.last_hit(); 
