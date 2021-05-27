@@ -10,7 +10,8 @@
 
 enum GamePhase {
     OPENING,
-    ENDGAME
+    ENDGAME,
+    N_GAMEPHASE
 };
 constexpr int OPENING_MATERIAL = 7800;
 constexpr int ENDGAME_MATERIAL = 0;
@@ -29,7 +30,7 @@ position_board fill_blank_positional_scores() {
 }
 
 inline int reverse_rank(int square) {
-    // Square from our perspective;
+    // Square from Black's perspective;
     return (56 - (square & 0x38)) | (square & 0x07);
 }
 
@@ -132,7 +133,8 @@ constexpr position_board pb_rook = {    500, 500, 500, 500, 500, 500, 500, 500,
                                         500, 500, 500, 500, 500, 500, 500, 500 };
 
 
-static std::array<std::array<position_board_set, 2>, 2> piece_square_tables;
+static std::array<std::array<position_board_set, N_COLOUR>, N_GAMEPHASE> piece_square_tables;
+
 namespace Evaluation {
     void init() {
         piece_square_tables[OPENING][WHITE][PAWN] = pb_pawn_opening;
