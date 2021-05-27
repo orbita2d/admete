@@ -117,7 +117,7 @@ void go(Board& board, std::istringstream& is) {
     // That's a lot, let's just search to a fixed depth for now.
     int wtime = POS_INF, btime = POS_INF;
     int winc = 0, binc = 0, move_time = POS_INF;
-    unsigned int max_depth = 10;
+    unsigned int max_depth = 20;
     std::string token;
     while (is >> token) {
         // munch through the command string

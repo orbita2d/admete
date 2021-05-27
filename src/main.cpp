@@ -116,6 +116,7 @@ int main(int argc, char* argv[])
 			break;
 		case '?':
 			/* getopt_long already printed an error message. */
+			exit(EXIT_FAILURE);
 			break;
 		default:
 			exit(EXIT_FAILURE);
