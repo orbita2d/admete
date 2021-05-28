@@ -219,11 +219,7 @@ int main(int argc, char* argv[])
         // Testing section
         board.pretty();
         std::cout << "Black Passed Pawns:" << std::endl;
-        Bitboards::pretty((board.pieces(BLACK, PAWN))); 
-        Bitboards::pretty(Bitboards::north_fill(board.pieces(BLACK, PAWN))); 
-        Bitboards::pretty(Bitboards::south_fill(board.pieces(BLACK, PAWN))); 
-        Bitboards::pretty(Bitboards::forward_fill(BLACK, board.pieces(BLACK, PAWN))); 
-        Bitboards::pretty(Bitboards::rear_fill(BLACK, board.pieces(BLACK, PAWN))); 
+        Bitboards::pretty(board.passed_pawns(BLACK)); 
 
         std::cout << "White Passed Pawns:" << std::endl;
         Bitboards::pretty(board.passed_pawns(WHITE)); 
