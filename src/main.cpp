@@ -207,6 +207,7 @@ int main(int argc, char* argv[])
         perft_divide(depth, board);
         exit(EXIT_SUCCESS);
     }
+    
     // Otherwise, we are probably talking to a computer.
 
     std::string command;
@@ -214,7 +215,17 @@ int main(int argc, char* argv[])
     
     if (command == "uci") {
         uci();
-    }
+    } else if (command == "test") {
+        // Testing section
+        board.pretty();
+        std::cout << "Black Passed Pawns:" << std::endl;
+        Bitboards::pretty((board.pieces(BLACK, PAWN))); 
+        Bitboards::pretty(Bitboards::north_fill(board.pieces(BLACK, PAWN))); 
+        Bitboards::pretty(Bitboards::south_fill(board.pieces(BLACK, PAWN))); 
+        Bitboards::pretty(Bitboards::forward_fill(BLACK, board.pieces(BLACK, PAWN))); 
+        Bitboards::pretty(Bitboards::rear_fill(BLACK, board.pieces(BLACK, PAWN))); 
 
-    //std::cout << perft(4, board) << std::endl;
+        std::cout << "White Passed Pawns:" << std::endl;
+        Bitboards::pretty(board.passed_pawns(WHITE)); 
+    }
 }

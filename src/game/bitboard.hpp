@@ -6,6 +6,7 @@ typedef unsigned long int Bitboard;
 
 inline Bitboard PseudolegalAttacks[N_PIECE][N_SQUARE];
 inline Bitboard PawnAttacks[N_COLOUR][N_SQUARE];
+inline Bitboard PawnSpans[N_COLOUR][N_SQUARE];
 inline Bitboard RankBBs[8] = {0x00000000000000FF, 0x000000000000ff00, 0x0000000000ff0000, 0x00000000ff000000, 0x000000ff00000000, 0x0000ff0000000000, 0x00ff000000000000, 0xff00000000000000};
 inline Bitboard FileBBs[8] = {0x0101010101010101, 0x0202020202020202, 0x0404040404040404, 0x0808080808080808, 0x1010101010101010, 0x2020202020202020, 0x4040404040404040, 0x8080808080808080};
 inline Bitboard LineBBs[N_SQUARE][N_SQUARE];
@@ -145,6 +146,70 @@ namespace Bitboards
 
   constexpr Bitboard castle(const Colour c, const CastlingSide cs) {
     return CastleBBs[c][cs];
+  }
+
+  inline Bitboard north_fill(Bitboard g) {
+    g |= g >> 0x08;
+    g |= g >> 0x10;
+    g |= g >> 0x20;
+    return g;
+  }
+
+  inline Bitboard south_fill(Bitboard g) {
+    g |= g << 0x08;
+    g |= g << 0x10;
+    g |= g << 0x20;
+    return g;
+  }
+
+  inline Bitboard north_spans(Bitboard g) {
+    // Squares that a pawn could be to not be passed.
+    g = north_fill(g);
+    g = shift<Direction::N>(g);
+    g |= shift<Direction::W>(g);
+    g |= shift<Direction::E>(g);
+    return g;
+  }
+
+  inline Bitboard south_spans(Bitboard g) {
+    // Squares that a pawn could be to not be passed.
+    g = south_fill(g);
+    g = shift<Direction::S>(g);
+    g |= shift<Direction::W>(g);
+    g |= shift<Direction::E>(g);
+    return g;
+  }
+
+  inline Bitboard forward_spans(const Colour c, Bitboard g) {
+    if (c == WHITE) {
+      return north_spans(g);
+    } else {
+      return south_spans(g);
+    }
+  }
+
+  inline Bitboard rear_spans(const Colour c, Bitboard g) {
+    if (c == WHITE) {
+      return south_spans(g);
+    } else {
+      return north_spans(g);
+    }
+  }
+
+  inline Bitboard forward_fill(const Colour c, Bitboard g) {
+    if (c == WHITE) {
+      return north_fill(g);
+    } else {
+      return south_fill(g);
+    }
+  }
+
+  inline Bitboard rear_fill(const Colour c, Bitboard g) {
+    if (c == WHITE) {
+      return south_fill(g);
+    } else {
+      return north_fill(g);
+    }
   }
 }
 

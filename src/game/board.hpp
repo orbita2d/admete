@@ -70,6 +70,7 @@ public:
     Bitboard pieces(const Colour c, const PieceType p) const{return colour_bb[c] & piece_bb[p];}
     Bitboard pieces(const Colour c, const PieceType p1, const PieceType p2) const{return colour_bb[c] & (piece_bb[p1] |piece_bb[p2]);}
     Bitboard pinned() const {return pinned_bb;}
+    Bitboard passed_pawns(const Colour c) const {return pieces(c,PAWN) & ~Bitboards::forward_spans(~c, pieces(~c,PAWN)); };
 
     void make_move(Move &move);
     void unmake_move(const Move move);
