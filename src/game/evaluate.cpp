@@ -96,20 +96,20 @@ constexpr position_board pb_king_endgame = {    0,  0,  0,  0,  0,  0,  0,  0,
 
 
 constexpr position_board pb_pawn_opening = {      0,   0,   0,   0,   0,   0,   0,   0,
-                                                260, 260, 260, 260, 260, 260, 260, 260,
                                                 120, 120, 120, 120, 120, 120, 120, 120,
-                                                108, 108, 108, 108, 108, 108, 108, 108,
-                                                100, 105, 105, 130, 130, 105, 100, 100,
+                                                110, 110, 110, 110, 110, 110, 110, 110,
+                                                108, 108, 110, 115, 115, 110, 108, 108,
+                                                100, 105, 115, 130, 130, 115, 100, 100,
                                                 100, 100, 100, 100, 100, 100, 100, 100,
                                                 100, 100, 100, 100, 100, 100, 100, 100, 
                                                   0,   0,   0,   0,   0,   0,   0,   0 };
 
 constexpr position_board pb_pawn_endgame = {      0,   0,   0,   0,   0,   0,   0,   0,
-                                                300, 300, 300, 300, 300, 300, 300, 300,
-                                                200, 200, 200, 200, 200, 200, 200, 200,
-                                                180, 180, 180, 180, 180, 180, 180, 180,
-                                                160, 160, 160, 160, 160, 160, 160, 160,
                                                 140, 140, 140, 140, 140, 140, 140, 140,
+                                                130, 130, 130, 130, 130, 130, 130, 130,
+                                                120, 120, 120, 120, 120, 120, 120, 120,
+                                                110, 110, 110, 110, 110, 110, 110, 110,
+                                                100, 100, 100, 100, 100, 100, 100, 100,
                                                 100, 100, 100, 100, 100, 100, 100, 100, 
                                                 0,   0,   0,   0,   0,   0,   0,   0 };
 
@@ -132,8 +132,18 @@ constexpr position_board pb_rook = {    500, 500, 500, 500, 500, 500, 500, 500,
                                         500, 500, 500, 500, 500, 500, 500, 500, 
                                         500, 500, 500, 500, 500, 500, 500, 500 };
 
+// Bonus given to passed pawns
+constexpr position_board pb_p_pawn = {   0,   0,   0,   0,   0,   0,   0,   0,
+                                        200, 200, 200, 200, 200, 200, 200, 200,
+                                        100, 100, 100, 100, 100, 100, 100, 100,
+                                        80,  80,  80,  80,  80,  80,  80,  80,
+                                        60,  60,  60,  60,  60,  60,  60,  60,
+                                        40,  40,  40,  40,  40,  40,  40,  40,
+                                        20,  20,  20,  20,  20,  20,  20,  20, 
+                                        0,   0,   0,   0,   0,   0,   0,   0 };
 
 static std::array<std::array<position_board_set, N_COLOUR>, N_GAMEPHASE> piece_square_tables;
+static position_board pb_passed[N_COLOUR];
 
 namespace Evaluation {
     void init() {
@@ -165,6 +175,9 @@ namespace Evaluation {
         piece_square_tables[ENDGAME][BLACK][ROOK] = reverse_board(pb_rook);
         piece_square_tables[ENDGAME][BLACK][QUEEN] = reverse_board(pb_queen);
         piece_square_tables[ENDGAME][BLACK][KING] = reverse_board(pb_king_endgame);
+
+        pb_passed[WHITE] = pb_p_pawn;
+        pb_passed[BLACK] = reverse_board(pb_p_pawn);
     }
 }
 
@@ -188,42 +201,33 @@ void print_tables() {
     std::cout << "OPENING" << std::endl;
     std::cout << "PAWN" << std::endl;
     print_table(piece_square_tables[OPENING][WHITE][PAWN]);
-    print_table(piece_square_tables[OPENING][BLACK][PAWN]);
     std::cout << "KNIGHT" << std::endl;
     print_table(piece_square_tables[OPENING][WHITE][KNIGHT]);
-    print_table(piece_square_tables[OPENING][BLACK][KNIGHT]);
     std::cout << "BISHOP" << std::endl;
     print_table(piece_square_tables[OPENING][WHITE][BISHOP]);
-    print_table(piece_square_tables[OPENING][BLACK][BISHOP]);
     std::cout << "ROOK" << std::endl;
     print_table(piece_square_tables[OPENING][WHITE][ROOK]);
-    print_table(piece_square_tables[OPENING][BLACK][ROOK]);
     std::cout << "QUEEN" << std::endl;
     print_table(piece_square_tables[OPENING][WHITE][QUEEN]);
-    print_table(piece_square_tables[OPENING][BLACK][QUEEN]);
     std::cout << "KING" << std::endl;
     print_table(piece_square_tables[OPENING][WHITE][KING]);
-    print_table(piece_square_tables[OPENING][BLACK][KING]);
 
     std::cout << "ENDGAME" << std::endl;
     std::cout << "PAWN" << std::endl;
     print_table(piece_square_tables[ENDGAME][WHITE][PAWN]);
-    print_table(piece_square_tables[ENDGAME][BLACK][PAWN]);
     std::cout << "KNIGHT" << std::endl;
     print_table(piece_square_tables[ENDGAME][WHITE][KNIGHT]);
-    print_table(piece_square_tables[ENDGAME][BLACK][KNIGHT]);
     std::cout << "BISHOP" << std::endl;
     print_table(piece_square_tables[ENDGAME][WHITE][BISHOP]);
-    print_table(piece_square_tables[ENDGAME][BLACK][BISHOP]);
     std::cout << "ROOK" << std::endl;
     print_table(piece_square_tables[ENDGAME][WHITE][ROOK]);
-    print_table(piece_square_tables[ENDGAME][BLACK][ROOK]);
     std::cout << "QUEEN" << std::endl;
     print_table(piece_square_tables[ENDGAME][WHITE][QUEEN]);
-    print_table(piece_square_tables[ENDGAME][BLACK][QUEEN]);
     std::cout << "KING" << std::endl;
     print_table(piece_square_tables[ENDGAME][WHITE][KING]);
-    print_table(piece_square_tables[ENDGAME][BLACK][KING]);
+    
+    std::cout << "PASSED PAWN" << std::endl;
+    print_table(pb_passed[WHITE]);
 }
 
 void Evaluation::load_tables(std::string filename) {
@@ -280,47 +284,6 @@ int evaluate(Board &board) {
     return evaluate(board, legal_moves);
 }
 
-int heuristic_diff(Colour us, Move &move, int material_value) {
-    int opening_value = 0;
-    int endgame_value = 0;
-    Colour them = ~us;
-    PieceType p = move.moving_piece;
-    // Remove the piece from the origin
-    opening_value -= piece_square_tables[OPENING][us][p][move.origin];
-    endgame_value -= piece_square_tables[ENDGAME][us][p][move.origin];
-    // Add the piece from the origin
-    opening_value += piece_square_tables[OPENING][us][p][move.target];
-    endgame_value += piece_square_tables[ENDGAME][us][p][move.target];
-
-    if (move.is_promotion()) {
-        PieceType promoted = get_promoted(move);
-        opening_value += piece_square_tables[OPENING][us][promoted][move.target];
-        endgame_value += piece_square_tables[ENDGAME][us][promoted][move.target];
-    } 
-    if (move.is_king_castle()) {
-        opening_value -= piece_square_tables[OPENING][us][ROOK][RookSquare[us][KINGSIDE]];
-        endgame_value -= piece_square_tables[ENDGAME][us][ROOK][RookSquare[us][KINGSIDE]];
-        opening_value += piece_square_tables[OPENING][us][ROOK][move.origin + Direction::E];
-        endgame_value += piece_square_tables[ENDGAME][us][ROOK][move.origin + Direction::E];
-    } else if (move.is_queen_castle()) {
-        opening_value -= piece_square_tables[OPENING][us][ROOK][RookSquare[us][QUEENSIDE]];
-        endgame_value -= piece_square_tables[ENDGAME][us][ROOK][RookSquare[us][QUEENSIDE]];
-        opening_value += piece_square_tables[OPENING][us][ROOK][move.origin + Direction::W];
-        endgame_value += piece_square_tables[ENDGAME][us][ROOK][move.origin + Direction::W];
-    } else if (move.is_ep_capture()) {
-        const Square captured_square = move.origin.rank()|move.target.file();
-        opening_value -= piece_square_tables[OPENING][them][PAWN][captured_square];
-        endgame_value -= piece_square_tables[ENDGAME][them][PAWN][captured_square];
-    } else if (move.is_capture()) {
-        const PieceType cp = to_enum_piece(move.captured_piece);
-        opening_value -= piece_square_tables[OPENING][them][cp][move.target];
-        endgame_value -= piece_square_tables[ENDGAME][them][cp][move.target];
-    }
-    
-    int value = opening_value + (material_value - OPENING_MATERIAL) * (endgame_value - opening_value) / (ENDGAME_MATERIAL - OPENING_MATERIAL);
-    return value;
-}
-
 int count_material(Board &board) {
     int material_value = 0;
     for (int p = 0; p < N_PIECE; p++) {
@@ -350,8 +313,31 @@ int heuristic(Board &board) {
             endgame_value += piece_square_tables[ENDGAME][BLACK][p][sq];
         }
     }
-    // Interpolate linearly between the game phases.
-    int value = opening_value + (material_value - OPENING_MATERIAL) * (endgame_value - opening_value) / (ENDGAME_MATERIAL - OPENING_MATERIAL);
+
+    // Add bonus for passed pawns for each side.
+    Bitboard occ = board.passed_pawns(WHITE);
+    while (occ) {
+        Square sq = pop_lsb(&occ);
+        opening_value += pb_passed[WHITE][sq];
+        endgame_value += pb_passed[WHITE][sq];
+    }
+
+    occ = board.passed_pawns(BLACK);
+    while (occ) {
+        Square sq = pop_lsb(&occ);
+        opening_value += pb_passed[BLACK][sq];
+        endgame_value += pb_passed[BLACK][sq];
+    }
+
+
+    int value;
+    if (material_value > endgame_value) {
+        // Interpolate linearly between the game phases.
+        value = opening_value + (material_value - OPENING_MATERIAL) * (endgame_value - opening_value) / (ENDGAME_MATERIAL - OPENING_MATERIAL);
+    } else {
+        // Just use endgame tables
+        value = endgame_value;
+    }
     return value;
 }
 

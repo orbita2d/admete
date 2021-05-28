@@ -162,7 +162,7 @@ namespace Bitboards
     return g;
   }
 
-  inline Bitboard north_spans(Bitboard g) {
+  inline Bitboard north_block_spans(Bitboard g) {
     // Squares that a pawn could be to not be passed.
     g = north_fill(g);
     g = shift<Direction::N>(g);
@@ -171,7 +171,7 @@ namespace Bitboards
     return g;
   }
 
-  inline Bitboard south_spans(Bitboard g) {
+  inline Bitboard south_block_spans(Bitboard g) {
     // Squares that a pawn could be to not be passed.
     g = south_fill(g);
     g = shift<Direction::S>(g);
@@ -182,17 +182,37 @@ namespace Bitboards
 
   inline Bitboard forward_spans(const Colour c, Bitboard g) {
     if (c == WHITE) {
-      return north_spans(g);
+      g = north_fill(g);
+      return shift<Direction::N>(g);
     } else {
-      return south_spans(g);
+      g = south_fill(g);
+      return shift<Direction::S>(g);
     }
   }
 
   inline Bitboard rear_spans(const Colour c, Bitboard g) {
     if (c == WHITE) {
-      return south_spans(g);
+      g = south_fill(g);
+      return shift<Direction::S>(g);
     } else {
-      return north_spans(g);
+      g = north_fill(g);
+      return shift<Direction::N>(g);
+    }
+  }
+
+  inline Bitboard forward_block_spans(const Colour c, Bitboard g) {
+    if (c == WHITE) {
+      return north_block_spans(g);
+    } else {
+      return south_block_spans(g);
+    }
+  }
+
+  inline Bitboard rear_block_spans(const Colour c, Bitboard g) {
+    if (c == WHITE) {
+      return south_block_spans(g);
+    } else {
+      return north_block_spans(g);
     }
   }
 

@@ -220,8 +220,8 @@ void Bitboards::init() {
         }
         PawnAttacks[WHITE][origin] = shift<Direction::NW>(origin_bb) | shift<Direction::NE>(origin_bb);
         PawnAttacks[BLACK][origin] = shift<Direction::SW>(origin_bb) | shift<Direction::SE>(origin_bb);
-        PawnSpans[WHITE][origin] = forward_spans(WHITE, origin_bb);
-        PawnSpans[BLACK][origin] = forward_spans(BLACK, origin_bb);
+        PawnSpans[WHITE][origin] = forward_block_spans(WHITE, origin_bb);
+        PawnSpans[BLACK][origin] = forward_block_spans(BLACK, origin_bb);
     }
     // Initialise magic bitboard tables.
     search_magics(BISHOP, BishopTable, BishopMagics);
