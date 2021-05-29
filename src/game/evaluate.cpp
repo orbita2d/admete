@@ -13,8 +13,21 @@ enum GamePhase {
     ENDGAME,
     N_GAMEPHASE
 };
-constexpr int OPENING_MATERIAL = 7800;
-constexpr int ENDGAME_MATERIAL = 0;
+
+// We consider 3 game phases. Opening, where material > OPENING_MATERIAL. Endgame, where material < ENDGAME_MATERIAL. And a midgame in between.
+// Evalutation is linearly interpolated in the midgame:
+/*
+op  |mid| eg
+----+---+----
+----
+    \
+     \
+      \
+        -----
+*/
+constexpr int OPENING_MATERIAL = 6000;
+constexpr int ENDGAME_MATERIAL = 2000;
+
 std::array<int, 6> material = {
         {100, 300, 300, 500, 900, 0}
 };
@@ -82,7 +95,7 @@ constexpr position_board pb_king_opening = {   -20, -20, -20, -20, -20, -20, -20
                                                -20, -20, -20, -20, -20, -20, -20, -20,
                                                -20, -20, -20, -20, -20, -20, -20, -20,
                                                -10, -20, -20, -20, -20, -20, -20, -20, 
-                                                10,  50,  30,   0,   0,   6,  50,  10 };
+                                                15,  40,  30,   0,   0,   6,  40,  15 };
 
 
 constexpr position_board pb_king_endgame = {    0,  0,  0,  0,  0,  0,  0,  0,
@@ -105,10 +118,10 @@ constexpr position_board pb_pawn_opening = {      0,   0,   0,   0,   0,   0,   
                                                   0,   0,   0,   0,   0,   0,   0,   0 };
 
 constexpr position_board pb_pawn_endgame = {      0,   0,   0,   0,   0,   0,   0,   0,
-                                                140, 140, 140, 140, 140, 140, 140, 140,
-                                                130, 130, 130, 130, 130, 130, 130, 130,
                                                 120, 120, 120, 120, 120, 120, 120, 120,
+                                                115, 115, 115, 115, 115, 115, 115, 115,
                                                 110, 110, 110, 110, 110, 110, 110, 110,
+                                                105, 110, 110, 110, 110, 110, 110, 110,
                                                 100, 100, 100, 100, 100, 100, 100, 100,
                                                 100, 100, 100, 100, 100, 100, 100, 100, 
                                                 0,   0,   0,   0,   0,   0,   0,   0 };
@@ -123,7 +136,16 @@ constexpr position_board pb_queen = {   900, 900, 900, 900, 900, 900, 900, 900,
                                         900, 900, 900, 900, 900, 900, 900, 900, 
                                         900, 900, 900, 900, 900, 900, 900, 900 };
 
-constexpr position_board pb_rook = {    500, 500, 500, 500, 500, 500, 500, 500,
+constexpr position_board pb_rook_op = { 500, 500, 500, 500, 500, 500, 500, 500,
+                                        520, 520, 520, 520, 520, 520, 520, 520,
+                                        500, 500, 500, 500, 500, 500, 500, 500,
+                                        500, 500, 500, 500, 500, 500, 500, 500,
+                                        500, 500, 500, 500, 500, 500, 500, 500,
+                                        500, 500, 500, 500, 500, 500, 500, 500,
+                                        500, 500, 500, 500, 500, 500, 500, 500, 
+                                        500, 500, 500, 500, 500, 500, 500, 500 };
+
+constexpr position_board pb_rook_eg = { 500, 500, 500, 500, 500, 500, 500, 500,
                                         500, 500, 500, 500, 500, 500, 500, 500,
                                         500, 500, 500, 500, 500, 500, 500, 500,
                                         500, 500, 500, 500, 500, 500, 500, 500,
@@ -133,14 +155,22 @@ constexpr position_board pb_rook = {    500, 500, 500, 500, 500, 500, 500, 500,
                                         500, 500, 500, 500, 500, 500, 500, 500 };
 
 // Bonus given to passed pawns
-constexpr position_board pb_p_pawn = {   0,   0,   0,   0,   0,   0,   0,   0,
-                                        200, 200, 200, 200, 200, 200, 200, 200,
-                                        100, 100, 100, 100, 100, 100, 100, 100,
-                                        80,  80,  80,  80,  80,  80,  80,  80,
-                                        60,  60,  60,  60,  60,  60,  60,  60,
-                                        40,  40,  40,  40,  40,  40,  40,  40,
-                                        20,  20,  20,  20,  20,  20,  20,  20, 
-                                        0,   0,   0,   0,   0,   0,   0,   0 };
+constexpr int passed_mult_op = 10;
+constexpr int passed_mult_eg = 15;
+constexpr int weak_pawn = -10; // Pawn not defended by another pawn.
+constexpr int isolated_pawn = -10; // Pawn with no supporting pawns on adjacent files
+constexpr int connected_passed = 20; // Bonus for connected passed pawns (per pawn)
+constexpr int rook_open_file = 10;
+constexpr int rook_hopen_file = 5;
+
+constexpr position_board pb_p_pawn = {   0,  0,  0,  0,  0,  0,  0,  0,
+                                        10, 10, 10, 10, 10, 10, 10, 10,
+                                         5,  5,  5,  5,  5,  5,  5,  5,
+                                         4,  4,  4,  4,  4,  4,  4,  4,
+                                         3,  3,  3,  3,  3,  3,  3,  3,
+                                         2,  2,  2,  2,  2,  2,  2,  2,
+                                         1,  1,  1,  1,  1,  1,  1,  1, 
+                                         0,  0,  0,  0,  0,  0,  0,  0 };
 
 static std::array<std::array<position_board_set, N_COLOUR>, N_GAMEPHASE> piece_square_tables;
 static position_board pb_passed[N_COLOUR];
@@ -150,14 +180,14 @@ namespace Evaluation {
         piece_square_tables[OPENING][WHITE][PAWN] = pb_pawn_opening;
         piece_square_tables[OPENING][WHITE][KNIGHT] = fill_knight_positional_scores();
         piece_square_tables[OPENING][WHITE][BISHOP] = pb_bishop;
-        piece_square_tables[OPENING][WHITE][ROOK] = pb_rook;
+        piece_square_tables[OPENING][WHITE][ROOK] = pb_rook_op;
         piece_square_tables[OPENING][WHITE][QUEEN] = pb_queen;
         piece_square_tables[OPENING][WHITE][KING] = pb_king_opening;
 
         piece_square_tables[OPENING][BLACK][PAWN] = reverse_board(pb_pawn_opening);
         piece_square_tables[OPENING][BLACK][KNIGHT] = reverse_board(fill_knight_positional_scores());
         piece_square_tables[OPENING][BLACK][BISHOP] = reverse_board(pb_bishop);
-        piece_square_tables[OPENING][BLACK][ROOK] = reverse_board(pb_rook);
+        piece_square_tables[OPENING][BLACK][ROOK] = reverse_board(pb_rook_op);
         piece_square_tables[OPENING][BLACK][QUEEN] = reverse_board(pb_queen);
         piece_square_tables[OPENING][BLACK][KING] = reverse_board(pb_king_opening);
 
@@ -165,14 +195,14 @@ namespace Evaluation {
         piece_square_tables[ENDGAME][WHITE][PAWN] = pb_pawn_endgame;
         piece_square_tables[ENDGAME][WHITE][KNIGHT] = fill_knight_positional_scores();
         piece_square_tables[ENDGAME][WHITE][BISHOP] = pb_bishop;
-        piece_square_tables[ENDGAME][WHITE][ROOK] = pb_rook;
+        piece_square_tables[ENDGAME][WHITE][ROOK] = pb_rook_eg;
         piece_square_tables[ENDGAME][WHITE][QUEEN] = pb_queen;
         piece_square_tables[ENDGAME][WHITE][KING] = pb_king_endgame;
 
         piece_square_tables[ENDGAME][BLACK][PAWN] = reverse_board(pb_pawn_endgame);
         piece_square_tables[ENDGAME][BLACK][KNIGHT] = reverse_board(fill_knight_positional_scores());
         piece_square_tables[ENDGAME][BLACK][BISHOP] = reverse_board(pb_bishop);
-        piece_square_tables[ENDGAME][BLACK][ROOK] = reverse_board(pb_rook);
+        piece_square_tables[ENDGAME][BLACK][ROOK] = reverse_board(pb_rook_eg);
         piece_square_tables[ENDGAME][BLACK][QUEEN] = reverse_board(pb_queen);
         piece_square_tables[ENDGAME][BLACK][KING] = reverse_board(pb_king_endgame);
 
@@ -228,6 +258,7 @@ void print_tables() {
     
     std::cout << "PASSED PAWN" << std::endl;
     print_table(pb_passed[WHITE]);
+    print_table(pb_passed[BLACK]);
 }
 
 void Evaluation::load_tables(std::string filename) {
@@ -314,24 +345,73 @@ int heuristic(Board &board) {
         }
     }
 
+    // Pawn structure bonuses:
+
     // Add bonus for passed pawns for each side.
     Bitboard occ = board.passed_pawns(WHITE);
     while (occ) {
         Square sq = pop_lsb(&occ);
-        opening_value += pb_passed[WHITE][sq];
-        endgame_value += pb_passed[WHITE][sq];
+        opening_value += passed_mult_op * pb_passed[WHITE][sq];
+        endgame_value += passed_mult_eg * pb_passed[WHITE][sq];
     }
 
     occ = board.passed_pawns(BLACK);
     while (occ) {
         Square sq = pop_lsb(&occ);
-        opening_value += pb_passed[BLACK][sq];
-        endgame_value += pb_passed[BLACK][sq];
+        opening_value += passed_mult_op * pb_passed[BLACK][sq];
+        endgame_value += passed_mult_eg * pb_passed[BLACK][sq];
     }
 
+    // Bonus for connected passers.
+    occ = board.connected_passed_pawns(WHITE);
+    opening_value += connected_passed * count_bits(occ);
+    endgame_value += connected_passed * count_bits(occ);
+
+    occ = board.connected_passed_pawns(BLACK);
+    opening_value -= connected_passed * count_bits(occ);
+    endgame_value -= connected_passed * count_bits(occ);
+    
+    // Penalty for weak pawns.
+    occ = board.weak_pawns(WHITE);
+    opening_value += weak_pawn * count_bits(occ);
+    endgame_value += weak_pawn * count_bits(occ);
+
+    occ = board.weak_pawns(BLACK);
+    opening_value -= weak_pawn * count_bits(occ);
+    endgame_value -= weak_pawn * count_bits(occ);
+
+    // Penalty for isolated pawns.
+    occ = board.isolated_pawns(WHITE);
+    opening_value += isolated_pawn * count_bits(occ);
+    endgame_value += isolated_pawn * count_bits(occ);
+
+    occ = board.isolated_pawns(BLACK);
+    opening_value -= isolated_pawn * count_bits(occ);
+    endgame_value -= isolated_pawn * count_bits(occ);
+
+    // Rooks in open and half-open files;
+    const Bitboard open_files = board.open_files();
+    occ = board.pieces(WHITE, ROOK) & open_files;
+    opening_value += rook_open_file * count_bits(occ);
+    endgame_value += rook_open_file * count_bits(occ);
+
+    occ = board.pieces(BLACK, ROOK) & open_files;
+    opening_value -= rook_open_file * count_bits(occ);
+    endgame_value -= rook_open_file * count_bits(occ);
+
+    occ = board.pieces(WHITE, ROOK) & board.half_open_files(WHITE);
+    opening_value += rook_open_file * count_bits(occ);
+    endgame_value += rook_open_file * count_bits(occ);
+
+    occ = board.pieces(BLACK, ROOK) & board.half_open_files(BLACK);
+    opening_value -= rook_open_file * count_bits(occ);
+    endgame_value -= rook_open_file * count_bits(occ);
 
     int value;
-    if (material_value > endgame_value) {
+    if (material_value > OPENING_MATERIAL) {
+        // Just use opening tables
+        value = opening_value;
+    } else if (material_value > ENDGAME_MATERIAL) {
         // Interpolate linearly between the game phases.
         value = opening_value + (material_value - OPENING_MATERIAL) * (endgame_value - opening_value) / (ENDGAME_MATERIAL - OPENING_MATERIAL);
     } else {

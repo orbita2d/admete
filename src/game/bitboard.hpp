@@ -161,8 +161,13 @@ namespace Bitboards
     g |= g << 0x20;
     return g;
   }
+  
+  inline Bitboard vertical_fill(Bitboard g) {
+    // Fill the whole file for every bit in g
+    return north_fill(south_fill(g));
+  }
 
-  inline Bitboard north_block_spans(Bitboard g) {
+  inline Bitboard north_block_span(Bitboard g) {
     // Squares that a pawn could be to not be passed.
     g = north_fill(g);
     g = shift<Direction::N>(g);
@@ -171,7 +176,7 @@ namespace Bitboards
     return g;
   }
 
-  inline Bitboard south_block_spans(Bitboard g) {
+  inline Bitboard south_block_span(Bitboard g) {
     // Squares that a pawn could be to not be passed.
     g = south_fill(g);
     g = shift<Direction::S>(g);
@@ -180,7 +185,7 @@ namespace Bitboards
     return g;
   }
 
-  inline Bitboard forward_spans(const Colour c, Bitboard g) {
+  inline Bitboard forward_span(const Colour c, Bitboard g) {
     if (c == WHITE) {
       g = north_fill(g);
       return shift<Direction::N>(g);
@@ -190,7 +195,7 @@ namespace Bitboards
     }
   }
 
-  inline Bitboard rear_spans(const Colour c, Bitboard g) {
+  inline Bitboard rear_span(const Colour c, Bitboard g) {
     if (c == WHITE) {
       g = south_fill(g);
       return shift<Direction::S>(g);
@@ -200,20 +205,35 @@ namespace Bitboards
     }
   }
 
-  inline Bitboard forward_block_spans(const Colour c, Bitboard g) {
+  inline Bitboard forward_block_span(const Colour c, Bitboard g) {
     if (c == WHITE) {
-      return north_block_spans(g);
+      return north_block_span(g);
     } else {
-      return south_block_spans(g);
+      return south_block_span(g);
     }
   }
 
-  inline Bitboard rear_block_spans(const Colour c, Bitboard g) {
+  inline Bitboard rear_block_span(const Colour c, Bitboard g) {
     if (c == WHITE) {
-      return south_block_spans(g);
+      return south_block_span(g);
     } else {
-      return north_block_spans(g);
+      return north_block_span(g);
     }
+  }
+
+  inline Bitboard forward_atk_span(const Colour c, Bitboard g) {
+    g = forward_span(c, g);
+    return shift<Direction::W>(g) | shift<Direction::E>(g);
+  }
+
+  inline Bitboard rear_atk_span(const Colour c, Bitboard g) {
+    g = rear_span(c, g);
+    return shift<Direction::W>(g) | shift<Direction::E>(g);
+  }
+  
+  inline Bitboard full_atk_span(Bitboard g) {
+    Bitboard f = vertical_fill(g);
+    return shift<Direction::W>(f) | shift<Direction::E>(f);
   }
 
   inline Bitboard forward_fill(const Colour c, Bitboard g) {
@@ -231,17 +251,19 @@ namespace Bitboards
       return north_fill(g);
     }
   }
-}
 
-
-inline int count_bits(Bitboard bb) {
-    int bits = 0;
-    for (int i = 0; i < N_SQUARE; i++) {
-        if (bb & sq_to_bb(i)) {bits++; }
+  inline Bitboard pawn_attacks(const Colour c, Bitboard g) {
+    if (c == WHITE) {
+      Bitboard atk = shift<Direction::NW>(g) | shift<Direction::NE>(g);
+      return atk;
+    } else {
+      Bitboard atk = shift<Direction::SW>(g) | shift<Direction::SE>(g);
+      return atk;
     }
-    return bits;
+  }
+
 }
-// Following bit magic shamelessly stolen from Stockfish
+
 
 /// lsb() and msb() return the least/most significant bit in a non-zero bitboard
 
@@ -253,6 +275,10 @@ inline Square lsb(Bitboard b) {
 
 inline Square msb(Bitboard b) {
   return Square(63 ^ __builtin_clzll(b));
+}
+
+inline int count_bits(Bitboard bb) {
+  return __builtin_popcountl(bb);
 }
 
 #else  // Compiler is neither GCC nor MSVC compatible

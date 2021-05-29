@@ -70,7 +70,13 @@ public:
     Bitboard pieces(const Colour c, const PieceType p) const{return colour_bb[c] & piece_bb[p];}
     Bitboard pieces(const Colour c, const PieceType p1, const PieceType p2) const{return colour_bb[c] & (piece_bb[p1] |piece_bb[p2]);}
     Bitboard pinned() const {return pinned_bb;}
-    Bitboard passed_pawns(const Colour c) const {return pieces(c,PAWN) & ~Bitboards::forward_block_spans(~c, pieces(~c,PAWN)); };
+    Bitboard passed_pawns(const Colour c) const {return pieces(c, PAWN) & ~Bitboards::forward_block_span(~c, pieces(~c, PAWN)); };
+    Bitboard open_files() const {return ~Bitboards::vertical_fill(pieces(PAWN)); }
+    Bitboard half_open_files(const Colour c) const {return ~Bitboards::vertical_fill(pieces(c, PAWN));}
+    Bitboard weak_pawns(const Colour c) const {return pieces(c, PAWN) & ~Bitboards::pawn_attacks(c, pieces(c, PAWN));}
+    Bitboard isolated_pawns(const Colour c) const {return pieces(c, PAWN) & ~Bitboards::full_atk_span(pieces(c, PAWN));}
+    Bitboard connected_passed_pawns(const Colour c) const {return passed_pawns(c) & Bitboards::full_atk_span(passed_pawns(c));}
+    Bitboard pawn_controlled(const Colour c) const {return Bitboards::pawn_attacks(c, Bitboards::full_atk_span(pieces(c, PAWN)));}
 
     void make_move(Move &move);
     void unmake_move(const Move move);

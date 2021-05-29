@@ -158,7 +158,7 @@ constexpr std::array<std::array<Square, 2>, 2> RookSquare = {{{Squares::FileH | 
 
 
 constexpr int N_COLOUR = 2;
-enum Colour {
+enum Colour : int {
     WHITE,
     BLACK
 };

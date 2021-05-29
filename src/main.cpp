@@ -218,10 +218,39 @@ int main(int argc, char* argv[])
     } else if (command == "test") {
         // Testing section
         board.pretty();
-        std::cout << "Black Passed Pawns:" << std::endl;
-        Bitboards::pretty(board.passed_pawns(BLACK)); 
 
         std::cout << "White Passed Pawns:" << std::endl;
         Bitboards::pretty(board.passed_pawns(WHITE)); 
+
+        std::cout << "Black Passed Pawns:" << std::endl;
+        Bitboards::pretty(board.passed_pawns(BLACK)); 
+
+        std::cout << "White Weak Pawns:" << std::endl;
+        Bitboards::pretty(board.weak_pawns(WHITE)); 
+
+        std::cout << "Black Weak Pawns:" << std::endl;
+        Bitboards::pretty(board.weak_pawns(BLACK)); 
+
+        std::cout << "White Half-Open Files:" << std::endl;
+        Bitboards::pretty(board.half_open_files(WHITE)); 
+
+        std::cout << "Black Half-Open Files:" << std::endl;
+        Bitboards::pretty(board.half_open_files(BLACK)); 
+
+        std::cout << "Open Files:" << std::endl;
+        Bitboards::pretty(board.open_files()); 
+
+        std::cout << "White Isolated Pawns:" << std::endl;
+        Bitboards::pretty(board.isolated_pawns(WHITE)); 
+
+        std::cout << "Black Isolated Pawns:" << std::endl;
+        Bitboards::pretty(board.isolated_pawns(BLACK)); 
+
+        std::cout << "White Connected Passed Pawns:" << std::endl;
+        Bitboards::pretty(board.connected_passed_pawns(WHITE)); 
+
+        std::cout << "Black Connected Passed Pawns:" << std::endl;
+        Bitboards::pretty(board.connected_passed_pawns(BLACK)); 
+
     }
 }
