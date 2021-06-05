@@ -209,7 +209,8 @@ typedef std::chrono::high_resolution_clock my_clock;
 int iterative_deepening(Board& board, const unsigned int max_depth, const int max_millis, PrincipleLine& line, long &nodes) {
     // Initialise the transposition table.
     transposition_table.min_depth(0);
-    PrincipleLine principle;
+    // Check for a principle line in the TT
+    PrincipleLine principle = unroll_tt_line(board);
     board.set_root();
     
     int score;
@@ -219,8 +220,11 @@ int iterative_deepening(Board& board, const unsigned int max_depth, const int ma
     time_origin = my_clock::now();
     std::chrono::duration<double, std::milli> time_span, time_span_last, t_est;
     int branching_factor = 10;
+    int counter = 0;
 
-    for (unsigned int depth = 2; depth <= max_depth; depth+=1) {
+    uint start_depth = 2;
+
+    for (unsigned int depth = start_depth; depth <= max_depth; depth+=1) {
         PrincipleLine temp_line;
         temp_line.reserve(depth);
         nodes = 0ul;
@@ -235,12 +239,13 @@ int iterative_deepening(Board& board, const unsigned int max_depth, const int ma
         if (is_mating(score)) { break; }
         t_est = branching_factor * time_span;
         // Calculate the last branching factor
-        if (depth >= 5) {
+        if (counter >= 3) {
             branching_factor = int(time_span.count() / time_span_last.count());
         }
         // We've run out of time to calculate.
         if (int(t_est.count()) > max_millis) { break;}
         time_span_last = time_span;
+        counter++;
     }
     line = principle;
     return score;
