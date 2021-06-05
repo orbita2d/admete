@@ -95,7 +95,7 @@ constexpr position_board pb_king_opening = {   -20, -20, -20, -20, -20, -20, -20
                                                -20, -20, -20, -20, -20, -20, -20, -20,
                                                -20, -20, -20, -20, -20, -20, -20, -20,
                                                -10, -20, -20, -20, -20, -20, -20, -20, 
-                                                15,  40,  30,   0,   0,   6,  40,  15 };
+                                                20,  20,  10,   0,   0,  10,  20,  20 };
 
 
 constexpr position_board pb_king_endgame = {    0,  0,  0,  0,  0,  0,  0,  0,
@@ -109,10 +109,10 @@ constexpr position_board pb_king_endgame = {    0,  0,  0,  0,  0,  0,  0,  0,
 
 
 constexpr position_board pb_pawn_opening = {      0,   0,   0,   0,   0,   0,   0,   0,
-                                                120, 120, 120, 120, 120, 120, 120, 120,
-                                                110, 110, 110, 110, 110, 110, 110, 110,
-                                                108, 108, 110, 115, 115, 110, 108, 108,
-                                                100, 105, 115, 130, 130, 115, 100, 100,
+                                                100, 100, 100, 100, 100, 100, 100, 100,
+                                                105, 105, 110, 110, 110, 110, 105, 105,
+                                                100, 105, 110, 115, 115, 110, 105, 100,
+                                                100, 100, 115, 130, 130, 115, 100, 100,
                                                 100, 100, 100, 100, 100, 100, 100, 100,
                                                 100, 100, 100, 100, 100, 100, 100, 100, 
                                                   0,   0,   0,   0,   0,   0,   0,   0 };
@@ -154,15 +154,25 @@ constexpr position_board pb_rook_eg = { 500, 500, 500, 500, 500, 500, 500, 500,
                                         500, 500, 500, 500, 500, 500, 500, 500, 
                                         500, 500, 500, 500, 500, 500, 500, 500 };
 
-// Bonus given to passed pawns
-constexpr int passed_mult_op = 10;
-constexpr int passed_mult_eg = 15;
-constexpr int weak_pawn = -10; // Pawn not defended by another pawn.
+constexpr int weak_pawn = -5; // Pawn not defended by another pawn.
 constexpr int isolated_pawn = -10; // Pawn with no supporting pawns on adjacent files
 constexpr int connected_passed = 20; // Bonus for connected passed pawns (per pawn)
-constexpr int rook_open_file = 10;
-constexpr int rook_hopen_file = 5;
+constexpr int rook_open_file = 10; // Bonus for rook on open file
+constexpr int rook_hopen_file = 5; // Bonus for rook on half open file
 
+constexpr int king_open_file = 0; // Penalty for king on open file
+constexpr int king_hopen_file = 0; // Penalty for king on half open file
+
+constexpr int castle_hopen_file = 0; // Penalty for castled king near a half open file
+
+// Bonus given the pawns on the 2nd and 3rd ranks in front of a castled king
+constexpr int castle_pawns2 = 0;
+constexpr int castle_pawns3 = 0;
+
+// Bonus given to passed pawns, multiplied by PSqT below
+constexpr int passed_mult_op = 10;
+constexpr int passed_mult_eg = 15;
+// PSqT for passed pawns.
 constexpr position_board pb_p_pawn = {   0,  0,  0,  0,  0,  0,  0,  0,
                                         10, 10, 10, 10, 10, 10, 10, 10,
                                          5,  5,  5,  5,  5,  5,  5,  5,
@@ -391,22 +401,58 @@ int heuristic(Board &board) {
 
     // Rooks in open and half-open files;
     const Bitboard open_files = board.open_files();
+    const Bitboard w_hopen_files = board.half_open_files(WHITE);
+    const Bitboard b_hopen_files = board.half_open_files(BLACK);
+
     occ = board.pieces(WHITE, ROOK) & open_files;
     opening_value += rook_open_file * count_bits(occ);
-    endgame_value += rook_open_file * count_bits(occ);
 
     occ = board.pieces(BLACK, ROOK) & open_files;
     opening_value -= rook_open_file * count_bits(occ);
-    endgame_value -= rook_open_file * count_bits(occ);
 
-    occ = board.pieces(WHITE, ROOK) & board.half_open_files(WHITE);
-    opening_value += rook_open_file * count_bits(occ);
-    endgame_value += rook_open_file * count_bits(occ);
+    occ = board.pieces(WHITE, ROOK) & w_hopen_files;
+    opening_value += rook_hopen_file * count_bits(occ);
 
-    occ = board.pieces(BLACK, ROOK) & board.half_open_files(BLACK);
-    opening_value -= rook_open_file * count_bits(occ);
-    endgame_value -= rook_open_file * count_bits(occ);
+    occ = board.pieces(BLACK, ROOK) & b_hopen_files;
+    opening_value -= rook_hopen_file * count_bits(occ);
 
+    // King safety
+
+    const Bitboard wk = board.find_king(WHITE);
+    const Bitboard bk = board.find_king(WHITE);
+    
+    if (wk & Bitboards::castle_king[WHITE][KINGSIDE]) {
+        opening_value += castle_pawns2 * count_bits(Bitboards::castle_pawn2[WHITE][KINGSIDE] & board.pieces(WHITE, PAWN));
+        opening_value += castle_pawns3 * count_bits(Bitboards::castle_pawn3[WHITE][KINGSIDE] & board.pieces(WHITE, PAWN));
+        opening_value += castle_hopen_file * count_bits(Bitboards::castle_king[WHITE][KINGSIDE] & w_hopen_files);
+    } else if (wk & Bitboards::castle_king[WHITE][QUEENSIDE]) {
+        opening_value += castle_pawns2 * count_bits(Bitboards::castle_pawn2[WHITE][QUEENSIDE] & board.pieces(WHITE, PAWN));
+        opening_value += castle_pawns3 * count_bits(Bitboards::castle_pawn3[WHITE][QUEENSIDE] & board.pieces(WHITE, PAWN));
+        opening_value += castle_hopen_file * count_bits(Bitboards::castle_king[WHITE][QUEENSIDE] & w_hopen_files);
+    }
+
+    if (bk & Bitboards::castle_king[BLACK][KINGSIDE]) {
+        opening_value -= castle_pawns2 * count_bits(Bitboards::castle_pawn2[BLACK][KINGSIDE] & board.pieces(BLACK, PAWN));
+        opening_value -= castle_pawns3 * count_bits(Bitboards::castle_pawn3[BLACK][KINGSIDE] & board.pieces(BLACK, PAWN));
+        opening_value -= castle_hopen_file * count_bits(Bitboards::castle_king[BLACK][KINGSIDE] & b_hopen_files);
+    } else if (bk & Bitboards::castle_king[BLACK][QUEENSIDE]) {
+        opening_value -= castle_pawns2 * count_bits(Bitboards::castle_pawn2[BLACK][QUEENSIDE] & board.pieces(BLACK, PAWN));
+        opening_value -= castle_pawns3 * count_bits(Bitboards::castle_pawn3[BLACK][QUEENSIDE] & board.pieces(BLACK, PAWN));
+        opening_value -= castle_hopen_file * count_bits(Bitboards::castle_king[BLACK][QUEENSIDE] & b_hopen_files);
+    }
+
+    if (wk & w_hopen_files) {
+        opening_value += king_hopen_file;
+    } else if (wk & open_files) {
+        opening_value += king_open_file;
+    }
+
+    if (bk & b_hopen_files) {
+        opening_value -= king_hopen_file;
+    } else if (bk & open_files) {
+        opening_value -= king_open_file;
+    }
+    
     int value;
     if (material_value > OPENING_MATERIAL) {
         // Just use opening tables

@@ -251,6 +251,5 @@ int main(int argc, char* argv[])
 
         std::cout << "Black Connected Passed Pawns:" << std::endl;
         Bitboards::pretty(board.connected_passed_pawns(BLACK)); 
-
     }
 }

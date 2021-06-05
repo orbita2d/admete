@@ -10,7 +10,7 @@ inline Bitboard PawnSpans[N_COLOUR][N_SQUARE];
 inline Bitboard RankBBs[8] = {0x00000000000000FF, 0x000000000000ff00, 0x0000000000ff0000, 0x00000000ff000000, 0x000000ff00000000, 0x0000ff0000000000, 0x00ff000000000000, 0xff00000000000000};
 inline Bitboard FileBBs[8] = {0x0101010101010101, 0x0202020202020202, 0x0404040404040404, 0x0808080808080808, 0x1010101010101010, 0x2020202020202020, 0x4040404040404040, 0x8080808080808080};
 inline Bitboard LineBBs[N_SQUARE][N_SQUARE];
-constexpr Bitboard CastleBBs[N_COLOUR][N_CASTLE] = {{0x6000000000000000, 0xe00000000000000}, {0x60, 0xe}};
+constexpr Bitboard CastleCheckBBs[N_COLOUR][N_CASTLE] = {{0x6000000000000000, 0xe00000000000000}, {0x60, 0xe}};
 inline Bitboard SquareBBs[N_SQUARE];
 
 inline Bitboard sq_to_bb(const int s) {
@@ -83,6 +83,12 @@ namespace Bitboards
   constexpr Bitboard rank_7 = 0x000000000000ff00;
   constexpr Bitboard rank_8 = 0x00000000000000ff;
   constexpr Bitboard omega = ~Bitboard(0);
+  // Bitboard for squares where king is castled 
+  constexpr Bitboard castle_king[N_COLOUR][N_CASTLE] = {{0xe000000000000000, 0x700000000000000}, {0xe0, 0x7}};
+  // Bitboard for king safetly pawns on 2nd rank 
+  constexpr Bitboard castle_pawn2[N_COLOUR][N_CASTLE] = {{0x00e0000000000000, 0x007000000000000}, {0xe000, 0x700}};
+  // Bitboard for king safetly pawns on 3rd rank 
+  constexpr Bitboard castle_pawn3[N_COLOUR][N_CASTLE] = {{0x0000e00000000000, 0x000070000000000}, {0xe00000, 0x70000}};
 
 
   template<Direction dir>
@@ -145,7 +151,7 @@ namespace Bitboards
   }
 
   constexpr Bitboard castle(const Colour c, const CastlingSide cs) {
-    return CastleBBs[c][cs];
+    return CastleCheckBBs[c][cs];
   }
 
   inline Bitboard north_fill(Bitboard g) {

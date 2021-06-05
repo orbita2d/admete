@@ -10,8 +10,8 @@ void Bitboards::pretty(const Bitboard bb) {
         }
         std::cout << std::endl;
     }
-    std::cout << std::endl;
     std::cout << "0x" << std::hex << bb << std::endl;
+    std::cout << std::endl;
 }
 
 class PRNG {
