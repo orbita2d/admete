@@ -160,14 +160,14 @@ constexpr int connected_passed = 20; // Bonus for connected passed pawns (per pa
 constexpr int rook_open_file = 10; // Bonus for rook on open file
 constexpr int rook_hopen_file = 5; // Bonus for rook on half open file
 
-constexpr int king_open_file = 0; // Penalty for king on open file
-constexpr int king_hopen_file = 0; // Penalty for king on half open file
+constexpr int castle_hopen_file = -5; // Penalty for castled king near a half open file
 
-constexpr int castle_hopen_file = 0; // Penalty for castled king near a half open file
+// Bonus given the pawns on the 2nd and 3rd ranks in front of a castled king. This promotes castling and penalises pushing pawns in front of the king.
+constexpr int castle_pawns2 = 5;
+constexpr int castle_pawns3 = 5;
 
-// Bonus given the pawns on the 2nd and 3rd ranks in front of a castled king
-constexpr int castle_pawns2 = 0;
-constexpr int castle_pawns3 = 0;
+// Penealty for squares where a queen would check the king, if only pawns were on the board.
+constexpr int queen_check = -8;
 
 // Bonus given to passed pawns, multiplied by PSqT below
 constexpr int passed_mult_op = 10;
@@ -419,7 +419,7 @@ int heuristic(Board &board) {
     // King safety
 
     const Bitboard wk = board.find_king(WHITE);
-    const Bitboard bk = board.find_king(WHITE);
+    const Bitboard bk = board.find_king(BLACK);
     
     if (wk & Bitboards::castle_king[WHITE][KINGSIDE]) {
         opening_value += castle_pawns2 * count_bits(Bitboards::castle_pawn2[WHITE][KINGSIDE] & board.pieces(WHITE, PAWN));
@@ -441,17 +441,17 @@ int heuristic(Board &board) {
         opening_value -= castle_hopen_file * count_bits(Bitboards::castle_king[BLACK][QUEENSIDE] & b_hopen_files);
     }
 
-    if (wk & w_hopen_files) {
-        opening_value += king_hopen_file;
-    } else if (wk & open_files) {
-        opening_value += king_open_file;
-    }
+    // Punish squares where a queen could check the king, if there were only pawns on the board, without being captured by a pawn, loose heuristic for king safety.
 
-    if (bk & b_hopen_files) {
-        opening_value -= king_hopen_file;
-    } else if (bk & open_files) {
-        opening_value -= king_open_file;
-    }
+    occ = Bitboards::attacks<QUEEN>(board.pieces(PAWN), board.find_king(WHITE));
+    occ &= ~board.pieces(PAWN);
+    occ &= ~Bitboards::pawn_attacks(WHITE, board.pieces(WHITE, PAWN));
+    opening_value += queen_check * count_bits(occ);
+
+    occ = Bitboards::attacks<QUEEN>(board.pieces(PAWN), board.find_king(BLACK));
+    occ &= ~board.pieces(PAWN);
+    occ &= ~Bitboards::pawn_attacks(BLACK, board.pieces(BLACK, PAWN));
+    opening_value -= queen_check * count_bits(occ);
     
     int value;
     if (material_value > OPENING_MATERIAL) {

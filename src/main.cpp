@@ -251,5 +251,11 @@ int main(int argc, char* argv[])
 
         std::cout << "Black Connected Passed Pawns:" << std::endl;
         Bitboards::pretty(board.connected_passed_pawns(BLACK)); 
+
+        std::cout << "King Saftey:" << std::endl;
+        Bitboard occ = Bitboards::attacks<QUEEN>(board.pieces(PAWN), board.find_king(WHITE));
+        occ &= ~board.pieces(PAWN);
+        occ &= ~Bitboards::pawn_attacks(WHITE, board.pieces(WHITE, PAWN));
+        Bitboards::pretty(occ);
     }
 }

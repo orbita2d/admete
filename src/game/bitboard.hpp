@@ -73,6 +73,12 @@ namespace Bitboards
   void pretty(Bitboard);
   void init();
   constexpr Bitboard h_file = 0x0101010101010101;
+  constexpr Bitboard g_file = 0x0202020202020202;
+  constexpr Bitboard f_file = 0x0404040404040404;
+  constexpr Bitboard e_file = 0x0808080808080808;
+  constexpr Bitboard d_file = 0x1010101010101010;
+  constexpr Bitboard c_file = 0x2020202020202020;
+  constexpr Bitboard b_file = 0x4040404040404040;
   constexpr Bitboard a_file = 0x8080808080808080;
   constexpr Bitboard rank_1 = 0xff00000000000000;
   constexpr Bitboard rank_2 = 0x00ff000000000000;
