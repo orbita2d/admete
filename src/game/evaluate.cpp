@@ -169,6 +169,9 @@ constexpr int castle_pawns3 = 5;
 // Penealty for squares where a queen would check the king, if only pawns were on the board.
 constexpr int queen_check = -8;
 
+constexpr int mobility_op = 4;
+constexpr int mobility_eg = 4;
+
 // Bonus given to passed pawns, multiplied by PSqT below
 constexpr int passed_mult_op = 10;
 constexpr int passed_mult_eg = 15;
@@ -351,7 +354,29 @@ int heuristic(Board &board) {
             material_value += material[p];
             Square sq = pop_lsb(&occ);
             opening_value += piece_square_tables[OPENING][BLACK][p][sq];
-            endgame_value += piece_square_tables[ENDGAME][BLACK][p][sq];
+            endgame_value += piece_square_tables[ENDGAME][BLACK][p][sq];   
+        }
+    }
+
+    // Mobility
+    for (int p = (int)KNIGHT; p < KING; p++) {
+        Bitboard occ = board.pieces(WHITE, (PieceType)p);
+        while (occ) {
+            Square sq = pop_lsb(&occ);
+            Bitboard mob = Bitboards::attacks((PieceType)p, board.pieces(), sq);
+            mob &= ~Bitboards::pawn_attacks(BLACK, board.pieces(BLACK, PAWN));
+            mob &= ~board.pieces();
+            opening_value += mobility_op * count_bits(mob);
+            endgame_value += mobility_eg * count_bits(mob);
+        }
+        occ = board.pieces(BLACK, (PieceType)p);
+        while (occ) {
+            Square sq = pop_lsb(&occ);
+            Bitboard mob = Bitboards::attacks((PieceType)p, board.pieces(), sq);
+            mob &= ~Bitboards::pawn_attacks(WHITE, board.pieces(WHITE, PAWN));
+            mob &= ~board.pieces();
+            opening_value -= mobility_op * count_bits(mob);
+            endgame_value -= mobility_eg * count_bits(mob);
         }
     }
 
@@ -418,8 +443,8 @@ int heuristic(Board &board) {
 
     // King safety
 
-    const Bitboard wk = board.find_king(WHITE);
-    const Bitboard bk = board.find_king(BLACK);
+    const Bitboard wk = sq_to_bb(board.find_king(WHITE));
+    const Bitboard bk = sq_to_bb(board.find_king(BLACK));
     
     if (wk & Bitboards::castle_king[WHITE][KINGSIDE]) {
         opening_value += castle_pawns2 * count_bits(Bitboards::castle_pawn2[WHITE][KINGSIDE] & board.pieces(WHITE, PAWN));

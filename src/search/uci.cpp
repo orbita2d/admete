@@ -8,6 +8,7 @@
 #include "uci.hpp"
 #include "board.hpp"
 #include "search.hpp"
+#include "evaluate.hpp"
 
 #define ENGINE_NAME "admete"
 #define ENGINE_AUTH "orbita"
@@ -175,6 +176,9 @@ void uci() {
             exit(EXIT_SUCCESS);
         } else if (token == "d") {
             board.pretty();
+        } else if (token == "h") {
+            int v = heuristic(board);
+            std::cout << std::dec << v << std::endl;
         }
         else {
             //std::cerr << "!#" << token << ":"<< command << std::endl;

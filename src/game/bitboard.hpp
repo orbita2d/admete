@@ -110,11 +110,26 @@ namespace Bitboards
     else if (dir == Direction::SE) { return (bb << 9) & ~Bitboards::h_file;}
   }
 
-  inline Bitboard attacks(const PieceType p, const Square s) {
+  inline Bitboard pseudo_attacks(const PieceType p, const Square s) {
       // Get the value from the pseudolegal attacks table
       return PseudolegalAttacks[p][s];
   }
 
+  inline Bitboard attacks(const PieceType p, const Bitboard occ, const Square sq) {
+      // Get the value from the pseudolegal attacks table
+      switch (p)
+      {
+      case ROOK:
+        return rook_attacks(occ, sq); 
+      case BISHOP:
+        return bishop_attacks(occ, sq);    
+      case QUEEN:
+        return bishop_attacks(occ, sq) | rook_attacks(occ, sq);
+      default:
+        return PseudolegalAttacks[p][sq];
+      }
+  }
+  
   template<PieceType p>
   inline Bitboard attacks(const Bitboard occ, const Square sq) {
       // Get the value from the pseudolegal attacks table

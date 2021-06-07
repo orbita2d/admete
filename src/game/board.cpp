@@ -428,8 +428,8 @@ bool Board::is_attacked(const Square origin, const Colour us) const{
     // First off, if the square is attacked by a knight, it's definitely in check.
     const Colour them = ~us;
     
-    if (Bitboards::attacks(KNIGHT, origin) & pieces(them, KNIGHT)) { return true;}
-    if (Bitboards::attacks(KING, origin) & pieces(them, KING)) { return true;}
+    if (Bitboards::pseudo_attacks(KNIGHT, origin) & pieces(them, KNIGHT)) { return true;}
+    if (Bitboards::pseudo_attacks(KING, origin) & pieces(them, KING)) { return true;}
     // Our colour pawn attacks are the same as attacked-by pawn
     if (Bitboards::pawn_attacks(us, origin) & pieces(them, PAWN)) { return true;}
 
@@ -470,7 +470,7 @@ void Board::update_checkers() {
 
     const Bitboard occ = pieces();
 
-    Bitboard atk = Bitboards::attacks(KNIGHT, origin) & pieces(them, KNIGHT);
+    Bitboard atk = Bitboards::pseudo_attacks(KNIGHT, origin) & pieces(them, KNIGHT);
     atk |= Bitboards::pawn_attacks(us, origin) & pieces(them, PAWN);
     atk |= rook_attacks(occ, origin) & (pieces(them, ROOK, QUEEN));
     atk |= bishop_attacks(occ, origin) & (pieces(them, BISHOP, QUEEN));
@@ -499,7 +499,7 @@ void Board::update_check_squares() {
 
     // Sqaures for direct checks
     aux_info->check_squares[PAWN] = Bitboards::pawn_attacks(them, origin);
-    aux_info->check_squares[KNIGHT] = Bitboards::attacks(KNIGHT, origin);
+    aux_info->check_squares[KNIGHT] = Bitboards::pseudo_attacks(KNIGHT, origin);
     aux_info->check_squares[BISHOP] = bishop_attacks(occ, origin);
     aux_info->check_squares[ROOK] = rook_attacks(occ, origin);
     aux_info->check_squares[QUEEN] = aux_info->check_squares[BISHOP] | aux_info->check_squares[ROOK];

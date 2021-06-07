@@ -3,6 +3,7 @@
 void print_tables();
 int heuristic_diff(Colour us, Move &move, int material_value);
 int negamax_heuristic(Board &board);
+int heuristic(Board &board);
 int evaluate(Board &board);
 int evaluate(Board &board, std::vector<Move> &legal_moves);
 int evaluation_diff(Board &board, Move move);

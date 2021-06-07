@@ -29,15 +29,17 @@ struct AuxilliaryInfo {
 
 class Board {
 public:
-    Board() {
-        aux_info = aux_history.begin();
-    };
 
     void fen_decode(const std::string& fen);
     std::string fen_encode() const;
     void initialise();
     void initialise_starting_position() { fen_decode("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"); }
 
+    Board() {
+        aux_info = aux_history.begin();
+        initialise_starting_position();
+    };
+    
     void pretty() const;
 
     std::string print_move(Move move, MoveList &legal_moves);
