@@ -79,14 +79,14 @@ position_board fill_knight_positional_scores() {
 position_board pb_knight = fill_knight_positional_scores();
 
 
-constexpr position_board pb_bishop = {  305, 300, 300, 300, 300, 300, 300, 305,
-                                        300, 310, 305, 305, 305, 305, 310, 300,
-                                        300, 300, 305, 310, 310, 305, 300, 300,
-                                        300, 300, 310, 310, 310, 310, 300, 300,
-                                        300, 300, 310, 310, 310, 310, 300, 300,
-                                        300, 300, 305, 310, 310, 305, 300, 300,
-                                        305, 330, 300, 300, 300, 300, 330, 300, 
-                                        300, 300, 290, 300, 300, 290, 300, 310};
+constexpr position_board pb_bishop = {  350, 330, 330, 330, 330, 330, 330, 350,
+                                        330, 350, 330, 330, 330, 330, 350, 330,
+                                        330, 330, 350, 340, 340, 350, 330, 330,
+                                        330, 330, 340, 350, 350, 340, 330, 330,
+                                        330, 330, 340, 350, 350, 340, 330, 330,
+                                        330, 330, 350, 340, 340, 350, 330, 330,
+                                        330, 350, 330, 330, 330, 330, 350, 330, 
+                                        350, 330, 330, 330, 330, 330, 330, 350};
 
 constexpr position_board pb_king_opening = {   -20, -20, -20, -20, -20, -20, -20, -20,
                                                -20, -20, -20, -20, -20, -20, -20, -20,
@@ -171,6 +171,9 @@ constexpr int queen_check = -8;
 
 constexpr int mobility_op = 4;
 constexpr int mobility_eg = 4;
+
+// Bonus for having the bishop pair
+constexpr int bishop_pair = 15;
 
 // Bonus given to passed pawns, multiplied by PSqT below
 constexpr int passed_mult_op = 10;
@@ -380,10 +383,24 @@ int heuristic(Board &board) {
         }
     }
 
+    // Bishop stuff
+    Bitboard occ = board.pieces(WHITE, BISHOP);
+    if ((occ & Bitboards::light_squares) && (occ & Bitboards::dark_squares)) {
+        // White has the bishop pair
+        opening_value += bishop_pair;
+        endgame_value += bishop_pair;
+    }
+    occ = board.pieces(BLACK, BISHOP);
+    if ((occ & Bitboards::light_squares) && (occ & Bitboards::dark_squares)) {
+        // Black has the bishop pair
+        opening_value -= bishop_pair;
+        endgame_value -= bishop_pair;
+    }
+
     // Pawn structure bonuses:
 
     // Add bonus for passed pawns for each side.
-    Bitboard occ = board.passed_pawns(WHITE);
+    occ = board.passed_pawns(WHITE);
     while (occ) {
         Square sq = pop_lsb(&occ);
         opening_value += passed_mult_op * pb_passed[WHITE][sq];
