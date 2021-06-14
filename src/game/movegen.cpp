@@ -511,6 +511,7 @@ void Board::sort_moves(MoveList &legal_moves, const DenseMove hash_dmove, const 
             // En-passent is weird too.
             const Square captured_square = move.origin.rank() | move.target.file();
             move.captured_piece = PAWN;
+            good_captures.push_back(move);
         } else if (move.is_capture()){
             // Make sure to lookup and record the piece captured 
             move.captured_piece = piece_type(move.target);
