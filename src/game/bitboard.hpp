@@ -7,7 +7,7 @@ typedef unsigned long int Bitboard;
 inline Bitboard PseudolegalAttacks[N_PIECE][N_SQUARE];
 inline Bitboard PawnAttacks[N_COLOUR][N_SQUARE];
 inline Bitboard PawnSpans[N_COLOUR][N_SQUARE];
-inline Bitboard RankBBs[8] = {0x00000000000000FF, 0x000000000000ff00, 0x0000000000ff0000, 0x00000000ff000000, 0x000000ff00000000, 0x0000ff0000000000, 0x00ff000000000000, 0xff00000000000000};
+inline Bitboard RankBBs[8] = {0x00000000000000ff, 0x000000000000ff00, 0x0000000000ff0000, 0x00000000ff000000, 0x000000ff00000000, 0x0000ff0000000000, 0x00ff000000000000, 0xff00000000000000};
 inline Bitboard FileBBs[8] = {0x0101010101010101, 0x0202020202020202, 0x0404040404040404, 0x0808080808080808, 0x1010101010101010, 0x2020202020202020, 0x4040404040404040, 0x8080808080808080};
 inline Bitboard LineBBs[N_SQUARE][N_SQUARE];
 constexpr Bitboard CastleCheckBBs[N_COLOUR][N_CASTLE] = {{0x6000000000000000, 0xe00000000000000}, {0x60, 0xe}};
@@ -95,6 +95,9 @@ namespace Bitboards
   constexpr Bitboard castle_pawn2[N_COLOUR][N_CASTLE] = {{0x00e0000000000000, 0x007000000000000}, {0xe000, 0x700}};
   // Bitboard for king safetly pawns on 3rd rank 
   constexpr Bitboard castle_pawn3[N_COLOUR][N_CASTLE] = {{0x0000e00000000000, 0x000070000000000}, {0xe00000, 0x70000}};
+
+  constexpr Bitboard light_squares = 0xAA55AA55AA55AA55;
+  constexpr Bitboard dark_squares  = 0x55AA55AA55AA55AA;
 
 
   template<Direction dir>
