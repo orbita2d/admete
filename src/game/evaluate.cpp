@@ -175,6 +175,15 @@ constexpr int mobility_eg = 4;
 // Bonus for having the bishop pair
 constexpr int bishop_pair = 15;
 
+// Bonus for a piece on a weak enemy square
+constexpr int piece_weak_square = 0;
+
+// Bonus for a knight on an outpost
+constexpr int knight_outpost = 15;
+
+// Bonus for an outpost (occupied or otherwise)
+constexpr int outpost = 5;
+
 // Bonus given to passed pawns, multiplied by PSqT below
 constexpr int passed_mult_op = 10;
 constexpr int passed_mult_eg = 15;
@@ -396,6 +405,21 @@ int heuristic(Board &board) {
         opening_value -= bishop_pair;
         endgame_value -= bishop_pair;
     }
+
+    // Knights
+    opening_value += outpost * count_bits(board.outposts(WHITE));
+    opening_value -= outpost * count_bits(board.outposts(BLACK));
+
+    occ = board.pieces(WHITE, KNIGHT) & board.outposts(WHITE);
+    opening_value += knight_outpost * count_bits(occ);
+
+    occ = board.pieces(BLACK, KNIGHT) & board.outposts(BLACK);
+    opening_value -= knight_outpost * count_bits(occ);
+
+    occ = (board.pieces(WHITE, KNIGHT) | board.pieces(WHITE, BISHOP)) & board.weak_squares(BLACK);
+    opening_value += piece_weak_square * count_bits(occ);
+    occ = (board.pieces(BLACK, KNIGHT) | board.pieces(BLACK, BISHOP)) & board.weak_squares(WHITE);
+    opening_value -= piece_weak_square * count_bits(occ);
 
     // Pawn structure bonuses:
 

@@ -88,6 +88,7 @@ namespace Bitboards
   constexpr Bitboard rank_6 = 0x0000000000ff0000;
   constexpr Bitboard rank_7 = 0x000000000000ff00;
   constexpr Bitboard rank_8 = 0x00000000000000ff;
+  constexpr Bitboard middle_ranks = rank_3 | rank_4 | rank_5 | rank_6;
   constexpr Bitboard omega = ~Bitboard(0);
   // Bitboard for squares where king is castled 
   constexpr Bitboard castle_king[N_COLOUR][N_CASTLE] = {{0xe000000000000000, 0x700000000000000}, {0xe0, 0x7}};

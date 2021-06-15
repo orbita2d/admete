@@ -78,7 +78,9 @@ public:
     Bitboard weak_pawns(const Colour c) const {return pieces(c, PAWN) & ~Bitboards::pawn_attacks(c, pieces(c, PAWN));}
     Bitboard isolated_pawns(const Colour c) const {return pieces(c, PAWN) & ~Bitboards::full_atk_span(pieces(c, PAWN));}
     Bitboard connected_passed_pawns(const Colour c) const {return passed_pawns(c) & Bitboards::full_atk_span(passed_pawns(c));}
-    Bitboard pawn_controlled(const Colour c) const {return Bitboards::pawn_attacks(c, Bitboards::full_atk_span(pieces(c, PAWN)));}
+    Bitboard pawn_controlled(const Colour c) const {return Bitboards::pawn_attacks(c, pieces(c, PAWN));}
+    Bitboard weak_squares(const Colour c) const {return Bitboards::middle_ranks & ~Bitboards::forward_atk_span(c, pieces(c, PAWN));} // Sqaures that can never be defended by a pawn
+    Bitboard outposts(const Colour c) const {return Bitboards::pawn_attacks(c, pieces(c, PAWN)) & weak_squares(~c);} 
 
     void make_move(Move &move);
     void unmake_move(const Move move);

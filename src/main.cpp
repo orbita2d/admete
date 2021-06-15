@@ -258,9 +258,15 @@ int main(int argc, char* argv[])
         occ &= ~Bitboards::pawn_attacks(WHITE, board.pieces(WHITE, PAWN));
         Bitboards::pretty(occ);
 
-        std::cout << "Light / Dark Squares:" << std::endl;
-        Bitboards::pretty(Bitboards::light_squares);
-        Bitboards::pretty(Bitboards::dark_squares);
+        std::cout << "White weak squares:" << std::endl;
+        Bitboards::pretty(board.weak_squares(WHITE));
+        std::cout << "Black weak squares:" << std::endl;
+        Bitboards::pretty(board.weak_squares(BLACK));
+
+        std::cout << "White Outposts:" << std::endl;
+        Bitboards::pretty(board.outposts(WHITE));
+        std::cout << "Black Outposts:" << std::endl;
+        Bitboards::pretty(board.outposts(BLACK));
 
     }
 }
