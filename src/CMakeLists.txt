@@ -6,6 +6,7 @@ PRIVATE search_library)
 
 add_subdirectory(game)
 add_subdirectory(search)
+add_subdirectory(analyser)
 
 set_property(TARGET admete PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
 if ( CMAKE_COMPILER_IS_GNUCXX )
