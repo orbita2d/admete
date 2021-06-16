@@ -36,13 +36,9 @@ void print_line(PrincipleLine &line, Board& board) {
 
 int main(int argc, char* argv[])
 {
-    static int count_moves_flag = 0;
-    static int count_captures_flag = 0;
-    static int interactive_flag = 0;
     static int perft_flag = 0;
     static int perftcomp_flag = 0;
     static int evaluate_flag = 0;
-    static int evaluate_random_flag = 0;
     static int evaluate_static_flag = 0;
     static int divide_flag = 0;
     static int print_flag = 0;
@@ -54,13 +50,9 @@ int main(int argc, char* argv[])
     int opt;
 	while (true) {
 		static struct option long_options[] = {
-			{"count-moves",	no_argument, &count_moves_flag, 1},
-			{"capture-moves",	no_argument, &count_captures_flag, 1},
-			{"interactive",	no_argument, &interactive_flag, 1},
             {"perft", no_argument, &perft_flag, 1},
             {"perft-compare", no_argument, &perftcomp_flag, 1},
             {"eval", no_argument, &evaluate_flag, 1},
-            {"eval-random", no_argument, &evaluate_random_flag, 1},
 			{"eval-static",	no_argument, &evaluate_static_flag, 1},
             {"divide", no_argument, &divide_flag, 1},
 			{"depth",	required_argument, 0, 'd'},
