@@ -9,7 +9,7 @@
 
 typedef std::chrono::high_resolution_clock my_clock;
 int alphabeta(Board& board, const unsigned int depth, const int alpha_start, const int beta, PrincipleLine& line, long &nodes,
- std::chrono::high_resolution_clock::time_point time_cutoff, bool &kill_flag) {
+ std::chrono::high_resolution_clock::time_point time_cutoff, bool &kill_flag, bool allow_cutoff) {
     // perform alpha-beta pruning search.
     int alpha = alpha_start;
     
@@ -51,13 +51,14 @@ int alphabeta(Board& board, const unsigned int depth, const int alpha_start, con
         hash_move = hit.move();
     }
     
-    // Check if we've passed our time cutoff
-    std::chrono::high_resolution_clock::time_point time_now = my_clock::now();
-    if (time_now > time_cutoff) {
-        kill_flag = true;
-        return POS_INF;
+    if (allow_cutoff) {
+        // Check if we've passed our time cutoff
+        std::chrono::high_resolution_clock::time_point time_now = my_clock::now();
+        if (time_now > time_cutoff) {
+            kill_flag = true;
+            return POS_INF;
+        }
     }
-
     board.sort_moves(legal_moves, hash_move, killer_move);
     bool is_first_child = true;
     PrincipleLine best_line;
@@ -68,15 +69,15 @@ int alphabeta(Board& board, const unsigned int depth, const int alpha_start, con
         board.make_move(move);
         int score;
         if (is_first_child) {
-            score = -alphabeta(board, depth - 1, -beta, -alpha, temp_line, nodes, time_cutoff, kill_flag);
+            score = -alphabeta(board, depth - 1, -beta, -alpha, temp_line, nodes, time_cutoff, kill_flag, allow_cutoff);
         } else {
             // Search with a null window
-            score = -alphabeta(board, depth - 1, -beta, -alpha, temp_line, nodes, time_cutoff, kill_flag);
+            score = -alphabeta(board, depth - 1, -beta, -alpha, temp_line, nodes, time_cutoff, kill_flag, allow_cutoff);
             if (score > alpha && score < beta && depth > 1) {
                 // Do a full search
                 temp_line.clear();
                 temp_line.reserve(16);
-                score = -alphabeta(board, depth - 1, -beta, -alpha, temp_line, nodes, time_cutoff, kill_flag);
+                score = -alphabeta(board, depth - 1, -beta, -alpha, temp_line, nodes, time_cutoff, kill_flag, allow_cutoff);
             }
         }
         board.unmake_move(move);
@@ -140,7 +141,7 @@ int quiesce(Board& board, const int alpha_start, const int beta, long &nodes) {
 }
 
 int pv_search(Board& board, const unsigned int depth, const int alpha_start, const int beta, PrincipleLine& principle, const uint pv_depth,
- PrincipleLine& line, long& nodes, std::chrono::high_resolution_clock::time_point time_cutoff, bool &kill_flag) {
+ PrincipleLine& line, long& nodes, std::chrono::high_resolution_clock::time_point time_cutoff, bool &kill_flag, bool allow_cutoff) {
     // perform alpha-beta pruning search with principle variation optimisation.
     int alpha = alpha_start;
     MoveList legal_moves = board.get_moves();
@@ -159,7 +160,7 @@ int pv_search(Board& board, const unsigned int depth, const int alpha_start, con
         // -1 here is because we are indexing at 0. If there is 1 move left, that's at index 0;
         pv_move = principle.at(pv_depth - 1);
         board.make_move(pv_move);
-        best_score = -pv_search(board, depth - 1, -beta, -alpha, principle, pv_depth - 1, best_line, nodes, time_cutoff, kill_flag);
+        best_score = -pv_search(board, depth - 1, -beta, -alpha, principle, pv_depth - 1, best_line, nodes, time_cutoff, kill_flag, allow_cutoff);
         alpha = best_score;
         best_line.push_back(pv_move);
         board.unmake_move(pv_move);
@@ -177,15 +178,15 @@ int pv_search(Board& board, const unsigned int depth, const int alpha_start, con
         int score;
         if (is_first_child) {
             // If this is the first child (we've come to the end of the PV), run a full search on the node.
-            score = -alphabeta(board, depth - 1, -beta, -alpha, temp_line, nodes, time_cutoff, kill_flag);
+            score = -alphabeta(board, depth - 1, -beta, -alpha, temp_line, nodes, time_cutoff, kill_flag, allow_cutoff);
         } else {
             // Search with a null window
-            score = -alphabeta(board, depth - 1, -beta, -alpha, temp_line, nodes, time_cutoff, kill_flag);
+            score = -alphabeta(board, depth - 1, -beta, -alpha, temp_line, nodes, time_cutoff, kill_flag, allow_cutoff);
             if (score > alpha && score < beta && depth > 1) {
                 // Do a full search
                 temp_line.clear();
                 temp_line.reserve(16);
-                score = -alphabeta(board, depth - 1, -beta, -alpha, temp_line, nodes, time_cutoff, kill_flag);
+                score = -alphabeta(board, depth - 1, -beta, -alpha, temp_line, nodes, time_cutoff, kill_flag, allow_cutoff);
             }
         }
         board.unmake_move(move);
@@ -232,12 +233,14 @@ int iterative_deepening(Board& board, const unsigned int max_depth, const int ma
 
     uint start_depth = 2;
     bool kill_flag = false;
+    bool allow_cutoff = false;
 
     for (unsigned int depth = start_depth; depth <= max_depth; depth+=1) {
         PrincipleLine temp_line;
         temp_line.reserve(depth);
         nodes = 0ul;
-        new_score = pv_search(board, depth, NEG_INF, POS_INF, principle, principle.size(), temp_line, nodes, time_cutoff, kill_flag);
+        new_score = pv_search(board, depth, NEG_INF, POS_INF, principle, principle.size(), temp_line, nodes, time_cutoff, kill_flag, allow_cutoff);
+        allow_cutoff = true;
         if (kill_flag) { break; }
         score = new_score;
         principle = unroll_tt_line(board, temp_line);
