@@ -34,27 +34,6 @@ void print_line(PrincipleLine &line, Board& board) {
     }
 }
 
-void count_moves(Board &board) {
-    std::vector<Move> moves = board.get_moves();
-    std::cout << moves.size() << std::endl;
-}
-
-void interactive(Board &board) {
-    std::string input;
-    while (true) {
-        std::cout << std::endl;
-        board.pretty();
-        std::cin >> input;
-        if (input == "q") {
-            exit(EXIT_SUCCESS);
-        } else if (input == "moves") {
-            print_vector(board.get_moves());
-        } else {
-        board.try_move(input);
-        }
-    }
-}
-
 int main(int argc, char* argv[])
 {
     static int count_moves_flag = 0;
@@ -138,28 +117,6 @@ int main(int argc, char* argv[])
 
     if (print_tables_flag) {
         print_tables();
-        exit(EXIT_SUCCESS);
-    }
-
-    if (count_moves_flag) {
-        std::cout << board.fen_encode() << std::endl;
-        count_moves(board);
-        exit(EXIT_SUCCESS);
-    }
-
-    if (count_captures_flag) {
-        std::cout << board.fen_encode() << std::endl;
-        std::cout << "Captures:" << std::endl;
-        MoveList moves = board.get_captures();
-        for (Move move : moves) {
-            std::cout << board.print_move(move, moves) << std::endl;
-        }
-        exit(EXIT_SUCCESS);
-    }
-
-    if (interactive_flag) {
-        std::cout << board.fen_encode() << std::endl;
-        interactive(board);
         exit(EXIT_SUCCESS);
     }
 
