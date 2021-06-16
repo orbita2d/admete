@@ -51,7 +51,7 @@ int alphabeta(Board& board, const unsigned int depth, const int alpha_start, con
         hash_move = hit.move();
     }
     
-    if (allow_cutoff) {
+    if (allow_cutoff && (nodes % 1000 == 0)) {
         // Check if we've passed our time cutoff
         std::chrono::high_resolution_clock::time_point time_now = my_clock::now();
         if (time_now > time_cutoff) {
