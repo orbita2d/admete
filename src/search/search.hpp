@@ -1,5 +1,6 @@
 #pragma once
 #include "../game/board.hpp"
+#include <chrono>
 
 typedef std::vector<Move> PrincipleLine;
 
@@ -12,10 +13,9 @@ unsigned long perft(depth_t depth, Board &board);
 void perft_divide(depth_t depth, Board &board);
 
 // search.cpp
-int alphabeta(Board& board, const depth_t depth, int alpha, int beta, PrincipleLine& line, long &nodes);
-int alphabeta(Board& board, const depth_t depth, PrincipleLine& line, long &nodes);
+int alphabeta(Board& board, const depth_t depth, int alpha, int beta, PrincipleLine& line, long &nodes, std::chrono::high_resolution_clock::time_point time_cutoff, bool &kill_flag);
 int quiesce(Board& board, int alpha, int beta, long &nodes);
-int pv_search(Board& board, const depth_t depth, int alpha, int beta, PrincipleLine& principle, const uint pv_depth, PrincipleLine& line, long &nodes);
+int pv_search(Board& board, const depth_t depth, int alpha, int beta, PrincipleLine& principle, const uint pv_depth, PrincipleLine& line, long &nodes, std::chrono::high_resolution_clock::time_point time_cutoff, bool &kill_flag);
 int iterative_deepening(Board& board, const depth_t depth, const int max_millis, PrincipleLine& line, long &nodes);
 int iterative_deepening(Board& board, const depth_t depth, PrincipleLine& line);
 PrincipleLine unroll_tt_line(Board& board);
