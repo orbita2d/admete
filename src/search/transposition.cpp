@@ -2,9 +2,12 @@
 #include <array>
 #include <algorithm>
 
-std::array<long, tt_max> key_array;
+std::array<long, Cache::tt_max> key_array;
 
-bool TranspositionTable::probe(const long hash) {
+bool Cache::TranspositionTable::probe(const long hash) {
+    if (is_enabled() == false) {
+        return false;
+    }
     tt_map::iterator it = _data.find(hash);
     if (it == _data.end()) {
         return false;
@@ -14,7 +17,10 @@ bool TranspositionTable::probe(const long hash) {
     }
 }
 
-void TranspositionTable::store(const long hash, const int eval, const int lower, const int upper, const depth_t depth, const Move move) {
+void Cache::TranspositionTable::store(const long hash, const int eval, const int lower, const int upper, const depth_t depth, const Move move) {
+    if (is_enabled() == false) {
+        return;
+    }
     const TransElement elem = TransElement(eval, lower, upper, depth, move);
     if (index < tt_max) {
         // We are doing the first fill of the table;
@@ -31,14 +37,26 @@ void TranspositionTable::store(const long hash, const int eval, const int lower,
     index++;
 }
 
-DenseMove KillerTable::probe(const ply_t ply) {
+DenseMove Cache::KillerTable::probe(const ply_t ply) {
+    if (is_enabled() == false) {
+        return NULL_DMOVE;
+    }
     return _data[ply];
 }
 
 
-void KillerTable::store(const ply_t ply, const Move move) {
+void Cache::KillerTable::store(const ply_t ply, const Move move) {
+    if (is_enabled() == false) {
+        return;
+    }
     // Store the move, only if it's a quiet move.
     if (move.type != QUIETmv) { return; }
     // The move is quiet, store it in the table.
     _data[ply] = pack_move(move);
+}
+
+
+void Cache::init() {
+    killer_table = KillerTable();
+    transposition_table = TranspositionTable();
 }

@@ -96,6 +96,7 @@ int main(int argc, char* argv[])
     Bitboards::init();
     Zorbist::init();
     Evaluation::init();
+    Cache::init();
 
     if (tuning_table_flag) {
         Evaluation::load_tables(tuning_table);

@@ -23,10 +23,10 @@ int alphabeta(Board& board, const unsigned int depth, const int alpha_start, con
 
     // Lookup position in transposition table.
     DenseMove hash_move = NULL_DMOVE;
-    DenseMove killer_move = killer_table.probe(board.ply());
+    DenseMove killer_move = Cache::killer_table.probe(board.ply());
     const long hash = board.hash();
-    if (transposition_table.probe(hash)) {
-        const TransElement hit = transposition_table.last_hit();
+    if (Cache::transposition_table.probe(hash)) {
+        const Cache::TransElement hit = Cache::transposition_table.last_hit();
         if (hit.depth() >= depth) {
             if (hit.lower()) {
                 // The saved score is a lower bound for the score of the sub tree
@@ -104,8 +104,8 @@ int alphabeta(Board& board, const unsigned int depth, const int alpha_start, con
     line = best_line;
     if (best_line.size() != 0) {
         // The length can be zero on an ALL-node.
-        killer_table.store(board.ply(), best_line.back());
-        transposition_table.store(hash, best_score, alpha_start, beta, depth, best_line.back());
+        Cache::killer_table.store(board.ply(), best_line.back());
+        Cache::transposition_table.store(hash, best_score, alpha_start, beta, depth, best_line.back());
     }
     return best_score;
 }
@@ -166,7 +166,7 @@ int pv_search(Board& board, const unsigned int depth, const int alpha_start, con
         board.unmake_move(pv_move);
         is_first_child = false;
     }
-
+    if (kill_flag) { return POS_INF; }
     board.sort_moves(legal_moves, NULL_DMOVE, NULL_DMOVE);
     for (Move move : legal_moves) {
         if (move == pv_move) {
@@ -190,6 +190,7 @@ int pv_search(Board& board, const unsigned int depth, const int alpha_start, con
             }
         }
         board.unmake_move(move);
+        if (kill_flag) { return POS_INF; }
         if (score > best_score) {
             best_score = score;
             best_line = temp_line;
@@ -210,13 +211,14 @@ int pv_search(Board& board, const unsigned int depth, const int alpha_start, con
         // Keep track of how many the mate is in.
         best_score--;
     }
-    transposition_table.store(board.hash(), best_score, alpha_start, beta, depth, best_line.back());
+    Cache::transposition_table.store(board.hash(), best_score, alpha_start, beta, depth, best_line.back());
     return best_score;
 }
 
 int iterative_deepening(Board& board, const unsigned int max_depth, const int max_millis, PrincipleLine& line, long &nodes) {
     // Initialise the transposition table.
-    transposition_table.min_depth(0);
+    Cache::transposition_table.min_depth(0);
+
     // Check for a principle line in the TT
     PrincipleLine principle = unroll_tt_line(board);
     board.set_root();
@@ -283,9 +285,9 @@ PrincipleLine unroll_tt_line(Board& board) {
             // If we have seen this position before in the unrolling, we're in a loop, so break.
             break;
         }
-        if (transposition_table.probe(hash)) {
+        if (Cache::transposition_table.probe(hash)) {
             MoveList legal_moves = board.get_moves();
-            TransElement hit = transposition_table.last_hit(); 
+            Cache::TransElement hit = Cache::transposition_table.last_hit(); 
             Move best_move = unpack_move(hit.move(), legal_moves);
             if (best_move == NULL_MOVE) {
                 break;

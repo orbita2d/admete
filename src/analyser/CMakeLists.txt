@@ -1,8 +1,9 @@
 add_executable(admete-analyser analyser.cpp)
 
 target_link_libraries(admete-analyser 
-game_library
-search_library)
+PRIVATE game_library
+PRIVATE search_library
+PRIVATE pthread)
 
 set_property(TARGET admete-analyser PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
 

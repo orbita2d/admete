@@ -12,8 +12,8 @@ unsigned long perft_comparison(depth_t depth, Board &board) {
 }
 
 unsigned long perft(depth_t depth, Board &board) {
-    transposition_table.clear();
-    transposition_table.min_depth(0);
+    Cache::transposition_table.clear();
+    Cache::transposition_table.min_depth(0);
     // Transposition tables very tricky here because the keys cannot distinguish by depth
     /*           R
                 / \ 
@@ -33,8 +33,8 @@ unsigned long perft_bulk(depth_t depth, Board &board) {
     }
 
     const long hash = board.hash();
-    if (transposition_table.probe(hash)) {
-        const TransElement hit = transposition_table.last_hit();
+    if (Cache::transposition_table.probe(hash)) {
+        const Cache::TransElement hit = Cache::transposition_table.last_hit();
         if (hit.depth() == depth) {
             // The saved score is an exact value for the subtree
             return hit.eval();
@@ -46,7 +46,7 @@ unsigned long perft_bulk(depth_t depth, Board &board) {
         nodes += perft_bulk(depth-1, board);
         board.unmake_move(move);
     }
-    transposition_table.store(hash, nodes, NEG_INF, POS_INF, depth, NULL_MOVE);
+    Cache::transposition_table.store(hash, nodes, NEG_INF, POS_INF, depth, NULL_MOVE);
     return nodes;
 }
 

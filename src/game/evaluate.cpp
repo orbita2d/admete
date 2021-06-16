@@ -300,8 +300,8 @@ void Evaluation::load_tables(std::string filename) {
         int value;
         file >> value;
         piece_square_tables[OPENING][WHITE][PAWN].at(i) = value;
-        piece_square_tables[OPENING][BLACK][PAWN] = reverse_board(piece_square_tables[OPENING][WHITE][PAWN]);
     }
+    piece_square_tables[OPENING][BLACK][PAWN] = reverse_board(piece_square_tables[OPENING][WHITE][PAWN]);
     file >> std::ws;
     for (int p = KNIGHT; p < N_PIECE; p++) {
         for (int sq = 0; sq < 64; sq++) {
@@ -309,8 +309,8 @@ void Evaluation::load_tables(std::string filename) {
             int value;
             file >> value;
             piece_square_tables[OPENING][WHITE][p].at(sq) = value;
-            piece_square_tables[OPENING][BLACK][p] = reverse_board(piece_square_tables[OPENING][WHITE][p]);
         }
+            piece_square_tables[OPENING][BLACK][p] = reverse_board(piece_square_tables[OPENING][WHITE][p]);
         file >> std::ws;
     }
     // Endgame tables.
