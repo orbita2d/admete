@@ -217,7 +217,7 @@ int pv_search(Board& board, const unsigned int depth, const int alpha_start, con
 
 int iterative_deepening(Board& board, const unsigned int max_depth, const int max_millis, PrincipleLine& line, long &nodes) {
     // Initialise the transposition table.
-    Cache::transposition_table.min_depth(0);
+    Cache::transposition_table.set_delete();
 
     // Check for a principle line in the TT
     PrincipleLine principle = unroll_tt_line(board);

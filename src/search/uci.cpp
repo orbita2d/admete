@@ -201,8 +201,12 @@ void uci_info(unsigned long depth, int eval, unsigned long nodes, unsigned long 
     } else {
         std::cout << " score cp " << eval;
     }
-    std::cout << " nodes " << nodes;
-    std::cout << " nps " << nps;
+    if (nodes > 0) {
+        std::cout << " nodes " << nodes;
+    }
+    if (nps > 0) {
+        std::cout << " nps " << nps;
+    }
     std::cout << " pv ";
     for (PrincipleLine::reverse_iterator it = principle.rbegin(); it != principle.rend(); ++it) {
         std::cout << it->pretty() << " ";

@@ -12,9 +12,18 @@ bool Cache::TranspositionTable::probe(const long hash) {
     if (it == _data.end()) {
         return false;
     } else {
+        it->second.set_cache_hit();
         _last_hit = it->second;
         return true;
     }
+}
+
+
+void Cache::TranspositionTable::replace(const size_t index, const long new_hash, const TransElement elem) {
+    const long old_hash = key_array[index];
+    key_array[index] = new_hash;
+    _data.erase(old_hash);
+    _data[new_hash] = elem;
 }
 
 void Cache::TranspositionTable::store(const long hash, const int eval, const int lower, const int upper, const depth_t depth, const Move move) {
@@ -28,13 +37,17 @@ void Cache::TranspositionTable::store(const long hash, const int eval, const int
         key_array[index] = hash;
     } else {
         // Replace oldest value
-        const size_t i = index % tt_max;
-        const long old_hash = key_array[i];
-        key_array[i] = hash;
-        _data.erase(old_hash);
-        _data[hash] = elem;
+        replace(index % tt_max, hash, elem);
     }
     index++;
+}
+
+
+void Cache::TranspositionTable::set_delete() {
+    for (tt_pair t : _data) {
+        // Iterates through the entire data structure
+        t.second.set_delete();
+    }
 }
 
 DenseMove Cache::KillerTable::probe(const ply_t ply) {
