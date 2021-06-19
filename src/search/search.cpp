@@ -244,6 +244,7 @@ int iterative_deepening(Board& board, const unsigned int max_depth, const int ma
         new_score = pv_search(board, depth, NEG_INF, POS_INF, principle, principle.size(), temp_line, nodes, time_cutoff, kill_flag, allow_cutoff);
         allow_cutoff = true;
         if (kill_flag) { break; }
+        // Use this to not save an invalid score if we reach the time cutoff
         score = new_score;
         principle = unroll_tt_line(board, temp_line);
         time_now = my_clock::now();

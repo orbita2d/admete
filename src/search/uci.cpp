@@ -138,15 +138,12 @@ void go(Board& board, std::istringstream& is) {
     }
     const int our_time = board.is_white_move() ? wtime : btime;
     const int our_inc  = board.is_white_move() ? winc : binc;
-    int cutoff_time = our_time == POS_INF ? POS_INF : our_time / 30 + our_inc*3/5;
-    cutoff_time = cutoff_time < move_time ? cutoff_time : move_time;
-    // std::cerr << "searching: " << float(cutoff_time) / 1000  << std::endl;
-    std::vector<Move> line;
+    int cutoff_time = our_time == POS_INF ? POS_INF : our_time / 18 + (our_inc*3)/5;
+    cutoff_time = std::min(move_time, cutoff_time);
+    PrincipleLine line;
     long nodes = 0;
     line.reserve(max_depth);
-    my_clock::time_point time_origin = my_clock::now();
     int score = iterative_deepening(board, max_depth, cutoff_time, line, nodes);
-    std::chrono::duration<double, std::milli> time_span = my_clock::now() - time_origin;
     Move first_move = line.back();
     bestmove(first_move);
     
