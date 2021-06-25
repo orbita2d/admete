@@ -257,7 +257,6 @@ void gen_castle_moves(const Board &board, MoveList &moves) {
     if (board.can_castle(us, QUEENSIDE)) 
     {
         // Check for overlap of squares that need to be free, and occupied bb.
-        // In the future we should keep a 
         if (!(Bitboards::castle(us, QUEENSIDE) & board.pieces())) {
             if (!board.is_attacked(Squares::FileD | back_rank(us), us)
                 & !board.is_attacked(Squares::FileC | back_rank(us), us)) 
@@ -283,10 +282,20 @@ void gen_castle_moves(const Board &board, MoveList &moves) {
 }
 
 template<GenType gen>
-void generate_pseudolegal_moves(const Board &board, MoveList &moves) {
+void gen_moves(const Board &board, MoveList &moves) {
     Colour us = board.who_to_play();
     Bitboard occ;
     Square ks = board.find_king(us);
+
+    // If we are generating quiet moves, add castling
+    if (gen == QUIET) {
+        if (us == WHITE) {
+            gen_castle_moves<WHITE>(board, moves);
+        } else {
+            gen_castle_moves<BLACK>(board, moves);
+        }
+    }
+
     // Pawns which aren't pinned
     occ = board.pieces(us, PAWN) & ~board.pinned();
     while (occ) {
@@ -356,9 +365,8 @@ void generate_pseudolegal_moves(const Board &board, MoveList &moves) {
 }
 
 template<>
-void generate_pseudolegal_moves<EVASIONS>(const Board &board, MoveList &moves) {
+void gen_moves<EVASIONS>(const Board &board, MoveList &moves) {
     Colour us = board.who_to_play();
-    Colour them = ~us;
     Bitboard occ;
     const Bitboard can_move = ~board.pinned();
     occ = board.pieces(us, KING);
@@ -400,20 +408,31 @@ void generate_pseudolegal_moves<EVASIONS>(const Board &board, MoveList &moves) {
         move.make_capture();
         moves.push_back(move);
     }
+    // Squares where a pawn could capture the checker
+    Bitboard pawn_atk = Bitboards::pawn_attacks(~us, target_square) | (Bitboards::shift<W>(target_square) | Bitboards::shift<E>(target_square));
+    occ = board.pieces(us, PAWN) & can_move & pawn_atk;
+    while (occ) {
+        Square sq = pop_lsb(&occ);
+        if (us == WHITE) {
+            // Weird pawn en-passent checks just make my life so much harder.
+            gen_pawn_moves<WHITE, CAPTURES>(board, sq, moves, target_square);
+        } else {
+            // Weird pawn en-passent checks just make my life so much harder.
+            gen_pawn_moves<BLACK, CAPTURES>(board, sq, moves, target_square);
+        }
+    }
 
     // Or we can block the check
     Bitboard between_squares = Bitboards::between(ks, ts);
-    occ = board.pieces(us, PAWN) & can_move;
+    
+    // All of our pawns that can move that have some posibility of blocking the check. (We verify they can later)
+    occ = board.pieces(us, PAWN) & can_move & Bitboards::reverse_pawn_push(us, between_squares);;
     while (occ) {
         Square sq = pop_lsb(&occ);
         if (us == WHITE) {
             gen_pawn_moves<WHITE, QUIET>(board, sq, moves, between_squares);
-            // Weird pawn en-passent checks just make my life so much harder.
-            gen_pawn_moves<WHITE, CAPTURES>(board, sq, moves, target_square);
         } else {
             gen_pawn_moves<BLACK, QUIET>(board, sq, moves, between_squares);
-            // Weird pawn en-passent checks just make my life so much harder.
-            gen_pawn_moves<BLACK, CAPTURES>(board, sq, moves, target_square);
         }
     }
     occ = board.pieces(us, KNIGHT) & can_move;
@@ -441,19 +460,13 @@ void generate_pseudolegal_moves<EVASIONS>(const Board &board, MoveList &moves) {
 template<GenType gen>
 void generate_moves(Board &board, MoveList &moves) {
     // Generate all legal non-evasion moves
-    Colour us = board.who_to_play();
     moves.reserve(MAX_MOVES);
     if (gen == CAPTURES) {
-        generate_pseudolegal_moves<CAPTURES>(board, moves);
+        gen_moves<CAPTURES>(board, moves);
     } else if (gen == LEGAL) {
-        generate_pseudolegal_moves<CAPTURES>(board, moves);
-        generate_pseudolegal_moves<QUIET>(board, moves);
+        gen_moves<CAPTURES>(board, moves);
+        gen_moves<QUIET>(board, moves);
     }    
-    if (us == WHITE) {
-        gen_castle_moves<WHITE>(board, moves);
-    } else {
-        gen_castle_moves<BLACK>(board, moves);
-    }
     return;
 
 }
@@ -471,7 +484,7 @@ void generate_moves<EVASIONS>(Board &board, MoveList &moves) {
         gen_moves<QUIET, KING>(board, king_square, moves);
         gen_moves<CAPTURES, KING>(board, king_square, moves);
     } else {
-        generate_pseudolegal_moves<EVASIONS>(board, moves);
+        gen_moves<EVASIONS>(board, moves);
     }
     return;
 }
