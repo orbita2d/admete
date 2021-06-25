@@ -210,7 +210,6 @@ void Board::make_move(Move &move) {
     const Colour us = whos_move;
     const Colour them = ~ us;
     const PieceType p = move.moving_piece;
-    const PieceType cp = move.captured_piece;
 
     if (move.is_capture() | (p == PAWN)) {
         aux_info->halfmove_clock = 0;
@@ -331,7 +330,7 @@ void Board::make_move(Move &move) {
     whos_move = ~ whos_move;
     update_checkers();
     update_check_squares();
-    if ((p == PAWN) | (cp == PAWN)) {
+    if ((p == PAWN) | (move.captured_piece == PAWN)) {
         pawn_atk_bb[WHITE] = Bitboards::pawn_attacks(WHITE, pieces(WHITE, PAWN));
         pawn_atk_bb[BLACK] = Bitboards::pawn_attacks(BLACK, pieces(BLACK, PAWN));
     }
