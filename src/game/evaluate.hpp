@@ -1,18 +1,16 @@
 #include "board.hpp"
 
 void print_tables();
-int heuristic_diff(Colour us, Move &move, int material_value);
-int negamax_heuristic(Board &board);
-int heuristic(Board &board);
-int evaluate(Board &board);
-int evaluate(Board &board, std::vector<Move> &legal_moves);
-int evaluation_diff(Board &board, Move move);
-int evaluate_material(Board &board);
-int evaluate_lazy(Board &board, std::vector<Move> &legal_moves);
-int count_material(const Board &board);
-int piece_value(const PieceType);
+score_t negamax_heuristic(Board &board);
+score_t heuristic(Board &board);
+score_t evaluate(Board &board);
+score_t evaluate(Board &board, std::vector<Move> &legal_moves);
+score_t evaluate_material(Board &board);
+score_t evaluate_lazy(Board &board, std::vector<Move> &legal_moves);
+score_t count_material(const Board &board);
+score_t piece_value(const PieceType);
 
-typedef std::array<int, 64> position_board;
+typedef std::array<score_t, 64> position_board;
 typedef std::array<position_board, 6> position_board_set;
 
 namespace Evaluation {

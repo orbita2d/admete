@@ -32,21 +32,12 @@ unsigned long perft_bulk(depth_t depth, Board &board) {
         return legal_moves.size();
     }
 
-    const long hash = board.hash();
-    if (Cache::transposition_table.probe(hash)) {
-        const Cache::TransElement hit = Cache::transposition_table.last_hit();
-        if (hit.depth() == depth) {
-            // The saved score is an exact value for the subtree
-            return hit.eval();
-        }
-    }
     unsigned long nodes = 0;
     for (Move move : legal_moves) {
         board.make_move(move);
         nodes += perft_bulk(depth-1, board);
         board.unmake_move(move);
     }
-    Cache::transposition_table.store(hash, nodes, NEG_INF, POS_INF, depth, NULL_MOVE);
     return nodes;
 }
 

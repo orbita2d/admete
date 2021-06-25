@@ -8,10 +8,10 @@
 
 
 typedef std::chrono::high_resolution_clock my_clock;
-int alphabeta(Board& board, const depth_t depth, const int alpha_start, const int beta, PrincipleLine& line, long &nodes,
+score_t alphabeta(Board& board, const depth_t depth, const score_t alpha_start, const score_t beta, PrincipleLine& line, long &nodes,
  std::chrono::high_resolution_clock::time_point time_cutoff, bool &kill_flag, bool allow_cutoff) {
     // perform alpha-beta pruning search.
-    int alpha = alpha_start;
+    score_t alpha = alpha_start;
     
     MoveList legal_moves = board.get_moves();
     if (board.is_draw()) { return 0; }
@@ -56,18 +56,18 @@ int alphabeta(Board& board, const depth_t depth, const int alpha_start, const in
         std::chrono::high_resolution_clock::time_point time_now = my_clock::now();
         if (time_now > time_cutoff) {
             kill_flag = true;
-            return POS_INF;
+            return MAX_SCORE;
         }
     }
     board.sort_moves(legal_moves, hash_move, killer_move);
     bool is_first_child = true;
     PrincipleLine best_line;
-    int best_score = NEG_INF;
+    score_t best_score = MIN_SCORE;
     for (Move move : legal_moves) {
         PrincipleLine temp_line;
         temp_line.reserve(16);
         board.make_move(move);
-        int score;
+        score_t score;
         if (is_first_child) {
             score = -alphabeta(board, depth - 1, -beta, -alpha, temp_line, nodes, time_cutoff, kill_flag, allow_cutoff);
         } else {
@@ -81,13 +81,13 @@ int alphabeta(Board& board, const depth_t depth, const int alpha_start, const in
             }
         }
         board.unmake_move(move);
-        if (kill_flag) { return POS_INF; }
+        if (kill_flag) { return MAX_SCORE; }
         if (score > best_score) {
             best_score = score;
             best_line = temp_line;
             best_line.push_back(move);
         }
-        if (score == mating_score) {
+        if (score == MATING_SCORE) {
             // Mate in 1.
             break;
         }
@@ -110,9 +110,9 @@ int alphabeta(Board& board, const depth_t depth, const int alpha_start, const in
     return best_score;
 }
 
-int quiesce(Board& board, const int alpha_start, const int beta, long &nodes) {
+score_t quiesce(Board& board, const score_t alpha_start, const score_t beta, long &nodes) {
     // perform quiesence search to evaluate only quiet positions.
-    int alpha = alpha_start;
+    score_t alpha = alpha_start;
     int stand_pat = negamax_heuristic(board);
     if (stand_pat >= beta) {
         nodes++;
@@ -130,7 +130,7 @@ int quiesce(Board& board, const int alpha_start, const int beta, long &nodes) {
     board.sort_moves(captures, NULL_DMOVE, NULL_DMOVE);
     for (Move move : captures) {
         board.make_move(move);
-        int score = -quiesce(board, -beta, -alpha, nodes);
+        score_t score = -quiesce(board, -beta, -alpha, nodes);
         board.unmake_move(move);
         alpha = std::max(alpha, score);
         if (alpha >= beta) {
@@ -140,10 +140,10 @@ int quiesce(Board& board, const int alpha_start, const int beta, long &nodes) {
     return alpha;
 }
 
-int pv_search(Board& board, const depth_t depth, const int alpha_start, const int beta, PrincipleLine& principle, const uint pv_depth,
+score_t pv_search(Board& board, const depth_t depth, const score_t alpha_start, const score_t beta, PrincipleLine& principle, const uint pv_depth,
  PrincipleLine& line, long& nodes, std::chrono::high_resolution_clock::time_point time_cutoff, bool &kill_flag, bool allow_cutoff) {
     // perform alpha-beta pruning search with principle variation optimisation.
-    int alpha = alpha_start;
+    score_t alpha = alpha_start;
     MoveList legal_moves = board.get_moves();
     if (board.is_draw()) { return 0; }
     if (depth == 0) { nodes++; return evaluate(board, legal_moves); }
@@ -153,7 +153,7 @@ int pv_search(Board& board, const depth_t depth, const int alpha_start, const in
     }
 
     PrincipleLine best_line;
-    int best_score = NEG_INF;
+    score_t best_score = MIN_SCORE;
     Move pv_move = NULL_MOVE;
     bool is_first_child = true;
     if (pv_depth != 0) {
@@ -166,7 +166,7 @@ int pv_search(Board& board, const depth_t depth, const int alpha_start, const in
         board.unmake_move(pv_move);
         is_first_child = false;
     }
-    if (kill_flag) { return POS_INF; }
+    if (kill_flag) { return MAX_SCORE; }
     board.sort_moves(legal_moves, NULL_DMOVE, NULL_DMOVE);
     for (Move move : legal_moves) {
         if (move == pv_move) {
@@ -175,7 +175,7 @@ int pv_search(Board& board, const depth_t depth, const int alpha_start, const in
         PrincipleLine temp_line;
         temp_line.reserve(16);
         board.make_move(move);
-        int score;
+        score_t score;
         if (is_first_child) {
             // If this is the first child (we've come to the end of the PV), run a full search on the node.
             score = -alphabeta(board, depth - 1, -beta, -alpha, temp_line, nodes, time_cutoff, kill_flag, allow_cutoff);
@@ -190,13 +190,13 @@ int pv_search(Board& board, const depth_t depth, const int alpha_start, const in
             }
         }
         board.unmake_move(move);
-        if (kill_flag) { return POS_INF; }
+        if (kill_flag) { return MAX_SCORE; }
         if (score > best_score) {
             best_score = score;
             best_line = temp_line;
             best_line.push_back(move);
         }
-        if (score == mating_score) {
+        if (score == MATING_SCORE) {
             // Mate in 1.
             break;
         }
@@ -215,7 +215,7 @@ int pv_search(Board& board, const depth_t depth, const int alpha_start, const in
     return best_score;
 }
 
-int iterative_deepening(Board& board, const depth_t max_depth, const int max_millis, PrincipleLine& line, long &nodes) {
+score_t iterative_deepening(Board& board, const depth_t max_depth, const int max_millis, PrincipleLine& line, long &nodes) {
     // Initialise the transposition table.
     Cache::transposition_table.set_delete();
 
@@ -241,7 +241,7 @@ int iterative_deepening(Board& board, const depth_t max_depth, const int max_mil
         PrincipleLine temp_line;
         temp_line.reserve(depth);
         nodes = 0ul;
-        new_score = pv_search(board, depth, NEG_INF, POS_INF, principle, principle.size(), temp_line, nodes, time_cutoff, kill_flag, allow_cutoff);
+        new_score = pv_search(board, depth, MIN_SCORE, MAX_SCORE, principle, principle.size(), temp_line, nodes, time_cutoff, kill_flag, allow_cutoff);
         allow_cutoff = true;
         if (kill_flag) { break; }
         // Use this to not save an invalid score if we reach the time cutoff
@@ -268,7 +268,7 @@ int iterative_deepening(Board& board, const depth_t max_depth, const int max_mil
     return score;
 }
 
-int iterative_deepening(Board& board, const depth_t depth, PrincipleLine& line) {
+score_t iterative_deepening(Board& board, const depth_t depth, PrincipleLine& line) {
     long nodes = 0;
     return iterative_deepening(board, depth, POS_INF, line, nodes);
 }

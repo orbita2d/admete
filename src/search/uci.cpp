@@ -184,22 +184,22 @@ void uci() {
 
 }
 
-void uci_info(unsigned long depth, int eval, unsigned long nodes, unsigned long nps, PrincipleLine principle, unsigned int time) {
+void uci_info(depth_t depth, score_t eval, unsigned long nodes, unsigned long nps, PrincipleLine principle, unsigned int time) {
     if (!::uci_enable) {return;}
     std::cout << std::dec;
     std::cout << "info";
-    std::cout << " depth " << depth;
+    std::cout << " depth " << (uint)depth;
 
     if (is_mating(eval)) {
         //Make for white.
-        int n = mating_score - eval;
-        std::cout << " score mate " << n;
+        score_t n = MATING_SCORE - eval;
+        std::cout << " score mate " << (int)n;
     }else if (is_mating(-eval)) {
         //Make for black.
-        int n = (eval + mating_score);
-        std::cout << " score mate " << -n;
+        score_t n = (eval + MATING_SCORE);
+        std::cout << " score mate " << -(int)n;
     } else {
-        std::cout << " score cp " << eval;
+        std::cout << " score cp " << (int)eval;
     }
     if (nodes > 0) {
         std::cout << " nodes " << nodes;

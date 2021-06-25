@@ -26,7 +26,7 @@ void Cache::TranspositionTable::replace(const size_t index, const long new_hash,
     _data[new_hash] = elem;
 }
 
-void Cache::TranspositionTable::store(const long hash, const int eval, const int lower, const int upper, const depth_t depth, const Move move) {
+void Cache::TranspositionTable::store(const long hash, const score_t eval, const score_t lower, const score_t upper, const depth_t depth, const Move move) {
     if (is_enabled() == false) {
         return;
     }

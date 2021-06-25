@@ -604,19 +604,15 @@ bool Board::gives_check(Move move){
     return false;
 }
 
-bool is_mating(int score) {
-    return (score > (mating_score-500));
-}
-
 std::string print_score(int score) {
     std::stringstream ss;
     if (is_mating(score)) {
         //Make for white.
-        signed int n = mating_score - score;
+        signed int n = MATING_SCORE - score;
         ss << "#" << n;
     }else if (is_mating(-score)) {
         //Make for black.
-        signed int n = (score + mating_score);
+        signed int n = (score + MATING_SCORE);
         ss << "#-" << n;
     } else if (score > 5) {
         // White winning

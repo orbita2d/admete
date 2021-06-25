@@ -122,8 +122,6 @@ private:
     ply_t root_node_ply;
 };
 
-constexpr int mating_score = 100100;
-bool is_mating(int score);
 std::string print_score(int);
 
 inline Move unpack_move(const DenseMove dm, const Board& board) {

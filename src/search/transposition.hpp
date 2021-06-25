@@ -13,11 +13,11 @@ namespace Cache {
     };
     typedef int8_t tt_flags_t;
 
-    // 12 bytes
+    // 6 bytes
     struct TransElement {
         TransElement() = default;
-        TransElement(int eval, int a, int b, int d, Move m) : score(eval), _depth(d), info((eval <= a) ? UPPER : (eval >= b) ? LOWER : EXACT) , hash_move(pack_move(m)) {}; 
-        int eval() const{ return score; }
+        TransElement(score_t eval, score_t a, score_t b, depth_t d, Move m) : score(eval), _depth(d), info((eval <= a) ? UPPER : (eval >= b) ? LOWER : EXACT) , hash_move(pack_move(m)) {}; 
+        score_t eval() const{ return score; }
         bool lower() const{ return (info & LOWER) == LOWER; }
         bool upper() const{ return (info & UPPER) == UPPER; }
         bool is_delete() const{ return (info & DELETE) == DELETE; }
@@ -28,7 +28,7 @@ namespace Cache {
         depth_t depth() const{ return _depth; }
         DenseMove move() const { return hash_move; }
     private:
-        int score = 0;
+        score_t score = 0;
         depth_t _depth = 0;
         tt_flags_t info = EXACT;
         DenseMove hash_move = NULL_DMOVE;
@@ -44,7 +44,7 @@ namespace Cache {
         TranspositionTable() = default;
         bool probe(const long);
         TransElement last_hit() const { return _last_hit; };
-        void store(const long hash, const int eval, const int lower, const int upper, const depth_t depth, const Move move);
+        void store(const long hash, const score_t eval, const score_t lower, const score_t upper, const depth_t depth, const Move move);
         void replace(const size_t index, const long new_hash, const TransElement elem);
         void clear() {_data.clear(); index = 0ul; }
         depth_t min_depth() {return _min_depth; }

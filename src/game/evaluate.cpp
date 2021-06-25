@@ -25,14 +25,14 @@ op  |mid| eg
       \
         -----
 */
-constexpr int OPENING_MATERIAL = 6000;
-constexpr int ENDGAME_MATERIAL = 2000;
+constexpr score_t OPENING_MATERIAL = 6000;
+constexpr score_t ENDGAME_MATERIAL = 2000;
 
-std::array<int, 6> material = {
+std::array<score_t, 6> material = {
         {100, 300, 300, 500, 900, 0}
 };
 
-int piece_value(const PieceType p) {
+score_t piece_value(const PieceType p) {
     return material[p];
 }
 position_board fill_blank_positional_scores() {
@@ -68,8 +68,8 @@ constexpr position_board center_dist = {
 
 position_board fill_knight_positional_scores() {
     // want centralised knights.
-    const int weight = 7;
-    const int material = 297;
+    const score_t weight = 7;
+    const score_t material = 297;
     position_board pb;
     for( int i = 0; i<64 ; i++) {
         pb[i] = (3-center_dist[i]) * weight + material;
@@ -156,7 +156,7 @@ constexpr position_board pb_rook_eg = { 500, 500, 500, 500, 500, 500, 500, 500,
 
 class Score {
 public:
-    constexpr Score(int o, int e) : opening_score(o), endgame_score(e) {}
+    constexpr Score(score_t o, score_t e) : opening_score(o), endgame_score(e) {}
     inline Score operator+(Score that){
         return Score(opening_score + that.opening_score, endgame_score + that.endgame_score);
     }
@@ -173,8 +173,8 @@ public:
         endgame_score -= that.endgame_score;
         return *this;
     }
-    int opening_score;
-    int endgame_score;
+    score_t opening_score;
+    score_t endgame_score;
 };
 
 inline Score operator*(const int a, const Score s) {
@@ -369,20 +369,20 @@ void Evaluation::load_tables(std::string filename) {
 	file.close();
 }
 
-int evaluate(Board &board) {
+score_t evaluate(Board &board) {
     std::vector<Move> legal_moves = board.get_moves();
     return evaluate(board, legal_moves);
 }
 
-int count_material(const Board &board) {
-    int material_value = 0;
-    for (int p = 0; p < N_PIECE; p++) {
+score_t count_material(const Board &board) {
+    score_t material_value = 0;
+    for (score_t p = 0; p < N_PIECE; p++) {
         material_value += material[p] * (board.count_pieces(WHITE, (PieceType)p) + board.count_pieces(BLACK, (PieceType)p));
     }
     return material_value;
 }
 
-int heuristic(Board &board) {
+score_t heuristic(Board &board) {
     int material_value = 0;
     Score score = Score(0, 0);
     for (int p = 0; p < N_PIECE; p++) {
@@ -543,7 +543,7 @@ int heuristic(Board &board) {
     occ &= ~board.pawn_controlled(BLACK);
     score -= queen_check * count_bits(occ);
     
-    int value;
+    score_t value;
     if (material_value > OPENING_MATERIAL) {
         // Just use opening tables
         value = score.opening_score;
@@ -557,19 +557,19 @@ int heuristic(Board &board) {
     return value;
 }
 
-int negamax_heuristic(Board &board) {
+score_t negamax_heuristic(Board &board) {
     int side_multiplier = board.is_white_move() ? 1 : -1;
     return heuristic(board) * side_multiplier;
 }
 
 
-int evaluate(Board &board, std::vector<Move> &legal_moves) {
+score_t evaluate(Board &board, std::vector<Move> &legal_moves) {
     // evaluate the position relative to the current player.
     // First check if we have been mated.
     if (legal_moves.size() == 0) {
         if (board.is_check()) {
             // This is checkmate
-            return -mating_score;
+            return -MATING_SCORE;
         } else {
             // This is stalemate.
             return -10;

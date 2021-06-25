@@ -178,3 +178,16 @@ enum PieceType {
 typedef uint8_t depth_t;
 typedef unsigned int ply_t;
 constexpr ply_t MAX_PLY = 512;
+typedef int16_t score_t;
+
+constexpr score_t MIN_SCORE = -16382;
+constexpr score_t MAX_SCORE = -MIN_SCORE;
+
+constexpr score_t MATING_SCORE = 16381;
+
+inline bool is_mating(score_t score) {
+    return (score > (MATING_SCORE-500));
+}
+
+constexpr int NEG_INF = -1000000000;
+constexpr int POS_INF = +1000000000;

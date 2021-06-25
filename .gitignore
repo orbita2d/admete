@@ -7,3 +7,5 @@ dist
 
 # Profiling output
 gmon.out
+
+*.gen
