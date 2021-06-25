@@ -11,17 +11,18 @@
 
 struct AuxilliaryInfo {
     // Information that is game history dependent, that would otherwise need to be encoded in a move.
-    // Access linke castling_rights[WHITE][KINGSIDE]
-    std::array<std::array<bool, 2>, 2> castling_rights;
+    // Access like castling_rights[WHITE][KINGSIDE]
+    std::array<std::array<bool, N_COLOUR>, N_CASTLE> castling_rights;
     uint halfmove_clock = 0;
     Square en_passent_target;
     Bitboard pinned;
     uint number_checkers;
+    // Locations of the (up to 2) checkers 
     std::array<Square, 2> checkers;
     bool is_check = false;
-    // Squares where, if a particular piece was placed, it would give check.
+    // Squares where, if a particular piece type was placed, it would give check.
     Bitboard check_squares[N_PIECE];
-    
+
     // Pieces belonging to the player to move, that if moved would give discovered check.
     Bitboard blockers;
     int material;
@@ -59,9 +60,9 @@ public:
     Bitboard check_squares(const PieceType p) const {return aux_info->check_squares[p];};
     Bitboard blockers() const {return aux_info->blockers;};
 
-    std::array<Square, 2> checkers() const {return _checkers;}
-    Square checkers(int i) const {return _checkers[i];}
-    int number_checkers() const {return _number_checkers;}
+    std::array<Square, 2> checkers() const {return aux_info->checkers;}
+    Square checkers(int i) const {return aux_info->checkers[i];}
+    int number_checkers() const {return aux_info->number_checkers;}
     bool is_check() const{ return aux_info->is_check;};
 
     long int hash() const;
@@ -73,7 +74,7 @@ public:
     Bitboard pieces(const Colour c) const{return colour_bb[c];}
     Bitboard pieces(const Colour c, const PieceType p) const{return colour_bb[c] & piece_bb[p];}
     Bitboard pieces(const Colour c, const PieceType p1, const PieceType p2) const{return colour_bb[c] & (piece_bb[p1] |piece_bb[p2]);}
-    Bitboard pinned() const {return pinned_bb;}
+    Bitboard pinned() const {return aux_info->pinned;}
     Bitboard pawn_controlled(const Colour c) const {return pawn_atk_bb[c];}
     Bitboard passed_pawns(const Colour c) const {return pieces(c, PAWN) & ~Bitboards::forward_block_span(~c, pieces(~c, PAWN)); };
     Bitboard open_files() const {return ~Bitboards::vertical_fill(pieces(PAWN)); }
@@ -108,13 +109,10 @@ public:
 private:
     AuxilliaryInfo* aux_info;
     Bitboard occupied_bb;
-    Bitboard pinned_bb;
     std::array<Bitboard, N_COLOUR> colour_bb;
     std::array<Bitboard, N_PIECE> piece_bb;
     std::array<Bitboard, N_COLOUR> pawn_atk_bb;
     int piece_counts[N_COLOUR][N_PIECE];
-    uint _number_checkers;
-    std::array<Square, 2> _checkers;
     Colour whos_move = WHITE;
     uint fullmove_counter = 1;
     ply_t ply_counter = 0;

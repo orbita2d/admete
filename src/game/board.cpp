@@ -204,15 +204,13 @@ bool Board::is_colour(const Colour c, const Square target) const{
 void Board::make_move(Move &move) {
     // Iterate counters.
     if (whos_move == Colour::BLACK) {fullmove_counter++;}
-    aux_info->pinned = pinned_bb;
-    aux_info->checkers = _checkers;
-    aux_info->number_checkers = _number_checkers;
     aux_history[ply_counter + 1] = *aux_info;
     ply_counter ++;
     aux_info = &aux_history[ply_counter];
     const Colour us = whos_move;
     const Colour them = ~ us;
     const PieceType p = move.moving_piece;
+    const PieceType cp = move.captured_piece;
 
     if (move.is_capture() | (p == PAWN)) {
         aux_info->halfmove_clock = 0;
@@ -333,9 +331,10 @@ void Board::make_move(Move &move) {
     whos_move = ~ whos_move;
     update_checkers();
     update_check_squares();
-
-    pawn_atk_bb[WHITE] = Bitboards::pawn_attacks(WHITE, pieces(WHITE, PAWN));
-    pawn_atk_bb[BLACK] = Bitboards::pawn_attacks(BLACK, pieces(BLACK, PAWN));
+    if ((p == PAWN) | (cp == PAWN)) {
+        pawn_atk_bb[WHITE] = Bitboards::pawn_attacks(WHITE, pieces(WHITE, PAWN));
+        pawn_atk_bb[BLACK] = Bitboards::pawn_attacks(BLACK, pieces(BLACK, PAWN));
+    }
 
     assert(pawn_controlled(WHITE) == Bitboards::pawn_attacks(WHITE, pieces(WHITE, PAWN)));
     assert(pawn_controlled(BLACK) == Bitboards::pawn_attacks(BLACK, pieces(BLACK, PAWN)));
@@ -355,6 +354,8 @@ void Board::unmake_move(const Move move) {
     Colour them = ~ us;
 
     const PieceType p =  move.moving_piece;
+    const PieceType cp =  move.captured_piece;
+
     if (p == KING) {
         king_square[us] = move.origin;
     }
@@ -431,12 +432,10 @@ void Board::unmake_move(const Move move) {
         piece_counts[us][QUEEN] --;
     }
 
-    pinned_bb = aux_info->pinned;
-    _number_checkers = aux_info->number_checkers;
-    _checkers = aux_info->checkers;
-
-    pawn_atk_bb[WHITE] = Bitboards::pawn_attacks(WHITE, pieces(WHITE, PAWN));
-    pawn_atk_bb[BLACK] = Bitboards::pawn_attacks(BLACK, pieces(BLACK, PAWN));
+    if ((p == PAWN) | (cp == PAWN)) {
+        pawn_atk_bb[WHITE] = Bitboards::pawn_attacks(WHITE, pieces(WHITE, PAWN));
+        pawn_atk_bb[BLACK] = Bitboards::pawn_attacks(BLACK, pieces(BLACK, PAWN));
+    }
 }
 
 void Board::try_move(const std::string move_sting) {
@@ -512,7 +511,7 @@ void Board::update_checkers() {
     const Colour them = ~us;
     // Want to (semi-efficiently) see if a square is attacked, ignoring pins.
     // First off, if the square is attacked by a knight, it's definitely in check.
-    _number_checkers = 0;
+    aux_info->number_checkers = 0;
 
     const Bitboard occ = pieces();
 
@@ -521,19 +520,19 @@ void Board::update_checkers() {
     atk |= rook_attacks(occ, origin) & (pieces(them, ROOK, QUEEN));
     atk |= bishop_attacks(occ, origin) & (pieces(them, BISHOP, QUEEN));
     while (atk) {
-        _checkers[_number_checkers] = pop_lsb(&atk);
-        _number_checkers++;
+        aux_info->checkers[aux_info->number_checkers] = pop_lsb(&atk);
+        aux_info->number_checkers++;
     }
 
-    pinned_bb = 0;
+    aux_info->pinned = 0;
     Bitboard pinner = rook_xrays(occ, origin) & pieces(them, ROOK, QUEEN);
     pinner |=   bishop_xrays(occ, origin) & pieces(them, BISHOP, QUEEN);
     while (pinner) { 
         Square sq = pop_lsb(&pinner);
         Bitboard pinned = (Bitboards::between(origin, sq) & pieces(us));
-        pinned_bb |= pinned;
+        aux_info->pinned |= pinned;
     }
-    aux_info->is_check = _number_checkers > 0;
+    aux_info->is_check = aux_info->number_checkers > 0;
 }
 
 void Board::update_check_squares() {

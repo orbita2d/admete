@@ -236,6 +236,30 @@ namespace Bitboards
     }
   }
 
+  inline Bitboard pawn_push(const Colour c, Bitboard g) {
+    if (c == WHITE) {
+      g = shift<Direction::N>(g);
+      g |= shift<Direction::N>(g & rank_3);
+      return g;
+    } else {
+      g = shift<Direction::S>(g);
+      g |= shift<Direction::S>(g & rank_6);
+      return g;
+    }
+  }
+
+  inline Bitboard reverse_pawn_push(const Colour c, Bitboard g) {
+    if (c == WHITE) {
+      g = shift<Direction::S>(g);
+      g |= shift<Direction::S>(g & rank_3);
+      return g;
+    } else {
+      g = shift<Direction::N>(g);
+      g |= shift<Direction::N>(g & rank_6);
+      return g;
+    }
+  }
+
   inline Bitboard forward_block_span(const Colour c, Bitboard g) {
     if (c == WHITE) {
       return north_block_span(g);
