@@ -222,7 +222,6 @@ void Board::make_move(Move &move) {
     } else {
         aux_info->en_passent_target = 0;
     }
-    std::array<std::array<bool, N_COLOUR>, N_CASTLE> starting_cr = aux_history[ply_counter - 1].castling_rights;
     std::array<std::array<bool, N_COLOUR>, N_CASTLE> castling_rights_change = {{{{false, false}}, {{false, false}}}};
     if (p == KING) {
         king_square[us] = move.target;

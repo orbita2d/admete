@@ -158,10 +158,10 @@ enum CastlingSide {
 constexpr std::array<std::array<Square, 2>, 2> RookSquare = {{{Squares::FileH | Squares::Rank1, Squares::FileA | Squares::Rank1},{Squares::FileH | Squares::Rank8, Squares::FileA | Squares::Rank8}}};
 
 
-constexpr int N_COLOUR = 2;
 enum Colour : int {
     WHITE,
-    BLACK
+    BLACK,
+    N_COLOUR
 };
 
 enum PieceType {
