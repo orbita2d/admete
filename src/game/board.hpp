@@ -65,7 +65,7 @@ public:
     int number_checkers() const {return aux_info->number_checkers;}
     bool is_check() const{ return aux_info->is_check;};
 
-    long int hash() const;
+    long int hash() const { return hash_history[ply()]; }
     Piece pieces(const Square sq) const;
     PieceType piece_type(const Square sq) const;
     int count_pieces(const Colour c, const PieceType p) const{ return piece_counts[c][p]; }
@@ -162,4 +162,5 @@ constexpr Square relative_rank (const Colour c, const Square sq) {
 namespace Zorbist {
     void init();
     long hash(const Board& board);
+    long diff(const Move move, const Colour us, const int last_ep_file, const std::array<std::array<bool, N_COLOUR>, N_CASTLE> castling_rights_change);
 }
