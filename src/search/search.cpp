@@ -23,7 +23,7 @@ score_t alphabeta(Board& board, const depth_t depth, const score_t alpha_start, 
 
     // Lookup position in transposition table.
     DenseMove hash_move = NULL_DMOVE;
-    DenseMove killer_move = Cache::killer_table.probe(board.ply());
+    KillerTableRow killer_move = Cache::killer_table.probe(board.ply());
     const long hash = board.hash();
     if (Cache::transposition_table.probe(hash)) {
         const Cache::TransElement hit = Cache::transposition_table.last_hit();
@@ -127,7 +127,7 @@ score_t quiesce(Board& board, const score_t alpha_start, const score_t beta, lon
         return stand_pat;
     }
     MoveList captures = board.get_captures();
-    board.sort_moves(captures, NULL_DMOVE, NULL_DMOVE);
+    board.sort_moves(captures, NULL_DMOVE, NULL_KROW);
     for (Move move : captures) {
         board.make_move(move);
         score_t score = -quiesce(board, -beta, -alpha, nodes);
@@ -167,7 +167,7 @@ score_t pv_search(Board& board, const depth_t depth, const score_t alpha_start, 
         is_first_child = false;
     }
     if (kill_flag) { return MAX_SCORE; }
-    board.sort_moves(legal_moves, NULL_DMOVE, NULL_DMOVE);
+    board.sort_moves(legal_moves, NULL_DMOVE, NULL_KROW);
     for (Move move : legal_moves) {
         if (move == pv_move) {
             continue;

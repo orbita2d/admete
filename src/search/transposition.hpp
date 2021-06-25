@@ -1,7 +1,7 @@
 #include <unordered_map>
 #include "../game/piece.hpp"
 #include <iostream>
-#include <inttypes.h>
+#include "../game/types.hpp"
 
 namespace Cache {
     enum TransState{
@@ -36,8 +36,8 @@ namespace Cache {
 
     typedef std::pair<long, TransElement> tt_pair;
     typedef std::unordered_map<long, TransElement> tt_map ;
-    // Limit transposition table to 16MB
-    constexpr size_t tt_max = (1<<24) / sizeof(TransElement);
+    // Limit transposition table to 64MB
+    constexpr size_t tt_max = (1<<26) / sizeof(tt_pair);
 
     class TranspositionTable {
     public:
@@ -67,13 +67,14 @@ namespace Cache {
         // Table for the killer heuristic;
     public:
         KillerTable() = default;
-        DenseMove probe(const ply_t ply);
+        KillerTableRow probe(const ply_t ply);
         void store(const ply_t ply, const Move move);
         bool is_enabled() {return enabled; }
         void enable() {enabled = true;}
         void disable() {enabled = false;}
     private:
-        std::array<DenseMove, MAX_PLY> _data;
+        std::array<KillerTableRow, MAX_PLY> _data;
+        std::array<int, MAX_PLY> indicies;
         bool enabled = true;
     };
 

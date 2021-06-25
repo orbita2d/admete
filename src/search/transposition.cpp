@@ -50,9 +50,9 @@ void Cache::TranspositionTable::set_delete() {
     }
 }
 
-DenseMove Cache::KillerTable::probe(const ply_t ply) {
+KillerTableRow Cache::KillerTable::probe(const ply_t ply) {
     if (is_enabled() == false) {
-        return NULL_DMOVE;
+        return NULL_KROW;
     }
     return _data[ply];
 }
@@ -64,14 +64,20 @@ void Cache::KillerTable::store(const ply_t ply, const Move move) {
     }
     // Store the move, only if it's a quiet move.
     if (move.type != QUIETmv) { return; }
-    // The move is quiet, store it in the table.
-    _data[ply] = pack_move(move);
+    // Don't keep duplicates
+    if (move == _data[ply]) { return; }
+    const DenseMove dmove = pack_move(move);
+    int index = indicies[ply];
+    _data[ply][index] = dmove;
+    // Increment the counter so we use all the slots
+    indicies[ply]++;
+    indicies[ply] %= n_krow;
 }
 
 
 void Cache::init() {
     killer_table = KillerTable();
     transposition_table = TranspositionTable();
-    std::cout << "TransElement: " << sizeof(TransElement) << " bytes" << std::endl;
+    std::cout << "TransElement: " << sizeof(tt_pair) << " bytes" << std::endl;
     std::cout << "Table: " << tt_max << " elements" << std::endl;
 }

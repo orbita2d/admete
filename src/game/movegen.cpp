@@ -504,20 +504,19 @@ bool cmp(Move &m1, Move &m2) {
     return m1.score > m2.score;
 }
 
-void Board::sort_moves(MoveList &legal_moves, const DenseMove hash_dmove, const DenseMove killer_dmove) {
-    MoveList checks, quiet_moves, good_captures, bad_captures, sorted_moves;
+void Board::sort_moves(MoveList &legal_moves, const DenseMove hash_dmove, const KillerTableRow killer_dmove) {
+    MoveList checks, quiet_moves, good_captures, bad_captures, sorted_moves, killer;
     size_t n_moves = legal_moves.size();
     checks.reserve(n_moves);
     quiet_moves.reserve(n_moves);
     good_captures.reserve(n_moves);
-    Move killer = NULL_MOVE;
     Move hash_move = NULL_MOVE;
     // The moves from get_moves already have captures first
     for (Move move : legal_moves) {
         if (move == hash_dmove) {
             hash_move = move;
         } else if (move == killer_dmove) {
-            killer = move;
+            killer.push_back(move);
         } else if (gives_check(move)) {
             checks.push_back(move);
         } else if(move.is_ep_capture()) {
@@ -546,10 +545,8 @@ void Board::sort_moves(MoveList &legal_moves, const DenseMove hash_dmove, const 
     std::sort(good_captures.begin(), good_captures.end(), cmp);
     std::sort(bad_captures.begin(), bad_captures.end(), cmp);
     legal_moves.insert(legal_moves.end(), good_captures.begin(), good_captures.end());
+    legal_moves.insert(legal_moves.end(), killer.begin(), killer.end());
     legal_moves.insert(legal_moves.end(), bad_captures.begin(), bad_captures.end());
-    if (!(killer == NULL_MOVE)) {
-        legal_moves.push_back(killer);
-    }
     legal_moves.insert(legal_moves.end(), quiet_moves.begin(), quiet_moves.end());
 }
 

@@ -68,8 +68,9 @@ TEST(PerftTest, wikifive) {
     std::string board_fen = "rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8";
     Board board = Board();
     board.fen_decode(board_fen);
-    EXPECT_EQ(perft(1, board),  44);
-    EXPECT_EQ(perft(2, board),   1486);
+    EXPECT_EQ(perft(1, board),      44);
+    EXPECT_EQ(perft(2, board),    1486);
     EXPECT_EQ(perft(3, board),   62379);
     EXPECT_EQ(perft(4, board),  2103487);
+    EXPECT_EQ(perft(5, board), 89941194);
 }

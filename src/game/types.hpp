@@ -191,3 +191,34 @@ inline bool is_mating(score_t score) {
 
 constexpr int NEG_INF = -1000000000;
 constexpr int POS_INF = +1000000000;
+
+
+// Uses four bits to store additional info about moves
+enum MoveType {
+    QUIETmv = 0,
+    CAPTURE = 1,
+    PROMOTION = 2,
+    SPECIAL1 = 4,
+    SPECIAL2 = 8,
+    EN_PASSENT = 9,
+    DOUBLE_PUSH = 8,
+    KING_CASTLE = 4,
+    QUEEN_CASTLE = 12
+};
+
+struct DenseMove {
+    constexpr DenseMove() = default;
+    constexpr DenseMove(const Square o, const Square t) : v((o.get_value() << 6) | t.get_value()) {};
+    constexpr DenseMove(const Square o, const Square t, const MoveType m) : v((m << 12) | (o.get_value() << 6) | t.get_value()) {};
+    Square target() const {return v & 0x003f;}
+    Square origin() const {return (v >> 6) & 0x003f;}
+    MoveType type() const {return (MoveType)((v >> 12) & 0x000f);}
+    int16_t v = 0;
+};
+
+constexpr DenseMove NULL_DMOVE = DenseMove();
+
+// Length of a row in the Killer Table
+constexpr size_t n_krow = 4;
+typedef std::array<DenseMove, n_krow> KillerTableRow;
+constexpr KillerTableRow NULL_KROW = KillerTableRow();
