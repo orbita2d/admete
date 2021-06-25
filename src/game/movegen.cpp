@@ -504,7 +504,7 @@ bool cmp(Move &m1, Move &m2) {
     return m1.score > m2.score;
 }
 
-void Board::sort_moves(MoveList &legal_moves, const DenseMove hash_dmove, const KillerTableRow killer_dmove) {
+void Board::sort_moves(MoveList &legal_moves, const DenseMove hash_dmove, const KillerTableRow killer_moves) {
     MoveList checks, quiet_moves, good_captures, bad_captures, sorted_moves, killer;
     size_t n_moves = legal_moves.size();
     checks.reserve(n_moves);
@@ -515,7 +515,7 @@ void Board::sort_moves(MoveList &legal_moves, const DenseMove hash_dmove, const 
     for (Move move : legal_moves) {
         if (move == hash_dmove) {
             hash_move = move;
-        } else if (move == killer_dmove) {
+        } else if (move == killer_moves) {
             killer.push_back(move);
         } else if (gives_check(move)) {
             checks.push_back(move);
