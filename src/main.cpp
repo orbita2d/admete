@@ -43,7 +43,7 @@ int main(int argc, char* argv[])
     static int divide_flag = 0;
     static int print_flag = 0;
     static int print_tables_flag = 0;
-    unsigned int depth = 4;
+    depth_t depth = 4;
     std::string board_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
     std::string tuning_table = "";
     static int tuning_table_flag = 0;

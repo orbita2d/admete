@@ -126,6 +126,11 @@ constexpr int mating_score = 100100;
 bool is_mating(int score);
 std::string print_score(int);
 
+inline Move unpack_move(const DenseMove dm, const Board& board) {
+    PieceType p = board.piece_type(dm.origin());
+    return Move(p, dm.origin(), dm.target(), dm.type());
+}
+
 constexpr Direction forwards(const Colour us) {
     if (us == WHITE) {
         return Direction::N;

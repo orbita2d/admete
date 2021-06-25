@@ -8,7 +8,7 @@
 
 
 typedef std::chrono::high_resolution_clock my_clock;
-int alphabeta(Board& board, const unsigned int depth, const int alpha_start, const int beta, PrincipleLine& line, long &nodes,
+int alphabeta(Board& board, const depth_t depth, const int alpha_start, const int beta, PrincipleLine& line, long &nodes,
  std::chrono::high_resolution_clock::time_point time_cutoff, bool &kill_flag, bool allow_cutoff) {
     // perform alpha-beta pruning search.
     int alpha = alpha_start;
@@ -42,7 +42,7 @@ int alphabeta(Board& board, const unsigned int depth, const int alpha_start, con
                 }
             } else {
                 // The saved score is an exact value for the subtree
-                const Move best_move = unpack_move(hit.move(), legal_moves);
+                const Move best_move = unpack_move(hit.move(), board);
                 line.push_back(best_move);
                 line = unroll_tt_line(board);
                 return hit.eval();
@@ -140,7 +140,7 @@ int quiesce(Board& board, const int alpha_start, const int beta, long &nodes) {
     return alpha;
 }
 
-int pv_search(Board& board, const unsigned int depth, const int alpha_start, const int beta, PrincipleLine& principle, const uint pv_depth,
+int pv_search(Board& board, const depth_t depth, const int alpha_start, const int beta, PrincipleLine& principle, const uint pv_depth,
  PrincipleLine& line, long& nodes, std::chrono::high_resolution_clock::time_point time_cutoff, bool &kill_flag, bool allow_cutoff) {
     // perform alpha-beta pruning search with principle variation optimisation.
     int alpha = alpha_start;
@@ -215,7 +215,7 @@ int pv_search(Board& board, const unsigned int depth, const int alpha_start, con
     return best_score;
 }
 
-int iterative_deepening(Board& board, const unsigned int max_depth, const int max_millis, PrincipleLine& line, long &nodes) {
+int iterative_deepening(Board& board, const depth_t max_depth, const int max_millis, PrincipleLine& line, long &nodes) {
     // Initialise the transposition table.
     Cache::transposition_table.set_delete();
 
@@ -237,7 +237,7 @@ int iterative_deepening(Board& board, const unsigned int max_depth, const int ma
     bool kill_flag = false;
     bool allow_cutoff = false;
 
-    for (unsigned int depth = start_depth; depth <= max_depth; depth+=1) {
+    for (depth_t depth = start_depth; depth <= max_depth; depth+=1) {
         PrincipleLine temp_line;
         temp_line.reserve(depth);
         nodes = 0ul;
@@ -268,7 +268,7 @@ int iterative_deepening(Board& board, const unsigned int max_depth, const int ma
     return score;
 }
 
-int iterative_deepening(Board& board, const unsigned int depth, PrincipleLine& line) {
+int iterative_deepening(Board& board, const depth_t depth, PrincipleLine& line) {
     long nodes = 0;
     return iterative_deepening(board, depth, POS_INF, line, nodes);
 }
@@ -289,7 +289,7 @@ PrincipleLine unroll_tt_line(Board& board) {
         if (Cache::transposition_table.probe(hash)) {
             MoveList legal_moves = board.get_moves();
             Cache::TransElement hit = Cache::transposition_table.last_hit(); 
-            Move best_move = unpack_move(hit.move(), legal_moves);
+            Move best_move = unpack_move(hit.move(), board);
             if (best_move == NULL_MOVE) {
                 break;
             }

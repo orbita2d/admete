@@ -98,7 +98,7 @@ void summary(std::string filename) {
 
 int main(int argc, char* argv[])
 {
-    unsigned int depth = 4;
+    depth_t depth = 4;
     std::string tuning_table = "";
     std::string input_file = "";
     static int tuning_table_flag = 0;

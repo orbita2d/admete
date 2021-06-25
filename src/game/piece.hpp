@@ -2,6 +2,7 @@
 #include <ostream>
 #include "types.hpp"
 #include <vector>
+#include <inttypes.h>
 
 #define CMASK 0x18
 #define PMASK 0x07
@@ -128,6 +129,7 @@ inline PieceType to_enum_piece(const Piece p) {
 }
 std::ostream& operator<<(std::ostream& os, const Piece piece);
 
+// Uses four bits to store additional info about moves
 enum MoveType {
     QUIETmv = 0,
     CAPTURE = 1,
@@ -142,15 +144,18 @@ enum MoveType {
 
 struct DenseMove {
     constexpr DenseMove() = default;
-    constexpr DenseMove(const Square o, const Square t) : v((o.get_value() << 8) | t.get_value()) {};
-    Square origin() const {return v >> 8;}
-    Square target() const {return v & 255;}
-    int v = 0;
+    constexpr DenseMove(const Square o, const Square t) : v((o.get_value() << 6) | t.get_value()) {};
+    constexpr DenseMove(const Square o, const Square t, const MoveType m) : v((m << 12) | (o.get_value() << 6) | t.get_value()) {};
+    Square target() const {return v & 0x003f;}
+    Square origin() const {return (v >> 6) & 0x003f;}
+    MoveType type() const {return (MoveType)((v >> 12) & 0x000f);}
+    int16_t v = 0;
 };
 
 struct Move {
 public:
     Move(const PieceType p, const Square o, const Square t) : origin(o), target(t), moving_piece(p) {};
+    Move(const PieceType p, const Square o, const Square t, const MoveType m) : origin(o), target(t), moving_piece(p), type(m) {};
     constexpr Move() {};
 
     Square origin;
@@ -257,7 +262,7 @@ constexpr PieceType get_promoted(const Move m) {
 std::ostream& operator<<(std::ostream& os, const Move move);
 
 inline bool operator==(const Move m, const DenseMove dm) {
-    return (dm.origin() == m.origin && dm.target() == m.target);
+    return (dm.origin() == m.origin && dm.target() == m.target && dm.type() == m.type);
 }
 inline bool operator==(const DenseMove dm, const Move m) {
     return m == dm;
@@ -266,12 +271,12 @@ inline bool operator==(const DenseMove dm, const Move m) {
 typedef std::vector<Move> MoveList;
 
 inline DenseMove pack_move(const Move m) {
-    return DenseMove(m.origin, m.target);
+    return DenseMove(m.origin, m.target, m.type);
 }
 
-inline Move unpack_move(const DenseMove m, const MoveList& moves) {
+inline Move unpack_move(const DenseMove dm, const MoveList& moves) {
     for (auto move: moves) {
-        if (move.origin == m.origin() && move.target == m.target()) { return move;}
+        if (move == dm) { return move;}
     }
     return NULL_MOVE;
 }

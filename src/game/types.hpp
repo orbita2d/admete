@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <array>
+#include <inttypes.h>
 
 
 enum Direction : int {
@@ -174,6 +175,6 @@ enum PieceType {
     NO_PIECE
 };
 
-typedef unsigned int depth_t;
+typedef uint8_t depth_t;
 typedef unsigned int ply_t;
-constexpr depth_t MAX_PLY = 512;
+constexpr ply_t MAX_PLY = 512;

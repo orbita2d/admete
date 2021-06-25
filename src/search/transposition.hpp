@@ -13,7 +13,7 @@ namespace Cache {
     };
     typedef int8_t tt_flags_t;
 
-    // 16 bytes
+    // 12 bytes
     struct TransElement {
         TransElement() = default;
         TransElement(int eval, int a, int b, int d, Move m) : score(eval), _depth(d), info((eval <= a) ? UPPER : (eval >= b) ? LOWER : EXACT) , hash_move(pack_move(m)) {}; 

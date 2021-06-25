@@ -72,4 +72,6 @@ void Cache::KillerTable::store(const ply_t ply, const Move move) {
 void Cache::init() {
     killer_table = KillerTable();
     transposition_table = TranspositionTable();
+    std::cout << "TransElement: " << sizeof(TransElement) << " bytes" << std::endl;
+    std::cout << "Table: " << tt_max << " elements" << std::endl;
 }
