@@ -187,6 +187,8 @@ void Board::initialise() {
             piece_counts[c][p] = count_bits(pieces((Colour)c,(PieceType)p));
         }
     }
+    pawn_atk_bb[WHITE] = Bitboards::pawn_attacks(WHITE, pieces(WHITE, PAWN));
+    pawn_atk_bb[BLACK] = Bitboards::pawn_attacks(BLACK, pieces(BLACK, PAWN));
     set_root();
 }
 
@@ -331,6 +333,13 @@ void Board::make_move(Move &move) {
     whos_move = ~ whos_move;
     update_checkers();
     update_check_squares();
+
+    pawn_atk_bb[WHITE] = Bitboards::pawn_attacks(WHITE, pieces(WHITE, PAWN));
+    pawn_atk_bb[BLACK] = Bitboards::pawn_attacks(BLACK, pieces(BLACK, PAWN));
+
+    assert(pawn_controlled(WHITE) == Bitboards::pawn_attacks(WHITE, pieces(WHITE, PAWN)));
+    assert(pawn_controlled(BLACK) == Bitboards::pawn_attacks(BLACK, pieces(BLACK, PAWN)));
+
     hash_history[ply_counter] = Zorbist::hash(*this);
 }
 
@@ -425,6 +434,9 @@ void Board::unmake_move(const Move move) {
     pinned_bb = aux_info->pinned;
     _number_checkers = aux_info->number_checkers;
     _checkers = aux_info->checkers;
+
+    pawn_atk_bb[WHITE] = Bitboards::pawn_attacks(WHITE, pieces(WHITE, PAWN));
+    pawn_atk_bb[BLACK] = Bitboards::pawn_attacks(BLACK, pieces(BLACK, PAWN));
 }
 
 void Board::try_move(const std::string move_sting) {
@@ -491,7 +503,7 @@ Square Board::find_king(const Colour us) const{
 
 
 bool Board::is_pinned(const Square origin) const{
-    return pinned_bb & origin;
+    return pinned() & origin;
 }
 
 void Board::update_checkers() {

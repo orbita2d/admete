@@ -509,7 +509,6 @@ void Board::sort_moves(MoveList &legal_moves, const DenseMove hash_dmove, const 
             checks.push_back(move);
         } else if(move.is_ep_capture()) {
             // En-passent is weird too.
-            const Square captured_square = move.origin.rank() | move.target.file();
             move.captured_piece = PAWN;
             good_captures.push_back(move);
         } else if (move.is_capture()){

@@ -409,7 +409,7 @@ int heuristic(Board &board) {
         while (occ) {
             Square sq = pop_lsb(&occ);
             Bitboard mob = Bitboards::attacks((PieceType)p, board.pieces(), sq);
-            mob &= ~Bitboards::pawn_attacks(BLACK, board.pieces(BLACK, PAWN));
+            mob &= ~board.pawn_controlled(BLACK);
             mob &= ~board.pieces();
             score += mobility * count_bits(mob);
         }
@@ -417,7 +417,7 @@ int heuristic(Board &board) {
         while (occ) {
             Square sq = pop_lsb(&occ);
             Bitboard mob = Bitboards::attacks((PieceType)p, board.pieces(), sq);
-            mob &= ~Bitboards::pawn_attacks(WHITE, board.pieces(WHITE, PAWN));
+            mob &= ~board.pawn_controlled(WHITE);
             mob &= ~board.pieces();
             score -= mobility * count_bits(mob);
         }
@@ -535,12 +535,12 @@ int heuristic(Board &board) {
 
     occ = Bitboards::attacks<QUEEN>(board.pieces(PAWN), board.find_king(WHITE));
     occ &= ~board.pieces(PAWN);
-    occ &= ~Bitboards::pawn_attacks(WHITE, board.pieces(WHITE, PAWN));
+    occ &= ~board.pawn_controlled(WHITE);
     score += queen_check * count_bits(occ);
 
     occ = Bitboards::attacks<QUEEN>(board.pieces(PAWN), board.find_king(BLACK));
     occ &= ~board.pieces(PAWN);
-    occ &= ~Bitboards::pawn_attacks(BLACK, board.pieces(BLACK, PAWN));
+    occ &= ~board.pawn_controlled(BLACK);
     score -= queen_check * count_bits(occ);
     
     int value;
