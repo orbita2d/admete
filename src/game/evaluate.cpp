@@ -217,6 +217,10 @@ constexpr Score outpost = Score(5, 0);
 
 // Bonus given to passed pawns, multiplied by PSqT below
 constexpr Score passed_mult = Score(10, 15);
+
+// Bonus for rook behind a passed pawn
+constexpr Score rook_behind_passed = Score(5, 20);
+
 // PSqT for passed pawns.
 constexpr position_board pb_p_pawn = {   0,  0,  0,  0,  0,  0,  0,  0,
                                         10, 10, 10, 10, 10, 10, 10, 10,
@@ -370,11 +374,10 @@ int evaluate(Board &board) {
     return evaluate(board, legal_moves);
 }
 
-int count_material(Board &board) {
+int count_material(const Board &board) {
     int material_value = 0;
     for (int p = 0; p < N_PIECE; p++) {
-        Bitboard occ = board.pieces((PieceType)p);
-        material_value += material[p] * count_bits(occ);
+        material_value += material[p] * (board.count_pieces(WHITE, (PieceType)p) + board.count_pieces(BLACK, (PieceType)p));
     }
     return material_value;
 }
@@ -395,6 +398,10 @@ int heuristic(Board &board) {
             Square sq = pop_lsb(&occ);
             score += Score(piece_square_tables[OPENING][BLACK][p][sq], piece_square_tables[ENDGAME][BLACK][p][sq]);
         }
+    }
+    if (material_value == 0) {
+        // This is king vs king
+        return 0;
     }
     // Mobility
     for (int p = (int)KNIGHT; p < KING; p++) {
@@ -495,6 +502,9 @@ int heuristic(Board &board) {
 
     occ = board.pieces(BLACK, ROOK) & b_hopen_files;
     score -= rook_hopen_file * count_bits(occ);
+
+    score += rook_behind_passed * count_bits(board.pieces(WHITE, ROOK) & Bitboards::rear_span(WHITE, board.passed_pawns(WHITE)));
+    score -= rook_behind_passed * count_bits(board.pieces(BLACK, ROOK) & Bitboards::rear_span(BLACK, board.passed_pawns(BLACK)));
 
     // King safety
 

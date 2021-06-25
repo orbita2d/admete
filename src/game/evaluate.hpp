@@ -9,7 +9,7 @@ int evaluate(Board &board, std::vector<Move> &legal_moves);
 int evaluation_diff(Board &board, Move move);
 int evaluate_material(Board &board);
 int evaluate_lazy(Board &board, std::vector<Move> &legal_moves);
-int count_material(Board &board);
+int count_material(const Board &board);
 int piece_value(const PieceType);
 
 typedef std::array<int, 64> position_board;
