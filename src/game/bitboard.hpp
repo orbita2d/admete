@@ -99,7 +99,7 @@ namespace Bitboards
 
   constexpr Bitboard light_squares = 0xAA55AA55AA55AA55;
   constexpr Bitboard dark_squares  = 0x55AA55AA55AA55AA;
-
+  constexpr Bitboard bishop_squares[N_BISHOPTYPES] = {light_squares, dark_squares};
 
   template<Direction dir>
   constexpr Bitboard shift(const Bitboard bb) {

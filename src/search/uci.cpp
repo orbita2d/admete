@@ -118,7 +118,7 @@ void go(Board& board, std::istringstream& is) {
     // That's a lot, let's just search to a fixed depth for now.
     int wtime = POS_INF, btime = POS_INF;
     int winc = 0, binc = 0, move_time = POS_INF;
-    depth_t max_depth = 20;
+    uint max_depth = 20;
     std::string token;
     while (is >> token) {
         // munch through the command string
@@ -143,7 +143,7 @@ void go(Board& board, std::istringstream& is) {
     PrincipleLine line;
     long nodes = 0;
     line.reserve(max_depth);
-    int score = iterative_deepening(board, max_depth, cutoff_time, line, nodes);
+    int score = iterative_deepening(board, (depth_t) max_depth, cutoff_time, line, nodes);
     Move first_move = line.back();
     bestmove(first_move);
     

@@ -206,6 +206,13 @@ enum MoveType {
     QUEEN_CASTLE = 12
 };
 
+
+enum BishopTypes {
+    LIGHTSQUARE,
+    DARKSQUARE,
+    N_BISHOPTYPES
+};
+
 struct DenseMove {
     constexpr DenseMove() = default;
     constexpr DenseMove(const Square o, const Square t) : v((o.get_value() << 6) | t.get_value()) {};
