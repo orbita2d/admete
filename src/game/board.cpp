@@ -5,6 +5,7 @@
 #include <cstdint> //for uint8_t
 #include <stdexcept>
 #include <random>
+#include <assert.h>
 
 #include "board.hpp"
 #include "evaluate.hpp"
@@ -180,6 +181,13 @@ void Board::initialise() {
     update_check_squares();
     aux_info->material = count_material(*this);
     hash_history[0] = Zorbist::hash(*this);
+
+    for (int c = WHITE; c < N_COLOUR; c++){
+        for (int p = 0; p < N_PIECE; p++) {
+            piece_counts[c][p] = count_bits(pieces((Colour)c,(PieceType)p));
+        }
+    }
+    set_root();
 }
 
 
@@ -258,7 +266,8 @@ void Board::make_move(Move &move) {
         piece_bb[PAWN] ^= from_to_bb;
         piece_bb[PAWN] ^= sq_to_bb(captured_square);
         // Make sure to lookup and record the piece captured 
-        move.captured_piece = piece_type(captured_square);
+        move.captured_piece = PAWN;
+        piece_counts[them][PAWN] --;
     } else if (move.is_capture()){
         // Make sure to lookup and record the piece captured 
         move.captured_piece = piece_type(move.target);
@@ -268,6 +277,7 @@ void Board::make_move(Move &move) {
         colour_bb[them] ^= to_bb;
         piece_bb[p] ^= from_to_bb;
         piece_bb[move.captured_piece] ^= to_bb;
+        piece_counts[them][move.captured_piece] --;
     } else {
         // Quiet move
         occupied_bb ^= from_to_bb;
@@ -279,17 +289,24 @@ void Board::make_move(Move &move) {
     if (move.is_knight_promotion()) {
         piece_bb[PAWN] ^= to_bb;
         piece_bb[KNIGHT] ^= to_bb;
+        piece_counts[us][PAWN] --;
+        piece_counts[us][KNIGHT] ++;
     } else if (move.is_bishop_promotion()){
         piece_bb[PAWN] ^= to_bb;
         piece_bb[BISHOP] ^= to_bb;
+        piece_counts[us][PAWN] --;
+        piece_counts[us][BISHOP] ++;
     } else if (move.is_rook_promotion()){
         piece_bb[PAWN] ^= to_bb;
         piece_bb[ROOK] ^= to_bb;
+        piece_counts[us][PAWN] --;
+        piece_counts[us][ROOK] ++;
     } else if (move.is_queen_promotion()){
         piece_bb[PAWN] ^= to_bb;
         piece_bb[QUEEN] ^= to_bb;
+        piece_counts[us][PAWN] --;
+        piece_counts[us][QUEEN] ++;
     }
-    
 
     // Check if we've moved our rook.
     if (move.origin == RookSquare[us][KINGSIDE]) {
@@ -305,6 +322,11 @@ void Board::make_move(Move &move) {
         aux_info->castling_rights[them][QUEENSIDE] = false;
     }
 
+    for (int c = WHITE; c < N_COLOUR; c++){
+        for (int p = 0; p < N_PIECE; p++) {
+            assert(count_pieces((Colour)c, (PieceType)p) == count_bits(pieces((Colour)c,(PieceType)p)));
+        }
+    }
     // Switch whos turn it is to play
     whos_move = ~ whos_move;
     update_checkers();
@@ -358,7 +380,8 @@ void Board::unmake_move(const Move move) {
         colour_bb[them] ^= sq_to_bb(captured_square);
         piece_bb[PAWN] ^= from_to_bb;
         piece_bb[PAWN] ^= sq_to_bb(captured_square);
-        // Make sure to lookup and record the piece captured 
+        // Update piece counts
+        piece_counts[them][PAWN] ++;
     } else if (move.is_capture()){
         // Make sure to lookup and record the piece captured 
         // Update the bitboards.
@@ -367,6 +390,8 @@ void Board::unmake_move(const Move move) {
         colour_bb[them] ^= to_bb;
         piece_bb[p] ^= from_to_bb;
         piece_bb[move.captured_piece] ^= to_bb;
+        // Update piece counts
+        piece_counts[them][move.captured_piece] ++;
     } else {
         occupied_bb ^= from_to_bb;
         colour_bb[us] ^= from_to_bb;
@@ -378,16 +403,25 @@ void Board::unmake_move(const Move move) {
     if (move.is_knight_promotion()) {
         piece_bb[KNIGHT] ^= to_bb;
         piece_bb[PAWN] ^= to_bb; 
+        piece_counts[us][PAWN] ++;
+        piece_counts[us][KNIGHT] --;
     } else if (move.is_bishop_promotion()){
         piece_bb[BISHOP] ^= to_bb;
         piece_bb[PAWN] ^= to_bb; 
+        piece_counts[us][PAWN] ++;
+        piece_counts[us][BISHOP] --;
     } else if (move.is_rook_promotion()){
         piece_bb[ROOK] ^= to_bb;
         piece_bb[PAWN] ^= to_bb; 
+        piece_counts[us][PAWN] ++;
+        piece_counts[us][ROOK] --;
     } else if (move.is_queen_promotion()){
         piece_bb[QUEEN] ^= to_bb;
         piece_bb[PAWN] ^= to_bb; 
+        piece_counts[us][PAWN] ++;
+        piece_counts[us][QUEEN] --;
     }
+
     pinned_bb = aux_info->pinned;
     _number_checkers = aux_info->number_checkers;
     _checkers = aux_info->checkers;
@@ -691,6 +725,7 @@ bool Board::is_draw() const {
     int repetition_before_root = 0;
     int repetition_after_root = 0;
 
+    // Look for draw by repetition
     for (unsigned int i = 0; i < get_root(); i++) {
         if (hash_history[i] == current) {
             repetition_before_root ++;
@@ -709,7 +744,17 @@ bool Board::is_draw() const {
         // This is a draw if there are 2 repetitions total.
         return true;
     }
-    return false;
+    // Check draw by insufficient material
+    if (pieces(QUEEN)) { return false; }
+    else if (pieces(ROOK)) { return false; }
+    else if (pieces(PAWN)) { return false; }
+    else if (count_pieces(WHITE, BISHOP) > 1) { return false; }
+    else if (count_pieces(WHITE, KNIGHT) > 2) { return false; }
+    else if ((count_pieces(WHITE, KNIGHT) >= 1) & (count_pieces(WHITE, BISHOP) >= 1)) { return false; }
+    else if (count_pieces(BLACK, BISHOP) > 1) { return false; }
+    else if (count_pieces(BLACK, KNIGHT) > 2) { return false; }
+    else if ((count_pieces(BLACK, KNIGHT) >= 1) & (count_pieces(BLACK, BISHOP) >= 1)) { return false; }
+    else {return true;}
 };
 
 long int Board::hash() const{

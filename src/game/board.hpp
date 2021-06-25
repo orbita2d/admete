@@ -66,6 +66,7 @@ public:
     long int hash() const;
     Piece pieces(const Square sq) const;
     PieceType piece_type(const Square sq) const;
+    int count_pieces(const Colour c, const PieceType p) const{ return piece_counts[c][p]; }
     Bitboard pieces() const {return occupied_bb;}
     Bitboard pieces(const PieceType p) const{return piece_bb[p];}
     Bitboard pieces(const Colour c) const{return colour_bb[c];}
@@ -109,6 +110,7 @@ private:
     Bitboard pinned_bb;
     std::array<Bitboard, N_COLOUR> colour_bb;
     std::array<Bitboard, N_PIECE> piece_bb;
+    int piece_counts[N_COLOUR][N_PIECE];
     uint _number_checkers;
     std::array<Square, 2> _checkers;
     Colour whos_move = WHITE;
