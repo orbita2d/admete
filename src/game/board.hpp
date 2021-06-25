@@ -77,12 +77,12 @@ public:
     Bitboard pinned() const {return aux_info->pinned;}
     Bitboard pawn_controlled(const Colour c) const {return pawn_atk_bb[c];}
     Bitboard passed_pawns(const Colour c) const {return pieces(c, PAWN) & ~Bitboards::forward_block_span(~c, pieces(~c, PAWN)); };
+    Bitboard connected_passed_pawns(const Colour c) const {return passed_pawns(c) & Bitboards::full_atk_span(passed_pawns(c));}
     Bitboard open_files() const {return ~Bitboards::vertical_fill(pieces(PAWN)); }
     Bitboard half_open_files(const Colour c) const {return ~Bitboards::vertical_fill(pieces(c, PAWN));}
     Bitboard weak_pawns(const Colour c) const {return pieces(c, PAWN) & ~pawn_controlled(c);}
     Bitboard isolated_pawns(const Colour c) const {return pieces(c, PAWN) & ~Bitboards::full_atk_span(pieces(c, PAWN));}
-    Bitboard connected_passed_pawns(const Colour c) const {return passed_pawns(c) & Bitboards::full_atk_span(passed_pawns(c));}
-    Bitboard weak_squares(const Colour c) const {return Bitboards::middle_ranks & ~Bitboards::forward_atk_span(c, pieces(c, PAWN));} // Sqaures that can never be defended by a pawn
+    Bitboard weak_squares(const Colour c) const {return Bitboards::middle_ranks & ~Bitboards::forward_atk_span(c, pieces(c, PAWN));} // Squares that can never be defended by a pawn
     Bitboard outposts(const Colour c) const {return pawn_controlled(c) & weak_squares(~c);} 
 
     void make_move(Move &move);
