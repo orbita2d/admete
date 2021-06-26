@@ -56,23 +56,56 @@ position_board reverse_board(position_board in) {
 }
 
 constexpr position_board center_dist = {
-            3, 3, 3, 3, 3, 3, 3, 3,
-            3, 2, 2, 2, 2, 2, 2, 3,
-            3, 2, 1, 1, 1, 1, 2, 3,
-            3, 2, 1, 0, 0, 1, 2, 3,
-            3, 2, 1, 0, 0, 1, 2, 3,
-            3, 2, 1, 1, 1, 1, 2, 3,
-            3, 2, 2, 2, 2, 2, 2, 3,
-            3, 3, 3, 3, 3, 3, 3, 3
+    3, 3, 3, 3, 3, 3, 3, 3,
+    3, 2, 2, 2, 2, 2, 2, 3,
+    3, 2, 1, 1, 1, 1, 2, 3,
+    3, 2, 1, 0, 0, 1, 2, 3,
+    3, 2, 1, 0, 0, 1, 2, 3,
+    3, 2, 1, 1, 1, 1, 2, 3,
+    3, 2, 2, 2, 2, 2, 2, 3,
+    3, 3, 3, 3, 3, 3, 3, 3
+};
+
+constexpr position_board center_manhattan_dist = {
+    6, 5, 4, 3, 3, 4, 5, 6,
+    5, 4, 3, 2, 2, 3, 4, 5,
+    4, 3, 2, 1, 1, 2, 3, 4,
+    3, 2, 1, 0, 0, 1, 2, 3,
+    3, 2, 1, 0, 0, 1, 2, 3,
+    4, 3, 2, 1, 1, 2, 3, 4,
+    5, 4, 3, 2, 2, 3, 4, 5,
+    6, 5, 4, 3, 3, 4, 5, 6
+};
+
+constexpr position_board lightsquare_corner_distance = {
+    0, 1, 2, 3, 4, 5, 6, 7,
+    1, 2, 3, 4, 5, 6, 7, 6,
+    2, 3, 4, 5, 6, 7, 6, 5,
+    3, 4, 5, 6, 7, 6, 5, 4,
+    4, 5, 6, 7, 6, 5, 4, 3,
+    5, 6, 7, 6, 5, 4, 3, 2,
+    6, 7, 6, 5, 2, 3, 2, 1,
+    7, 6, 5, 4, 3, 2, 1, 0
+};
+
+constexpr position_board darksquare_corner_distance = {
+    7, 6, 5, 4, 3, 2, 1, 0,
+    6, 7, 6, 5, 4, 3, 2, 1,
+    5, 6, 7, 6, 5, 4, 3, 2,
+    4, 5, 6, 7, 6, 5, 4, 3,
+    3, 4, 5, 6, 7, 6, 5, 4,
+    2, 3, 4, 5, 6, 7, 6, 5,
+    1, 2, 3, 4, 5, 6, 7, 6,
+    0, 1, 2, 3, 4, 5, 6, 7
 };
 
 position_board fill_knight_positional_scores() {
     // want centralised knights.
-    const score_t weight = 7;
+    const score_t weight = 5;
     const score_t material = 297;
     position_board pb;
     for( int i = 0; i<64 ; i++) {
-        pb[i] = (3-center_dist[i]) * weight + material;
+        pb[i] = (3-center_manhattan_dist[i]) * weight + material;
     }
     return pb;
 }
@@ -220,6 +253,9 @@ constexpr Score passed_mult = Score(10, 15);
 
 // Bonus for rook behind a passed pawn
 constexpr Score rook_behind_passed = Score(5, 20);
+
+// Multiplier for special psqt to push enemy king into corner same colour as our only bishop.
+constexpr Score bishop_corner_multiplier = Score(0, 8);
 
 // PSqT for passed pawns.
 constexpr position_board pb_p_pawn = {   0,  0,  0,  0,  0,  0,  0,  0,
@@ -424,17 +460,50 @@ score_t heuristic(Board &board) {
     }
 
     // Bishop stuff
+    bool bishop_types[N_COLOUR][N_BISHOPTYPES] = {{false, false}, {false, false}};
+
     Bitboard occ = board.pieces(WHITE, BISHOP);
-    if ((occ & Bitboards::light_squares) && (occ & Bitboards::dark_squares)) {
+    if (occ & Bitboards::light_squares) {
+        bishop_types[WHITE][LIGHTSQUARE] = true;
+    } 
+    if (occ & Bitboards::dark_squares) {
+        bishop_types[WHITE][DARKSQUARE] = true;
+    } 
+
+    occ = board.pieces(BLACK, BISHOP);
+    if (occ & Bitboards::light_squares) {
+        bishop_types[BLACK][LIGHTSQUARE] = true;
+    } 
+    if (occ & Bitboards::dark_squares) {
+        bishop_types[BLACK][DARKSQUARE] = true;
+    } 
+
+    if (bishop_types[WHITE][LIGHTSQUARE] && bishop_types[WHITE][DARKSQUARE]) {
         // White has the bishop pair
         score += bishop_pair;
     }
-    occ = board.pieces(BLACK, BISHOP);
-    if ((occ & Bitboards::light_squares) && (occ & Bitboards::dark_squares)) {
+    if (bishop_types[BLACK][LIGHTSQUARE] && bishop_types[BLACK][DARKSQUARE]) {
         // Black has the bishop pair
         score -= bishop_pair;
     }
+    
+    if (bishop_types[WHITE][LIGHTSQUARE] && !bishop_types[WHITE][DARKSQUARE]) {
+        // White only has one, lightsquare bishop.
+        // Push the enemy king into that corner
+        score -= bishop_corner_multiplier * (lightsquare_corner_distance[board.find_king(BLACK)] - 4);
+    } else if (!bishop_types[WHITE][LIGHTSQUARE] && bishop_types[WHITE][DARKSQUARE]) {
+        // White only has one, darksquare bishop.
+        score -= bishop_corner_multiplier * (darksquare_corner_distance[board.find_king(BLACK)] - 4);
+    }
 
+    if (bishop_types[BLACK][LIGHTSQUARE] && !bishop_types[BLACK][DARKSQUARE]) {
+        // Black only has one, lightsquare bishop.
+        score += bishop_corner_multiplier * (lightsquare_corner_distance[board.find_king(WHITE)] - 4);
+    } else if (!bishop_types[BLACK][LIGHTSQUARE] && bishop_types[BLACK][DARKSQUARE]) {
+        // Black only has one, darksquare bishop.
+        score += bishop_corner_multiplier * (darksquare_corner_distance[board.find_king(WHITE)] - 4);
+    }
+    
     // Knights
     score += outpost * count_bits(board.outposts(WHITE));
     score -= outpost * count_bits(board.outposts(BLACK));

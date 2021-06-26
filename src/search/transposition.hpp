@@ -12,14 +12,16 @@ namespace Cache {
         CACHEHIT = 8 // Entry has had cache hit before
     };
     typedef int8_t tt_flags_t;
+    constexpr tt_flags_t bound_mask = 0x03;
 
     // 6 bytes
     struct TransElement {
         TransElement() = default;
         TransElement(score_t eval, score_t a, score_t b, depth_t d, Move m) : score(eval), _depth(d), info((eval <= a) ? UPPER : (eval >= b) ? LOWER : EXACT) , hash_move(pack_move(m)) {}; 
         score_t eval() const{ return score; }
-        bool lower() const{ return (info & LOWER) == LOWER; }
-        bool upper() const{ return (info & UPPER) == UPPER; }
+        bool lower() const{ return (info & bound_mask) == LOWER; }
+        bool upper() const{ return (info & bound_mask) == UPPER; }
+        bool exact() const{ return (info & bound_mask) == EXACT; }
         bool is_delete() const{ return (info & DELETE) == DELETE; }
         bool is_cache_hit() const{ return (info & CACHEHIT) == CACHEHIT; }
         void set_delete() { info |= TransState::DELETE; }
