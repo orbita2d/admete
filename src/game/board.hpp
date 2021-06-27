@@ -106,6 +106,7 @@ public:
     ply_t repetitions(const ply_t start) const;
     bool is_draw() const;
     ply_t ply() const { return ply_counter;}
+    ply_t height() const { return ply_counter - root_node_ply;}
 private:
     AuxilliaryInfo* aux_info;
     Bitboard occupied_bb;
