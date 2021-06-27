@@ -186,8 +186,12 @@ constexpr score_t MAX_SCORE = -MIN_SCORE;
 constexpr score_t MATING_SCORE = 16381;
 constexpr score_t MIN_MATE_SCORE = MATING_SCORE - MAX_PLY;
 
-inline bool is_mating(score_t score) {
+inline bool is_mating(const score_t score) {
     return (score > MIN_MATE_SCORE);
+}
+
+inline ply_t mate_score_to_ply(const score_t score) {
+    return MATING_SCORE - score;
 }
 
 constexpr int NEG_INF = -1000000000;

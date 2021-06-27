@@ -19,6 +19,12 @@ score_t null_window_search(Board& board, const depth_t depth, const score_t alph
     }
     if (depth == 0) { return quiesce(board, alpha, beta, nodes); }
 
+    if (is_mating(alpha) && (mate_score_to_ply(alpha) <= board.ply())){
+        // We've already found a mate at a lower ply than this node, we can't do better.
+        // Fail low.
+        return MIN_SCORE;
+    }
+
     // Lookup position in transposition table.
     DenseMove hash_move = NULL_DMOVE;
     KillerTableRow killer_move = Cache::killer_table.probe(board.ply());
@@ -68,10 +74,6 @@ score_t null_window_search(Board& board, const depth_t depth, const score_t alph
         if (score > best_score) {
             best_score = score;
             best_move = move;
-        }
-        if (best_score == MATING_SCORE) {
-            // Mate in 1.
-            break;
         }
         if (best_score >= beta) {
             break; // beta-cutoff
@@ -276,7 +278,6 @@ score_t iterative_deepening(Board& board, const depth_t max_depth, const int max
     for (depth_t depth = start_depth; depth <= max_depth; depth+=1) {
         PrincipleLine temp_line;
         temp_line.reserve(depth);
-        nodes = 0ul;
         new_score = pv_search(board, depth, MIN_SCORE, MAX_SCORE, principle, principle.size(), temp_line, nodes, time_cutoff, kill_flag, allow_cutoff);
         allow_cutoff = true;
         if (kill_flag) { break; }
@@ -288,9 +289,11 @@ score_t iterative_deepening(Board& board, const depth_t max_depth, const int max
 
         unsigned long nps = int(1000*(nodes / time_span.count()));
         uci_info(depth, score, nodes, nps, principle, (int) time_span.count(), board.get_root());
+        
         if (is_mating(score)) {
             break;
         }
+        
         t_est = branching_factor * time_span;
         // Calculate the last branching factor
         if (counter >= 3) {
