@@ -6,12 +6,10 @@
 #include "transposition.hpp"
 #include <iostream>
 
-
-typedef std::chrono::high_resolution_clock my_clock;
-score_t alphabeta(Board& board, const depth_t depth, const score_t alpha_start, const score_t beta, PrincipleLine& line, long &nodes,
- std::chrono::high_resolution_clock::time_point time_cutoff, bool &kill_flag, bool allow_cutoff) {
+score_t null_window_search(Board& board, const depth_t depth, const score_t alpha, long &nodes,
+ my_clock::time_point time_cutoff, bool &kill_flag, bool allow_cutoff) {
     // perform alpha-beta pruning search.
-    score_t alpha = alpha_start;
+    score_t beta = alpha + 1;
     
     MoveList legal_moves = board.get_moves();
     if (board.is_draw()) { return 0; }
@@ -42,7 +40,6 @@ score_t alphabeta(Board& board, const depth_t depth, const score_t alpha_start, 
                 }
             } else {
                 // The saved score is an exact value for the subtree
-                line = unroll_tt_line(board);
                 return hit.eval();
             }
         }
@@ -51,7 +48,71 @@ score_t alphabeta(Board& board, const depth_t depth, const score_t alpha_start, 
     
     if (allow_cutoff && (nodes % 1000 == 0)) {
         // Check if we've passed our time cutoff
-        std::chrono::high_resolution_clock::time_point time_now = my_clock::now();
+        my_clock::time_point time_now = my_clock::now();
+        if (time_now > time_cutoff) {
+            kill_flag = true;
+            return MAX_SCORE;
+        }
+    }
+
+    board.sort_moves(legal_moves, hash_move, killer_move);
+    score_t best_score = MIN_SCORE;
+    Move best_move;
+    for (Move move : legal_moves) {
+        PrincipleLine temp_line;
+        temp_line.reserve(16);
+        board.make_move(move);
+        score_t score = -null_window_search(board, depth - 1, -alpha -1, nodes, time_cutoff, kill_flag, allow_cutoff);
+        board.unmake_move(move);
+        if (kill_flag) { return MAX_SCORE; }
+        if (score > best_score) {
+            best_score = score;
+            best_move = move;
+        }
+        if (best_score == MATING_SCORE) {
+            // Mate in 1.
+            break;
+        }
+        if (best_score >= beta) {
+            break; // beta-cutoff
+        }
+    }
+    if (is_mating(best_score)) {
+        // Keep track of how many the mate is in.
+        best_score--;
+    }
+
+    Cache::killer_table.store(board.ply(), best_move);
+    Cache::transposition_table.store(hash, best_score, alpha, beta, depth, best_move);
+    return best_score;
+}
+
+
+score_t alphabeta(Board& board, const depth_t depth, const score_t alpha_start, const score_t beta, PrincipleLine& line, long &nodes,
+ my_clock::time_point time_cutoff, bool &kill_flag, bool allow_cutoff) {
+    // perform alpha-beta pruning search.
+    score_t alpha = alpha_start;
+    
+    MoveList legal_moves = board.get_moves();
+    if (board.is_draw()) { return 0; }
+    if (legal_moves.size() == 0) { 
+        nodes++;
+        return evaluate(board, legal_moves); 
+    }
+    if (depth == 0) { return quiesce(board, alpha, beta, nodes); }
+
+    // Lookup position in transposition table.
+    DenseMove hash_move = NULL_DMOVE;
+    KillerTableRow killer_move = Cache::killer_table.probe(board.ply());
+    const long hash = board.hash();
+    if (Cache::transposition_table.probe(hash)) {
+        const Cache::TransElement hit = Cache::transposition_table.last_hit();
+        hash_move = hit.move();
+    }
+    
+    if (allow_cutoff && (nodes % 1000 == 0)) {
+        // Check if we've passed our time cutoff
+        my_clock::time_point time_now = my_clock::now();
         if (time_now > time_cutoff) {
             kill_flag = true;
             return MAX_SCORE;
@@ -70,11 +131,9 @@ score_t alphabeta(Board& board, const depth_t depth, const score_t alpha_start, 
             score = -alphabeta(board, depth - 1, -beta, -alpha, temp_line, nodes, time_cutoff, kill_flag, allow_cutoff);
         } else {
             // Search with a null window
-            score = -alphabeta(board, depth - 1, -beta, -alpha, temp_line, nodes, time_cutoff, kill_flag, allow_cutoff);
+            score = -null_window_search(board, depth - 1, -alpha -1, nodes, time_cutoff, kill_flag, allow_cutoff);
             if (score > alpha && score < beta && depth > 1) {
                 // Do a full search
-                temp_line.clear();
-                temp_line.reserve(16);
                 score = -alphabeta(board, depth - 1, -beta, -alpha, temp_line, nodes, time_cutoff, kill_flag, allow_cutoff);
             }
         }
@@ -100,11 +159,9 @@ score_t alphabeta(Board& board, const depth_t depth, const score_t alpha_start, 
         best_score--;
     }
     line = best_line;
-    if (best_line.size() != 0) {
-        // The length can be zero on an ALL-node.
-        Cache::killer_table.store(board.ply(), best_line.back());
-        Cache::transposition_table.store(hash, best_score, alpha_start, beta, depth, best_line.back());
-    }
+
+    Cache::killer_table.store(board.ply(), best_line.back());
+    Cache::transposition_table.store(hash, best_score, alpha_start, beta, depth, best_line.back());
     return best_score;
 }
 
@@ -139,7 +196,7 @@ score_t quiesce(Board& board, const score_t alpha_start, const score_t beta, lon
 }
 
 score_t pv_search(Board& board, const depth_t depth, const score_t alpha_start, const score_t beta, PrincipleLine& principle, const uint pv_depth,
- PrincipleLine& line, long& nodes, std::chrono::high_resolution_clock::time_point time_cutoff, bool &kill_flag, bool allow_cutoff) {
+ PrincipleLine& line, long& nodes, my_clock::time_point time_cutoff, bool &kill_flag, bool allow_cutoff) {
     // perform alpha-beta pruning search with principle variation optimisation.
     score_t alpha = alpha_start;
     MoveList legal_moves = board.get_moves();
@@ -148,12 +205,12 @@ score_t pv_search(Board& board, const depth_t depth, const score_t alpha_start, 
         return evaluate(board, legal_moves); 
     }
     if (depth == 0) { nodes++; return evaluate(board, legal_moves); }
+    if (board.is_draw()) { return 0; }
 
     PrincipleLine best_line;
     score_t best_score = MIN_SCORE;
     Move pv_move = NULL_MOVE;
-    bool is_first_child = true;
-    if (pv_depth != 0) {
+    if (pv_depth > 0) {
         // -1 here is because we are indexing at 0. If there is 1 move left, that's at index 0;
         pv_move = principle.at(pv_depth - 1);
         board.make_move(pv_move);
@@ -161,8 +218,9 @@ score_t pv_search(Board& board, const depth_t depth, const score_t alpha_start, 
         alpha = best_score;
         best_line.push_back(pv_move);
         board.unmake_move(pv_move);
-        is_first_child = false;
-    } 
+    } else {
+        return alphabeta(board, depth, alpha, beta, line, nodes, time_cutoff, kill_flag, allow_cutoff);
+    }
     if (kill_flag) { return MAX_SCORE; }
     board.sort_moves(legal_moves, NULL_DMOVE, NULL_KROW);
     for (Move move : legal_moves) {
@@ -172,19 +230,14 @@ score_t pv_search(Board& board, const depth_t depth, const score_t alpha_start, 
         PrincipleLine temp_line;
         temp_line.reserve(16);
         board.make_move(move);
-        score_t score;
-        if (is_first_child) {
-            // If this is the first child (we've come to the end of the PV), run a full search on the node.
+
+        // Search with a null window
+        score_t score = -null_window_search(board, depth - 1, -alpha -1, nodes, time_cutoff, kill_flag, allow_cutoff);
+        if (score > alpha && score < beta && depth > 1) {
+            // Do a full search
+            temp_line.clear();
+            temp_line.reserve(16);
             score = -alphabeta(board, depth - 1, -beta, -alpha, temp_line, nodes, time_cutoff, kill_flag, allow_cutoff);
-        } else {
-            // Search with a null window
-            score = -alphabeta(board, depth - 1, -beta, -alpha, temp_line, nodes, time_cutoff, kill_flag, allow_cutoff);
-            if (score > alpha && score < beta && depth > 1) {
-                // Do a full search
-                temp_line.clear();
-                temp_line.reserve(16);
-                score = -alphabeta(board, depth - 1, -beta, -alpha, temp_line, nodes, time_cutoff, kill_flag, allow_cutoff);
-            }
         }
         board.unmake_move(move);
         if (kill_flag) { return MAX_SCORE; }
@@ -201,7 +254,6 @@ score_t pv_search(Board& board, const depth_t depth, const score_t alpha_start, 
         if (alpha >= beta) {
             break; // beta-cutoff
         }
-        is_first_child = false;
     }
     line = best_line;
     if (is_mating(best_score)) {
