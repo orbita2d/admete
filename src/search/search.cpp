@@ -128,7 +128,7 @@ score_t alphabeta(Board& board, const depth_t depth, const score_t alpha_start, 
         } else {
             // Search with a null window
             score = -null_window_search(board, depth - 1, -alpha -1, nodes, time_cutoff, kill_flag, allow_cutoff);
-            if (score > alpha && score < beta && depth > 1) {
+            if (score > alpha) {
                 // Do a full search
                 score = -alphabeta(board, depth - 1, -beta, -alpha, temp_line, nodes, time_cutoff, kill_flag, allow_cutoff);
             }
@@ -225,10 +225,8 @@ score_t pv_search(Board& board, const depth_t depth, const score_t alpha_start, 
 
         // Search with a null window
         score_t score = -null_window_search(board, depth - 1, -alpha -1, nodes, time_cutoff, kill_flag, allow_cutoff);
-        if (score > alpha && score < beta && depth > 1) {
+        if (score > alpha) {
             // Do a full search
-            temp_line.clear();
-            temp_line.reserve(16);
             score = -alphabeta(board, depth - 1, -beta, -alpha, temp_line, nodes, time_cutoff, kill_flag, allow_cutoff);
         }
         board.unmake_move(move);
@@ -289,8 +287,10 @@ score_t iterative_deepening(Board& board, const depth_t max_depth, const int max
         time_span = time_now - time_origin;
 
         unsigned long nps = int(1000*(nodes / time_span.count()));
-        uci_info(depth, score, nodes, nps, principle, (int) time_span.count());
-
+        uci_info(depth, score, nodes, nps, principle, (int) time_span.count(), board.get_root());
+        if (is_mating(score)) {
+            break;
+        }
         t_est = branching_factor * time_span;
         // Calculate the last branching factor
         if (counter >= 3) {
