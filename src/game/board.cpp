@@ -799,12 +799,8 @@ bool Board::is_draw() const {
             repetition_after_root ++;
         }
     }
-    if (repetition_after_root > 0) {
-        // After even one repetition, this can be labeled a draw
-        return true;
-    }
-    if (repetition_before_root + repetition_after_root >= 2) {
-        // This is a draw if there are 2 repetitions total.
+    if (repetition_before_root + repetition_after_root > 0) {
+        // Consider any repeating moves to be a draw
         return true;
     }
     // Check draw by insufficient material

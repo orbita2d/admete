@@ -42,8 +42,6 @@ score_t alphabeta(Board& board, const depth_t depth, const score_t alpha_start, 
                 }
             } else {
                 // The saved score is an exact value for the subtree
-                const Move best_move = unpack_move(hit.move(), board);
-                line.push_back(best_move);
                 line = unroll_tt_line(board);
                 return hit.eval();
             }
@@ -145,12 +143,11 @@ score_t pv_search(Board& board, const depth_t depth, const score_t alpha_start, 
     // perform alpha-beta pruning search with principle variation optimisation.
     score_t alpha = alpha_start;
     MoveList legal_moves = board.get_moves();
-    if (board.is_draw()) { return 0; }
-    if (depth == 0) { nodes++; return evaluate(board, legal_moves); }
     if (legal_moves.size() == 0) { 
         nodes++;
         return evaluate(board, legal_moves); 
     }
+    if (depth == 0) { nodes++; return evaluate(board, legal_moves); }
 
     PrincipleLine best_line;
     score_t best_score = MIN_SCORE;
@@ -165,7 +162,7 @@ score_t pv_search(Board& board, const depth_t depth, const score_t alpha_start, 
         best_line.push_back(pv_move);
         board.unmake_move(pv_move);
         is_first_child = false;
-    }
+    } 
     if (kill_flag) { return MAX_SCORE; }
     board.sort_moves(legal_moves, NULL_DMOVE, NULL_KROW);
     for (Move move : legal_moves) {
@@ -218,6 +215,7 @@ score_t pv_search(Board& board, const depth_t depth, const score_t alpha_start, 
 score_t iterative_deepening(Board& board, const depth_t max_depth, const int max_millis, PrincipleLine& line, long &nodes) {
     // Initialise the transposition table.
     Cache::transposition_table.set_delete();
+    //Cache::transposition_table.clear();
 
     // Check for a principle line in the TT
     PrincipleLine principle = unroll_tt_line(board);
@@ -253,7 +251,6 @@ score_t iterative_deepening(Board& board, const depth_t max_depth, const int max
         unsigned long nps = int(1000*(nodes / time_span.count()));
         uci_info(depth, score, nodes, nps, principle, (int) time_span.count());
 
-        if (is_mating(score)) { break; }
         t_est = branching_factor * time_span;
         // Calculate the last branching factor
         if (counter >= 3) {
