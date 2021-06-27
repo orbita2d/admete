@@ -405,11 +405,6 @@ void Evaluation::load_tables(std::string filename) {
 	file.close();
 }
 
-score_t evaluate(Board &board) {
-    std::vector<Move> legal_moves = board.get_moves();
-    return evaluate(board, legal_moves);
-}
-
 score_t count_material(const Board &board) {
     score_t material_value = 0;
     for (score_t p = 0; p < N_PIECE; p++) {
@@ -638,11 +633,17 @@ score_t evaluate(Board &board, std::vector<Move> &legal_moves) {
     if (legal_moves.size() == 0) {
         if (board.is_check()) {
             // This is checkmate
-            return -MATING_SCORE;
+            return -MATING_SCORE + board.ply();
         } else {
             // This is stalemate.
-            return -10;
+            return 0;
         }
     }
     return negamax_heuristic(board);
+}
+
+
+score_t evaluate(Board &board) {
+    std::vector<Move> legal_moves = board.get_moves();
+    return evaluate(board, legal_moves);
 }

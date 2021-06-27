@@ -14,11 +14,13 @@ namespace Cache {
     typedef int8_t tt_flags_t;
     constexpr tt_flags_t bound_mask = 0x03;
 
+    score_t eval_to_tt(const score_t eval, const ply_t ply);
+    score_t eval_from_tt(const score_t eval, const ply_t ply);
     // 6 bytes
     struct TransElement {
         TransElement() = default;
-        TransElement(score_t eval, score_t a, score_t b, depth_t d, Move m) : score(eval), _depth(d), info((eval <= a) ? UPPER : (eval >= b) ? LOWER : EXACT) , hash_move(pack_move(m)) {}; 
-        score_t eval() const{ return score; }
+        TransElement(score_t eval, score_t a, score_t b, depth_t d, Move m, ply_t ply) : score(eval_to_tt(eval, ply)), _depth(d), info((eval <= a) ? UPPER : (eval >= b) ? LOWER : EXACT) , hash_move(pack_move(m)) {}; 
+        score_t eval(ply_t ply) const{ return eval_from_tt(score, ply); }
         bool lower() const{ return (info & bound_mask) == LOWER; }
         bool upper() const{ return (info & bound_mask) == UPPER; }
         bool exact() const{ return (info & bound_mask) == EXACT; }
@@ -46,7 +48,7 @@ namespace Cache {
         TranspositionTable() = default;
         bool probe(const long);
         TransElement last_hit() const { return _last_hit; };
-        void store(const long hash, const score_t eval, const score_t lower, const score_t upper, const depth_t depth, const Move move);
+        void store(const long hash, const score_t eval, const score_t lower, const score_t upper, const depth_t depth, const Move move, const ply_t ply);
         void replace(const size_t index, const long new_hash, const TransElement elem);
         void clear() {_data.clear(); index = 0ul; }
         depth_t min_depth() {return _min_depth; }

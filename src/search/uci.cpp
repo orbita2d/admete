@@ -192,11 +192,11 @@ void uci_info(depth_t depth, score_t eval, unsigned long nodes, unsigned long np
 
     if (is_mating(eval)) {
         //Make for white.
-        score_t n = MATING_SCORE - eval;
+        score_t n = (MATING_SCORE - eval + 1) / 2;
         std::cout << " score mate " << (int)n;
     }else if (is_mating(-eval)) {
         //Make for black.
-        score_t n = (eval + MATING_SCORE);
+        score_t n = (eval + MATING_SCORE) / 2;
         std::cout << " score mate " << -(int)n;
     } else {
         std::cout << " score cp " << (int)eval;

@@ -28,19 +28,19 @@ score_t null_window_search(Board& board, const depth_t depth, const score_t alph
         if (hit.depth() >= depth) {
             if (hit.lower()) {
                 // The saved score is a lower bound for the score of the sub tree
-                if (hit.eval() >= beta) {
+                if (hit.eval(board.ply()) >= beta) {
                     // beta cutoff
-                    return hit.eval();
+                    return hit.eval(board.ply());
                 }
             } else if (hit.upper()) {
                 // The saved score is an upper bound for the score of the subtree.
-                if (hit.eval() <= alpha) {
+                if (hit.eval(board.ply()) <= alpha) {
                     // rare negamax alpha-cutoff
-                    return hit.eval();
+                    return hit.eval(board.ply());
                 }
             } else {
                 // The saved score is an exact value for the subtree
-                return hit.eval();
+                return hit.eval(board.ply());
             }
         }
         hash_move = hit.move();
@@ -77,13 +77,9 @@ score_t null_window_search(Board& board, const depth_t depth, const score_t alph
             break; // beta-cutoff
         }
     }
-    if (is_mating(best_score)) {
-        // Keep track of how many the mate is in.
-        best_score--;
-    }
 
     Cache::killer_table.store(board.ply(), best_move);
-    Cache::transposition_table.store(hash, best_score, alpha, beta, depth, best_move);
+    Cache::transposition_table.store(hash, best_score, alpha, beta, depth, best_move, board.ply());
     return best_score;
 }
 
@@ -154,14 +150,10 @@ score_t alphabeta(Board& board, const depth_t depth, const score_t alpha_start, 
         }
         is_first_child = false;
     }
-    if (is_mating(best_score)) {
-        // Keep track of how many the mate is in.
-        best_score--;
-    }
     line = best_line;
 
     Cache::killer_table.store(board.ply(), best_line.back());
-    Cache::transposition_table.store(hash, best_score, alpha_start, beta, depth, best_line.back());
+    Cache::transposition_table.store(hash, best_score, alpha_start, beta, depth, best_line.back(), board.ply());
     return best_score;
 }
 
@@ -256,11 +248,7 @@ score_t pv_search(Board& board, const depth_t depth, const score_t alpha_start, 
         }
     }
     line = best_line;
-    if (is_mating(best_score)) {
-        // Keep track of how many the mate is in.
-        best_score--;
-    }
-    Cache::transposition_table.store(board.hash(), best_score, alpha_start, beta, depth, best_line.back());
+    Cache::transposition_table.store(board.hash(), best_score, alpha_start, beta, depth, best_line.back(), board.ply());
     return best_score;
 }
 

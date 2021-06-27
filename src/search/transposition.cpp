@@ -26,11 +26,33 @@ void Cache::TranspositionTable::replace(const size_t index, const long new_hash,
     _data[new_hash] = elem;
 }
 
-void Cache::TranspositionTable::store(const long hash, const score_t eval, const score_t lower, const score_t upper, const depth_t depth, const Move move) {
+score_t Cache::eval_to_tt(const score_t eval, const ply_t ply) {
+    // We want to store a mating score in the TT as MATE - (ply to mate), but eval is MATE - (ply of checkmate)
+    if (is_mating(eval)) {
+        return eval + ply;
+    } else if (is_mating(-eval)) {
+        return eval - ply;
+    } else {
+        return eval;
+    }
+}
+
+score_t Cache::eval_from_tt(const score_t eval, const ply_t ply) {
+    // We want mating scoreeval is MATE - (ply of checkmate) but score in the TT as MATE - (ply to mate) 
+    if (is_mating(eval)) {
+        return eval - ply;
+    } else if (is_mating(-eval)) {
+        return eval + ply;
+    } else {
+        return eval;
+    }
+}
+
+void Cache::TranspositionTable::store(const long hash, const score_t eval, const score_t lower, const score_t upper, const depth_t depth, const Move move, const ply_t ply) {
     if (is_enabled() == false) {
         return;
     }
-    const TransElement elem = TransElement(eval, lower, upper, depth, move);
+    const TransElement elem = TransElement(eval, lower, upper, depth, move, ply);
     if (index < tt_max) {
         // We are doing the first fill of the table;
         _data[hash] = elem;
