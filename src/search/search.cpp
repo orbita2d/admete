@@ -14,7 +14,6 @@ score_t null_window_search(Board& board, const depth_t depth, const score_t alph
     MoveList legal_moves = board.get_moves();
     if (board.is_draw()) { return 0; }
     if (legal_moves.size() == 0) { 
-        nodes++;
         return evaluate(board, legal_moves); 
     }
     if (depth == 0) { return quiesce(board, alpha, beta, nodes); }
@@ -68,6 +67,7 @@ score_t null_window_search(Board& board, const depth_t depth, const score_t alph
         PrincipleLine temp_line;
         temp_line.reserve(16);
         board.make_move(move);
+        nodes++;
         score_t score = -null_window_search(board, depth - 1, -alpha -1, nodes, time_cutoff, kill_flag, allow_cutoff);
         board.unmake_move(move);
         if (kill_flag) { return MAX_SCORE; }
@@ -94,7 +94,6 @@ score_t alphabeta(Board& board, const depth_t depth, const score_t alpha_start, 
     MoveList legal_moves = board.get_moves();
     if (board.is_draw()) { return 0; }
     if (legal_moves.size() == 0) { 
-        nodes++;
         return evaluate(board, legal_moves); 
     }
     if (depth == 0) { return quiesce(board, alpha, beta, nodes); }
@@ -124,6 +123,7 @@ score_t alphabeta(Board& board, const depth_t depth, const score_t alpha_start, 
         PrincipleLine temp_line;
         temp_line.reserve(16);
         board.make_move(move);
+        nodes++;
         score_t score;
         if (is_first_child) {
             score = -alphabeta(board, depth - 1, -beta, -alpha, temp_line, nodes, time_cutoff, kill_flag, allow_cutoff);
@@ -164,7 +164,6 @@ score_t quiesce(Board& board, const score_t alpha_start, const score_t beta, lon
     score_t alpha = alpha_start;
     int stand_pat = negamax_heuristic(board);
     if (stand_pat >= beta) {
-        nodes++;
         return stand_pat;
     }
     if (alpha < stand_pat) {
@@ -179,6 +178,7 @@ score_t quiesce(Board& board, const score_t alpha_start, const score_t beta, lon
     board.sort_moves(captures, NULL_DMOVE, NULL_KROW);
     for (Move move : captures) {
         board.make_move(move);
+        nodes++;
         score_t score = -quiesce(board, -beta, -alpha, nodes);
         board.unmake_move(move);
         alpha = std::max(alpha, score);
@@ -195,10 +195,9 @@ score_t pv_search(Board& board, const depth_t depth, const score_t alpha_start, 
     score_t alpha = alpha_start;
     MoveList legal_moves = board.get_moves();
     if (legal_moves.size() == 0) { 
-        nodes++;
         return evaluate(board, legal_moves); 
     }
-    if (depth == 0) { nodes++; return evaluate(board, legal_moves); }
+    if (depth == 0) { return evaluate(board, legal_moves); }
     if (board.is_draw()) { return 0; }
 
     PrincipleLine best_line;
@@ -207,11 +206,17 @@ score_t pv_search(Board& board, const depth_t depth, const score_t alpha_start, 
     if (pv_depth > 0) {
         // -1 here is because we are indexing at 0. If there is 1 move left, that's at index 0;
         pv_move = principle.at(pv_depth - 1);
-        board.make_move(pv_move);
-        best_score = -pv_search(board, depth - 1, -beta, -alpha, principle, pv_depth - 1, best_line, nodes, time_cutoff, kill_flag, allow_cutoff);
-        alpha = best_score;
-        best_line.push_back(pv_move);
-        board.unmake_move(pv_move);
+        // The PV move could come from the TT, shouldn't assume it's legal.
+        if (is_legal(pv_move, legal_moves)) {
+            board.make_move(pv_move);
+            nodes++;
+            best_score = -pv_search(board, depth - 1, -beta, -alpha, principle, pv_depth - 1, best_line, nodes, time_cutoff, kill_flag, allow_cutoff);
+            alpha = best_score;
+            best_line.push_back(pv_move);
+            board.unmake_move(pv_move);
+        } else {
+            return alphabeta(board, depth, alpha, beta, line, nodes, time_cutoff, kill_flag, allow_cutoff);
+        }
     } else {
         return alphabeta(board, depth, alpha, beta, line, nodes, time_cutoff, kill_flag, allow_cutoff);
     }
@@ -224,6 +229,7 @@ score_t pv_search(Board& board, const depth_t depth, const score_t alpha_start, 
         PrincipleLine temp_line;
         temp_line.reserve(16);
         board.make_move(move);
+        nodes++;
 
         // Search with a null window
         score_t score = -null_window_search(board, depth - 1, -alpha -1, nodes, time_cutoff, kill_flag, allow_cutoff);

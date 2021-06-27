@@ -5,7 +5,7 @@
 
 TEST(ForcedMateTest, MateInTwo) {
     Board board = Board();
-    std::vector<Move> line;
+    PrincipleLine line;
     uint depth = 4;
     line.reserve(depth);
     board.fen_decode("r2q1b1r/1pN1n1pp/p1n3k1/4Pb2/2BP4/8/PPP3PP/R1BQ1RK1 w - - 1 0");
@@ -29,7 +29,7 @@ TEST(ForcedMateTest, MateInTwo) {
 
 TEST(ForcedMateTest, MateInThree) {
     Board board = Board();
-    std::vector<Move> line;
+    PrincipleLine line;
     uint depth = 6;
     line.reserve(depth);
     board.fen_decode("r1b1kb1r/pppp1ppp/5q2/4n3/3KP3/2N3PN/PPP4P/R1BQ1B1R b kq - 0 1");
@@ -39,7 +39,7 @@ TEST(ForcedMateTest, MateInThree) {
 
 TEST(ForcedMateTest, MateInFour) {
     Board board = Board();
-    std::vector<Move> line;
+    PrincipleLine line;
     uint depth = 8;
     line.reserve(depth);
     board.fen_decode("2r2b2/p2q1P1p/3p2k1/4pNP1/4P1RQ/7K/2pr4/5R2 w - - 1 0");

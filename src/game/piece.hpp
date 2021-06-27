@@ -148,7 +148,7 @@ public:
         return move_string;
     }
 
-    bool operator==(const Move that) {
+    bool operator==(const Move that) const{
         return  origin == that.origin &&
                 target == that.target &&
                 type == that.type;
@@ -254,6 +254,15 @@ inline bool operator==(const Move m, const KillerTableRow row) {
 
 typedef std::vector<Move> MoveList;
 
+inline bool operator==(const DenseMove dm, const MoveList moves) {
+    for (Move m : moves) {
+        if (m == dm) {
+            return true;
+        }
+    }
+    return false;
+}
+
 inline DenseMove pack_move(const Move m) {
     return DenseMove(m.origin, m.target, m.type);
 }
@@ -263,4 +272,11 @@ inline Move unpack_move(const DenseMove dm, const MoveList& moves) {
         if (move == dm) { return move;}
     }
     return NULL_MOVE;
+}
+
+inline bool is_legal(const Move move, const MoveList &legal_moves) {
+    for (const Move lm: legal_moves) {
+        if (move == lm) { return true;} 
+    }
+    return false;
 }

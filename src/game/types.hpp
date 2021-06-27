@@ -228,9 +228,21 @@ struct DenseMove {
     int16_t v = 0;
 };
 
+inline bool operator==(const DenseMove m1, const DenseMove m2) {
+    return (m1.v == m2.v);
+}
 constexpr DenseMove NULL_DMOVE = DenseMove();
 
 // Length of a row in the Killer Table
-constexpr size_t n_krow = 4;
+constexpr size_t n_krow = 3;
 typedef std::array<DenseMove, n_krow> KillerTableRow;
 constexpr KillerTableRow NULL_KROW = KillerTableRow();
+
+inline bool operator==(const DenseMove m, const KillerTableRow row) {
+    for (DenseMove dm : row) {
+        if (m == dm) {
+            return true;
+        }
+    }
+    return false;
+}
