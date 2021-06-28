@@ -1,7 +1,8 @@
 add_executable(tests main.cpp
                 perft.cpp
                 search.cpp
-                ops.cpp)
+                ops.cpp
+                fen.cpp)
 
 target_link_libraries(tests
         gtest

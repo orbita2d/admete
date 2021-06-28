@@ -42,17 +42,63 @@ TEST(Operations, InsufficientMaterial) {
     EXPECT_FALSE(board.is_draw());
 }
 
-TEST(Operations, Fills) {
-    EXPECT_EQ(Bitboards::north_fill(0xFFFFFFFFFFFFFFFF), 0xFFFFFFFFFFFFFFFF);
-    EXPECT_EQ(Bitboards::south_fill(0xFFFFFFFFFFFFFFFF), 0xFFFFFFFFFFFFFFFF);
-    EXPECT_EQ(Bitboards::north_fill(0x0), 0x0);
-    EXPECT_EQ(Bitboards::south_fill(0x0), 0x0);
+TEST(Operations, RelativeFills) {
+    Bitboard testcases[] = {
+        0xFFFFFFFFFFFFFFFF,
+        0x0000000000000000,
+        0x0101010101010101,
+        0xff00000000000000,
+        0x00000000000000ff,
+        0x0100000000000000,
+        0x0000000000000001,
+        0x0000000001000000,
+        0x0000000000020400
+        };
 
-    EXPECT_EQ(Bitboards::north_fill(0x20400), 0x20606);
-    EXPECT_EQ(Bitboards::south_fill(0x20400), 0x606060606060400);
+    for (const auto &test : testcases) {
+        EXPECT_EQ(Bitboards::north_fill(test), Bitboards::forward_fill(WHITE, test));
+        EXPECT_EQ(Bitboards::south_fill(test), Bitboards::forward_fill(BLACK, test));
+        EXPECT_EQ(Bitboards::south_fill(test), Bitboards::rear_fill(WHITE, test));
+        EXPECT_EQ(Bitboards::north_fill(test), Bitboards::rear_fill(BLACK, test));
+    }
+}
+
+
+TEST(Operations, NorthFill) {
+    std::pair<Bitboard, Bitboard> testcases[] = {
+        {0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF},
+        {0x0000000000000000, 0x0000000000000000},
+        {0x0101010101010101, 0x0101010101010101},
+        {0xff00000000000000, 0xFFFFFFFFFFFFFFFF},
+        {0x00000000000000ff, 0x00000000000000ff},
+        {0x0100000000000000, 0x0101010101010101},
+        {0x0000000000000001, 0x0000000000000001},
+        {0x0000000001000000, 0x0000000001010101},
+        {0x0000000000020400, 0x0000000000020606},
+        
+    };
     
-    EXPECT_EQ(Bitboards::south_fill(0x20400), Bitboards::forward_fill(BLACK, 0x20400));
-    EXPECT_EQ(Bitboards::north_fill(0x20400), Bitboards::rear_fill(BLACK, 0x20400));
-    EXPECT_EQ(Bitboards::south_fill(0x20400), Bitboards::rear_fill(WHITE, 0x20400));
-    EXPECT_EQ(Bitboards::north_fill(0x20400), Bitboards::forward_fill(WHITE, 0x20400));
+    for (const auto &[in, out] : testcases) {
+        EXPECT_EQ(Bitboards::north_fill(in), out);
+    }
+}
+
+
+TEST(Operations, SouthFill) {
+    std::pair<Bitboard, Bitboard> testcases[] = {
+        {0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF},
+        {0x0000000000000000, 0x0000000000000000},
+        {0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF},
+        {0x0000000000000000, 0x0000000000000000},
+        {0x0101010101010101, 0x0101010101010101},
+        {0xff00000000000000, 0xff00000000000000},
+        {0x00000000000000ff, 0xFFFFFFFFFFFFFFFF},
+        {0x0100000000000000, 0x0100000000000000},
+        {0x0000000000000001, 0x0101010101010101},
+        {0x0000000001000000, 0x0101010101000000},
+        {0x0000000000020400, 0x606060606060400},
+    };
+    for (const auto &[in, out] : testcases) {
+        EXPECT_EQ(Bitboards::south_fill(in), out);
+    }
 }
