@@ -94,6 +94,9 @@ class Board {
     void make_move(Move &move);
     void unmake_move(const Move move);
 
+    void make_nullmove();
+    void unmake_nullmove();
+
     void try_move(const std::string move_sting);
     bool try_uci_move(const std::string move_sting);
     Square find_king(const Colour us) const;
@@ -175,4 +178,5 @@ void init();
 long hash(const Board &board);
 long diff(const Move move, const Colour us, const int last_ep_file,
           const std::array<std::array<bool, N_COLOUR>, N_CASTLE> castling_rights_change);
+long nulldiff(const Colour us, const int last_ep_file);
 } // namespace Zorbist

@@ -199,6 +199,7 @@ void Board::make_move(Move &move) {
     } else {
         aux_info->halfmove_clock++;
     }
+
     // Track en-passent square
     if (move.is_double_push()) {
         // Little hacky but this is the square in between.
@@ -222,42 +223,38 @@ void Board::make_move(Move &move) {
     const Bitboard from_bb = sq_to_bb(move.origin);
     const Bitboard to_bb = sq_to_bb(move.target);
     const Bitboard from_to_bb = from_bb ^ to_bb;
-    // Castling is special
+
     if (move.is_king_castle()) {
         const Bitboard rook_from_to_bb = sq_to_bb(RookSquare[us][KINGSIDE]) ^ sq_to_bb(move.origin + Direction::E);
-        // Update the bitboard.
         occupied_bb ^= from_to_bb;
         occupied_bb ^= rook_from_to_bb;
         colour_bb[us] ^= from_to_bb;
         colour_bb[us] ^= rook_from_to_bb;
         piece_bb[KING] ^= from_to_bb;
         piece_bb[ROOK] ^= rook_from_to_bb;
-        aux_info->castling_rights[us][KINGSIDE] = false;
-        aux_info->castling_rights[us][QUEENSIDE] = false;
+
     } else if (move.is_queen_castle()) {
         const Bitboard rook_from_to_bb = sq_to_bb(RookSquare[us][QUEENSIDE]) ^ sq_to_bb(move.origin + Direction::W);
-        // Update the bitboard.
         occupied_bb ^= from_to_bb;
         occupied_bb ^= rook_from_to_bb;
         colour_bb[us] ^= from_to_bb;
         colour_bb[us] ^= rook_from_to_bb;
         piece_bb[KING] ^= from_to_bb;
         piece_bb[ROOK] ^= rook_from_to_bb;
-        aux_info->castling_rights[us][KINGSIDE] = false;
-        aux_info->castling_rights[us][QUEENSIDE] = false;
+
     } else if (move.is_ep_capture()) {
-        // En-passent is weird too.
         const Square captured_square = move.origin.rank() | move.target.file();
-        // Update the bitboard.
         occupied_bb ^= from_to_bb;
         occupied_bb ^= sq_to_bb(captured_square);
         colour_bb[us] ^= from_to_bb;
         colour_bb[them] ^= sq_to_bb(captured_square);
         piece_bb[PAWN] ^= from_to_bb;
+
         piece_bb[PAWN] ^= sq_to_bb(captured_square);
         // Make sure to lookup and record the piece captured
         move.captured_piece = PAWN;
         piece_counts[them][PAWN]--;
+
     } else if (move.is_capture()) {
         // Make sure to lookup and record the piece captured
         move.captured_piece = piece_type(move.target);
@@ -268,6 +265,7 @@ void Board::make_move(Move &move) {
         piece_bb[p] ^= from_to_bb;
         piece_bb[move.captured_piece] ^= to_bb;
         piece_counts[them][move.captured_piece]--;
+
     } else {
         // Quiet move
         occupied_bb ^= from_to_bb;
@@ -298,7 +296,7 @@ void Board::make_move(Move &move) {
         piece_counts[us][QUEEN]++;
     }
 
-    // Check if we've moved our rook.
+    // Check if we've moved our rook to update our castling rights.
     if ((move.origin == RookSquare[us][KINGSIDE]) & can_castle(us, KINGSIDE)) {
         aux_info->castling_rights[us][KINGSIDE] = false;
         castling_rights_change[us][KINGSIDE] = true;
@@ -306,7 +304,8 @@ void Board::make_move(Move &move) {
         aux_info->castling_rights[us][QUEENSIDE] = false;
         castling_rights_change[us][QUEENSIDE] = true;
     }
-    // Check for rook captures.
+
+    // Check for rook captures to update their castling rights
     if (move.is_capture()) {
         if ((move.target == RookSquare[them][KINGSIDE]) & can_castle(them, KINGSIDE)) {
             aux_info->castling_rights[them][KINGSIDE] = false;
@@ -318,15 +317,21 @@ void Board::make_move(Move &move) {
         }
     }
 
+    // Checks that the piece counts (updated incrementally) are being tracked properly
     for (int c = WHITE; c < N_COLOUR; c++) {
         for (int p = 0; p < N_PIECE; p++) {
             assert(count_pieces((Colour)c, (PieceType)p) == count_bits(pieces((Colour)c, (PieceType)p)));
         }
     }
+
     // Switch whos turn it is to play
     whos_move = ~whos_move;
+
+    // Update the various data structures that are computed for the position
     update_checkers();
     update_check_squares();
+
+    // Precompute the pawn attacks bitboards.
     if ((p == PAWN) | (move.captured_piece == PAWN)) {
         pawn_atk_bb[WHITE] = Bitboards::pawn_attacks(WHITE, pieces(WHITE, PAWN));
         pawn_atk_bb[BLACK] = Bitboards::pawn_attacks(BLACK, pieces(BLACK, PAWN));
@@ -335,13 +340,13 @@ void Board::make_move(Move &move) {
     assert(pawn_controlled(WHITE) == Bitboards::pawn_attacks(WHITE, pieces(WHITE, PAWN)));
     assert(pawn_controlled(BLACK) == Bitboards::pawn_attacks(BLACK, pieces(BLACK, PAWN)));
 
+    // Update the zorbist hash
     hash_history[ply_counter] =
         hash_history[ply_counter - 1] ^ Zorbist::diff(move, us, last_ep_file, castling_rights_change);
-    ;
 }
 
 void Board::unmake_move(const Move move) {
-    // Iterate counters.
+    // Iterate counters
     if (whos_move == Colour::WHITE) {
         fullmove_counter--;
     }
@@ -363,26 +368,26 @@ void Board::unmake_move(const Move move) {
     const Bitboard from_bb = sq_to_bb(move.origin);
     const Bitboard to_bb = sq_to_bb(move.target);
     const Bitboard from_to_bb = from_bb ^ to_bb;
+
     if (move.is_king_castle()) {
         const Bitboard rook_from_to_bb = sq_to_bb(RookSquare[us][KINGSIDE]) ^ sq_to_bb(move.origin + Direction::E);
-        // Update the bitboard.
         occupied_bb ^= from_to_bb;
         occupied_bb ^= rook_from_to_bb;
         colour_bb[us] ^= from_to_bb;
         colour_bb[us] ^= rook_from_to_bb;
         piece_bb[KING] ^= from_to_bb;
         piece_bb[ROOK] ^= rook_from_to_bb;
+
     } else if (move.is_queen_castle()) {
         const Bitboard rook_from_to_bb = sq_to_bb(RookSquare[us][QUEENSIDE]) ^ sq_to_bb(move.origin + Direction::W);
-        // Update the bitboard.
         occupied_bb ^= from_to_bb;
         occupied_bb ^= rook_from_to_bb;
         colour_bb[us] ^= from_to_bb;
         colour_bb[us] ^= rook_from_to_bb;
         piece_bb[KING] ^= from_to_bb;
         piece_bb[ROOK] ^= rook_from_to_bb;
+
     } else if (move.is_ep_capture()) {
-        // En-passent is weird too.
         const Square captured_square = move.origin.rank() | move.target.file();
         occupied_bb ^= from_to_bb;
         occupied_bb ^= sq_to_bb(captured_square);
@@ -390,8 +395,10 @@ void Board::unmake_move(const Move move) {
         colour_bb[them] ^= sq_to_bb(captured_square);
         piece_bb[PAWN] ^= from_to_bb;
         piece_bb[PAWN] ^= sq_to_bb(captured_square);
+
         // Update piece counts
         piece_counts[them][PAWN]++;
+
     } else if (move.is_capture()) {
         // Make sure to lookup and record the piece captured
         // Update the bitboards.
@@ -436,6 +443,45 @@ void Board::unmake_move(const Move move) {
         pawn_atk_bb[WHITE] = Bitboards::pawn_attacks(WHITE, pieces(WHITE, PAWN));
         pawn_atk_bb[BLACK] = Bitboards::pawn_attacks(BLACK, pieces(BLACK, PAWN));
     }
+}
+
+void Board::make_nullmove() {
+    // Iterate counters
+    if (whos_move == Colour::BLACK) {
+        fullmove_counter++;
+    }
+    aux_history[ply_counter + 1] = *aux_info;
+    ply_counter++;
+    aux_info = &aux_history[ply_counter];
+    const Colour us = whos_move;
+    int last_ep_file = en_passent() ? en_passent().file_index() : -1;
+
+    aux_info->halfmove_clock++;
+
+    // Track en-passent square
+    aux_info->en_passent_target = 0;
+
+    // Switch whos turn it is to play
+    whos_move = ~whos_move;
+
+    // Update the various data structures that are computed for the position
+    update_checkers();
+    update_check_squares();
+
+    // Update the zorbist hash
+    hash_history[ply_counter] = hash_history[ply_counter - 1] ^ Zorbist::nulldiff(us, last_ep_file);
+}
+
+void Board::unmake_nullmove() {
+    // Iterate counters
+    if (whos_move == Colour::WHITE) {
+        fullmove_counter--;
+    }
+    ply_counter--;
+    aux_info = &aux_history[ply_counter];
+
+    // Switch whos turn it is to play
+    whos_move = ~whos_move;
 }
 
 void Board::try_move(const std::string move_sting) {
@@ -751,6 +797,20 @@ long Zorbist::diff(const Move move, const Colour us, const int last_ep_file,
         hash ^= zobrist_table[us][PAWN][move.target];
         hash ^= zobrist_table[us][get_promoted(move)][move.target];
     }
+    hash ^= zobrist_table_move[us];
+    hash ^= zobrist_table_move[them];
+
+    return hash;
+}
+
+long Zorbist::nulldiff(const Colour us, const int last_ep_file) {
+    long int hash = 0;
+    Colour them = ~us;
+
+    if (last_ep_file >= 0) {
+        hash ^= zobrist_table_ep[last_ep_file];
+    }
+
     hash ^= zobrist_table_move[us];
     hash ^= zobrist_table_move[them];
 
