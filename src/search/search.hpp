@@ -8,19 +8,21 @@ typedef std::vector<Move> PrincipleLine;
 
 struct SearchOptions {
     SearchOptions() {
-        kill_flag.store(false);
+        stop_flag.store(false);
         running_flag.store(false);
     };
     SearchOptions(const SearchOptions &so) {
-        kill_flag.store(so.kill_flag.load());
+        stop_flag.store(so.stop_flag.load());
         running_flag.store(so.running_flag.load());
     }
-    std::atomic<bool> kill_flag;    // Flag to use to tell the search to stop as soon as possible
+    std::atomic<bool> stop_flag;    // Flag to use to tell the search to stop as soon as possible
     score_t eval = MIN_SCORE;       // Where the eval is set when the object is shared between threads.
     unsigned long nodes = 0;        // How many nodes have been accessed
     std::thread running_thread;     // The thread object for the search itself.
     std::atomic<bool> running_flag; // Flag set when the search is running.
     bool is_running() const { return running_flag.load(); }
+    bool stop() const { return stop_flag.load(); }
+    void set_stop() { stop_flag.store(true); }
 };
 
 // perft.cpp

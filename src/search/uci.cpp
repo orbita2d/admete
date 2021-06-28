@@ -82,7 +82,7 @@ void do_search(Board *board, depth_t max_depth, const int max_millis, SearchOpti
     PrincipleLine line;
     line.reserve(max_depth);
     options->running_flag.store(true);
-    options->kill_flag = false;
+    options->stop_flag = false;
     options->nodes = 0;
     int score = search(*board, max_depth, max_millis, line, *options);
     options->eval = score;
@@ -176,7 +176,7 @@ void stop(SearchOptions &options) {
     don't forget the "bestmove" and possibly the "ponder" token when finishing the search
     */
     if (options.is_running()) {
-        options.kill_flag.store(true);
+        options.stop_flag.store(true);
         options.running_thread.join();
     }
 }

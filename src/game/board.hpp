@@ -109,12 +109,13 @@ class Board {
     bool can_castle(const Colour c, const CastlingSide s) const { return aux_info->castling_rights[c][s]; }
     Square en_passent() const { return aux_info->en_passent_target; }
     int material() const { return aux_info->material; }
-    void set_root() { root_node_ply = ply_counter; }
-    ply_t get_root() const { return root_node_ply; }
     ply_t repetitions(const ply_t start) const;
     bool is_draw() const;
     ply_t ply() const { return ply_counter; }
     ply_t height() const { return ply_counter - root_node_ply; }
+    void set_root() { root_node_ply = ply_counter; }
+    ply_t get_root() const { return root_node_ply; }
+    bool is_root() const { return ply_counter == root_node_ply; }
     bool is_endgame() const;
 
   private:

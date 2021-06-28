@@ -7,6 +7,7 @@
 #include <time.h>
 
 constexpr score_t futility_margins[] = {0, 330, 500, 900};
+
 score_t scout_search(Board &board, depth_t depth, const score_t alpha, my_clock::time_point time_cutoff,
                      bool allow_cutoff, SearchOptions &options) {
     // perform alpha-beta pruning search.
@@ -61,11 +62,11 @@ score_t scout_search(Board &board, depth_t depth, const score_t alpha, my_clock:
         hash_dmove = hit.move();
     }
 
+    // Check if we've passed our time cutoff
     if (allow_cutoff && (options.nodes % 1000 == 0)) {
-        // Check if we've passed our time cutoff
         my_clock::time_point time_now = my_clock::now();
         if (time_now > time_cutoff) {
-            options.kill_flag.store(true);
+            options.set_stop();
             return MAX_SCORE;
         }
     }
@@ -79,10 +80,12 @@ score_t scout_search(Board &board, depth_t depth, const score_t alpha, my_clock:
     }
 
     KillerTableRow killer_move = Cache::killer_table.probe(board.ply());
+
     score_t best_score = MIN_SCORE;
     Move best_move;
     Move hash_move = unpack_move(hash_dmove, legal_moves);
-    // Do this explicitely to avoid sorting moves if our hash moves provides a beta-cutoff
+
+    // Do the hash move explicitly to avoid sorting moves if our hash moves provides a beta-cutoff
     if (!(hash_move == NULL_MOVE)) {
         board.make_move(hash_move);
         options.nodes++;
@@ -90,22 +93,24 @@ score_t scout_search(Board &board, depth_t depth, const score_t alpha, my_clock:
         board.unmake_move(hash_move);
         best_move = hash_move;
 
-        if (options.kill_flag) {
+        if (options.stop()) {
             return MAX_SCORE;
         }
+
         if (best_score >= beta) {
             Cache::killer_table.store(board.ply(), best_move);
             Cache::transposition_table.store(hash, best_score, alpha, beta, depth, best_move, board.ply());
             return best_score;
         }
     }
+
     board.sort_moves(legal_moves, hash_dmove, killer_move);
     for (Move move : legal_moves) {
         board.make_move(move);
         options.nodes++;
-        score_t score = -scout_search(board, depth - 1, -alpha - 1, time_cutoff, allow_cutoff, options);
+        score_t score = -scout_search(board, depth - 1, -beta, time_cutoff, allow_cutoff, options);
         board.unmake_move(move);
-        if (options.kill_flag.load()) {
+        if (options.stop()) {
             return MAX_SCORE;
         }
         if (score > best_score) {
@@ -126,7 +131,8 @@ score_t pv_search(Board &board, depth_t depth, const score_t alpha_start, const 
                   my_clock::time_point time_cutoff, bool allow_cutoff, SearchOptions &options) {
     // Perform an alpha-beta pruning tree search.
     // The use of this function implies that the node is a PV-node.
-    // For non-PV nodes, use
+    // For non-PV nodes, use scout_search
+
     score_t alpha = alpha_start;
     MoveList legal_moves = board.get_moves();
 
@@ -135,13 +141,17 @@ score_t pv_search(Board &board, depth_t depth, const score_t alpha_start, const 
         depth++;
     }
 
-    if (board.is_draw() && (board.height() > 0)) {
+    // If this is a draw by repetition or insufficient material, return the drawn score.
+    if (board.is_draw() && !board.is_root()) {
         return 0;
     }
 
+    // Terminal node
     if (legal_moves.size() == 0) {
         return Evaluation::evaluate(board, legal_moves);
     }
+
+    // Leaf node (from the main tree anyway)
     if (depth == 0) {
         return quiesce(board, alpha, beta, options);
     }
@@ -161,19 +171,21 @@ score_t pv_search(Board &board, depth_t depth, const score_t alpha_start, const 
         hash_dmove = hit.move();
     }
 
+    // Check if we've passed our time cutoff
     if (allow_cutoff && (options.nodes % 1000 == 0)) {
-        // Check if we've passed our time cutoff
         my_clock::time_point time_now = my_clock::now();
         if (time_now > time_cutoff) {
-            options.kill_flag = true;
+            options.set_stop();
             return MAX_SCORE;
         }
     }
+
     bool is_first_child = true;
     PrincipleLine best_line;
     score_t best_score = MIN_SCORE;
     Move hash_move = unpack_move(hash_dmove, legal_moves);
-    // Do this explicitly to avoid sorting moves if our hash moves provides a beta-cutoff
+
+    // Do the hash move explicitly to avoid sorting moves if our hash moves provides a beta-cutoff
     if (!(hash_move == NULL_MOVE)) {
         PrincipleLine temp_line;
         temp_line.reserve(16);
@@ -183,7 +195,7 @@ score_t pv_search(Board &board, depth_t depth, const score_t alpha_start, const 
         board.unmake_move(hash_move);
         best_line.push_back(hash_move);
 
-        if (options.kill_flag) {
+        if (options.stop()) {
             return MAX_SCORE;
         }
         alpha = std::max(alpha, best_score);
@@ -195,10 +207,14 @@ score_t pv_search(Board &board, depth_t depth, const score_t alpha_start, const 
         }
         is_first_child = false;
     }
+
+    // Sort the remaining moves, and remove the hash move if it exists
     board.sort_moves(legal_moves, hash_dmove, killer_move);
+
     for (Move move : legal_moves) {
         PrincipleLine temp_line;
         temp_line.reserve(16);
+
         board.make_move(move);
         options.nodes++;
         score_t score;
@@ -213,9 +229,11 @@ score_t pv_search(Board &board, depth_t depth, const score_t alpha_start, const 
             }
         }
         board.unmake_move(move);
-        if (options.kill_flag) {
+
+        if (options.stop()) {
             return MAX_SCORE;
         }
+
         if (score > best_score) {
             best_score = score;
             best_line = temp_line;
@@ -294,7 +312,7 @@ score_t search(Board &board, const depth_t max_depth, const int max_millis, Prin
         temp_line.reserve(depth);
         new_score = pv_search(board, depth, MIN_SCORE, MAX_SCORE, temp_line, time_cutoff, allow_cutoff, options);
         allow_cutoff = true;
-        if (options.kill_flag.load()) {
+        if (options.stop()) {
             break;
         }
         // Use this to not save an invalid score if we reach the time cutoff
