@@ -550,7 +550,7 @@ void Board::sort_moves(MoveList &legal_moves, const DenseMove hash_dmove, const 
     legal_moves.insert(legal_moves.end(), quiet_moves.begin(), quiet_moves.end());
 }
 
-MoveList Board::get_captures() {
+MoveList Board::get_quiessence_moves() {
     MoveList moves;
     if (is_check()) {
         generate_moves<EVASIONS>(*this, moves);

@@ -6,7 +6,7 @@
 #include "transposition.hpp"
 #include <iostream>
 
-score_t null_window_search(Board& board, const depth_t depth, const score_t alpha,
+score_t null_window_search(Board& board, depth_t depth, const score_t alpha,
             my_clock::time_point time_cutoff, bool allow_cutoff, SearchOptions& options) {
     // perform alpha-beta pruning search.
     score_t beta = alpha + 1;
@@ -25,7 +25,6 @@ score_t null_window_search(Board& board, const depth_t depth, const score_t alph
 
     // Lookup position in transposition table.
     DenseMove hash_dmove = NULL_DMOVE;
-    KillerTableRow killer_move = Cache::killer_table.probe(board.ply());
     const long hash = board.hash();
     if (Cache::transposition_table.probe(hash)) {
         const Cache::TransElement hit = Cache::transposition_table.last_hit();
@@ -59,6 +58,12 @@ score_t null_window_search(Board& board, const depth_t depth, const score_t alph
         }
     }
 
+    // Check extentions
+    if (board.is_check()) {
+        depth++;
+    }
+
+    KillerTableRow killer_move = Cache::killer_table.probe(board.ply());
     score_t best_score = MIN_SCORE;
     Move best_move;
     Move hash_move = unpack_move(hash_dmove, legal_moves);
@@ -99,12 +104,12 @@ score_t null_window_search(Board& board, const depth_t depth, const score_t alph
 }
 
 
-score_t alphabeta(Board& board, const depth_t depth, const score_t alpha_start, const score_t beta, PrincipleLine& line,
+score_t alphabeta(Board& board, depth_t depth, const score_t alpha_start, const score_t beta, PrincipleLine& line,
  my_clock::time_point time_cutoff, bool allow_cutoff, SearchOptions& options) {
     // perform alpha-beta pruning search.
     score_t alpha = alpha_start;
     MoveList legal_moves = board.get_moves();
-    if (board.is_draw()) { return 0; }
+    if (board.is_draw() && (board.height() > 0)) { return 0; }
     if (legal_moves.size() == 0) { 
         return evaluate(board, legal_moves); 
     }
@@ -132,7 +137,10 @@ score_t alphabeta(Board& board, const depth_t depth, const score_t alpha_start, 
             return MAX_SCORE;
         }
     }
-
+    // Check extentions
+    if (board.is_check()) {
+        depth++;
+    }
     bool is_first_child = true;
     PrincipleLine best_line;
     score_t best_score = MIN_SCORE;
@@ -169,7 +177,7 @@ score_t alphabeta(Board& board, const depth_t depth, const score_t alpha_start, 
         } else {
             // Search with a null window
             score = -null_window_search(board, depth - 1, -alpha -1, time_cutoff, allow_cutoff, options);
-            if (score > alpha) {
+            if (score > alpha && score < beta) {
                 // Do a full search
                 score = -alphabeta(board, depth - 1, -beta, -alpha, temp_line, time_cutoff, allow_cutoff, options);
             }
@@ -213,9 +221,9 @@ score_t quiesce(Board& board, const score_t alpha_start, const score_t beta, Sea
     if (stand_pat < alpha - 900) {
         return stand_pat;
     }
-    MoveList captures = board.get_captures();
-    board.sort_moves(captures, NULL_DMOVE, NULL_KROW);
-    for (Move move : captures) {
+    MoveList moves = board.get_quiessence_moves();
+    board.sort_moves(moves, NULL_DMOVE, NULL_KROW);
+    for (Move move : moves) {
         board.make_move(move);
         options.nodes++;
         score_t score = -quiesce(board, -beta, -alpha, options);
@@ -228,7 +236,7 @@ score_t quiesce(Board& board, const score_t alpha_start, const score_t beta, Sea
     return alpha;
 }
 
-score_t pv_search(Board& board, const depth_t depth, const score_t alpha_start, const score_t beta, PrincipleLine& principle, const uint pv_depth,
+score_t pv_search(Board& board, depth_t depth, const score_t alpha_start, const score_t beta, PrincipleLine& principle, const uint pv_depth,
  PrincipleLine& line, my_clock::time_point time_cutoff, bool allow_cutoff, SearchOptions& options) {
     // perform alpha-beta pruning search with principle variation optimisation.
     score_t alpha = alpha_start;
@@ -237,8 +245,12 @@ score_t pv_search(Board& board, const depth_t depth, const score_t alpha_start, 
         return evaluate(board, legal_moves); 
     }
     if (depth == 0) { return evaluate(board, legal_moves); }
-    if (board.is_draw()) { return 0; }
+    if (board.is_draw() && (board.height() > 0)) { return 0; }
 
+    // Check extentions
+    if (board.is_check()) {
+        depth++;
+    }
     PrincipleLine best_line;
     score_t best_score = MIN_SCORE;
     Move pv_move = NULL_MOVE;
@@ -274,7 +286,7 @@ score_t pv_search(Board& board, const depth_t depth, const score_t alpha_start, 
 
         // Search with a null window
         score_t score = -null_window_search(board, depth - 1, -alpha -1, time_cutoff, allow_cutoff, options);
-        if (score > alpha) {
+        if (score > alpha && score < beta) {
             // Do a full search
             score = -alphabeta(board, depth - 1, -beta, -alpha, temp_line, time_cutoff, allow_cutoff, options);
         }
