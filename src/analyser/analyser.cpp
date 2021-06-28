@@ -24,7 +24,7 @@ void analyse_block(std::vector<std::string> *fen_list, std::vector<int> *results
         std::string fen = fen_list->at(i);
         board.fen_decode(fen);
         PrincipleLine pl;
-        int score = search(board, 2, pl);
+        int score = Search::search(board, 2, pl);
         score = board.is_white_move() ? score : -score;
         results->at(i) = score;
     }

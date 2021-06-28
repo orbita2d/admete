@@ -23,7 +23,7 @@ TEST(ForcedMateTest, MateInTwo) {
 
   for (const auto &[fen, score] : testcases) {
     board.fen_decode(fen);
-    EXPECT_EQ(search(board, depth, line), score);
+    EXPECT_EQ(Search::search(board, depth, line), score);
   }
 }
 
@@ -48,7 +48,7 @@ TEST(ForcedMateTest, MateInThree) {
 
   for (const auto &[fen, score] : testcases) {
     board.fen_decode(fen);
-    EXPECT_EQ(search(board, depth, line), score);
+    EXPECT_EQ(Search::search(board, depth, line), score);
   }
 }
 
@@ -66,6 +66,6 @@ TEST(ForcedMateTest, MateInFour) {
 
   for (const auto &[fen, score] : testcases) {
     board.fen_decode(fen);
-    EXPECT_EQ(search(board, depth, line), score);
+    EXPECT_EQ(Search::search(board, depth, line), score);
   }
 }

@@ -115,8 +115,8 @@ int main(int argc, char *argv[]) {
         std::cout << board.fen_encode() << std::endl;
         std::vector<Move> line;
         line.reserve(depth);
-        SearchOptions options = SearchOptions();
-        int score = search(board, depth, POS_INF, line, options);
+        Search::SearchOptions options = Search::SearchOptions();
+        int score = Search::search(board, depth, POS_INF, line, options);
         std::cout << print_score(score) << " ( " << options.nodes << " ) " << std::endl;
         print_line(line, board);
         exit(EXIT_SUCCESS);

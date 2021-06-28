@@ -556,7 +556,7 @@ score_t Evaluation::evaluate(Board &board, std::vector<Move> &legal_moves) {
             return -MATING_SCORE + board.ply();
         } else {
             // This is stalemate.
-            return 0;
+            return drawn_score(board);
         }
     }
     return negamax_heuristic(board);
@@ -565,4 +565,15 @@ score_t Evaluation::evaluate(Board &board, std::vector<Move> &legal_moves) {
 score_t Evaluation::evaluate(Board &board) {
     std::vector<Move> legal_moves = board.get_moves();
     return evaluate(board, legal_moves);
+}
+
+score_t Evaluation::drawn_score(const Board &board) {
+    // Returns a relative score for what we should consider a draw.
+    // This isn't contempt, but means that white will play for a win, and black for a draw.
+    constexpr score_t draw_diff = 5;
+    if (board.is_white_move()) {
+        return -draw_diff;
+    } else {
+        return draw_diff;
+    }
 }

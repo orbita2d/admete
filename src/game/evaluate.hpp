@@ -16,6 +16,7 @@ score_t negamax_heuristic(Board &board);
 score_t evaluate(Board &board);
 score_t evaluate(Board &board, std::vector<Move> &legal_moves);
 score_t count_material(const Board &board);
+score_t drawn_score(const Board &board);
 constexpr score_t OPENING_MATERIAL = 6000;
 constexpr score_t ENDGAME_MATERIAL = 2000;
 } // namespace Evaluation

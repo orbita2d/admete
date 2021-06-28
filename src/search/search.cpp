@@ -10,8 +10,8 @@ constexpr size_t futility_max_depth = 3;
 constexpr score_t futility_margins[] = {0, 330, 500, 900};
 constexpr depth_t null_move_depth_reduction = 2;
 
-score_t scout_search(Board &board, depth_t depth, const score_t alpha, my_clock::time_point time_cutoff,
-                     bool allow_cutoff, bool allow_null, SearchOptions &options) {
+score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, my_clock::time_point time_cutoff,
+                             bool allow_cutoff, bool allow_null, SearchOptions &options) {
     // Perform a null window 'scout' search on a subtree.
     // All nodes examined with this tree are not PV nodes (unless proven otherwise, when they should be researched)
     // Has bounds [alpha, alpha + 1]
@@ -22,13 +22,18 @@ score_t scout_search(Board &board, depth_t depth, const score_t alpha, my_clock:
         depth++;
     }
 
-    MoveList legal_moves = board.get_moves();
+    // If this is a draw by repetition or insufficient material, return the drawn score.
     if (board.is_draw()) {
-        return 0;
+        return Evaluation::drawn_score(board);
     }
+
+    MoveList legal_moves = board.get_moves();
+    // Terminal node.
     if (legal_moves.size() == 0) {
         return Evaluation::evaluate(board, legal_moves);
     }
+
+    // Leaf node for main tree.
     if (depth == 0) {
         return quiesce(board, alpha, beta, options);
     }
@@ -143,8 +148,9 @@ score_t scout_search(Board &board, depth_t depth, const score_t alpha, my_clock:
     return best_score;
 }
 
-score_t pv_search(Board &board, depth_t depth, const score_t alpha_start, const score_t beta, PrincipleLine &line,
-                  my_clock::time_point time_cutoff, bool allow_cutoff, SearchOptions &options) {
+score_t Search::pv_search(Board &board, depth_t depth, const score_t alpha_start, const score_t beta,
+                          PrincipleLine &line, my_clock::time_point time_cutoff, bool allow_cutoff,
+                          SearchOptions &options) {
     // Perform an alpha-beta pruning tree search.
     // The use of this function implies that the node is a PV-node.
     // For non-PV nodes, use scout_search
@@ -159,7 +165,7 @@ score_t pv_search(Board &board, depth_t depth, const score_t alpha_start, const 
 
     // If this is a draw by repetition or insufficient material, return the drawn score.
     if (board.is_draw() && !board.is_root()) {
-        return 0;
+        return Evaluation::drawn_score(board);
     }
 
     // Terminal node
@@ -268,7 +274,7 @@ score_t pv_search(Board &board, depth_t depth, const score_t alpha_start, const 
     return best_score;
 }
 
-score_t quiesce(Board &board, const score_t alpha_start, const score_t beta, SearchOptions &options) {
+score_t Search::quiesce(Board &board, const score_t alpha_start, const score_t beta, SearchOptions &options) {
     // perform quiesence search to evaluate only quiet positions.
     score_t alpha = alpha_start;
     score_t stand_pat = Evaluation::negamax_heuristic(board);
@@ -282,7 +288,7 @@ score_t quiesce(Board &board, const score_t alpha_start, const score_t beta, Sea
 
     // If this is a draw by repetition or insufficient material, return the drawn score.
     if (board.is_draw()) {
-        return 0;
+        return Evaluation::drawn_score(board);
     }
 
     // Delta pruning
@@ -313,8 +319,8 @@ score_t quiesce(Board &board, const score_t alpha_start, const score_t beta, Sea
     return alpha;
 }
 
-score_t search(Board &board, const depth_t max_depth, const int max_millis, PrincipleLine &line,
-               SearchOptions &options) {
+score_t Search::search(Board &board, const depth_t max_depth, const int max_millis, PrincipleLine &line,
+                       SearchOptions &options) {
     // Initialise the transposition table.
     Cache::transposition_table.set_delete();
 
@@ -372,7 +378,7 @@ score_t search(Board &board, const depth_t max_depth, const int max_millis, Prin
     return score;
 }
 
-score_t search(Board &board, const depth_t depth, PrincipleLine &line) {
+score_t Search::search(Board &board, const depth_t depth, PrincipleLine &line) {
     SearchOptions options = SearchOptions();
     return search(board, depth, POS_INF, line, options);
 }

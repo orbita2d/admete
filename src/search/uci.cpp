@@ -78,13 +78,13 @@ void bestmove(Board &board, Move move) {
     }
 }
 
-void do_search(Board *board, depth_t max_depth, const int max_millis, SearchOptions *options) {
+void do_search(Board *board, depth_t max_depth, const int max_millis, Search::SearchOptions *options) {
     PrincipleLine line;
     line.reserve(max_depth);
     options->running_flag.store(true);
     options->stop_flag = false;
     options->nodes = 0;
-    int score = search(*board, max_depth, max_millis, line, *options);
+    int score = Search::search(*board, max_depth, max_millis, line, *options);
     options->eval = score;
     Move first_move = line.back();
     bestmove(*board, first_move);
@@ -92,13 +92,13 @@ void do_search(Board *board, depth_t max_depth, const int max_millis, SearchOpti
     options->running_flag.store(false);
 }
 
-void cleanup_thread(SearchOptions &options) {
+void cleanup_thread(Search::SearchOptions &options) {
     if (!options.is_running() && options.running_thread.joinable()) {
         options.running_thread.join();
     }
 }
 
-void go(Board &board, std::istringstream &is, SearchOptions &options) {
+void go(Board &board, std::istringstream &is, Search::SearchOptions &options) {
     /*
     * go
     start calculating on the current position set up with the "position" command.
@@ -170,7 +170,7 @@ void go(Board &board, std::istringstream &is, SearchOptions &options) {
     options.running_thread = std::thread(&do_search, &board, (depth_t)max_depth, cutoff_time, &options);
 }
 
-void stop(SearchOptions &options) {
+void stop(Search::SearchOptions &options) {
     /*
     stop calculating as soon as possible,
     don't forget the "bestmove" and possibly the "ponder" token when finishing the search
@@ -185,7 +185,7 @@ void uci() {
     init_uci();
     std::string command, token;
     Board board = Board();
-    SearchOptions options = SearchOptions();
+    Search::SearchOptions options = Search::SearchOptions();
     while (true) {
         std::getline(std::cin, command);
         cleanup_thread(options);
