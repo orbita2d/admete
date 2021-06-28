@@ -539,7 +539,7 @@ void Board::sort_moves(MoveList &legal_moves, const DenseMove hash_dmove, const 
     }
     legal_moves.clear();
     if (!(hash_move == NULL_MOVE)) {
-        legal_moves.push_back(hash_move);
+        //legal_moves.push_back(hash_move);
     }
     legal_moves.insert(legal_moves.end(), checks.begin(), checks.end());
     std::sort(good_captures.begin(), good_captures.end(), cmp);

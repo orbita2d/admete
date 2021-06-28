@@ -117,9 +117,9 @@ int main(int argc, char* argv[])
         std::cout << board.fen_encode() << std::endl;
         std::vector<Move> line;
         line.reserve(depth);
-        long nodes;
-        int score = iterative_deepening(board, depth, POS_INF, line, nodes);
-        std::cout << print_score(score) << " ( " << nodes << " ) " << std::endl;
+        SearchOptions options = SearchOptions();
+        int score = iterative_deepening(board, depth, POS_INF, line, options);
+        std::cout << print_score(score) << " ( " << options.nodes << " ) " << std::endl;
         print_line(line, board);
         exit(EXIT_SUCCESS);
     }

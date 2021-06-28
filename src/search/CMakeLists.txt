@@ -3,7 +3,7 @@ add_library(search_library search.cpp search.hpp
     transposition.cpp transposition.hpp
     uci.cpp uci.hpp)
 
-target_link_libraries(search_library game_library)
+target_link_libraries(search_library game_library pthread)
 
 set_property(TARGET search_library PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
 

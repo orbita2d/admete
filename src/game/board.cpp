@@ -799,8 +799,12 @@ bool Board::is_draw() const {
             repetition_after_root ++;
         }
     }
-    if (repetition_before_root + repetition_after_root > 0) {
-        // Consider any repeating moves to be a draw
+    if (repetition_after_root > 0) {
+        // Consider any repeating moves after the root to be a draw
+        return true;
+    }
+    if (repetition_before_root + repetition_after_root > 1) {
+        // 2 repetitions is 3 fold draw
         return true;
     }
     // Check draw by insufficient material

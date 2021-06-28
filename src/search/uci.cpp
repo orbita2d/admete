@@ -4,6 +4,7 @@
 #include <sstream>
 #include <string>
 #include <chrono>
+#include <thread>
 
 #include "uci.hpp"
 #include "board.hpp"
@@ -12,6 +13,7 @@
 
 #define ENGINE_NAME "admete"
 #define ENGINE_AUTH "orbita"
+
 typedef std::chrono::high_resolution_clock my_clock;
 
 bool uci_enable = false;
@@ -58,7 +60,7 @@ void position(Board& board, std::istringstream& is) {
     }
 }
 
-void bestmove(Move move) {
+void bestmove(Board& board, Move move) {
     /* 
     bestmove <move1> [ ponder <move2> ]
 	the engine has stopped searching and found the move <move> best in this position.
@@ -68,10 +70,36 @@ void bestmove(Move move) {
 	Directly before that the engine should send a final "info" command with the final search information,
 	the the GUI has the complete statistics about the last search.
     */
-   std::cout << "bestmove " << move.pretty() << std::endl;
+    MoveList legal_moves = board.get_moves();
+    if (is_legal(move, legal_moves)) {
+        std::cout << "bestmove " << move.pretty() << std::endl;
+    } else {
+        std::cerr << "illegal move!: " << board.fen_encode()<< std::endl;
+        std::cout << "bestmove " << legal_moves[0].pretty() << std::endl;
+    }
 }
 
-void go(Board& board, std::istringstream& is) {
+void do_search(Board* board, depth_t max_depth, const int max_millis, SearchOptions* options) {
+    PrincipleLine line;
+    line.reserve(max_depth);
+    options->running_flag.store(true);
+    options->kill_flag = false;
+    options->nodes = 0;
+    int score = iterative_deepening(*board, max_depth, max_millis, line, *options);
+    options->eval = score;
+    Move first_move = line.back();
+    bestmove(*board, first_move);
+    // Set this so that the thread can be joined.
+    options->running_flag.store(false);
+}
+
+void cleanup_thread(SearchOptions& options) {
+    if (!options.is_running() && options.running_thread.joinable()) {
+        options.running_thread.join();
+    }
+}
+
+void go(Board& board, std::istringstream& is, SearchOptions& options) {
     /*
     * go
     start calculating on the current position set up with the "position" command.
@@ -140,35 +168,44 @@ void go(Board& board, std::istringstream& is) {
     const int our_inc  = board.is_white_move() ? winc : binc;
     int cutoff_time = our_time == POS_INF ? POS_INF : our_time / 18 + (our_inc*3)/5;
     cutoff_time = std::min(move_time, cutoff_time);
-    PrincipleLine line;
-    long nodes = 0;
-    line.reserve(max_depth);
-    int score = iterative_deepening(board, (depth_t) max_depth, cutoff_time, line, nodes);
-    Move first_move = line.back();
-    bestmove(first_move);
-    
+    options.running_thread = std::thread(&do_search, &board, (depth_t) max_depth, cutoff_time, &options);
+}
+
+void stop(SearchOptions& options) {
+    /*
+    stop calculating as soon as possible,
+    don't forget the "bestmove" and possibly the "ponder" token when finishing the search
+    */
+    if (options.is_running()) {
+        options.kill_flag.store(true);
+        options.running_thread.join();
+   }
 }
 
 void uci() {
     init_uci();
     std::string command, token;
-    bool debug;
     Board board = Board();
+    SearchOptions options = SearchOptions();
     while (true) {
         std::getline(std::cin, command);
+        cleanup_thread(options);
         std::istringstream is(command);
         is >> std::ws >> token;
         if (token == "isready") {
             // interface is asking if we can continue, if we are here, we clearly can.
+            stop(options);
             std::cout << "readyok" << std::endl;
         } else if (token == "ucinewgame") {
             board.initialise_starting_position();
         } else if (token == "position") {
-            //std::cerr << command << std::endl;
+            stop(options);
             position(board, is);
         } else if (token == "go") {
-            //std::cerr << command << std::endl;
-            go(board, is);
+            stop(options);
+            go(board, is, options);
+        } else if (token == "stop") {
+            stop(options);
         } else if (token == "quit") {
             exit(EXIT_SUCCESS);
         } else if (token == "d") {
@@ -212,5 +249,17 @@ void uci_info(depth_t depth, score_t eval, unsigned long nodes, unsigned long np
         std::cout << it->pretty() << " ";
     }
     std::cout << " time " << time;
+    std::cout << std::endl;
+}
+
+
+void uci_info_nodes(unsigned long nodes, unsigned long nps) {
+    if (!::uci_enable) {return;}
+    if (nodes > 0) {
+        std::cout << "nodes " << nodes;
+    }
+    if (nps > 0) {
+        std::cout << " nps " << nps;
+    }
     std::cout << std::endl;
 }
