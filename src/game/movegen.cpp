@@ -518,7 +518,8 @@ void Board::sort_moves(MoveList &legal_moves, const DenseMove hash_dmove, const 
         } else if (move.is_capture()) {
             // Make sure to lookup and record the piece captured
             move.captured_piece = piece_type(move.target);
-            move.score = piece_value(move.captured_piece) - piece_value(move.moving_piece);
+            move.score =
+                Evaluation::piece_material(move.captured_piece) - Evaluation::piece_material(move.moving_piece);
             if (move.score >= 0) {
                 // Captures of a more valuable piece with a less valuable piece are almost always good.
                 good_captures.push_back(move);
