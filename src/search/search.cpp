@@ -1,30 +1,34 @@
-#include <time.h>
-#include <chrono>
 #include "search.hpp"
-#include "uci.hpp"
 #include "../game/evaluate.hpp"
 #include "transposition.hpp"
+#include "uci.hpp"
+#include <chrono>
 #include <iostream>
+#include <time.h>
 
 constexpr score_t futility_margins[] = {0, 330, 500, 900};
-score_t scout_search(Board& board, depth_t depth, const score_t alpha,
-            my_clock::time_point time_cutoff, bool allow_cutoff, SearchOptions& options) {
+score_t scout_search(Board &board, depth_t depth, const score_t alpha, my_clock::time_point time_cutoff,
+                     bool allow_cutoff, SearchOptions &options) {
     // perform alpha-beta pruning search.
     score_t beta = alpha + 1;
-    
+
     // Check extentions
     if (board.is_check()) {
         depth++;
     }
 
     MoveList legal_moves = board.get_moves();
-    if (board.is_draw()) { return 0; }
-    if (legal_moves.size() == 0) { 
-        return Evaluation::evaluate(board, legal_moves); 
+    if (board.is_draw()) {
+        return 0;
     }
-    if (depth == 0) { return quiesce(board, alpha, beta, options); }
+    if (legal_moves.size() == 0) {
+        return Evaluation::evaluate(board, legal_moves);
+    }
+    if (depth == 0) {
+        return quiesce(board, alpha, beta, options);
+    }
 
-    if (is_mating(alpha) && (mate_score_to_ply(alpha) <= board.ply())){
+    if (is_mating(alpha) && (mate_score_to_ply(alpha) <= board.ply())) {
         // We've already found a mate at a lower ply than this node, we can't do better.
         // Fail low.
         return alpha;
@@ -56,7 +60,7 @@ score_t scout_search(Board& board, depth_t depth, const score_t alpha,
         }
         hash_dmove = hit.move();
     }
-    
+
     if (allow_cutoff && (options.nodes % 1000 == 0)) {
         // Check if we've passed our time cutoff
         my_clock::time_point time_now = my_clock::now();
@@ -69,10 +73,9 @@ score_t scout_search(Board& board, depth_t depth, const score_t alpha,
     // Reverse futility pruning
     if (!board.is_endgame() && depth <= 3 && !board.is_check()) {
         const score_t node_heuristic = Evaluation::negamax_heuristic(board);
-        if ((beta < MAX_SCORE) && (node_heuristic - futility_margins[depth] >= beta) ) {
+        if ((beta < MAX_SCORE) && (node_heuristic - futility_margins[depth] >= beta)) {
             return node_heuristic - futility_margins[depth];
         }
-
     }
 
     KillerTableRow killer_move = Cache::killer_table.probe(board.ply());
@@ -83,11 +86,13 @@ score_t scout_search(Board& board, depth_t depth, const score_t alpha,
     if (!(hash_move == NULL_MOVE)) {
         board.make_move(hash_move);
         options.nodes++;
-        best_score = -scout_search(board, depth - 1, -alpha -1, time_cutoff, allow_cutoff, options);
+        best_score = -scout_search(board, depth - 1, -alpha - 1, time_cutoff, allow_cutoff, options);
         board.unmake_move(hash_move);
         best_move = hash_move;
 
-        if (options.kill_flag) { return MAX_SCORE; }
+        if (options.kill_flag) {
+            return MAX_SCORE;
+        }
         if (best_score >= beta) {
             Cache::killer_table.store(board.ply(), best_move);
             Cache::transposition_table.store(hash, best_score, alpha, beta, depth, best_move, board.ply());
@@ -98,9 +103,11 @@ score_t scout_search(Board& board, depth_t depth, const score_t alpha,
     for (Move move : legal_moves) {
         board.make_move(move);
         options.nodes++;
-        score_t score = -scout_search(board, depth - 1, -alpha -1, time_cutoff, allow_cutoff, options);
+        score_t score = -scout_search(board, depth - 1, -alpha - 1, time_cutoff, allow_cutoff, options);
         board.unmake_move(move);
-        if (options.kill_flag.load()) { return MAX_SCORE; }
+        if (options.kill_flag.load()) {
+            return MAX_SCORE;
+        }
         if (score > best_score) {
             best_score = score;
             best_move = move;
@@ -115,12 +122,11 @@ score_t scout_search(Board& board, depth_t depth, const score_t alpha,
     return best_score;
 }
 
-
-score_t pv_search(Board& board, depth_t depth, const score_t alpha_start, const score_t beta, PrincipleLine& line,
- my_clock::time_point time_cutoff, bool allow_cutoff, SearchOptions& options) {
+score_t pv_search(Board &board, depth_t depth, const score_t alpha_start, const score_t beta, PrincipleLine &line,
+                  my_clock::time_point time_cutoff, bool allow_cutoff, SearchOptions &options) {
     // Perform an alpha-beta pruning tree search.
     // The use of this function implies that the node is a PV-node.
-    // For non-PV nodes, use 
+    // For non-PV nodes, use
     score_t alpha = alpha_start;
     MoveList legal_moves = board.get_moves();
 
@@ -128,15 +134,19 @@ score_t pv_search(Board& board, depth_t depth, const score_t alpha_start, const 
     if (board.is_check()) {
         depth++;
     }
-    
-    if (board.is_draw() && (board.height() > 0)) { return 0; }
 
-    if (legal_moves.size() == 0) { 
-        return Evaluation::evaluate(board, legal_moves); 
+    if (board.is_draw() && (board.height() > 0)) {
+        return 0;
     }
-    if (depth == 0) { return quiesce(board, alpha, beta, options); }
 
-    if (is_mating(alpha) && (mate_score_to_ply(alpha) <= board.ply())){
+    if (legal_moves.size() == 0) {
+        return Evaluation::evaluate(board, legal_moves);
+    }
+    if (depth == 0) {
+        return quiesce(board, alpha, beta, options);
+    }
+
+    if (is_mating(alpha) && (mate_score_to_ply(alpha) <= board.ply())) {
         // We've already found a mate at a lower ply than this node, we can't do better.
         // Fail low.
         return alpha;
@@ -150,7 +160,7 @@ score_t pv_search(Board& board, depth_t depth, const score_t alpha_start, const 
         const Cache::TransElement hit = Cache::transposition_table.last_hit();
         hash_dmove = hit.move();
     }
-    
+
     if (allow_cutoff && (options.nodes % 1000 == 0)) {
         // Check if we've passed our time cutoff
         my_clock::time_point time_now = my_clock::now();
@@ -171,9 +181,11 @@ score_t pv_search(Board& board, depth_t depth, const score_t alpha_start, const 
         options.nodes++;
         best_score = -pv_search(board, depth - 1, -beta, -alpha, best_line, time_cutoff, allow_cutoff, options);
         board.unmake_move(hash_move);
-            best_line.push_back(hash_move);
+        best_line.push_back(hash_move);
 
-        if (options.kill_flag) { return MAX_SCORE; }
+        if (options.kill_flag) {
+            return MAX_SCORE;
+        }
         alpha = std::max(alpha, best_score);
         if (alpha >= beta) {
             line = best_line;
@@ -194,14 +206,16 @@ score_t pv_search(Board& board, depth_t depth, const score_t alpha_start, const 
             score = -pv_search(board, depth - 1, -beta, -alpha, temp_line, time_cutoff, allow_cutoff, options);
         } else {
             // Search with a null window
-            score = -scout_search(board, depth - 1, -alpha -1, time_cutoff, allow_cutoff, options);
+            score = -scout_search(board, depth - 1, -alpha - 1, time_cutoff, allow_cutoff, options);
             if (score > alpha && score < beta) {
                 // Do a full search
                 score = -pv_search(board, depth - 1, -beta, -alpha, temp_line, time_cutoff, allow_cutoff, options);
             }
         }
         board.unmake_move(move);
-        if (options.kill_flag) { return MAX_SCORE; }
+        if (options.kill_flag) {
+            return MAX_SCORE;
+        }
         if (score > best_score) {
             best_score = score;
             best_line = temp_line;
@@ -220,7 +234,7 @@ score_t pv_search(Board& board, depth_t depth, const score_t alpha_start, const 
     return best_score;
 }
 
-score_t quiesce(Board& board, const score_t alpha_start, const score_t beta, SearchOptions& options) {
+score_t quiesce(Board &board, const score_t alpha_start, const score_t beta, SearchOptions &options) {
     // perform quiesence search to evaluate only quiet positions.
     score_t alpha = alpha_start;
     score_t stand_pat = Evaluation::negamax_heuristic(board);
@@ -228,7 +242,9 @@ score_t quiesce(Board& board, const score_t alpha_start, const score_t beta, Sea
         return stand_pat;
     }
     alpha = std::max(alpha, stand_pat);
-    if (board.is_draw()) { return 0; }
+    if (board.is_draw()) {
+        return 0;
+    }
     // Delta_pruning
     if (stand_pat < alpha - 900) {
         return stand_pat;
@@ -251,21 +267,21 @@ score_t quiesce(Board& board, const score_t alpha_start, const score_t beta, Sea
     return alpha;
 }
 
-
-score_t search(Board& board, const depth_t max_depth, const int max_millis, PrincipleLine& line, SearchOptions& options) {
+score_t search(Board &board, const depth_t max_depth, const int max_millis, PrincipleLine &line,
+               SearchOptions &options) {
     // Initialise the transposition table.
     Cache::transposition_table.set_delete();
 
     PrincipleLine principle;
     board.set_root();
-    
+
     score_t score = 0;
     score_t new_score;
 
     // We want to limit our search to a fixed time.
     my_clock::time_point time_origin, time_now, time_cutoff;
     time_origin = my_clock::now();
-    time_cutoff = time_origin + std::chrono::milliseconds((int) (1.2 * max_millis));
+    time_cutoff = time_origin + std::chrono::milliseconds((int)(1.2 * max_millis));
     std::chrono::duration<double, std::milli> time_span, time_span_last, t_est;
     int branching_factor = 10;
     int counter = 0;
@@ -273,32 +289,36 @@ score_t search(Board& board, const depth_t max_depth, const int max_millis, Prin
     uint start_depth = 2;
     bool allow_cutoff = false;
 
-    for (depth_t depth = start_depth; depth <= max_depth; depth+=1) {
+    for (depth_t depth = start_depth; depth <= max_depth; depth += 1) {
         PrincipleLine temp_line;
         temp_line.reserve(depth);
         new_score = pv_search(board, depth, MIN_SCORE, MAX_SCORE, temp_line, time_cutoff, allow_cutoff, options);
         allow_cutoff = true;
-        if (options.kill_flag.load()) { break; }
+        if (options.kill_flag.load()) {
+            break;
+        }
         // Use this to not save an invalid score if we reach the time cutoff
         score = new_score;
         principle = temp_line;
         time_now = my_clock::now();
         time_span = time_now - time_origin;
 
-        unsigned long nps = int(1000*(options.nodes / time_span.count()));
-        uci_info(depth, score, options.nodes, nps, principle, (int) time_span.count(), board.get_root());
-        
+        unsigned long nps = int(1000 * (options.nodes / time_span.count()));
+        uci_info(depth, score, options.nodes, nps, principle, (int)time_span.count(), board.get_root());
+
         if (is_mating(score)) {
             break;
         }
-        
+
         t_est = branching_factor * time_span;
         // Calculate the last branching factor
         if (counter >= 3) {
             branching_factor = int(time_span.count() / time_span_last.count());
         }
         // We've run out of time to calculate.
-        if (int(t_est.count()) > max_millis) { break;}
+        if (int(t_est.count()) > max_millis) {
+            break;
+        }
         time_span_last = time_span;
         counter++;
     }
@@ -306,7 +326,7 @@ score_t search(Board& board, const depth_t max_depth, const int max_millis, Prin
     return score;
 }
 
-score_t search(Board& board, const depth_t depth, PrincipleLine& line) {
+score_t search(Board &board, const depth_t depth, PrincipleLine &line) {
     SearchOptions options = SearchOptions();
     return search(board, depth, POS_INF, line, options);
 }

@@ -1,6 +1,6 @@
 #include "transposition.hpp"
-#include <array>
 #include <algorithm>
+#include <array>
 
 std::array<long, Cache::tt_max> key_array;
 
@@ -17,7 +17,6 @@ bool Cache::TranspositionTable::probe(const long hash) {
         return true;
     }
 }
-
 
 void Cache::TranspositionTable::replace(const size_t index, const long new_hash, const TransElement elem) {
     const long old_hash = key_array[index];
@@ -38,7 +37,7 @@ score_t Cache::eval_to_tt(const score_t eval, const ply_t ply) {
 }
 
 score_t Cache::eval_from_tt(const score_t eval, const ply_t ply) {
-    // We want mating scoreeval is MATE - (ply of checkmate) but score in the TT as MATE - (ply to mate) 
+    // We want mating scoreeval is MATE - (ply of checkmate) but score in the TT as MATE - (ply to mate)
     if (is_mating(eval)) {
         return eval - ply;
     } else if (is_mating(-eval)) {
@@ -48,7 +47,8 @@ score_t Cache::eval_from_tt(const score_t eval, const ply_t ply) {
     }
 }
 
-void Cache::TranspositionTable::store(const long hash, const score_t eval, const score_t lower, const score_t upper, const depth_t depth, const Move move, const ply_t ply) {
+void Cache::TranspositionTable::store(const long hash, const score_t eval, const score_t lower, const score_t upper,
+                                      const depth_t depth, const Move move, const ply_t ply) {
     if (is_enabled() == false) {
         return;
     }
@@ -64,7 +64,6 @@ void Cache::TranspositionTable::store(const long hash, const score_t eval, const
     index++;
 }
 
-
 void Cache::TranspositionTable::set_delete() {
     for (tt_pair t : _data) {
         // Iterates through the entire data structure
@@ -79,15 +78,18 @@ KillerTableRow Cache::KillerTable::probe(const ply_t ply) {
     return _data[ply];
 }
 
-
 void Cache::KillerTable::store(const ply_t ply, const Move move) {
     if (is_enabled() == false) {
         return;
     }
     // Store the move, only if it's a quiet move.
-    if (move.type != QUIETmv) { return; }
+    if (move.type != QUIETmv) {
+        return;
+    }
     // Don't keep duplicates
-    if (move == _data[ply]) { return; }
+    if (move == _data[ply]) {
+        return;
+    }
     const DenseMove dmove = pack_move(move);
     int index = indicies[ply];
     _data[ply][index] = dmove;
@@ -95,7 +97,6 @@ void Cache::KillerTable::store(const ply_t ply, const Move move) {
     indicies[ply]++;
     indicies[ply] %= n_krow;
 }
-
 
 void Cache::init() {
     killer_table = KillerTable();

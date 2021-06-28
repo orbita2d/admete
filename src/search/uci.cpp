@@ -1,15 +1,14 @@
 
-#include <iostream>
-#include <iomanip>
-#include <sstream>
-#include <string>
-#include <chrono>
-#include <thread>
-
 #include "uci.hpp"
 #include "board.hpp"
-#include "search.hpp"
 #include "evaluate.hpp"
+#include "search.hpp"
+#include <chrono>
+#include <iomanip>
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <thread>
 
 #define ENGINE_NAME "admete"
 #define ENGINE_AUTH "orbita"
@@ -26,7 +25,7 @@ void init_uci() {
     ::uci_enable = true;
 }
 
-void position(Board& board, std::istringstream& is) {
+void position(Board &board, std::istringstream &is) {
     /*
         position [fen <fenstring> | startpos ]  moves <move1> .... <movei>
         set up the position described in fenstring on the internal board and
@@ -48,7 +47,7 @@ void position(Board& board, std::istringstream& is) {
         }
     } else {
         // This is invalid. Just ignore it
-        std::cerr << "Invalid position string: \"" << token << "\n" << std::endl; 
+        std::cerr << "Invalid position string: \"" << token << "\n" << std::endl;
         return;
     }
     board.fen_decode(fen);
@@ -60,26 +59,26 @@ void position(Board& board, std::istringstream& is) {
     }
 }
 
-void bestmove(Board& board, Move move) {
-    /* 
+void bestmove(Board &board, Move move) {
+    /*
     bestmove <move1> [ ponder <move2> ]
-	the engine has stopped searching and found the move <move> best in this position.
-	the engine can send the move it likes to ponder on. The engine must not start pondering automatically.
-	this command must always be sent if the engine stops searching, also in pondering mode if there is a
-	"stop" command, so for every "go" command a "bestmove" command is needed!
-	Directly before that the engine should send a final "info" command with the final search information,
-	the the GUI has the complete statistics about the last search.
+        the engine has stopped searching and found the move <move> best in this position.
+        the engine can send the move it likes to ponder on. The engine must not start pondering automatically.
+        this command must always be sent if the engine stops searching, also in pondering mode if there is a
+        "stop" command, so for every "go" command a "bestmove" command is needed!
+        Directly before that the engine should send a final "info" command with the final search information,
+        the the GUI has the complete statistics about the last search.
     */
     MoveList legal_moves = board.get_moves();
     if (is_legal(move, legal_moves)) {
         std::cout << "bestmove " << move.pretty() << std::endl;
     } else {
-        std::cerr << "illegal move!: " << board.fen_encode()<< std::endl;
+        std::cerr << "illegal move!: " << board.fen_encode() << std::endl;
         std::cout << "bestmove " << legal_moves[0].pretty() << std::endl;
     }
 }
 
-void do_search(Board* board, depth_t max_depth, const int max_millis, SearchOptions* options) {
+void do_search(Board *board, depth_t max_depth, const int max_millis, SearchOptions *options) {
     PrincipleLine line;
     line.reserve(max_depth);
     options->running_flag.store(true);
@@ -93,13 +92,13 @@ void do_search(Board* board, depth_t max_depth, const int max_millis, SearchOpti
     options->running_flag.store(false);
 }
 
-void cleanup_thread(SearchOptions& options) {
+void cleanup_thread(SearchOptions &options) {
     if (!options.is_running() && options.running_thread.joinable()) {
         options.running_thread.join();
     }
 }
 
-void go(Board& board, std::istringstream& is, SearchOptions& options) {
+void go(Board &board, std::istringstream &is, SearchOptions &options) {
     /*
     * go
     start calculating on the current position set up with the "position" command.
@@ -165,13 +164,13 @@ void go(Board& board, std::istringstream& is, SearchOptions& options) {
         }
     }
     const int our_time = board.is_white_move() ? wtime : btime;
-    const int our_inc  = board.is_white_move() ? winc : binc;
-    int cutoff_time = our_time == POS_INF ? POS_INF : our_time / 18 + (our_inc*3)/5;
+    const int our_inc = board.is_white_move() ? winc : binc;
+    int cutoff_time = our_time == POS_INF ? POS_INF : our_time / 18 + (our_inc * 3) / 5;
     cutoff_time = std::min(move_time, cutoff_time);
-    options.running_thread = std::thread(&do_search, &board, (depth_t) max_depth, cutoff_time, &options);
+    options.running_thread = std::thread(&do_search, &board, (depth_t)max_depth, cutoff_time, &options);
 }
 
-void stop(SearchOptions& options) {
+void stop(SearchOptions &options) {
     /*
     stop calculating as soon as possible,
     don't forget the "bestmove" and possibly the "ponder" token when finishing the search
@@ -179,7 +178,7 @@ void stop(SearchOptions& options) {
     if (options.is_running()) {
         options.kill_flag.store(true);
         options.running_thread.join();
-   }
+    }
 }
 
 void uci() {
@@ -213,25 +212,26 @@ void uci() {
         } else if (token == "h") {
             score_t v = Evaluation::heuristic(board);
             std::cout << std::dec << (int)v << std::endl;
-        }
-        else {
-            //std::cerr << "!#" << token << ":"<< command << std::endl;
+        } else {
+            // std::cerr << "!#" << token << ":"<< command << std::endl;
         }
     }
-
 }
 
-void uci_info(depth_t depth, score_t eval, unsigned long nodes, unsigned long nps, PrincipleLine principle, unsigned int time, ply_t root_ply) {
-    if (!::uci_enable) {return;}
+void uci_info(depth_t depth, score_t eval, unsigned long nodes, unsigned long nps, PrincipleLine principle,
+              unsigned int time, ply_t root_ply) {
+    if (!::uci_enable) {
+        return;
+    }
     std::cout << std::dec;
     std::cout << "info";
     std::cout << " depth " << (uint)depth;
 
     if (is_mating(eval)) {
         // Mate for white. Score is (MATING_SCORE - mate_ply)
-        score_t n = (MATING_SCORE - (eval) - root_ply + 1) / 2;
+        score_t n = (MATING_SCORE - (eval)-root_ply + 1) / 2;
         std::cout << " score mate " << (int)n;
-    }else if (is_mating(-eval)) {
+    } else if (is_mating(-eval)) {
         // Mate for black. Score is (mate_ply - MATING_SCORE)
         score_t n = (eval + MATING_SCORE - root_ply) / 2;
         std::cout << " score mate " << -(int)n;
@@ -252,9 +252,10 @@ void uci_info(depth_t depth, score_t eval, unsigned long nodes, unsigned long np
     std::cout << std::endl;
 }
 
-
 void uci_info_nodes(unsigned long nodes, unsigned long nps) {
-    if (!::uci_enable) {return;}
+    if (!::uci_enable) {
+        return;
+    }
     if (nodes > 0) {
         std::cout << "nodes " << nodes;
     }

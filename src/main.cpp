@@ -1,15 +1,14 @@
-#include <iostream>
-#include <chrono>
-#include <getopt.h> // For get_opt_long()
-
-#include "piece.hpp"
+#include "bitboard.hpp"
 #include "board.hpp"
-#include "search.hpp"
-#include "uci.hpp"
 #include "evaluate.hpp"
 #include "movegen.hpp"
-#include "bitboard.hpp"
+#include "piece.hpp"
+#include "search.hpp"
 #include "transposition.hpp"
+#include "uci.hpp"
+#include <chrono>
+#include <getopt.h> // For get_opt_long()
+#include <iostream>
 
 void print_vector(const std::vector<Square> &moves) {
     for (Square move : moves) {
@@ -23,7 +22,7 @@ void print_vector(const std::vector<Move> &moves) {
     }
 }
 
-void print_line(PrincipleLine &line, Board& board) {
+void print_line(PrincipleLine &line, Board &board) {
     for (PrincipleLine::reverse_iterator it = line.rbegin(); it != line.rend(); ++it) {
         std::vector<Move> legal_moves = board.get_moves();
         std::cout << board.print_move(*it, legal_moves) << std::endl;
@@ -34,8 +33,7 @@ void print_line(PrincipleLine &line, Board& board) {
     }
 }
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char *argv[]) {
     static int perft_flag = 0;
     static int perftcomp_flag = 0;
     static int evaluate_flag = 0;
@@ -49,22 +47,22 @@ int main(int argc, char* argv[])
     static int tuning_table_flag = 0;
     int opt;
     while (true) {
-        static struct option long_options[] = {
-            {"perft", no_argument, &perft_flag, 1},
-            {"perft-compare", no_argument, &perftcomp_flag, 1},
-            {"eval", no_argument, &evaluate_flag, 1},
-            {"eval-static",	no_argument, &evaluate_static_flag, 1},
-            {"divide", no_argument, &divide_flag, 1},
-            {"depth",	required_argument, 0, 'd'},
-            {"board",	required_argument, 0, 'b'},
-            {"print",	no_argument, &print_flag, 1},
-            {"print-tables", no_argument, &print_tables_flag, 1},
-            {"load-tables", required_argument, 0, 'T'},
-            {0, 0, 0, 0}
-        };
+        static struct option long_options[] = {{"perft", no_argument, &perft_flag, 1},
+                                               {"perft-compare", no_argument, &perftcomp_flag, 1},
+                                               {"eval", no_argument, &evaluate_flag, 1},
+                                               {"eval-static", no_argument, &evaluate_static_flag, 1},
+                                               {"divide", no_argument, &divide_flag, 1},
+                                               {"depth", required_argument, 0, 'd'},
+                                               {"board", required_argument, 0, 'b'},
+                                               {"print", no_argument, &print_flag, 1},
+                                               {"print-tables", no_argument, &print_tables_flag, 1},
+                                               {"load-tables", required_argument, 0, 'T'},
+                                               {0, 0, 0, 0}};
         int option_index = 0;
         opt = getopt_long(argc, argv, "b:d:", long_options, &option_index);
-        if (opt == -1) { break; }
+        if (opt == -1) {
+            break;
+        }
         switch (opt) {
         case 0:
             /* If this option set a flag, do nothing else now. */
@@ -72,7 +70,7 @@ int main(int argc, char* argv[])
                 break;
             fprintf(stdout, "option %s", long_options[option_index].name);
             if (optarg)
-                fprintf(stdout," with arg %s", optarg);
+                fprintf(stdout, " with arg %s", optarg);
             fprintf(stdout, "\n");
             break;
         case 'd':
@@ -101,7 +99,7 @@ int main(int argc, char* argv[])
     if (tuning_table_flag) {
         Evaluation::load_tables(tuning_table);
     }
-    
+
     Board board = Board();
     board.fen_decode(board_fen);
     if (print_flag) {
@@ -146,8 +144,8 @@ int main(int argc, char* argv[])
         long nodes = perft_comparison(depth, board);
         time_now = std::chrono::high_resolution_clock::now();
         time_span = time_now - time_origin;
-        std::cout << "nodes: " << nodes << " in " << time_span.count() /1000 << "seconds" << std::endl;
-        std::cout <<  int(1000*(nodes / time_span.count())) << " nodes per second" << std::endl;
+        std::cout << "nodes: " << nodes << " in " << time_span.count() / 1000 << "seconds" << std::endl;
+        std::cout << int(1000 * (nodes / time_span.count())) << " nodes per second" << std::endl;
 
         exit(EXIT_SUCCESS);
     }
@@ -157,12 +155,12 @@ int main(int argc, char* argv[])
         perft_divide(depth, board);
         exit(EXIT_SUCCESS);
     }
-    
+
     // Otherwise, we are probably talking to a computer.
 
     std::string command;
     std::cin >> command;
-    
+
     if (command == "uci") {
         uci();
     } else if (command == "test") {
@@ -170,37 +168,37 @@ int main(int argc, char* argv[])
         board.pretty();
 
         std::cout << "White Passed Pawns:" << std::endl;
-        Bitboards::pretty(board.passed_pawns(WHITE)); 
+        Bitboards::pretty(board.passed_pawns(WHITE));
 
         std::cout << "Black Passed Pawns:" << std::endl;
-        Bitboards::pretty(board.passed_pawns(BLACK)); 
+        Bitboards::pretty(board.passed_pawns(BLACK));
 
         std::cout << "White Weak Pawns:" << std::endl;
-        Bitboards::pretty(board.weak_pawns(WHITE)); 
+        Bitboards::pretty(board.weak_pawns(WHITE));
 
         std::cout << "Black Weak Pawns:" << std::endl;
-        Bitboards::pretty(board.weak_pawns(BLACK)); 
+        Bitboards::pretty(board.weak_pawns(BLACK));
 
         std::cout << "White Half-Open Files:" << std::endl;
-        Bitboards::pretty(board.half_open_files(WHITE)); 
+        Bitboards::pretty(board.half_open_files(WHITE));
 
         std::cout << "Black Half-Open Files:" << std::endl;
-        Bitboards::pretty(board.half_open_files(BLACK)); 
+        Bitboards::pretty(board.half_open_files(BLACK));
 
         std::cout << "Open Files:" << std::endl;
-        Bitboards::pretty(board.open_files()); 
+        Bitboards::pretty(board.open_files());
 
         std::cout << "White Isolated Pawns:" << std::endl;
-        Bitboards::pretty(board.isolated_pawns(WHITE)); 
+        Bitboards::pretty(board.isolated_pawns(WHITE));
 
         std::cout << "Black Isolated Pawns:" << std::endl;
-        Bitboards::pretty(board.isolated_pawns(BLACK)); 
+        Bitboards::pretty(board.isolated_pawns(BLACK));
 
         std::cout << "White Connected Passed Pawns:" << std::endl;
-        Bitboards::pretty(board.connected_passed_pawns(WHITE)); 
+        Bitboards::pretty(board.connected_passed_pawns(WHITE));
 
         std::cout << "Black Connected Passed Pawns:" << std::endl;
-        Bitboards::pretty(board.connected_passed_pawns(BLACK)); 
+        Bitboards::pretty(board.connected_passed_pawns(BLACK));
 
         std::cout << "King Saftey:" << std::endl;
         Bitboard occ = Bitboards::attacks<QUEEN>(board.pieces(PAWN), board.find_king(WHITE));
@@ -217,6 +215,5 @@ int main(int argc, char* argv[])
         Bitboards::pretty(board.outposts(WHITE));
         std::cout << "Black Outposts:" << std::endl;
         Bitboards::pretty(board.outposts(BLACK));
-
     }
 }

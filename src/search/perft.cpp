@@ -16,11 +16,12 @@ unsigned long perft(depth_t depth, Board &board) {
     Cache::transposition_table.min_depth(0);
     // Transposition tables very tricky here because the keys cannot distinguish by depth
     /*           R
-                / \ 
+                / \
                0   1
              /  \ /  \
             00 01 10 11
-        If 10 and 0 have the same key (because it's the same position, possible with depth >= 5, especially in the endgame), it will count 10 as having two children 
+        If 10 and 0 have the same key (because it's the same position, possible with depth >= 5, especially in the
+       endgame), it will count 10 as having two children
     */
     return perft_bulk(depth, board);
 }
@@ -35,7 +36,7 @@ unsigned long perft_bulk(depth_t depth, Board &board) {
     unsigned long nodes = 0;
     for (Move move : legal_moves) {
         board.make_move(move);
-        nodes += perft_bulk(depth-1, board);
+        nodes += perft_bulk(depth - 1, board);
         board.unmake_move(move);
     }
     return nodes;
@@ -47,8 +48,8 @@ void perft_divide(depth_t depth, Board &board) {
     unsigned long child_nodes;
     for (auto move : legal_moves) {
         board.make_move(move);
-        child_nodes =  perft(depth-1, board);
-        std::cout << move.pretty() << ": "<< std::dec << child_nodes << std::endl;
+        child_nodes = perft(depth - 1, board);
+        std::cout << move.pretty() << ": " << std::dec << child_nodes << std::endl;
         nodes += child_nodes;
         board.unmake_move(move);
     }
@@ -65,7 +66,7 @@ unsigned long perft_spenny(depth_t depth, Board &board) {
     unsigned long nodes = 0;
     for (Move move : legal_moves) {
         board.make_move(move);
-        nodes += perft_spenny(depth-1, board);
+        nodes += perft_spenny(depth - 1, board);
         board.unmake_move(move);
     }
     return nodes;
