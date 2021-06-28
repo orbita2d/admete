@@ -48,51 +48,51 @@ int main(int argc, char* argv[])
     std::string tuning_table = "";
     static int tuning_table_flag = 0;
     int opt;
-	while (true) {
-		static struct option long_options[] = {
+    while (true) {
+        static struct option long_options[] = {
             {"perft", no_argument, &perft_flag, 1},
             {"perft-compare", no_argument, &perftcomp_flag, 1},
             {"eval", no_argument, &evaluate_flag, 1},
-			{"eval-static",	no_argument, &evaluate_static_flag, 1},
+            {"eval-static",	no_argument, &evaluate_static_flag, 1},
             {"divide", no_argument, &divide_flag, 1},
-			{"depth",	required_argument, 0, 'd'},
-			{"board",	required_argument, 0, 'b'},
+            {"depth",	required_argument, 0, 'd'},
+            {"board",	required_argument, 0, 'b'},
             {"print",	no_argument, &print_flag, 1},
             {"print-tables", no_argument, &print_tables_flag, 1},
             {"load-tables", required_argument, 0, 'T'},
-			{0, 0, 0, 0}
-		};
-		int option_index = 0;
-		opt = getopt_long(argc, argv, "b:d:", long_options, &option_index);
-		if (opt == -1) { break; }
-		switch (opt) {
-		case 0:
-			/* If this option set a flag, do nothing else now. */
-			if (long_options[option_index].flag != 0)
-				break;
-			fprintf(stdout, "option %s", long_options[option_index].name);
-			if (optarg)
-				fprintf(stdout," with arg %s", optarg);
-			fprintf(stdout, "\n");
-			break;
-		case 'd':
+            {0, 0, 0, 0}
+        };
+        int option_index = 0;
+        opt = getopt_long(argc, argv, "b:d:", long_options, &option_index);
+        if (opt == -1) { break; }
+        switch (opt) {
+        case 0:
+            /* If this option set a flag, do nothing else now. */
+            if (long_options[option_index].flag != 0)
+                break;
+            fprintf(stdout, "option %s", long_options[option_index].name);
+            if (optarg)
+                fprintf(stdout," with arg %s", optarg);
+            fprintf(stdout, "\n");
+            break;
+        case 'd':
             depth = atoi(optarg);
-			break;
-		case 'b':
+            break;
+        case 'b':
             board_fen = optarg;
-			break;
-		case 'T':
+            break;
+        case 'T':
             tuning_table_flag = 1;
             tuning_table = optarg;
-			break;
-		case '?':
-			/* getopt_long already printed an error message. */
-			exit(EXIT_FAILURE);
-			break;
-		default:
-			exit(EXIT_FAILURE);
-		}
-	}
+            break;
+        case '?':
+            /* getopt_long already printed an error message. */
+            exit(EXIT_FAILURE);
+            break;
+        default:
+            exit(EXIT_FAILURE);
+        }
+    }
     Bitboards::init();
     Zorbist::init();
     Evaluation::init();
