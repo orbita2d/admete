@@ -85,7 +85,7 @@ void do_search(Board* board, depth_t max_depth, const int max_millis, SearchOpti
     options->running_flag.store(true);
     options->kill_flag = false;
     options->nodes = 0;
-    int score = iterative_deepening(*board, max_depth, max_millis, line, *options);
+    int score = search(*board, max_depth, max_millis, line, *options);
     options->eval = score;
     Move first_move = line.back();
     bestmove(*board, first_move);
@@ -211,8 +211,8 @@ void uci() {
         } else if (token == "d") {
             board.pretty();
         } else if (token == "h") {
-            int v = heuristic(board);
-            std::cout << std::dec << v << std::endl;
+            score_t v = Evaluation::heuristic(board);
+            std::cout << std::dec << (int)v << std::endl;
         }
         else {
             //std::cerr << "!#" << token << ":"<< command << std::endl;

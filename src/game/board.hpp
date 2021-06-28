@@ -107,6 +107,8 @@ public:
     bool is_draw() const;
     ply_t ply() const { return ply_counter;}
     ply_t height() const { return ply_counter - root_node_ply;}
+    bool is_endgame() const;
+
 private:
     AuxilliaryInfo* aux_info;
     Bitboard occupied_bb;

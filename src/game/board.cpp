@@ -179,7 +179,7 @@ void Board::initialise() {
     search_kings();
     update_checkers();
     update_check_squares();
-    aux_info->material = count_material(*this);
+    aux_info->material = Evaluation::count_material(*this);
     hash_history[0] = Zorbist::hash(*this);
 
     for (int c = WHITE; c < N_COLOUR; c++){
@@ -833,4 +833,8 @@ ply_t Board::repetitions(const ply_t start) const{
     }
     return n;
 
+}
+
+bool Board::is_endgame() const {
+    return Evaluation::count_material(*this) < Evaluation::ENDGAME_MATERIAL; 
 }

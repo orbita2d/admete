@@ -118,14 +118,14 @@ int main(int argc, char* argv[])
         std::vector<Move> line;
         line.reserve(depth);
         SearchOptions options = SearchOptions();
-        int score = iterative_deepening(board, depth, POS_INF, line, options);
+        int score = search(board, depth, POS_INF, line, options);
         std::cout << print_score(score) << " ( " << options.nodes << " ) " << std::endl;
         print_line(line, board);
         exit(EXIT_SUCCESS);
     }
 
     if (evaluate_static_flag) {
-        int score = negamax_heuristic(board);
+        int score = Evaluation::negamax_heuristic(board);
         std::cout << print_score(score) << std::endl;
         exit(EXIT_SUCCESS);
     }

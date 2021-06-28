@@ -194,6 +194,10 @@ inline ply_t mate_score_to_ply(const score_t score) {
     return MATING_SCORE - score;
 }
 
+inline score_t ply_to_mate_score(const ply_t ply) {
+    return MATING_SCORE - ply;
+}
+
 constexpr int NEG_INF = -1000000000;
 constexpr int POS_INF = +1000000000;
 

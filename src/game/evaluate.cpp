@@ -25,9 +25,6 @@ op  |mid| eg
       \
         -----
 */
-constexpr score_t OPENING_MATERIAL = 6000;
-constexpr score_t ENDGAME_MATERIAL = 2000;
-
 std::array<score_t, 6> material = {
         {100, 300, 300, 500, 900, 0}
 };
@@ -405,7 +402,7 @@ void Evaluation::load_tables(std::string filename) {
 	file.close();
 }
 
-score_t count_material(const Board &board) {
+score_t Evaluation::count_material(const Board &board) {
     score_t material_value = 0;
     for (score_t p = 0; p < N_PIECE; p++) {
         material_value += material[p] * (board.count_pieces(WHITE, (PieceType)p) + board.count_pieces(BLACK, (PieceType)p));
@@ -413,7 +410,7 @@ score_t count_material(const Board &board) {
     return material_value;
 }
 
-score_t heuristic(Board &board) {
+score_t Evaluation::heuristic(Board &board) {
     int material_value = 0;
     Score score = Score(0, 0);
     for (int p = 0; p < N_PIECE; p++) {
@@ -621,13 +618,13 @@ score_t heuristic(Board &board) {
     return value;
 }
 
-score_t negamax_heuristic(Board &board) {
+score_t Evaluation::negamax_heuristic(Board &board) {
     int side_multiplier = board.is_white_move() ? 1 : -1;
     return heuristic(board) * side_multiplier;
 }
 
 
-score_t evaluate(Board &board, std::vector<Move> &legal_moves) {
+score_t Evaluation::evaluate(Board &board, std::vector<Move> &legal_moves) {
     // evaluate the position relative to the current player.
     // First check if we have been mated.
     if (legal_moves.size() == 0) {
@@ -643,7 +640,7 @@ score_t evaluate(Board &board, std::vector<Move> &legal_moves) {
 }
 
 
-score_t evaluate(Board &board) {
+score_t Evaluation::evaluate(Board &board) {
     std::vector<Move> legal_moves = board.get_moves();
     return evaluate(board, legal_moves);
 }

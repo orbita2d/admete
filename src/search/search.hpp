@@ -32,8 +32,7 @@ void perft_divide(depth_t depth, Board &board);
 typedef std::chrono::high_resolution_clock my_clock;
 
 // search.cpp
-score_t alphabeta(Board& board, depth_t depth, score_t alpha, score_t beta, PrincipleLine& line, my_clock::time_point time_cutoff, bool allow_cutoff, SearchOptions& options);
+score_t pv_search(Board& board, depth_t depth, score_t alpha, score_t beta, PrincipleLine& line, my_clock::time_point time_cutoff, bool allow_cutoff, SearchOptions& options);
 score_t quiesce(Board& board, score_t alpha, score_t beta, SearchOptions& options);
-score_t pv_search(Board& board, depth_t depth, score_t alpha, score_t beta, PrincipleLine& principle, const uint pv_depth, PrincipleLine& line, my_clock::time_point time_cutoff, bool allow_cutoff, SearchOptions& options);
-score_t iterative_deepening(Board& board, const depth_t depth, const int max_millis, PrincipleLine& line, SearchOptions& options);
-score_t iterative_deepening(Board& board, const depth_t depth, PrincipleLine& line);
+score_t search(Board& board, const depth_t depth, const int max_millis, PrincipleLine& line, SearchOptions& options);
+score_t search(Board& board, const depth_t depth, PrincipleLine& line);
