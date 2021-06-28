@@ -328,51 +328,111 @@ score_t Search::search(Board &board, const depth_t max_depth, const int max_mill
     board.set_root();
 
     score_t score = 0;
-    score_t new_score;
 
-    // We want to limit our search to a fixed time.
+    // Initialise variables for time control.
     my_clock::time_point time_origin, time_now, time_cutoff;
-    time_origin = my_clock::now();
-    time_cutoff = time_origin + std::chrono::milliseconds((int)(1.2 * max_millis));
     std::chrono::duration<double, std::milli> time_span, time_span_last, t_est;
-    int branching_factor = 10;
-    int counter = 0;
+    // Time at start of search.
+    time_origin = my_clock::now();
+    // Time when the search should be stopped
+    time_cutoff = time_origin + std::chrono::milliseconds((int)(1.2 * max_millis));
+    // Estimate effective branching factor empirically
+    int branching_factor = 4;
 
-    uint start_depth = 2;
     bool allow_cutoff = false;
 
-    for (depth_t depth = start_depth; depth <= max_depth; depth += 1) {
+    // Offsets from our score guess for our aspiration window in cp.
+    // When it gets to the end it just sets the limit it's failing on to MATING_SCORE
+    constexpr score_t aspration_windows[] = {30, 80, 200, 500};
+    constexpr size_t n_aw = sizeof(aspration_windows) / sizeof(score_t);
+
+    // Iterative deepening
+    for (depth_t depth = 2; depth <= max_depth; depth++) {
         PrincipleLine temp_line;
         temp_line.reserve(depth);
-        new_score = pv_search(board, depth, MIN_SCORE, MAX_SCORE, temp_line, time_cutoff, allow_cutoff, options);
-        allow_cutoff = true;
+        score_t new_score;
+
+        // Aspiration windows.
+        // 'score', from the previous iteration, acts as a guess we set our bounds around.
+        score_t alpha = score - aspration_windows[0];
+        score_t beta = score + aspration_windows[0];
+        for (size_t aw = 0; aw <= n_aw; aw++) {
+            new_score = pv_search(board, depth, alpha, beta, temp_line, time_cutoff, allow_cutoff, options);
+
+            // Exit search if we've been asked to stop.
+            if (options.stop()) {
+                break;
+            }
+
+            // Check the score against the bounds
+            if (new_score <= alpha) {
+                // Score is an upper bound
+                if (is_mating(-new_score)) {
+                    // We can skip some steps here
+                    alpha = -MATING_SCORE;
+                } else if (aw < n_aw - 1) {
+                    alpha = score - aspration_windows[aw + 1];
+                    alpha = std::max(alpha, (score_t)-MATING_SCORE);
+                } else {
+                    // If we are at the end of the listed bounds, just set the limit to the mating score.
+                    alpha = -MATING_SCORE;
+                }
+            } else if (new_score >= beta) {
+                // Score is a lower bound.
+                if (is_mating(new_score)) {
+                    // We can skip some steps here
+                    beta = MATING_SCORE;
+                } else if (aw < n_aw - 1) {
+                    beta = score + aspration_windows[aw + 1];
+                    beta = std::min(beta, (score_t)MATING_SCORE);
+                } else {
+                    // If we are at the end of the listed bounds, just set the limit to the mating score.
+                    beta = MATING_SCORE;
+                }
+            } else {
+                // Score is exact.
+                break;
+            }
+        }
+
+        // Check if we've been sent a stop signal.
         if (options.stop()) {
             break;
         }
-        // Use this to not save an invalid score if we reach the time cutoff
+        // Allow a forced stop after at least some calculation has been done.
+        allow_cutoff = true;
+        // Score is saved to temporary variable new_score so that we still have the last valid score if the search is
+        // stopped by force.
         score = new_score;
         principle = temp_line;
+
+        // Calculate the time spent so far.
         time_now = my_clock::now();
         time_span = time_now - time_origin;
-
         unsigned long nps = int(1000 * (options.nodes / time_span.count()));
+
+        // Send the info for the search to uci
         uci_info(depth, score, options.nodes, nps, principle, (int)time_span.count(), board.get_root());
 
+        // If we've found a forced mate, just play it.
         if (is_mating(score)) {
             break;
         }
 
+        // Estimate the next time span.
         t_est = branching_factor * time_span;
-        // Calculate the last branching factor
-        if (counter >= 3) {
-            branching_factor = int(time_span.count() / time_span_last.count());
-        }
-        // We've run out of time to calculate.
+
+        // Check if our estimate of the next depth will take us over our time limit
         if (int(t_est.count()) > max_millis) {
             break;
         }
+
+        // Calculate the last effective branching factor
+        if (depth >= 5) {
+            branching_factor = int(time_span.count() / time_span_last.count());
+        }
+
         time_span_last = time_span;
-        counter++;
     }
     line = principle;
     return score;
