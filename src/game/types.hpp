@@ -122,9 +122,16 @@ static constexpr std::array<Square, 8> by_dirx = {N, E, S, W, NE, SE, SW, NW};
 
 constexpr int N_CASTLE = 2;
 enum CastlingSide { KINGSIDE, QUEENSIDE };
-constexpr std::array<std::array<Square, 2>, 2> RookSquare = {
+
+// Squares the rooks sit on (for castling).
+constexpr std::array<std::array<Square, 2>, 2> RookSquares = {
     {{Squares::FileH | Squares::Rank1, Squares::FileA | Squares::Rank1},
      {Squares::FileH | Squares::Rank8, Squares::FileA | Squares::Rank8}}};
+
+// Squares the rooks move to when castling.
+constexpr std::array<std::array<Square, 2>, 2> RookCastleSquares = {
+    {{Squares::FileF | Squares::Rank1, Squares::FileD | Squares::Rank1},
+     {Squares::FileF | Squares::Rank8, Squares::FileD | Squares::Rank8}}};
 
 // Colours
 
