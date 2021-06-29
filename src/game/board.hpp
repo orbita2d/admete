@@ -170,6 +170,7 @@ constexpr Square relative_rank(const Colour c, const Square sq) {
     }
 }
 
+// zorbist.cpp
 namespace Zorbist {
 void init();
 long hash(const Board &board);
