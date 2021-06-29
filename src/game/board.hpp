@@ -47,7 +47,6 @@ class Board {
     MoveList get_evasion_moves() const;
     MoveList get_moves();
     MoveList get_quiessence_moves();
-    void sort_moves(MoveList &legal_moves, const DenseMove hash_move, const KillerTableRow killer_move);
 
     bool is_attacked(const Square square, const Colour us) const;
     void update_checkers();

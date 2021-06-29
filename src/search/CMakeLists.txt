@@ -1,7 +1,8 @@
 add_library(search_library search.cpp search.hpp
     perft.cpp 
     transposition.cpp transposition.hpp
-    uci.cpp uci.hpp)
+    uci.cpp uci.hpp
+    moveordering.cpp moveordering.hpp)
 
 target_link_libraries(search_library game_library pthread)
 

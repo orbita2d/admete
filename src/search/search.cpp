@@ -1,5 +1,6 @@
 #include "search.hpp"
-#include "../game/evaluate.hpp"
+#include "evaluate.hpp"
+#include "moveordering.hpp"
 #include "transposition.hpp"
 #include "uci.hpp"
 #include <chrono>
@@ -133,7 +134,7 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
         }
     }
 
-    board.sort_moves(legal_moves, hash_dmove, killer_move);
+    Ordering::sort_moves(board, legal_moves, hash_dmove, killer_move);
     for (Move move : legal_moves) {
         board.make_move(move);
         options.nodes++;
@@ -247,7 +248,7 @@ score_t Search::pv_search(Board &board, depth_t depth, const score_t alpha_start
     }
 
     // Sort the remaining moves, and remove the hash move if it exists
-    board.sort_moves(legal_moves, hash_dmove, killer_move);
+    Ordering::sort_moves(board, legal_moves, hash_dmove, killer_move);
 
     for (Move move : legal_moves) {
         PrincipleLine temp_line;
@@ -320,7 +321,7 @@ score_t Search::quiesce(Board &board, const score_t alpha_start, const score_t b
     }
 
     // Sort the captures.
-    board.sort_moves(moves, NULL_DMOVE, NULL_KROW);
+    Ordering::sort_moves(board, moves, NULL_DMOVE, NULL_KROW);
 
     for (Move move : moves) {
         board.make_move(move);
