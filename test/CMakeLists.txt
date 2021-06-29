@@ -3,7 +3,8 @@ add_executable(tests main.cpp
                 search.cpp
                 ops.cpp
                 fen.cpp
-                board.cpp)
+                board.cpp
+                eval.cpp)
 
 target_link_libraries(tests
         gtest

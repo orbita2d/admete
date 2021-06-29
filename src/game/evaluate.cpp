@@ -610,11 +610,12 @@ score_t Evaluation::evaluate(Board &board) {
 
 score_t Evaluation::drawn_score(const Board &board) {
     // Returns a relative score for what we should consider a draw.
-    // This isn't contempt, but means that white will play for a win, and black for a draw.
-    constexpr score_t draw_diff = 5;
-    if (board.is_white_move()) {
-        return -draw_diff;
+    // This implements contempt, such that the engine player should try avoid draws.
+    // If we are an even number of nodes from root, the root player is the current player.
+    const bool root_player = (board.height() % 2) == 0;
+    if (root_player) {
+        return contempt;
     } else {
-        return draw_diff;
+        return -contempt;
     }
 }
