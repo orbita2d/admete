@@ -23,15 +23,15 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
         depth++;
     }
 
-    // If this is a draw by repetition or insufficient material, return the drawn score.
-    if (board.is_draw()) {
-        return Evaluation::drawn_score(board);
-    }
-
     MoveList legal_moves = board.get_moves();
     // Terminal node.
     if (legal_moves.size() == 0) {
         return Evaluation::evaluate(board, legal_moves);
+    }
+
+    // If this is a draw by repetition or insufficient material, return the drawn score.
+    if (board.is_draw()) {
+        return Evaluation::drawn_score(board);
     }
 
     // Leaf node for main tree.
@@ -165,21 +165,21 @@ score_t Search::pv_search(Board &board, depth_t depth, const score_t alpha_start
     // For non-PV nodes, use scout_search
 
     score_t alpha = alpha_start;
-    MoveList legal_moves = board.get_moves();
 
     // Check extentions
     if (board.is_check()) {
         depth++;
     }
 
-    // If this is a draw by repetition or insufficient material, return the drawn score.
-    if (board.is_draw() && !board.is_root()) {
-        return Evaluation::drawn_score(board);
-    }
-
+    MoveList legal_moves = board.get_moves();
     // Terminal node
     if (legal_moves.size() == 0) {
         return Evaluation::evaluate(board, legal_moves);
+    }
+
+    // If this is a draw by repetition or insufficient material, return the drawn score.
+    if (board.is_draw() && !board.is_root()) {
+        return Evaluation::drawn_score(board);
     }
 
     // Leaf node (from the main tree anyway)

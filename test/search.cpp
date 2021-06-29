@@ -153,3 +153,22 @@ TEST(Search, Underpromotion) {
     EXPECT_EQ(Search::search(board, depth, line), score);
   }
 }
+
+TEST(Search, Rule50CheckmatePriority) {
+  Board board = Board();
+  board.set_root();
+  const score_t draw_score = Evaluation::drawn_score(board);
+  std::pair<std::string, score_t> testcases[] = {
+      {"7k/1R6/R7/8/8/8/8/4K3 w - - 99 1", MATING_SCORE - 1},
+      {"4k3/8/8/8/8/r7/1r6/7K b - - 99 1", MATING_SCORE - 1},
+  };
+
+  constexpr depth_t depth = 10;
+  PrincipleLine line;
+  line.reserve(depth);
+
+  for (const auto &[fen, score] : testcases) {
+    board.fen_decode(fen);
+    EXPECT_EQ(Search::search(board, depth, line), score);
+  }
+}
