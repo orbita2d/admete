@@ -1,4 +1,5 @@
 #include "board.hpp"
+#include <assert.h>
 #include <iomanip>
 #include <iostream>
 #include <istream>
@@ -236,4 +237,31 @@ std::ostream &operator<<(std::ostream &os, const Square move) {
 std::ostream &operator<<(std::ostream &os, const Move move) {
     os << move.pretty();
     return os;
+}
+
+std::string print_score(const score_t score) {
+    // Returns a human readable form of the score, rounding to nearest 10 cp.
+    assert(score > -MATING_SCORE && score < MATING_SCORE);
+    std::stringstream ss;
+    if (is_mating(score)) {
+        // Make for white.
+        signed int n = MATING_SCORE - score;
+        ss << "#" << n;
+    } else if (is_mating(-score)) {
+        // Make for black.
+        signed int n = (score + MATING_SCORE);
+        ss << "#-" << n;
+    } else if (score > 5) {
+        // White winning
+        ss << "+" << score / 100 << "." << (score % 100) / 10;
+    } else if (score < -5) {
+        // Black winning
+        ss << "-" << -score / 100 << "." << (-score % 100) / 10;
+    } else {
+        // White winning
+        ss << "0.0";
+    }
+    std::string out;
+    ss >> out;
+    return out;
 }

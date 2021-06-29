@@ -52,7 +52,7 @@ class Board {
     bool is_attacked(const Square square, const Colour us) const;
     void update_checkers();
     void update_check_squares();
-    bool gives_check(Move move);
+    bool gives_check(const Move move);
     Bitboard check_squares(const PieceType p) const { return aux_info->check_squares[p]; };
     Bitboard blockers() const { return aux_info->blockers; };
 
@@ -97,7 +97,6 @@ class Board {
     void make_nullmove();
     void unmake_nullmove();
 
-    void try_move(const std::string move_sting);
     bool try_uci_move(const std::string move_sting);
     Square find_king(const Colour us) const;
     void search_kings();
@@ -136,8 +135,6 @@ class Board {
     std::array<long, MAX_PLY> hash_history;
     ply_t root_node_ply;
 };
-
-std::string print_score(int);
 
 inline Move unpack_move(const DenseMove dm, const Board &board) {
     PieceType p = board.piece_type(dm.origin());

@@ -3,6 +3,7 @@
 #include "evaluate.hpp"
 #include "movegen.hpp"
 #include "piece.hpp"
+#include "printing.hpp"
 #include "search.hpp"
 #include "transposition.hpp"
 #include "uci.hpp"
@@ -116,14 +117,14 @@ int main(int argc, char *argv[]) {
         std::vector<Move> line;
         line.reserve(depth);
         Search::SearchOptions options = Search::SearchOptions();
-        int score = Search::search(board, depth, POS_INF, line, options);
+        score_t score = Search::search(board, depth, POS_INF, line, options);
         std::cout << print_score(score) << " ( " << options.nodes << " ) " << std::endl;
         print_line(line, board);
         exit(EXIT_SUCCESS);
     }
 
     if (evaluate_static_flag) {
-        int score = Evaluation::negamax_heuristic(board);
+        score_t score = Evaluation::negamax_heuristic(board);
         std::cout << print_score(score) << std::endl;
         exit(EXIT_SUCCESS);
     }
