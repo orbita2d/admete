@@ -134,3 +134,22 @@ TEST(Search, Stalemate) {
     EXPECT_EQ(Search::search(board, depth, line), score);
   }
 }
+
+TEST(Search, Underpromotion) {
+  Board board = Board();
+  board.set_root();
+  const score_t draw_score = Evaluation::drawn_score(board);
+  std::pair<std::string, score_t> testcases[] = {
+      {"6n1/5P1k/5Q2/8/8/8/8/7K w - - 0 1", MATING_SCORE - 1},
+      {"7k/8/8/8/8/5q2/5p1K/6N1 b - - 0 1", MATING_SCORE - 1},
+  };
+
+  constexpr depth_t depth = 10;
+  PrincipleLine line;
+  line.reserve(depth);
+
+  for (const auto &[fen, score] : testcases) {
+    board.fen_decode(fen);
+    EXPECT_EQ(Search::search(board, depth, line), score);
+  }
+}
