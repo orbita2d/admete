@@ -1,8 +1,9 @@
 #include "search.hpp"
 #include "board.hpp"
+#include "evaluate.hpp"
 #include <gtest/gtest.h>
 
-TEST(ForcedMateTest, MateInTwo) {
+TEST(Search, MateInTwo) {
   std::pair<std::string, score_t> testcases[] = {
       {"r2q1b1r/1pN1n1pp/p1n3k1/4Pb2/2BP4/8/PPP3PP/R1BQ1RK1 w - - 1 0",
        MATING_SCORE - 3},
@@ -17,8 +18,8 @@ TEST(ForcedMateTest, MateInTwo) {
       {"1rb4r/pkPp3p/1b1P3n/1Q6/N3Pp2/8/P1P3PP/7K w - - 1 0", MATING_SCORE - 3},
   };
   Board board = Board();
+  constexpr depth_t depth = 10;
   PrincipleLine line;
-  uint depth = 10;
   line.reserve(depth);
 
   for (const auto &[fen, score] : testcases) {
@@ -27,7 +28,7 @@ TEST(ForcedMateTest, MateInTwo) {
   }
 }
 
-TEST(ForcedMateTest, MateInThree) {
+TEST(Search, MateInThree) {
   std::pair<std::string, score_t> testcases[] = {
       {"r1b1kb1r/pppp1ppp/5q2/4n3/3KP3/2N3PN/PPP4P/R1BQ1B1R b kq - 0 1",
        MATING_SCORE - 5},
@@ -42,8 +43,8 @@ TEST(ForcedMateTest, MateInThree) {
        MATING_SCORE - 5},
   };
   Board board = Board();
+  constexpr depth_t depth = 10;
   PrincipleLine line;
-  uint depth = 10;
   line.reserve(depth);
 
   for (const auto &[fen, score] : testcases) {
@@ -52,7 +53,7 @@ TEST(ForcedMateTest, MateInThree) {
   }
 }
 
-TEST(ForcedMateTest, MateInFour) {
+TEST(Search, MateInFour) {
   std::pair<std::string, score_t> testcases[] = {
       {"2r2b2/p2q1P1p/3p2k1/4pNP1/4P1RQ/7K/2pr4/5R2 w - - 1 0",
        MATING_SCORE - 7},
@@ -60,12 +61,34 @@ TEST(ForcedMateTest, MateInFour) {
        MATING_SCORE - 7},
   };
   Board board = Board();
+  constexpr depth_t depth = 10;
   PrincipleLine line;
-  uint depth = 10;
   line.reserve(depth);
 
   for (const auto &[fen, score] : testcases) {
     board.fen_decode(fen);
     EXPECT_EQ(Search::search(board, depth, line), score);
+  }
+}
+
+TEST(Search, InsufficientMaterial) {
+  Board board = Board();
+  std::string fens[] = {
+      "8/2k5/8/8/8/4K3/8/8 w - - 0 1",   "8/5k2/8/2K5/8/8/8/8 b - - 0 1",
+      "7K/8/8/8/8/8/8/k7 w - - 0 1",     "7K/8/8/8/8/8/2n5/k7 w - - 0 1",
+      "7K/8/8/8/8/8/2n5/k7 b - - 0 1",   "7K/8/8/8/8/8/2N5/k7 w - - 0 1",
+      "7K/8/8/8/8/8/2N5/k7 b - - 0 1",   "7K/8/2B5/8/8/8/8/k7 w - - 0 1",
+      "7K/8/2B5/8/8/8/8/k7 b - - 0 1",   "7K/8/2B5/8/5b2/8/8/k7 w - - 0 1",
+      "7K/8/2B5/8/5b2/8/8/k7 b - - 0 1",
+  };
+
+  constexpr depth_t depth = 10;
+  PrincipleLine line;
+  line.reserve(depth);
+
+  for (const std::string fen : fens) {
+    board.fen_decode(fen);
+    EXPECT_EQ(Search::search(board, depth, line),
+              Evaluation::drawn_score(board));
   }
 }

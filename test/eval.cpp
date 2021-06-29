@@ -3,6 +3,8 @@
 #include <gtest/gtest.h>
 
 TEST(Eval, Contempt) {
+  // This test just looks at a bunch of cases and makes sure the contempt score
+  // alternates with the player.
   std::string fens[] = {
       "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 ",
       "rnbqk2r/ppp1ppbp/3p1np1/8/2PPP3/2N2N2/PP3PPP/R1BQKB1R b KQkq - 0 5 ",
