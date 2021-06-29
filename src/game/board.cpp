@@ -692,6 +692,12 @@ bool Board::is_draw() const {
         // 2 repetitions is 3 fold draw
         return true;
     }
+
+    // 50 move rule
+    if (halfmove_clock() >= 100) {
+        return true;
+    }
+
     // Check draw by insufficient material
     if (pieces(QUEEN)) {
         return false;

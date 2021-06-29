@@ -10,7 +10,7 @@ struct AuxilliaryInfo {
     // Information that is game history dependent, that would otherwise need to be encoded in a move.
     // Access like castling_rights[WHITE][KINGSIDE]
     std::array<std::array<bool, N_COLOUR>, N_CASTLE> castling_rights;
-    uint halfmove_clock = 0;
+    ply_t halfmove_clock = 0;
     Square en_passent_target;
     Bitboard pinned;
     uint number_checkers;
@@ -116,6 +116,7 @@ class Board {
     ply_t get_root() const { return root_node_ply; }
     bool is_root() const { return ply_counter == root_node_ply; }
     bool is_endgame() const;
+    ply_t halfmove_clock() const { return aux_info->halfmove_clock; }
 
   private:
     AuxilliaryInfo *aux_info;
