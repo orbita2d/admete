@@ -117,6 +117,7 @@ class Board {
     bool is_root() const { return ply_counter == root_node_ply; }
     bool is_endgame() const;
     ply_t halfmove_clock() const { return aux_info->halfmove_clock; }
+    void flip();
 
   private:
     AuxilliaryInfo *aux_info;

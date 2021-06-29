@@ -59,7 +59,7 @@ void position(Board &board, std::istringstream &is) {
     }
 }
 
-void bestmove(Board &board, Move move) {
+void bestmove(Board &board, const Move move) {
     /*
     bestmove <move1> [ ponder <move2> ]
         the engine has stopped searching and found the move <move> best in this position.

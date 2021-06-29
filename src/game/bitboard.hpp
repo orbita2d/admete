@@ -306,6 +306,18 @@ inline Bitboard pawn_attacks(const Colour c, Bitboard g) {
     }
 }
 
+inline Bitboard flip_vertical(const Bitboard g) {
+    // clang-format off
+    return   (g << 56)           |
+            ((g << 40) & rank_2) | 
+            ((g << 24) & rank_3) | 
+            ((g <<  8) & rank_4) | 
+            ((g >>  8) & rank_5) |
+            ((g >> 24) & rank_6) | 
+            ((g >> 40) & rank_7) | 
+             (g >> 56);
+    // clang-format on
+}
 } // namespace Bitboards
 
 /// lsb() and msb() return the least/most significant bit in a non-zero bitboard

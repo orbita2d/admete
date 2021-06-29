@@ -47,8 +47,6 @@ TEST(Operations, SouthFill) {
   std::pair<Bitboard, Bitboard> testcases[] = {
       {0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF},
       {0x0000000000000000, 0x0000000000000000},
-      {0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF},
-      {0x0000000000000000, 0x0000000000000000},
       {0x0101010101010101, 0x0101010101010101},
       {0xff00000000000000, 0xff00000000000000},
       {0x00000000000000ff, 0xFFFFFFFFFFFFFFFF},
@@ -59,5 +57,23 @@ TEST(Operations, SouthFill) {
   };
   for (const auto &[in, out] : testcases) {
     EXPECT_EQ(Bitboards::south_fill(in), out);
+  }
+}
+
+TEST(Operations, FlipVertical) {
+  std::pair<Bitboard, Bitboard> testcases[] = {
+      {0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF},
+      {0x0000000000000000, 0x0000000000000000},
+      {0x0101010101010101, 0x0101010101010101},
+      {0xff00000000000000, 0x00000000000000ff},
+      {0x00000000000000ff, 0xff00000000000000},
+      {0x0100000000000000, 0x0000000000000001},
+      {0x0000000000000001, 0x0100000000000000},
+      {0x0000000001000000, 0x0000000100000000},
+      {0x0000000000020400, 0x0004020000000000},
+  };
+  for (const auto &[in, out] : testcases) {
+    EXPECT_EQ(Bitboards::flip_vertical(in), out);
+    EXPECT_EQ(Bitboards::flip_vertical(out), in);
   }
 }

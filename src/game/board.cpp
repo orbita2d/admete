@@ -736,3 +736,17 @@ ply_t Board::repetitions(const ply_t start) const {
 }
 
 bool Board::is_endgame() const { return Evaluation::count_material(*this) < Evaluation::ENDGAME_MATERIAL; }
+
+void Board::flip() {
+    whos_move = ~whos_move;
+    occupied_bb = Bitboards::flip_vertical(occupied_bb);
+    colour_bb[WHITE] = Bitboards::flip_vertical(colour_bb[WHITE]);
+    colour_bb[BLACK] = Bitboards::flip_vertical(colour_bb[BLACK]);
+    std::swap(colour_bb[WHITE], colour_bb[BLACK]);
+    for (int p = PAWN; p < N_PIECE; p++) {
+        piece_bb[p] = Bitboards::flip_vertical(piece_bb[p]);
+    }
+
+    std::swap(aux_info->castling_rights[WHITE], aux_info->castling_rights[BLACK]);
+    initialise();
+}

@@ -73,11 +73,7 @@ std::string Board::fen_encode() const {
     }
 
     ss << " " << aux_info->halfmove_clock << " " << fullmove_counter;
-    std::string fen, tmp;
-    while (ss >> tmp) {
-        fen = fen + tmp + " ";
-    }
-    return fen;
+    return ss.str();
 }
 
 void Board::pretty() const {
