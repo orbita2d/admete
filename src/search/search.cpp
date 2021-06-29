@@ -295,18 +295,30 @@ score_t Search::pv_search(Board &board, depth_t depth, const score_t alpha_start
 score_t Search::quiesce(Board &board, const score_t alpha_start, const score_t beta, SearchOptions &options) {
     // perform quiesence search to evaluate only quiet positions.
     score_t alpha = alpha_start;
-    score_t stand_pat = Evaluation::negamax_heuristic(board);
 
-    // Beta cutoff
-    if (stand_pat >= beta) {
-        return stand_pat;
+    MoveList moves;
+
+    // Look for checkmate
+    if (board.is_check()) {
+        // Generates all evasions.
+        moves = board.get_moves();
+        if (moves.empty()) {
+            return Evaluation::evaluate(board, moves);
+        }
     }
-
-    alpha = std::max(alpha, stand_pat);
 
     // If this is a draw by repetition or insufficient material, return the drawn score.
     if (board.is_draw()) {
         return Evaluation::drawn_score(board);
+    }
+
+    score_t stand_pat = Evaluation::negamax_heuristic(board);
+
+    alpha = std::max(alpha, stand_pat);
+
+    // Beta cutoff
+    if (stand_pat >= beta) {
+        return stand_pat;
     }
 
     // Delta pruning
@@ -314,8 +326,11 @@ score_t Search::quiesce(Board &board, const score_t alpha_start, const score_t b
         return stand_pat;
     }
 
-    // Get a list of moves for quiessence. If it's check, it generates all check evasions. Otherwise it's just captures.
-    MoveList moves = board.get_quiessence_moves();
+    // Get a list of moves for quiessence. If it's check, it we already have all evasions from the checkmate test.
+    // Otherwise it generates quiet checks and captures.
+    if (!board.is_check()) {
+        moves = board.get_quiessence_moves();
+    }
 
     if (moves.size() == 0) {
         return stand_pat;
@@ -431,11 +446,6 @@ score_t Search::search(Board &board, const depth_t max_depth, const int max_mill
 
         // Send the info for the search to uci
         uci_info(depth, score, options.nodes, nps, principle, (int)time_span.count(), board.get_root());
-
-        // If we've found a forced mate, just play it.
-        if (is_mating(score)) {
-            break;
-        }
 
         // Estimate the next time span.
         t_est = branching_factor * time_span;
