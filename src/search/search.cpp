@@ -1,6 +1,6 @@
 #include "search.hpp"
 #include "evaluate.hpp"
-#include "moveordering.hpp"
+#include "ordering.hpp"
 #include "transposition.hpp"
 #include "uci.hpp"
 #include <chrono>
@@ -34,11 +34,6 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
         return Evaluation::drawn_score(board);
     }
 
-    // Leaf node for main tree.
-    if (depth == 0) {
-        return quiesce(board, alpha, beta, options);
-    }
-
     // The absolute upper bound for a score on this node is ply_to_mate_score(board.ply()).
     if (ply_to_mate_score(board.ply()) <= alpha) {
         // We've already found a mate at a lower ply than this node, we can't do better.
@@ -51,6 +46,11 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
     if (-ply_to_mate_score(board.ply()) >= beta) {
         // Fail high.
         return -ply_to_mate_score(board.ply());
+    }
+
+    // Leaf node for main tree.
+    if (depth == 0) {
+        return quiesce(board, alpha, beta, options);
     }
 
     // Lookup position in transposition table.
@@ -162,7 +162,8 @@ score_t Search::pv_search(Board &board, depth_t depth, const score_t alpha_start
                           SearchOptions &options) {
     // Perform an alpha-beta pruning tree search.
     // The use of this function implies that the node is a PV-node.
-    // For non-PV nodes, use scout_search
+    // For non-PV nodes, use scout_search.
+    // Has bounds [alpha, beta]
 
     score_t alpha = alpha_start;
 
@@ -182,11 +183,6 @@ score_t Search::pv_search(Board &board, depth_t depth, const score_t alpha_start
         return Evaluation::drawn_score(board);
     }
 
-    // Leaf node (from the main tree anyway)
-    if (depth == 0) {
-        return quiesce(board, alpha, beta, options);
-    }
-
     // The absolute upper bound for a score on this node is ply_to_mate_score(board.ply()).
     if (ply_to_mate_score(board.ply()) <= alpha) {
         // We've already found a mate at a lower ply than this node, we can't do better.
@@ -199,6 +195,11 @@ score_t Search::pv_search(Board &board, depth_t depth, const score_t alpha_start
     if (-ply_to_mate_score(board.ply()) >= beta) {
         // Fail high.
         return -ply_to_mate_score(board.ply());
+    }
+
+    // Leaf node for the main tree.
+    if (depth == 0) {
+        return quiesce(board, alpha, beta, options);
     }
 
     // Lookup position in transposition table for hashmove.
