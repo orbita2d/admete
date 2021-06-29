@@ -10,25 +10,6 @@
 
 enum GamePhase { OPENING, ENDGAME, N_GAMEPHASE };
 
-// We consider 3 game phases. Opening, where material > OPENING_MATERIAL. Endgame, where material < ENDGAME_MATERIAL.
-// And a midgame in between. Evalutation is linearly interpolated in the midgame:
-/*
-op  |mid| eg
-----+---+----
-----
-    \
-     \
-      \
-        -----
-*/
-
-position_board fill_blank_positional_scores() {
-    // want centralised bishops.
-    position_board pb;
-    pb.fill(0);
-    return pb;
-}
-
 inline int reverse_rank(int square) {
     // Square from Black's perspective;
     return (56 - (square & 0x38)) | (square & 0x07);
@@ -42,10 +23,6 @@ position_board reverse_board(position_board in) {
     return pb;
 }
 
-constexpr position_board center_manhattan_dist = {6, 5, 4, 3, 3, 4, 5, 6, 5, 4, 3, 2, 2, 3, 4, 5, 4, 3, 2, 1, 1, 2,
-                                                  3, 4, 3, 2, 1, 0, 0, 1, 2, 3, 3, 2, 1, 0, 0, 1, 2, 3, 4, 3, 2, 1,
-                                                  1, 2, 3, 4, 5, 4, 3, 2, 2, 3, 4, 5, 6, 5, 4, 3, 3, 4, 5, 6};
-
 // clang-format off
 
 constexpr position_board center_dist = {3, 3, 3, 3, 3, 3, 3, 3,
@@ -56,6 +33,15 @@ constexpr position_board center_dist = {3, 3, 3, 3, 3, 3, 3, 3,
                                         3, 2, 1, 1, 1, 1, 2, 3,
                                         3, 2, 2, 2, 2, 2, 2, 3, 
                                         3, 3, 3, 3, 3, 3, 3, 3};
+
+constexpr position_board center_manhattan_dist = {  6, 5, 4, 3, 3, 4, 5, 6,
+                                                    5, 4, 3, 2, 2, 3, 4, 5,
+                                                    4, 3, 2, 1, 1, 2, 3, 4, 
+                                                    3, 2, 1, 0, 0, 1, 2, 3, 
+                                                    3, 2, 1, 0, 0, 1, 2, 3,
+                                                    4, 3, 2, 1, 1, 2, 3, 4,
+                                                    5, 4, 3, 2, 2, 3, 4, 5,
+                                                    6, 5, 4, 3, 3, 4, 5, 6};
 
 constexpr position_board lightsquare_corner_distance = {0, 1, 2, 3, 4, 5, 6, 7,
                                                         1, 2, 3, 4, 5, 6, 7, 6,
@@ -185,7 +171,7 @@ constexpr Score castle_hopen_file = Score(-5, 0); // Penalty for castled king ne
 constexpr Score castle_pawns2 = Score(6, 0);
 constexpr Score castle_pawns3 = Score(4, 0);
 
-// Penealty for squares where a queen would check the king, if only pawns were on the board.
+// Penealty for squares where a queen would check the king if only pawns were on the board.
 constexpr Score queen_check = Score(-8, 0);
 
 // Bonus for every square accessible (that isn't protected by a pawn) to every piece.
@@ -217,7 +203,7 @@ static position_board pb_passed[N_COLOUR];
 
 // Piece values here for evaluation heuristic.
 static std::array<Score, 6> piece_values = {
-    {Score(100, 100), Score(300, 300), Score(330, 340), Score(500, 500), Score(900, 900), Score(0, 0)}};
+    {Score(100, 100), Score(300, 300), Score(330, 350), Score(500, 500), Score(900, 900), Score(0, 0)}};
 
 // Material here is for determining the game phase.
 static std::array<score_t, 6> material = {{100, 300, 350, 500, 900, 0}};
@@ -251,117 +237,6 @@ score_t piece_material(const PieceType p) { return material[p]; }
 Score piece_value(const PieceType p) { return piece_values[p]; }
 
 } // namespace Evaluation
-
-void print_table(const position_board table) {
-    for (int i = 0; i < 64; i++) {
-        std::cout << std::setfill(' ') << std::setw(4) << table[i] << " ";
-        if (i % 8 == 7) {
-            std::cout << std::endl;
-        }
-    }
-    std::cout << std::endl;
-}
-
-void print_tables() {
-    std::cout << "MATERIAL" << std::endl;
-    for (int i = 0; i < 6; i++) {
-        std::cout << std::setfill(' ') << std::setw(4) << material[i] << " ";
-    }
-    std::cout << "VALUES" << std::endl;
-    for (int i = 0; i < 6; i++) {
-        std::cout << std::setfill(' ') << std::setw(4) << material[i] << " ";
-    }
-    std::cout << std::endl;
-    std::cout << "OPENING" << std::endl;
-    std::cout << "PAWN" << std::endl;
-    print_table(piece_square_tables[OPENING][WHITE][PAWN]);
-    std::cout << "KNIGHT" << std::endl;
-    print_table(piece_square_tables[OPENING][WHITE][KNIGHT]);
-    std::cout << "BISHOP" << std::endl;
-    print_table(piece_square_tables[OPENING][WHITE][BISHOP]);
-    std::cout << "ROOK" << std::endl;
-    print_table(piece_square_tables[OPENING][WHITE][ROOK]);
-    std::cout << "QUEEN" << std::endl;
-    print_table(piece_square_tables[OPENING][WHITE][QUEEN]);
-    std::cout << "KING" << std::endl;
-    print_table(piece_square_tables[OPENING][WHITE][KING]);
-
-    std::cout << "ENDGAME" << std::endl;
-    std::cout << "PAWN" << std::endl;
-    print_table(piece_square_tables[ENDGAME][WHITE][PAWN]);
-    std::cout << "KNIGHT" << std::endl;
-    print_table(piece_square_tables[ENDGAME][WHITE][KNIGHT]);
-    std::cout << "BISHOP" << std::endl;
-    print_table(piece_square_tables[ENDGAME][WHITE][BISHOP]);
-    std::cout << "ROOK" << std::endl;
-    print_table(piece_square_tables[ENDGAME][WHITE][ROOK]);
-    std::cout << "QUEEN" << std::endl;
-    print_table(piece_square_tables[ENDGAME][WHITE][QUEEN]);
-    std::cout << "KING" << std::endl;
-    print_table(piece_square_tables[ENDGAME][WHITE][KING]);
-
-    std::cout << "PASSED PAWN" << std::endl;
-    print_table(pb_passed[WHITE]);
-    print_table(pb_passed[BLACK]);
-}
-
-void Evaluation::load_tables(std::string filename) {
-
-    std::fstream file;
-    file.open(filename, std::ios::in);
-    if (!file) {
-        std::cout << "No such file: " << filename << std::endl;
-        exit(EXIT_FAILURE);
-    }
-    // Start by reading opening tables.
-    for (int i = 8; i < 48; i++) {
-        // Pawn Table
-        int value;
-        file >> value;
-        piece_square_tables[OPENING][WHITE][PAWN].at(i) = value;
-    }
-    piece_square_tables[OPENING][BLACK][PAWN] = reverse_board(piece_square_tables[OPENING][WHITE][PAWN]);
-    file >> std::ws;
-    for (int p = KNIGHT; p < N_PIECE; p++) {
-        for (int sq = 0; sq < 64; sq++) {
-            // Other Tables
-            int value;
-            file >> value;
-            piece_square_tables[OPENING][WHITE][p].at(sq) = value;
-        }
-        piece_square_tables[OPENING][BLACK][p] = reverse_board(piece_square_tables[OPENING][WHITE][p]);
-        file >> std::ws;
-    }
-    // Endgame tables.
-    for (int i = 8; i < 48; i++) {
-        // Pawn Table
-        int value;
-        file >> value;
-        piece_square_tables[ENDGAME][WHITE][PAWN].at(i) = value;
-        piece_square_tables[ENDGAME][BLACK][PAWN] = reverse_board(piece_square_tables[ENDGAME][WHITE][PAWN]);
-    }
-    file >> std::ws;
-    for (int p = KNIGHT; p < N_PIECE; p++) {
-        for (int sq = 0; sq < 64; sq++) {
-            // Other Tables
-            int value;
-            file >> value;
-            piece_square_tables[ENDGAME][WHITE][p].at(sq) = value;
-            piece_square_tables[ENDGAME][BLACK][p] = reverse_board(piece_square_tables[ENDGAME][WHITE][p]);
-        }
-        file >> std::ws;
-    }
-    file.close();
-}
-
-score_t Evaluation::count_material(const Board &board) {
-    score_t material_value = 0;
-    for (score_t p = 0; p < N_PIECE; p++) {
-        material_value +=
-            material[p] * (board.count_pieces(WHITE, (PieceType)p) + board.count_pieces(BLACK, (PieceType)p));
-    }
-    return material_value;
-}
 
 score_t Evaluation::heuristic(Board &board) {
     int material_value = 0;
@@ -508,30 +383,32 @@ score_t Evaluation::heuristic(Board &board) {
     occ = board.isolated_pawns(BLACK);
     score -= isolated_pawn * count_bits(occ);
 
-    // Rooks in open and half-open files;
+    // Rooks
     const Bitboard open_files = board.open_files();
     const Bitboard w_hopen_files = board.half_open_files(WHITE);
     const Bitboard b_hopen_files = board.half_open_files(BLACK);
 
+    // Bonus for a rook on an open file.
     occ = board.pieces(WHITE, ROOK) & open_files;
     score += rook_open_file * count_bits(occ);
 
     occ = board.pieces(BLACK, ROOK) & open_files;
     score -= rook_open_file * count_bits(occ);
 
+    // Bonus for a rook on a half-open file.
     occ = board.pieces(WHITE, ROOK) & w_hopen_files;
     score += rook_hopen_file * count_bits(occ);
 
     occ = board.pieces(BLACK, ROOK) & b_hopen_files;
     score -= rook_hopen_file * count_bits(occ);
 
+    // Bonus for a rook behind a passed pawn.
     score += rook_behind_passed *
              count_bits(board.pieces(WHITE, ROOK) & Bitboards::rear_span(WHITE, board.passed_pawns(WHITE)));
     score -= rook_behind_passed *
              count_bits(board.pieces(BLACK, ROOK) & Bitboards::rear_span(BLACK, board.passed_pawns(BLACK)));
 
     // King safety
-
     const Bitboard wk = sq_to_bb(board.find_king(WHITE));
     const Bitboard bk = sq_to_bb(board.find_king(BLACK));
 
@@ -568,6 +445,17 @@ score_t Evaluation::heuristic(Board &board) {
     occ &= ~board.pawn_controlled(BLACK);
     score -= queen_check * count_bits(occ);
 
+    // We consider 3 game phases. Opening, where material > OPENING_MATERIAL. Endgame, where material <
+    // ENDGAME_MATERIAL. And a midgame in between. Evalutation is linearly interpolated in the midgame:
+    /*
+    op  |mid| eg
+    ----+---+----
+    ----
+        \
+         \
+          \
+            -----
+    */
     score_t value;
     if (material_value > OPENING_MATERIAL) {
         // Just use opening tables
@@ -582,6 +470,117 @@ score_t Evaluation::heuristic(Board &board) {
         value = score.endgame_score;
     }
     return value;
+}
+
+void print_table(const position_board table) {
+    for (int i = 0; i < 64; i++) {
+        std::cout << std::setfill(' ') << std::setw(4) << table[i] << " ";
+        if (i % 8 == 7) {
+            std::cout << std::endl;
+        }
+    }
+    std::cout << std::endl;
+}
+
+void print_tables() {
+    std::cout << "MATERIAL" << std::endl;
+    for (int i = 0; i < 6; i++) {
+        std::cout << std::setfill(' ') << std::setw(4) << material[i] << " ";
+    }
+    std::cout << "VALUES" << std::endl;
+    for (int i = 0; i < 6; i++) {
+        std::cout << std::setfill(' ') << std::setw(4) << material[i] << " ";
+    }
+    std::cout << std::endl;
+    std::cout << "OPENING" << std::endl;
+    std::cout << "PAWN" << std::endl;
+    print_table(piece_square_tables[OPENING][WHITE][PAWN]);
+    std::cout << "KNIGHT" << std::endl;
+    print_table(piece_square_tables[OPENING][WHITE][KNIGHT]);
+    std::cout << "BISHOP" << std::endl;
+    print_table(piece_square_tables[OPENING][WHITE][BISHOP]);
+    std::cout << "ROOK" << std::endl;
+    print_table(piece_square_tables[OPENING][WHITE][ROOK]);
+    std::cout << "QUEEN" << std::endl;
+    print_table(piece_square_tables[OPENING][WHITE][QUEEN]);
+    std::cout << "KING" << std::endl;
+    print_table(piece_square_tables[OPENING][WHITE][KING]);
+
+    std::cout << "ENDGAME" << std::endl;
+    std::cout << "PAWN" << std::endl;
+    print_table(piece_square_tables[ENDGAME][WHITE][PAWN]);
+    std::cout << "KNIGHT" << std::endl;
+    print_table(piece_square_tables[ENDGAME][WHITE][KNIGHT]);
+    std::cout << "BISHOP" << std::endl;
+    print_table(piece_square_tables[ENDGAME][WHITE][BISHOP]);
+    std::cout << "ROOK" << std::endl;
+    print_table(piece_square_tables[ENDGAME][WHITE][ROOK]);
+    std::cout << "QUEEN" << std::endl;
+    print_table(piece_square_tables[ENDGAME][WHITE][QUEEN]);
+    std::cout << "KING" << std::endl;
+    print_table(piece_square_tables[ENDGAME][WHITE][KING]);
+
+    std::cout << "PASSED PAWN" << std::endl;
+    print_table(pb_passed[WHITE]);
+    print_table(pb_passed[BLACK]);
+}
+
+void Evaluation::load_tables(std::string filename) {
+
+    std::fstream file;
+    file.open(filename, std::ios::in);
+    if (!file) {
+        std::cout << "No such file: " << filename << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    // Start by reading opening tables.
+    for (int i = 8; i < 48; i++) {
+        // Pawn Table
+        int value;
+        file >> value;
+        piece_square_tables[OPENING][WHITE][PAWN].at(i) = value;
+    }
+    piece_square_tables[OPENING][BLACK][PAWN] = reverse_board(piece_square_tables[OPENING][WHITE][PAWN]);
+    file >> std::ws;
+    for (int p = KNIGHT; p < N_PIECE; p++) {
+        for (int sq = 0; sq < 64; sq++) {
+            // Other Tables
+            int value;
+            file >> value;
+            piece_square_tables[OPENING][WHITE][p].at(sq) = value;
+        }
+        piece_square_tables[OPENING][BLACK][p] = reverse_board(piece_square_tables[OPENING][WHITE][p]);
+        file >> std::ws;
+    }
+    // Endgame tables.
+    for (int i = 8; i < 48; i++) {
+        // Pawn Table
+        int value;
+        file >> value;
+        piece_square_tables[ENDGAME][WHITE][PAWN].at(i) = value;
+        piece_square_tables[ENDGAME][BLACK][PAWN] = reverse_board(piece_square_tables[ENDGAME][WHITE][PAWN]);
+    }
+    file >> std::ws;
+    for (int p = KNIGHT; p < N_PIECE; p++) {
+        for (int sq = 0; sq < 64; sq++) {
+            // Other Tables
+            int value;
+            file >> value;
+            piece_square_tables[ENDGAME][WHITE][p].at(sq) = value;
+            piece_square_tables[ENDGAME][BLACK][p] = reverse_board(piece_square_tables[ENDGAME][WHITE][p]);
+        }
+        file >> std::ws;
+    }
+    file.close();
+}
+
+score_t Evaluation::count_material(const Board &board) {
+    score_t material_value = 0;
+    for (score_t p = 0; p < N_PIECE; p++) {
+        material_value +=
+            material[p] * (board.count_pieces(WHITE, (PieceType)p) + board.count_pieces(BLACK, (PieceType)p));
+    }
+    return material_value;
 }
 
 score_t Evaluation::negamax_heuristic(Board &board) {
