@@ -82,6 +82,10 @@ void Cache::KillerTable::store(const ply_t ply, const Move move) {
     if (is_enabled() == false) {
         return;
     }
+    // Put this check here rather than in the search for simplicity
+    if (move == NULL_MOVE) {
+        return;
+    }
     // Store the move, only if it's a quiet move.
     if (move.type != QUIETmv) {
         return;

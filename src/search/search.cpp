@@ -111,7 +111,7 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
     KillerTableRow killer_move = Cache::killer_table.probe(board.ply());
 
     score_t best_score = MIN_SCORE;
-    Move best_move;
+    Move best_move = NULL_MOVE;
     Move hash_move = unpack_move(hash_dmove, legal_moves);
 
     // Do the hash move explicitly to avoid sorting moves if our hash moves provides a beta-cutoff
@@ -147,10 +147,10 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
             best_move = move;
         }
         if (best_score >= beta) {
-            break; // beta-cutoff
+            // beta-cutoff
+            break;
         }
     }
-
     Cache::killer_table.store(board.ply(), best_move);
     Cache::transposition_table.store(hash, best_score, alpha, beta, depth, best_move, board.ply());
     return best_score;

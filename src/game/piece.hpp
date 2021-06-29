@@ -127,6 +127,7 @@ struct Move {
     bool operator==(const Move that) const {
         return origin == that.origin && target == that.target && type == that.type;
     }
+    bool operator!=(const Move that) const { return !operator==(that); }
 
     void make_quiet() { type = QUIETmv; }
     void make_double_push() { type = DOUBLE_PUSH; }
