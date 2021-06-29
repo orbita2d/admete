@@ -71,6 +71,25 @@ TEST(Search, MateInFour) {
   }
 }
 
+TEST(Search, 50MoveRule) {
+  Board board = Board();
+  std::pair<std::string, score_t> testcases[] = {
+      {"7k/8/R7/1R6/7K/8/7P/8 w - - 99 1", MATING_SCORE - 5},
+      {"8/7p/8/7k/1r6/r7/8/7K b - - 99 1", MATING_SCORE - 5},
+      {"8/8/8/P7/8/6n1/3R4/R3K2k w Q - 99 1", MATING_SCORE - 7},
+      {"r3k2K/3r4/6N1/8/p7/8/8/8 b q - 99 1", MATING_SCORE - 7},
+  };
+
+  constexpr depth_t depth = 10;
+  PrincipleLine line;
+  line.reserve(depth);
+
+  for (const auto &[fen, score] : testcases) {
+    board.fen_decode(fen);
+    EXPECT_EQ(Search::search(board, depth, line), score);
+  }
+}
+
 TEST(Search, InsufficientMaterial) {
   Board board = Board();
   std::string fens[] = {
