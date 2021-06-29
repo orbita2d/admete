@@ -1,5 +1,4 @@
 #pragma once
-#include "piece.hpp"
 #include "types.hpp"
 
 typedef unsigned long int Bitboard;

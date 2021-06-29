@@ -2,7 +2,6 @@
 #include "board.hpp"
 #include "evaluate.hpp"
 #include "movegen.hpp"
-#include "piece.hpp"
 #include "printing.hpp"
 #include "search.hpp"
 #include "transposition.hpp"
@@ -10,12 +9,6 @@
 #include <chrono>
 #include <getopt.h> // For get_opt_long()
 #include <iostream>
-
-void print_vector(const std::vector<Square> &moves) {
-    for (Square move : moves) {
-        std::cout << move << std::endl;
-    }
-}
 
 void print_vector(const std::vector<Move> &moves) {
     for (Move move : moves) {
@@ -25,8 +18,7 @@ void print_vector(const std::vector<Move> &moves) {
 
 void print_line(PrincipleLine &line, Board &board) {
     for (PrincipleLine::reverse_iterator it = line.rbegin(); it != line.rend(); ++it) {
-        std::vector<Move> legal_moves = board.get_moves();
-        std::cout << board.print_move(*it, legal_moves) << std::endl;
+        std::cout << it->pretty() << std::endl;
         board.make_move(*it);
     }
     for (Move move : line) {

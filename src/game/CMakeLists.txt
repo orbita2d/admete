@@ -3,7 +3,6 @@ add_library(game_library types.hpp
             printing.cpp printing.hpp
             movegen.cpp movegen.hpp
             bitboard.cpp bitboard.hpp
-            piece.cpp piece.hpp
             evaluate.cpp evaluate.hpp
             zorbist.cpp)
 

@@ -19,14 +19,17 @@ void Board::fen_decode(const std::string &fen) {
     uint N = fen.length(), board_position;
     uint rank = 0, file = 0;
     char my_char;
-    std::array<Piece, N_SQUARE> pieces_array;
+
+    // Reset board.
+    occupied_bb = 0;
+    colour_bb[WHITE] = 0;
+    colour_bb[BLACK] = 0;
+    for (int i = 0; i < N_PIECE; i++) {
+        piece_bb[i] = 0;
+    }
 
     std::stringstream stream;
-    // reset board
-    for (uint i = 0; i < 64; i++) {
-        pieces_array[i] = Pieces::Blank;
-    }
-    // First, go through the board position part of the fen string
+    // First, go through the board position part of the fen string.
     for (uint i = 0; i < N; i++) {
         my_char = fen[i];
         if (my_char == '/') {
@@ -39,32 +42,17 @@ void Board::fen_decode(const std::string &fen) {
             continue;
         }
         if (my_char == ' ') {
-            // Space is at the end of the board position section
+            // Space is at the end of the board position section.
             board_position = i;
             break;
         }
         // Otherwise should be a character for a piece
-        pieces_array[Square::to_index(rank, file)] = fen_decode_map[my_char];
+        const Bitboard square_bb = sq_to_bb(Square(rank, file));
+        const Piece p = fen_decode_map[my_char];
+        piece_bb[p.get_piece()] |= square_bb;
+        colour_bb[p.get_colour()] |= square_bb;
+        occupied_bb |= square_bb;
         file++;
-    }
-
-    occupied_bb = 0;
-    colour_bb[WHITE] = 0;
-    colour_bb[BLACK] = 0;
-    for (int i = 0; i < N_PIECE; i++) {
-        piece_bb[i] = 0;
-    }
-    for (uint i = 0; i < 64; i++) {
-        if (pieces_array.at(i).is_blank()) {
-            continue;
-        }
-        occupied_bb |= sq_to_bb(i);
-        if (pieces_array.at(i).is_colour(WHITE)) {
-            colour_bb[WHITE] |= sq_to_bb(i);
-        } else {
-            colour_bb[BLACK] |= sq_to_bb(i);
-        }
-        piece_bb[to_enum_piece(pieces_array.at(i))] |= sq_to_bb(i);
     }
 
     std::string side_to_move, castling, en_passent;
@@ -676,7 +664,7 @@ Piece Board::pieces(const Square sq) const {
             return Piece(BLACK, (PieceType)p);
         }
     }
-    return Pieces::Blank;
+    return Piece(WHITE, NO_PIECE);
 }
 
 bool Board::is_draw() const {

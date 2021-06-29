@@ -1,6 +1,5 @@
 #pragma once
 #include "bitboard.hpp"
-#include "piece.hpp"
 #include "types.hpp"
 #include <array>
 #include <map>
@@ -40,7 +39,6 @@ class Board {
 
     void pretty() const;
 
-    std::string print_move(Move move, MoveList &legal_moves);
     bool is_free(const Square target) const;
     bool is_colour(const Colour c, const Square target) const;
     Square slide_to_edge(const Square origin, const Square direction, const uint to_edge) const;

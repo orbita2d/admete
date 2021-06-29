@@ -1,6 +1,5 @@
 #include "evaluate.hpp"
 #include "board.hpp"
-#include "piece.hpp"
 #include <array>
 #include <fstream>
 #include <iomanip>

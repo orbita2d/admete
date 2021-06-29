@@ -2,6 +2,7 @@
 #include <array>
 #include <inttypes.h>
 #include <string>
+#include <vector>
 
 enum Direction : int {
     N = -8,
@@ -52,60 +53,49 @@ class Square {
     uint to_north() const { return rank_index(); };
     uint to_east() const { return 7 - file_index(); };
     uint to_south() const { return 7 - rank_index(); };
-    uint to_west() const {{return file_index();
-}
-}
-;
+    uint to_west() const { return file_index(); };
 
-square_t to_northeast() const { return std::min(to_north(), to_east()); };
-square_t to_southeast() const { return std::min(to_south(), to_east()); };
-square_t to_southwest() const { return std::min(to_south(), to_west()); };
-square_t to_northwest() const { return std::min(to_north(), to_west()); };
-square_t to_dirx(const int dirx) const {
-    switch (dirx) {
-    case 0:
-        return to_north();
-    case 1:
-        return to_east();
-    case 2:
-        return to_south();
-    case 3:
-        return to_west();
-    case 4:
-        return to_northeast();
-    case 5:
-        return to_southeast();
-    case 6:
-        return to_southwest();
-    case 7:
-        return to_northwest();
-    default:
-        return 0;
+    square_t to_northeast() const { return std::min(to_north(), to_east()); };
+    square_t to_southeast() const { return std::min(to_south(), to_east()); };
+    square_t to_southwest() const { return std::min(to_south(), to_west()); };
+    square_t to_northwest() const { return std::min(to_north(), to_west()); };
+    square_t to_dirx(const int dirx) const {
+        switch (dirx) {
+        case 0:
+            return to_north();
+        case 1:
+            return to_east();
+        case 2:
+            return to_south();
+        case 3:
+            return to_west();
+        case 4:
+            return to_northeast();
+        case 5:
+            return to_southeast();
+        case 6:
+            return to_southwest();
+        case 7:
+            return to_northwest();
+        default:
+            return 0;
+        }
     }
-}
 
-static constexpr square_t to_index(const square_t rank, const square_t file) { return 8 * rank + file; }
+    static constexpr square_t to_index(const square_t rank, const square_t file) { return 8 * rank + file; }
 
-constexpr operator square_t() const { return value; };
+    constexpr operator square_t() const { return value; };
 
-inline Square &operator+=(const Direction dir) {
-    value += dir;
-    return *this;
-}
+    inline Square &operator+=(const Direction dir) {
+        value += dir;
+        return *this;
+    }
 
-/*
-constexpr Square operator+(Direction v) {
-    return Square(value + v);
-}
-*/
+    std::string pretty() const;
 
-std::string pretty_print() const;
-operator std::string() const { return pretty_print(); };
-
-private:
-square_t value = 0;
-}
-;
+  private:
+    square_t value = 0;
+};
 std::ostream &operator<<(std::ostream &os, const Square square);
 
 namespace Squares {
@@ -136,9 +126,36 @@ constexpr std::array<std::array<Square, 2>, 2> RookSquare = {
     {{Squares::FileH | Squares::Rank1, Squares::FileA | Squares::Rank1},
      {Squares::FileH | Squares::Rank8, Squares::FileA | Squares::Rank8}}};
 
+// Colours
+
 enum Colour : int { WHITE, BLACK, N_COLOUR };
 
+constexpr Colour operator~(Colour c) {
+    return Colour(c ^ Colour::BLACK); // Toggle color
+}
+
+// Pieces
+
 enum PieceType { PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING, N_PIECE, NO_PIECE };
+
+class Piece {
+  public:
+    Piece() = default;
+    constexpr Piece(const Colour c, const PieceType p) : colour(c), piece(p){};
+    Colour get_colour() const { return colour; };
+    PieceType get_piece() const { return piece; };
+    // Returns true if the piece represents a blank square
+    bool is_blank() const { return piece == NO_PIECE; };
+    std::string pretty() const;
+
+  private:
+    Colour colour;
+    PieceType piece;
+};
+
+constexpr Piece BLANK_PIECE = Piece(WHITE, NO_PIECE);
+
+std::ostream &operator<<(std::ostream &os, const Piece piece);
 
 typedef uint8_t depth_t;
 typedef unsigned int ply_t;
@@ -160,6 +177,9 @@ inline score_t ply_to_mate_score(const ply_t ply) { return MATING_SCORE - ply; }
 constexpr int NEG_INF = -1000000000;
 constexpr int POS_INF = +1000000000;
 
+enum BishopTypes { LIGHTSQUARE, DARKSQUARE, N_BISHOPTYPES };
+
+// Moves
 // Uses four bits to store additional info about moves
 enum MoveType {
     QUIETmv = 0,
@@ -172,8 +192,6 @@ enum MoveType {
     KING_CASTLE = 4,
     QUEEN_CASTLE = 12
 };
-
-enum BishopTypes { LIGHTSQUARE, DARKSQUARE, N_BISHOPTYPES };
 
 struct DenseMove {
     constexpr DenseMove() = default;
@@ -189,6 +207,84 @@ struct DenseMove {
 inline bool operator==(const DenseMove m1, const DenseMove m2) { return (m1.v == m2.v); }
 constexpr DenseMove NULL_DMOVE = DenseMove();
 
+class Move {
+  public:
+    Move(const PieceType p, const Square o, const Square t) : origin(o), target(t), moving_piece(p){};
+    Move(const PieceType p, const Square o, const Square t, const MoveType m)
+        : origin(o), target(t), moving_piece(p), type(m){};
+    constexpr Move(){};
+
+    Square origin;
+    Square target;
+    int score = 0;
+
+    std::string pretty() const {
+        std::string move_string;
+        move_string = origin.pretty() + target.pretty();
+        if (is_knight_promotion()) {
+            move_string = move_string + "n";
+        } else if (is_bishop_promotion()) {
+            move_string = move_string + "b";
+        } else if (is_rook_promotion()) {
+            move_string = move_string + "r";
+        } else if (is_queen_promotion()) {
+            move_string = move_string + "q";
+        }
+        return move_string;
+    }
+
+    bool operator==(const Move that) const {
+        return origin == that.origin && target == that.target && type == that.type;
+    }
+    bool operator!=(const Move that) const { return !operator==(that); }
+
+    void make_quiet() { type = QUIETmv; }
+    void make_double_push() { type = DOUBLE_PUSH; }
+    void make_king_castle() { type = KING_CASTLE; }
+    void make_queen_castle() { type = QUEEN_CASTLE; }
+    void make_capture() { type = CAPTURE; }
+    void make_en_passent() { type = EN_PASSENT; }
+
+    void make_bishop_promotion() { type = (MoveType)((type & CAPTURE) | (PROMOTION)); }
+    void make_knight_promotion() { type = (MoveType)((type & CAPTURE) | (PROMOTION | SPECIAL2)); }
+    void make_rook_promotion() { type = (MoveType)((type & CAPTURE) | (PROMOTION | SPECIAL1)); }
+    void make_queen_promotion() { type = (MoveType)((type & CAPTURE) | (PROMOTION | SPECIAL1 | SPECIAL2)); }
+    constexpr bool is_capture() const { return type & CAPTURE; }
+    constexpr bool is_ep_capture() const { return type == EN_PASSENT; }
+    constexpr bool is_double_push() const { return type == DOUBLE_PUSH; }
+    constexpr bool is_king_castle() const { return type == KING_CASTLE; }
+    constexpr bool is_queen_castle() const { return type == QUEEN_CASTLE; }
+    constexpr bool is_knight_promotion() const { return (type & ~CAPTURE) == (PROMOTION); }
+    constexpr bool is_bishop_promotion() const { return (type & ~CAPTURE) == (PROMOTION | SPECIAL2); }
+    constexpr bool is_rook_promotion() const { return (type & ~CAPTURE) == (PROMOTION | SPECIAL1); }
+    constexpr bool is_queen_promotion() const { return (type & ~CAPTURE) == (PROMOTION | SPECIAL1 | SPECIAL2); }
+    constexpr bool is_promotion() const { return (type & PROMOTION); }
+    PieceType captured_piece = NO_PIECE;
+    PieceType moving_piece = NO_PIECE;
+    MoveType type = QUIETmv;
+};
+
+constexpr Move NULL_MOVE = Move();
+
+constexpr PieceType get_promoted(const Move m) {
+    if (m.is_knight_promotion()) {
+        return KNIGHT;
+    } else if (m.is_bishop_promotion()) {
+        return BISHOP;
+    } else if (m.is_rook_promotion()) {
+        return ROOK;
+    } else if (m.is_queen_promotion()) {
+        return QUEEN;
+    }
+    return NO_PIECE;
+}
+std::ostream &operator<<(std::ostream &os, const Move move);
+
+inline bool operator==(const Move m, const DenseMove dm) {
+    return (dm.origin() == m.origin && dm.target() == m.target && dm.type() == m.type);
+}
+inline bool operator==(const DenseMove dm, const Move m) { return m == dm; }
+
 // Length of a row in the Killer Table
 constexpr size_t n_krow = 3;
 typedef std::array<DenseMove, n_krow> KillerTableRow;
@@ -197,6 +293,45 @@ constexpr KillerTableRow NULL_KROW = KillerTableRow();
 inline bool operator==(const DenseMove m, const KillerTableRow row) {
     for (DenseMove dm : row) {
         if (m == dm) {
+            return true;
+        }
+    }
+    return false;
+}
+inline bool operator==(const Move m, const KillerTableRow row) {
+    for (DenseMove dm : row) {
+        if (m == dm) {
+            return true;
+        }
+    }
+    return false;
+}
+
+typedef std::vector<Move> MoveList;
+
+inline bool operator==(const DenseMove dm, const MoveList moves) {
+    for (Move m : moves) {
+        if (m == dm) {
+            return true;
+        }
+    }
+    return false;
+}
+
+inline DenseMove pack_move(const Move m) { return DenseMove(m.origin, m.target, m.type); }
+
+inline Move unpack_move(const DenseMove dm, const MoveList &moves) {
+    for (auto move : moves) {
+        if (move == dm) {
+            return move;
+        }
+    }
+    return NULL_MOVE;
+}
+
+inline bool is_legal(const Move move, const MoveList &legal_moves) {
+    for (const Move lm : legal_moves) {
+        if (move == lm) {
             return true;
         }
     }

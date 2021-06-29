@@ -7,13 +7,6 @@
 
 #define toDigit(c) (c - '0')
 
-std::map<Piece, char> fen_encode_map = {
-    {Pieces::Black | Pieces::Pawn, 'p'}, {Pieces::Black | Pieces::Knight, 'n'}, {Pieces::Black | Pieces::Bishop, 'b'},
-    {Pieces::Black | Pieces::Rook, 'r'}, {Pieces::Black | Pieces::Queen, 'q'},  {Pieces::Black | Pieces::King, 'k'},
-    {Pieces::White | Pieces::Pawn, 'P'}, {Pieces::White | Pieces::Knight, 'N'}, {Pieces::White | Pieces::Bishop, 'B'},
-    {Pieces::White | Pieces::Rook, 'R'}, {Pieces::White | Pieces::Queen, 'Q'},  {Pieces::White | Pieces::King, 'K'},
-};
-
 std::map<char, Square::square_t> file_decode_map = {
     {'a', 0}, {'b', 1}, {'c', 2}, {'d', 3}, {'e', 4}, {'f', 5}, {'g', 6}, {'h', 7},
 
@@ -39,7 +32,7 @@ std::string Board::fen_encode() const {
                 ss << space_counter;
                 space_counter = 0;
             }
-            ss << fen_encode_map[pieces(idx).get_value()];
+            ss << pieces(idx).pretty();
         }
         if (space_counter > 0) {
             // Found a piece after a little space.
@@ -76,7 +69,7 @@ std::string Board::fen_encode() const {
     if (aux_info->en_passent_target == Square(0)) {
         ss << "-";
     } else {
-        ss << aux_info->en_passent_target.pretty_print();
+        ss << aux_info->en_passent_target.pretty();
     }
 
     ss << " " << aux_info->halfmove_clock << " " << fullmove_counter;
@@ -95,7 +88,7 @@ void Board::pretty() const {
                 pieces(idx).is_blank()) {
                 std::cout << "! ";
             } else {
-                std::cout << pieces(idx).pretty_print();
+                std::cout << pieces(idx).pretty();
             }
             std::cout << " ";
         }
@@ -135,84 +128,6 @@ void Board::pretty() const {
     std::cout << std::hex << hash() << std::endl;
 };
 
-std::string Board::print_move(Move move, std::vector<Move> &legal_moves) {
-    Piece moving_piece = pieces(move.origin);
-    bool ambiguity_flag = false;
-    std::string notation;
-    // Pawn captures are special.
-    if (moving_piece.is_pawn() & move.is_capture()) {
-        notation = std::string(1, file_encode_map[move.origin.file_index()]) + "x" + move.target.pretty_print();
-        if (move.is_knight_promotion()) {
-            notation = notation + "=N";
-        } else if (move.is_bishop_promotion()) {
-            notation = notation + "=B";
-        } else if (move.is_rook_promotion()) {
-            notation = notation + "=R";
-        } else if (move.is_queen_promotion()) {
-            notation = notation + "=Q";
-        }
-    } else {
-        // Castles are special
-        if (move.is_king_castle()) {
-            notation = "O-O";
-        } else if (move.is_king_castle()) {
-            notation = "O-O-O";
-        }
-        for (Move a_move : legal_moves) {
-            // Ignore moves targeting somewhere else.
-            if (move.target != a_move.target) {
-                continue;
-            }
-            // Ignore this move when we find it.
-            if (move.origin == a_move.origin) {
-                continue;
-            }
-            // Check for ambiguity
-            if (moving_piece.is_piece(pieces(a_move.origin))) {
-                ambiguity_flag = true;
-            }
-        }
-        if (ambiguity_flag) {
-            // This is ambiguous, use full disambiguation for now.
-            notation = move.origin.pretty_print() + moving_piece.get_algebraic_character();
-        } else {
-            // Unambiguous move
-            notation = moving_piece.get_algebraic_character();
-        };
-        if (move.is_capture()) {
-            notation = notation + "x" + move.target.pretty_print();
-        } else {
-            notation = notation + move.target.pretty_print();
-        }
-    }
-    // To check for mate
-    make_move(move);
-    bool can_not_move = (get_moves().size() == 0);
-    bool now_is_check = aux_info->is_check;
-    bool now_whos_move = whos_move;
-    unmake_move(move);
-    if (can_not_move) {
-        // This could be a stalemate or a checkmate.
-        if (now_is_check) {
-            // Checkmate
-            notation = notation + "# ";
-            if (now_whos_move == Colour::WHITE) {
-                notation = notation + "1-0";
-            } else {
-                notation = notation + "0-1";
-            }
-        } else {
-            notation = notation + "½–½";
-        }
-    } else {
-        if (now_is_check) {
-            // Checkmate
-            notation = notation + "+";
-        }
-    }
-    return notation;
-}
-
 // Square
 
 Square::Square(const std::string rf) {
@@ -227,10 +142,10 @@ Square::Square(const std::string rf) {
     value = 8 * rank + file;
 }
 
-std::string Square::pretty_print() const { return file_encode_map[file_index()] + std::to_string(8 - rank_index()); };
+std::string Square::pretty() const { return file_encode_map[file_index()] + std::to_string(8 - rank_index()); };
 
 std::ostream &operator<<(std::ostream &os, const Square move) {
-    os << move.pretty_print();
+    os << move.pretty();
     return os;
 }
 
@@ -264,4 +179,37 @@ std::string print_score(const score_t score) {
     std::string out;
     ss >> out;
     return out;
+}
+
+std::string Piece::pretty() const {
+    const PieceType p = get_piece();
+    const Colour c = get_colour();
+
+    if (p == PAWN && c == WHITE) {
+        return "P";
+    } else if (p == PAWN && c == BLACK) {
+        return "p";
+    } else if (p == KNIGHT && c == WHITE) {
+        return "N";
+    } else if (p == KNIGHT && c == BLACK) {
+        return "n";
+    } else if (p == BISHOP && c == WHITE) {
+        return "B";
+    } else if (p == BISHOP && c == BLACK) {
+        return "b";
+    } else if (p == ROOK && c == WHITE) {
+        return "R";
+    } else if (p == ROOK && c == BLACK) {
+        return "r";
+    } else if (p == QUEEN && c == WHITE) {
+        return "Q";
+    } else if (p == QUEEN && c == BLACK) {
+        return "q";
+    } else if (p == KING && c == WHITE) {
+        return "K";
+    } else if (p == KING && c == BLACK) {
+        return "k";
+    } else {
+        return ".";
+    }
 }
