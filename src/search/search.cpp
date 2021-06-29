@@ -38,10 +38,18 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
         return quiesce(board, alpha, beta, options);
     }
 
-    if (is_mating(alpha) && (mate_score_to_ply(alpha) <= board.ply())) {
+    // The absolute upper bound for a score on this node is ply_to_mate_score(board.ply()).
+    if (ply_to_mate_score(board.ply()) <= alpha) {
         // We've already found a mate at a lower ply than this node, we can't do better.
         // Fail low.
-        return alpha;
+        return ply_to_mate_score(board.ply());
+    }
+
+    // The absolute lower bound for a score on this node is -ply_to_mate_score(board.ply()).
+    // (That is, we are being mated on this node)
+    if (-ply_to_mate_score(board.ply()) >= beta) {
+        // Fail high.
+        return -ply_to_mate_score(board.ply());
     }
 
     // Lookup position in transposition table.
@@ -178,10 +186,18 @@ score_t Search::pv_search(Board &board, depth_t depth, const score_t alpha_start
         return quiesce(board, alpha, beta, options);
     }
 
-    if (is_mating(alpha) && (mate_score_to_ply(alpha) <= board.ply())) {
+    // The absolute upper bound for a score on this node is ply_to_mate_score(board.ply()).
+    if (ply_to_mate_score(board.ply()) <= alpha) {
         // We've already found a mate at a lower ply than this node, we can't do better.
         // Fail low.
-        return alpha;
+        return ply_to_mate_score(board.ply());
+    }
+
+    // The absolute lower bound for a score on this node is -ply_to_mate_score(board.ply()).
+    // (That is, we are being mated on this node)
+    if (-ply_to_mate_score(board.ply()) >= beta) {
+        // Fail high.
+        return -ply_to_mate_score(board.ply());
     }
 
     // Lookup position in transposition table for hashmove.
