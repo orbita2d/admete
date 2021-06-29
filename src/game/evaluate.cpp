@@ -175,7 +175,7 @@ constexpr Score castle_pawns3 = Score(4, 0);
 constexpr Score queen_check = Score(-8, 0);
 
 // Bonus for every square accessible (that isn't protected by a pawn) to every piece.
-constexpr Score mobility = Score(4, 4);
+constexpr Score mobility = Score(6, 8);
 
 // Bonus for having the bishop pair.
 constexpr Score bishop_pair = Score(15, 15);
