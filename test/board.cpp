@@ -25,3 +25,29 @@ TEST(Board, NullMoves) {
     EXPECT_EQ(board.fen_encode(), board_fen);
   }
 }
+
+TEST(Board, InsufficientMaterial) {
+  Board board = Board();
+  std::pair<std::string, bool> testcases[] = {
+      {"8/2k5/8/8/8/4K3/8/8 w - - 0 1", true},
+      {"8/5k2/8/2K5/8/8/8/8 b - - 0 1", true},
+      {"7K/8/8/8/8/8/8/k7 w - - 0 1", true},
+      {"7K/8/8/8/8/8/2n5/k7 w - - 0 1", true},
+      {"7K/8/8/8/8/8/2n5/k7 b - - 0 1", true},
+      {"7K/8/8/8/8/8/2N5/k7 w - - 0 1", true},
+      {"7K/8/8/8/8/8/2N5/k7 b - - 0 1", true},
+      {"7K/8/2B5/8/8/8/8/k7 w - - 0 1", true},
+      {"7K/8/2B5/8/8/8/8/k7 b - - 0 1", true},
+      {"7K/8/2B5/8/5b2/8/8/k7 w - - 0 1", true},
+      {"7K/8/2B5/8/5b2/8/8/k7 b - - 0 1", true},
+      {"7K/8/2BB4/8/8/8/8/k7 w - - 0 1", false},
+      {"7K/8/2BB4/8/8/8/8/k7 b - - 0 1", false},
+      {"7K/8/8/8/2B5/p7/8/k7 w - - 0 1", false},
+      {"7K/8/8/8/2B5/p7/8/k7 b - - 0 1", false},
+  };
+  for (const auto &[fen, is_draw] : testcases) {
+    board.fen_decode(fen);
+    board.set_root();
+    EXPECT_EQ(board.is_draw(), is_draw);
+  }
+}
