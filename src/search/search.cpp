@@ -12,7 +12,7 @@ constexpr score_t futility_margins[] = {0, 330, 500, 900};
 constexpr depth_t null_move_depth_reduction = 2;
 
 score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, my_clock::time_point time_cutoff,
-                             bool allow_cutoff, bool allow_null, SearchOptions &options) {
+                             const bool allow_cutoff, const bool allow_null, SearchOptions &options) {
     // Perform a null window 'scout' search on a subtree.
     // All nodes examined with this tree are not PV nodes (unless proven otherwise, when they should be researched)
     // Has bounds [alpha, alpha + 1]
@@ -158,7 +158,7 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
 }
 
 score_t Search::pv_search(Board &board, depth_t depth, const score_t alpha_start, const score_t beta,
-                          PrincipleLine &line, my_clock::time_point time_cutoff, bool allow_cutoff,
+                          PrincipleLine &line, my_clock::time_point time_cutoff, const bool allow_cutoff,
                           SearchOptions &options) {
     // Perform an alpha-beta pruning tree search.
     // The use of this function implies that the node is a PV-node.
