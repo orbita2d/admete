@@ -8,7 +8,7 @@
 #include <iostream>
 
 bool cmp(Move &m1, Move &m2) {
-    // Comparison for the sort function. We want to sort in reverse order, so better scoring moves come first.
+    // Comparison for the sort function. Should return true if m1 goes before m2.
     return m1.score > m2.score;
 }
 
@@ -78,7 +78,7 @@ score_t see(Board &board, const Square target, Colour side, PieceType pt, Bitboa
         smallest_atk = get_smallest_attacker(board, target, mask, side);
     }
     // Gain has (depth) elements, we start at depth - 2 because this is the second to last element.
-    // The last element is the gain if the final piece were udner attack, but it's not (that's why it's last).
+    // The last element is the gain if the final piece were under attack, but it's not (that's why it's last).
 
     if (depth == 1) {
         // There were no captures to be made.
@@ -125,11 +125,10 @@ score_t see_quiet(Board &board, const Move move) {
 
 namespace Ordering {
 void sort_moves(Board &board, MoveList &legal_moves, const DenseMove hash_dmove, const KillerTableRow killer_moves) {
-    MoveList checks, quiet_moves, good_captures, even_captures, bad_captures, sorted_moves, killer;
+    MoveList quiet_moves, good_captures, even_captures, bad_captures, sorted_moves, killer;
     size_t n_moves = legal_moves.size();
     sorted_moves.reserve(n_moves);
     good_captures.reserve(n_moves);
-    checks.reserve(n_moves);
     killer.reserve(n_krow);
     even_captures.reserve(n_moves);
     quiet_moves.reserve(n_moves);
@@ -141,8 +140,6 @@ void sort_moves(Board &board, MoveList &legal_moves, const DenseMove hash_dmove,
             // list.
         } else if (move == killer_moves) {
             killer.push_back(move);
-        } else if (board.gives_check(move)) {
-            checks.push_back(move);
         } else if (move.is_capture()) {
             // Make sure to lookup and record the piece captured
             move.captured_piece = board.piece_type(move.target);
@@ -174,7 +171,6 @@ void sort_moves(Board &board, MoveList &legal_moves, const DenseMove hash_dmove,
 
     legal_moves.clear();
     legal_moves.insert(legal_moves.end(), good_captures.begin(), good_captures.end());
-    legal_moves.insert(legal_moves.end(), checks.begin(), checks.end());
     legal_moves.insert(legal_moves.end(), killer.begin(), killer.end());
     legal_moves.insert(legal_moves.end(), even_captures.begin(), even_captures.end());
     legal_moves.insert(legal_moves.end(), quiet_moves.begin(), quiet_moves.end());
