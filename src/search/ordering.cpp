@@ -1,3 +1,4 @@
+#include "ordering.hpp"
 #include "board.hpp"
 #include "evaluate.hpp"
 #include "printing.hpp"
@@ -11,8 +12,7 @@ bool cmp(Move &m1, Move &m2) {
     return m1.score > m2.score;
 }
 
-namespace Ordering {
-
+namespace SEE {
 Bitboard get_smallest_attacker(Board &board, const Square origin, const Bitboard mask, const Colour side) {
     // Return the smallest attacker on a given square, considering only pieces in the mask.
     // Has some issues with en-passent.
@@ -63,12 +63,12 @@ score_t see(Board &board, const Square target, Colour side, PieceType pt, Bitboa
     std::vector<score_t> gain;
     gain.reserve(16);
     depth_t depth = 1;
-    score_t value = Evaluation::piece_material(pt);
+    score_t value = SEE::material[pt];
     gain.push_back(value);
     while (smallest_atk) {
         const Square atksq = lsb(smallest_atk);
         PieceType p = board.piece_type(atksq);
-        value = Evaluation::piece_material(p);
+        value = SEE::material[p];
         gain.push_back(value - gain.back());
         // Remove the smallest attacker
         mask ^= smallest_atk;
@@ -101,13 +101,15 @@ score_t see_capture(Board &board, const Move move) {
     assert(move.is_capture());
     assert(move != NULL_MOVE);
     Bitboard mask = Bitboards::omega ^ move.origin;
-    const score_t see_gain = see(board, move.target, ~board.who_to_play(), move.moving_piece, mask);
     score_t cap_gain;
     if (move.is_ep_capture()) {
-        cap_gain = Evaluation::piece_material(PAWN);
+        const Square captured_square = move.origin.rank() | move.target.file();
+        mask ^= sq_to_bb(captured_square);
+        cap_gain = SEE::material[PAWN];
     } else {
-        cap_gain = Evaluation::piece_material(board.piece_type(move.target));
+        cap_gain = SEE::material[board.piece_type(move.target)];
     }
+    const score_t see_gain = see(board, move.target, ~board.who_to_play(), move.moving_piece, mask);
     return cap_gain - see_gain;
 }
 
@@ -119,6 +121,9 @@ score_t see_quiet(Board &board, const Move move) {
     return -see_gain;
 }
 
+} // namespace SEE
+
+namespace Ordering {
 void sort_moves(Board &board, MoveList &legal_moves, const DenseMove hash_dmove, const KillerTableRow killer_moves) {
     MoveList checks, quiet_moves, good_captures, even_captures, bad_captures, sorted_moves, killer;
     size_t n_moves = legal_moves.size();
@@ -141,7 +146,7 @@ void sort_moves(Board &board, MoveList &legal_moves, const DenseMove hash_dmove,
         } else if (move.is_capture()) {
             // Make sure to lookup and record the piece captured
             move.captured_piece = board.piece_type(move.target);
-            move.score = Ordering::see_capture(board, move);
+            move.score = SEE::see_capture(board, move);
             if (move.score >= 50) {
                 good_captures.push_back(move);
             } else if (move.score >= -50) {
@@ -150,7 +155,7 @@ void sort_moves(Board &board, MoveList &legal_moves, const DenseMove hash_dmove,
                 bad_captures.push_back(move);
             }
         } else {
-            move.score = Ordering::see_quiet(board, move);
+            move.score = SEE::see_quiet(board, move);
             quiet_moves.push_back(move);
         }
     }
