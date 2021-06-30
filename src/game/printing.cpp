@@ -7,6 +7,30 @@
 
 #define toDigit(c) (c - '0')
 
+namespace Printing {
+
+std::string piece_name(const PieceType p) {
+    switch (p) {
+    case PAWN:
+        return "Pawn";
+    case KNIGHT:
+        return "Knight";
+    case BISHOP:
+        return "Bishop";
+    case ROOK:
+        return "Rook";
+    case QUEEN:
+        return "Queen";
+    case KING:
+        return "King";
+    case NO_PIECE:
+        return "No Piece";
+    default:
+        break;
+    }
+}
+} // namespace Printing
+
 std::map<char, Square::square_t> file_decode_map = {
     {'a', 0}, {'b', 1}, {'c', 2}, {'d', 3}, {'e', 4}, {'f', 5}, {'g', 6}, {'h', 7},
 
@@ -80,11 +104,12 @@ void Board::pretty() const {
     for (uint rank = 0; rank < 8; rank++) {
         for (uint file = 0; file < 8; file++) {
             Square::square_t idx = 8 * rank + file;
-            if ((idx == aux_info->en_passent_target) & (aux_info->en_passent_target.get_value() != 0) &
-                pieces(idx).is_blank()) {
+            Square sq = Square(idx);
+            if ((sq == aux_info->en_passent_target) & (aux_info->en_passent_target.get_value() != 0) &
+                pieces(sq).is_blank()) {
                 std::cout << "! ";
             } else {
-                std::cout << pieces(idx).pretty();
+                std::cout << pieces(sq).pretty();
             }
             std::cout << " ";
         }

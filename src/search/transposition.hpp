@@ -92,5 +92,40 @@ class KillerTable {
 
 inline KillerTable killer_table;
 
+class HistoryTable {
+    // Table for the history heuristic;
+  public:
+    HistoryTable() = default;
+    uint probe(const PieceType, const Square);
+    void store(const depth_t depth, const Move move);
+    bool is_enabled() { return enabled; }
+    void enable() { enabled = true; }
+    void disable() { enabled = false; }
+
+    void clear();
+
+  private:
+    uint _data[N_PIECE][N_SQUARE];
+    bool enabled = true;
+};
+inline HistoryTable history_table;
+
+class CountermoveTable {
+    // Table for the history heuristic;
+  public:
+    CountermoveTable() = default;
+    DenseMove probe(const Move prev_move);
+    void store(const Move prev_move, const Move move);
+    bool is_enabled() { return enabled; }
+    void enable() { enabled = true; }
+    void disable() { enabled = false; }
+
+    void clear();
+
+  private:
+    DenseMove _data[N_PIECE][N_SQUARE];
+    bool enabled = true;
+};
+inline CountermoveTable countermove_table;
 void init();
 } // namespace Cache

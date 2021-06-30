@@ -4,7 +4,8 @@ add_executable(tests main.cpp
                 ops.cpp
                 fen.cpp
                 board.cpp
-                eval.cpp)
+                eval.cpp
+                ordering.cpp)
 
 target_link_libraries(tests
         gtest
@@ -14,4 +15,4 @@ target_link_libraries(tests
 add_test(NAME tests
         COMMAND tests)
 
-target_compile_options(tests PRIVATE "-std=c++20")
+target_compile_options(tests PRIVATE "-std=c++17")

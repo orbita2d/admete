@@ -250,11 +250,11 @@ void gen_moves(const Board &board, const Square origin, MoveList &moves, Bitboar
     }
 }
 
-template <Colour us> void gen_castle_moves(const Board &board, MoveList &moves) {
+template <Colour us, CastlingSide side> void gen_castle_moves(const Board &board, MoveList &moves) {
     // Check if castling is legal, and if so add it to the move list. Assumes we aren't in check
     Move move;
     // You can't castle through check, or while in check
-    if (board.can_castle(us, QUEENSIDE)) {
+    if (board.can_castle(us, QUEENSIDE) && (side == QUEENSIDE)) {
         // Check for overlap of squares that need to be free, and occupied bb.
         if (!(Bitboards::castle(us, QUEENSIDE) & board.pieces())) {
             if (!board.is_attacked(Squares::FileD | back_rank(us), us) &
@@ -265,7 +265,7 @@ template <Colour us> void gen_castle_moves(const Board &board, MoveList &moves) 
             }
         }
     }
-    if (board.can_castle(us, KINGSIDE)) {
+    if (board.can_castle(us, KINGSIDE) && (side == KINGSIDE)) {
         if (!(Bitboards::castle(us, KINGSIDE) & board.pieces())) {
             if (!board.is_attacked(Squares::FileF | back_rank(us), us) &
                 !board.is_attacked(Squares::FileG | back_rank(us), us)) {
@@ -275,6 +275,12 @@ template <Colour us> void gen_castle_moves(const Board &board, MoveList &moves) 
             }
         }
     }
+}
+
+template <Colour us> void gen_castle_moves(const Board &board, MoveList &moves) {
+    // Check if castling is legal, and if so add it to the move list. Assumes we aren't in check
+    gen_castle_moves<us, KINGSIDE>(board, moves);
+    gen_castle_moves<us, QUEENSIDE>(board, moves);
 }
 
 template <GenType gen> void gen_moves(const Board &board, MoveList &moves) {
@@ -356,6 +362,93 @@ template <GenType gen> void gen_moves(const Board &board, MoveList &moves) {
         gen_moves<gen, QUEEN>(board, sq, moves, target_squares);
     }
     gen_moves<gen, KING>(board, ks, moves);
+}
+
+template <> void gen_moves<QUIETCHECKS>(const Board &board, MoveList &moves) {
+    Colour us = board.who_to_play();
+    Bitboard occ;
+    Square ks = board.find_king(us);
+
+    // Caslting with check can happen is the square the rook ends up on is a rook check square.
+    if (board.check_squares(ROOK) & sq_to_bb(RookCastleSquares[us][KINGSIDE])) {
+        if (us == WHITE) {
+            gen_castle_moves<WHITE, KINGSIDE>(board, moves);
+        } else {
+            gen_castle_moves<BLACK, KINGSIDE>(board, moves);
+        }
+    }
+    if (board.check_squares(ROOK) & sq_to_bb(RookCastleSquares[us][QUEENSIDE])) {
+        if (us == WHITE) {
+            gen_castle_moves<WHITE, QUEENSIDE>(board, moves);
+        } else {
+            gen_castle_moves<BLACK, QUEENSIDE>(board, moves);
+        }
+    }
+
+    // Pawns which aren't pinned
+    occ = board.pieces(us, PAWN) & ~board.pinned();
+    while (occ) {
+        Square sq = pop_lsb(&occ);
+        if (us == WHITE) {
+            gen_pawn_moves<WHITE, QUIET>(board, sq, moves, board.check_squares(PAWN));
+        } else {
+            gen_pawn_moves<BLACK, QUIET>(board, sq, moves, board.check_squares(PAWN));
+        }
+    }
+    // Pawns which are
+    occ = board.pieces(us, PAWN) & board.pinned();
+    while (occ) {
+        Square sq = pop_lsb(&occ);
+        Bitboard target_squares = Bitboards::line(sq, ks) & board.check_squares(PAWN);
+        if (us == WHITE) {
+            gen_pawn_moves<WHITE, QUIET>(board, sq, moves, target_squares);
+        } else {
+            gen_pawn_moves<BLACK, QUIET>(board, sq, moves, target_squares);
+        }
+    }
+    // Pinned knights cannot move
+    occ = board.pieces(us, KNIGHT) & ~board.pinned();
+    while (occ) {
+        Square sq = pop_lsb(&occ);
+        gen_moves<QUIET, KNIGHT>(board, sq, moves, board.check_squares(KNIGHT));
+    }
+    // Bishops which aren't pinned
+    occ = board.pieces(us, BISHOP) & ~board.pinned();
+    while (occ) {
+        Square sq = pop_lsb(&occ);
+        gen_moves<QUIET, BISHOP>(board, sq, moves, board.check_squares(BISHOP));
+    }
+    // Bisops which are pinned
+    occ = board.pieces(us, BISHOP) & board.pinned();
+    while (occ) {
+        Square sq = pop_lsb(&occ);
+        Bitboard target_squares = Bitboards::line(sq, ks) & board.check_squares(BISHOP);
+        gen_moves<QUIET, BISHOP>(board, sq, moves, target_squares);
+    }
+    // Rooks which aren't pinned
+    occ = board.pieces(us, ROOK) & ~board.pinned();
+    while (occ) {
+        Square sq = pop_lsb(&occ);
+        gen_moves<QUIET, ROOK>(board, sq, moves, board.check_squares(ROOK));
+    }
+    // Rooks which are pinned
+    occ = board.pieces(us, ROOK) & board.pinned();
+    while (occ) {
+        Square sq = pop_lsb(&occ);
+        Bitboard target_squares = Bitboards::line(sq, ks) & board.check_squares(ROOK);
+        gen_moves<QUIET, ROOK>(board, sq, moves, target_squares);
+    }
+    occ = board.pieces(us, QUEEN) & ~board.pinned();
+    while (occ) {
+        Square sq = pop_lsb(&occ);
+        gen_moves<QUIET, QUEEN>(board, sq, moves, board.check_squares(QUEEN));
+    }
+    occ = board.pieces(us, QUEEN) & board.pinned();
+    while (occ) {
+        Square sq = pop_lsb(&occ);
+        Bitboard target_squares = Bitboards::line(sq, ks) & board.check_squares(QUEEN);
+        gen_moves<QUIET, QUEEN>(board, sq, moves, target_squares);
+    }
 }
 
 template <> void gen_moves<EVASIONS>(const Board &board, MoveList &moves) {
@@ -454,7 +547,6 @@ template <> void gen_moves<EVASIONS>(const Board &board, MoveList &moves) {
 
 template <GenType gen> void generate_moves(Board &board, MoveList &moves) {
     // Generate all legal non-evasion moves
-    moves.reserve(MAX_MOVES);
     if (gen == CAPTURES) {
         gen_moves<CAPTURES>(board, moves);
     } else if (gen == LEGAL) {
@@ -466,10 +558,8 @@ template <GenType gen> void generate_moves(Board &board, MoveList &moves) {
 
 template <> void generate_moves<EVASIONS>(Board &board, MoveList &moves) {
     // Generate all legal moves
-    Colour us = board.who_to_play();
-    Square king_square = board.find_king(us);
-    MoveList pseudolegal_moves;
-    moves.reserve(MAX_MOVES);
+    const Colour us = board.who_to_play();
+    const Square king_square = board.find_king(us);
     const int number_checkers = board.number_checkers();
     if (number_checkers == 2) {
         // Double check. Generate king moves.
@@ -483,6 +573,7 @@ template <> void generate_moves<EVASIONS>(Board &board, MoveList &moves) {
 
 MoveList Board::get_moves() {
     MoveList moves;
+    moves.reserve(MAX_MOVES);
     if (is_check()) {
         generate_moves<EVASIONS>(*this, moves);
     } else {
@@ -493,9 +584,12 @@ MoveList Board::get_moves() {
 
 MoveList Board::get_quiessence_moves() {
     MoveList moves;
+    moves.reserve(MAX_MOVES);
     if (is_check()) {
         generate_moves<EVASIONS>(*this, moves);
     } else {
+        // For later, currently unfortunately increases branching factor too much to be useful.
+        // gen_moves<QUIETCHECKS>(*this, moves);
         generate_moves<CAPTURES>(*this, moves);
     }
     return moves;

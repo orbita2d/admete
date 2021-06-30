@@ -122,9 +122,16 @@ static constexpr std::array<Square, 8> by_dirx = {N, E, S, W, NE, SE, SW, NW};
 
 constexpr int N_CASTLE = 2;
 enum CastlingSide { KINGSIDE, QUEENSIDE };
-constexpr std::array<std::array<Square, 2>, 2> RookSquare = {
+
+// Squares the rooks sit on (for castling).
+constexpr std::array<std::array<Square, 2>, 2> RookSquares = {
     {{Squares::FileH | Squares::Rank1, Squares::FileA | Squares::Rank1},
      {Squares::FileH | Squares::Rank8, Squares::FileA | Squares::Rank8}}};
+
+// Squares the rooks move to when castling.
+constexpr std::array<std::array<Square, 2>, 2> RookCastleSquares = {
+    {{Squares::FileF | Squares::Rank1, Squares::FileD | Squares::Rank1},
+     {Squares::FileF | Squares::Rank8, Squares::FileD | Squares::Rank8}}};
 
 // Colours
 
@@ -158,6 +165,8 @@ constexpr Piece BLANK_PIECE = Piece(WHITE, NO_PIECE);
 std::ostream &operator<<(std::ostream &os, const Piece piece);
 
 typedef uint8_t depth_t;
+constexpr depth_t MAX_DEPTH = 127;
+
 typedef unsigned int ply_t;
 constexpr ply_t MAX_PLY = 512;
 typedef int16_t score_t;
@@ -249,6 +258,7 @@ class Move {
     void make_knight_promotion() { type = (MoveType)((type & CAPTURE) | (PROMOTION | SPECIAL2)); }
     void make_rook_promotion() { type = (MoveType)((type & CAPTURE) | (PROMOTION | SPECIAL1)); }
     void make_queen_promotion() { type = (MoveType)((type & CAPTURE) | (PROMOTION | SPECIAL1 | SPECIAL2)); }
+    constexpr bool is_quiet() const { return !is_capture(); }
     constexpr bool is_capture() const { return type & CAPTURE; }
     constexpr bool is_ep_capture() const { return type == EN_PASSENT; }
     constexpr bool is_double_push() const { return type == DOUBLE_PUSH; }
@@ -337,3 +347,5 @@ inline bool is_legal(const Move move, const MoveList &legal_moves) {
     }
     return false;
 }
+
+enum NodeType { PVNODE, ALLNODE, CUTNODE };

@@ -100,10 +100,10 @@ long Zorbist::diff(const Move move, const Colour us, const int last_ep_file,
     } else if (move.is_capture()) {
         hash ^= zobrist_table[them][move.captured_piece][move.target];
     } else if (move.is_king_castle()) {
-        hash ^= zobrist_table[us][ROOK][RookSquare[us][KINGSIDE]];
+        hash ^= zobrist_table[us][ROOK][RookSquares[us][KINGSIDE]];
         hash ^= zobrist_table[us][ROOK][move.origin + Direction::E];
     } else if (move.is_queen_castle()) {
-        hash ^= zobrist_table[us][ROOK][RookSquare[us][QUEENSIDE]];
+        hash ^= zobrist_table[us][ROOK][RookSquares[us][QUEENSIDE]];
         hash ^= zobrist_table[us][ROOK][move.origin + Direction::W];
     }
     if (move.is_promotion()) {

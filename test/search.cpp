@@ -18,7 +18,7 @@ TEST(Search, MateInTwo) {
       {"1rb4r/pkPp3p/1b1P3n/1Q6/N3Pp2/8/P1P3PP/7K w - - 1 0", MATING_SCORE - 3},
   };
   Board board = Board();
-  constexpr depth_t depth = 10;
+  constexpr depth_t depth = 4;
   PrincipleLine line;
   line.reserve(depth);
 
@@ -43,7 +43,7 @@ TEST(Search, MateInThree) {
        MATING_SCORE - 5},
   };
   Board board = Board();
-  constexpr depth_t depth = 10;
+  constexpr depth_t depth = 6;
   PrincipleLine line;
   line.reserve(depth);
 
@@ -61,7 +61,7 @@ TEST(Search, MateInFour) {
        MATING_SCORE - 7},
   };
   Board board = Board();
-  constexpr depth_t depth = 10;
+  constexpr depth_t depth = 8;
   PrincipleLine line;
   line.reserve(depth);
 
@@ -80,7 +80,7 @@ TEST(Search, 50MoveRule) {
       {"r3k2K/3r4/6N1/8/p7/8/8/8 b q - 99 1", MATING_SCORE - 7},
   };
 
-  constexpr depth_t depth = 10;
+  constexpr depth_t depth = 8;
   PrincipleLine line;
   line.reserve(depth);
 
@@ -109,5 +109,66 @@ TEST(Search, InsufficientMaterial) {
     board.fen_decode(fen);
     EXPECT_EQ(Search::search(board, depth, line),
               Evaluation::drawn_score(board));
+  }
+}
+
+TEST(Search, Stalemate) {
+  Board board = Board();
+  board.set_root();
+  const score_t draw_score = Evaluation::drawn_score(board);
+  std::pair<std::string, score_t> testcases[] = {
+      {"kb4r1/p7/8/8/8/6q1/8/R6K w - - 0 1", draw_score},
+      {"r6k/8/6Q1/8/8/8/P7/KB4R1 b - - 0 1", draw_score},
+      {"8/8/8/8/8/8/p7/k1K5 w - - 0 1", draw_score},
+      {"K1k5/P7/8/8/8/8/8/8 b - - 0 1", draw_score},
+      {"K1k5/P1q5/8/B7/8/8/8/8 w - - 0 1", draw_score},
+      {"8/8/8/8/b7/8/p1Q5/k1K5 b - - 0 1", draw_score},
+  };
+
+  constexpr depth_t depth = 10;
+  PrincipleLine line;
+  line.reserve(depth);
+
+  for (const auto &[fen, score] : testcases) {
+    board.fen_decode(fen);
+    EXPECT_EQ(Search::search(board, depth, line), score);
+  }
+}
+
+TEST(Search, Underpromotion) {
+  Board board = Board();
+  board.set_root();
+  const score_t draw_score = Evaluation::drawn_score(board);
+  std::pair<std::string, score_t> testcases[] = {
+      {"6n1/5P1k/5Q2/8/8/8/8/7K w - - 0 1", MATING_SCORE - 1},
+      {"7k/8/8/8/8/5q2/5p1K/6N1 b - - 0 1", MATING_SCORE - 1},
+  };
+
+  constexpr depth_t depth = 10;
+  PrincipleLine line;
+  line.reserve(depth);
+
+  for (const auto &[fen, score] : testcases) {
+    board.fen_decode(fen);
+    EXPECT_EQ(Search::search(board, depth, line), score);
+  }
+}
+
+TEST(Search, Rule50CheckmatePriority) {
+  Board board = Board();
+  board.set_root();
+  const score_t draw_score = Evaluation::drawn_score(board);
+  std::pair<std::string, score_t> testcases[] = {
+      {"7k/1R6/R7/8/8/8/8/4K3 w - - 99 1", MATING_SCORE - 1},
+      {"4k3/8/8/8/8/r7/1r6/7K b - - 99 1", MATING_SCORE - 1},
+  };
+
+  constexpr depth_t depth = 10;
+  PrincipleLine line;
+  line.reserve(depth);
+
+  for (const auto &[fen, score] : testcases) {
+    board.fen_decode(fen);
+    EXPECT_EQ(Search::search(board, depth, line), score);
   }
 }

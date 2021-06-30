@@ -1,6 +1,6 @@
 #include "search.hpp"
 #include "evaluate.hpp"
-#include "moveordering.hpp"
+#include "ordering.hpp"
 #include "transposition.hpp"
 #include "uci.hpp"
 #include <chrono>
@@ -12,7 +12,7 @@ constexpr score_t futility_margins[] = {0, 330, 500, 900};
 constexpr depth_t null_move_depth_reduction = 2;
 
 score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, my_clock::time_point time_cutoff,
-                             bool allow_cutoff, bool allow_null, SearchOptions &options) {
+                             const bool allow_cutoff, const bool allow_null, SearchOptions &options) {
     // Perform a null window 'scout' search on a subtree.
     // All nodes examined with this tree are not PV nodes (unless proven otherwise, when they should be researched)
     // Has bounds [alpha, alpha + 1]
@@ -23,20 +23,15 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
         depth++;
     }
 
-    // If this is a draw by repetition or insufficient material, return the drawn score.
-    if (board.is_draw()) {
-        return Evaluation::drawn_score(board);
-    }
-
     MoveList legal_moves = board.get_moves();
     // Terminal node.
     if (legal_moves.size() == 0) {
         return Evaluation::evaluate(board, legal_moves);
     }
 
-    // Leaf node for main tree.
-    if (depth == 0) {
-        return quiesce(board, alpha, beta, options);
+    // If this is a draw by repetition or insufficient material, return the drawn score.
+    if (board.is_draw()) {
+        return Evaluation::drawn_score(board);
     }
 
     // The absolute upper bound for a score on this node is ply_to_mate_score(board.ply()).
@@ -53,6 +48,11 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
         return -ply_to_mate_score(board.ply());
     }
 
+    // Leaf node for main tree.
+    if (depth == 0) {
+        return quiesce(board, alpha, beta, options);
+    }
+
     // Lookup position in transposition table.
     DenseMove hash_dmove = NULL_DMOVE;
     const long hash = board.hash();
@@ -63,13 +63,13 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
             if (hit.lower()) {
                 // The saved score is a lower bound for the score of the sub tree
                 if (tt_eval >= beta) {
-                    // beta cutoff
+                    // Fail high
                     return tt_eval;
                 }
             } else if (hit.upper()) {
                 // The saved score is an upper bound for the score of the subtree.
                 if (tt_eval <= alpha) {
-                    // rare negamax alpha-cutoff
+                    // Fail low
                     return tt_eval;
                 }
             } else {
@@ -129,6 +129,8 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
 
         if (best_score >= beta) {
             Cache::killer_table.store(board.ply(), best_move);
+            Cache::history_table.store(depth, best_move);
+            Cache::countermove_table.store(board.last_move(), best_move);
             Cache::transposition_table.store(hash, best_score, alpha, beta, depth, best_move, board.ply());
             return best_score;
         }
@@ -153,38 +155,36 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
         }
     }
     Cache::killer_table.store(board.ply(), best_move);
+    Cache::history_table.store(depth, best_move);
+    Cache::countermove_table.store(board.last_move(), best_move);
     Cache::transposition_table.store(hash, best_score, alpha, beta, depth, best_move, board.ply());
     return best_score;
 }
 
 score_t Search::pv_search(Board &board, depth_t depth, const score_t alpha_start, const score_t beta,
-                          PrincipleLine &line, my_clock::time_point time_cutoff, bool allow_cutoff,
+                          PrincipleLine &line, my_clock::time_point time_cutoff, const bool allow_cutoff,
                           SearchOptions &options) {
     // Perform an alpha-beta pruning tree search.
     // The use of this function implies that the node is a PV-node.
-    // For non-PV nodes, use scout_search
+    // For non-PV nodes, use scout_search.
+    // Has bounds [alpha, beta]
 
     score_t alpha = alpha_start;
-    MoveList legal_moves = board.get_moves();
 
     // Check extentions
     if (board.is_check()) {
         depth++;
     }
 
-    // If this is a draw by repetition or insufficient material, return the drawn score.
-    if (board.is_draw() && !board.is_root()) {
-        return Evaluation::drawn_score(board);
-    }
-
+    MoveList legal_moves = board.get_moves();
     // Terminal node
     if (legal_moves.size() == 0) {
         return Evaluation::evaluate(board, legal_moves);
     }
 
-    // Leaf node (from the main tree anyway)
-    if (depth == 0) {
-        return quiesce(board, alpha, beta, options);
+    // If this is a draw by repetition or insufficient material, return the drawn score.
+    if (board.is_draw() && !board.is_root()) {
+        return Evaluation::drawn_score(board);
     }
 
     // The absolute upper bound for a score on this node is ply_to_mate_score(board.ply()).
@@ -199,6 +199,11 @@ score_t Search::pv_search(Board &board, depth_t depth, const score_t alpha_start
     if (-ply_to_mate_score(board.ply()) >= beta) {
         // Fail high.
         return -ply_to_mate_score(board.ply());
+    }
+
+    // Leaf node for the main tree.
+    if (depth == 0) {
+        return quiesce(board, alpha, beta, options);
     }
 
     // Lookup position in transposition table for hashmove.
@@ -241,6 +246,8 @@ score_t Search::pv_search(Board &board, depth_t depth, const score_t alpha_start
         if (alpha >= beta) {
             line = pv;
             Cache::killer_table.store(board.ply(), pv.back());
+            Cache::history_table.store(depth, pv.back());
+            Cache::countermove_table.store(board.last_move(), pv.back());
             Cache::transposition_table.store(hash, best_score, alpha_start, beta, depth, pv.back(), board.ply());
             return best_score;
         }
@@ -287,6 +294,8 @@ score_t Search::pv_search(Board &board, depth_t depth, const score_t alpha_start
     line = pv;
 
     Cache::killer_table.store(board.ply(), pv.back());
+    Cache::history_table.store(depth, pv.back());
+    Cache::countermove_table.store(board.last_move(), pv.back());
     Cache::transposition_table.store(hash, best_score, alpha_start, beta, depth, pv.back(), board.ply());
     return best_score;
 }
@@ -294,18 +303,30 @@ score_t Search::pv_search(Board &board, depth_t depth, const score_t alpha_start
 score_t Search::quiesce(Board &board, const score_t alpha_start, const score_t beta, SearchOptions &options) {
     // perform quiesence search to evaluate only quiet positions.
     score_t alpha = alpha_start;
-    score_t stand_pat = Evaluation::negamax_heuristic(board);
 
-    // Beta cutoff
-    if (stand_pat >= beta) {
-        return stand_pat;
+    MoveList moves;
+
+    // Look for checkmate
+    if (board.is_check()) {
+        // Generates all evasions.
+        moves = board.get_moves();
+        if (moves.empty()) {
+            return Evaluation::evaluate(board, moves);
+        }
     }
-
-    alpha = std::max(alpha, stand_pat);
 
     // If this is a draw by repetition or insufficient material, return the drawn score.
     if (board.is_draw()) {
         return Evaluation::drawn_score(board);
+    }
+
+    score_t stand_pat = Evaluation::negamax_heuristic(board);
+
+    alpha = std::max(alpha, stand_pat);
+
+    // Beta cutoff
+    if (stand_pat >= beta) {
+        return stand_pat;
     }
 
     // Delta pruning
@@ -313,17 +334,25 @@ score_t Search::quiesce(Board &board, const score_t alpha_start, const score_t b
         return stand_pat;
     }
 
-    // Get a list of moves for quiessence. If it's check, it generates all check evasions. Otherwise it's just captures.
-    MoveList moves = board.get_quiessence_moves();
+    // Get a list of moves for quiessence. If it's check, it we already have all evasions from the checkmate test.
+    // Otherwise it generates quiet checks and captures.
+    if (!board.is_check()) {
+        moves = board.get_quiessence_moves();
+    }
 
     if (moves.size() == 0) {
         return stand_pat;
     }
 
-    // Sort the captures.
+    // Sort the captures and record SEE.
     Ordering::sort_moves(board, moves, NULL_DMOVE, NULL_KROW);
 
     for (Move move : moves) {
+        // For a capture, the recorded score is the SEE value.
+        // It makes sense to not consider losing captures in qsearch.
+        if (move.is_capture() && (move.score < 0)) {
+            continue;
+        }
         board.make_move(move);
         options.nodes++;
         score_t score = -quiesce(board, -beta, -alpha, options);
@@ -340,7 +369,7 @@ score_t Search::search(Board &board, const depth_t max_depth, const int max_mill
                        SearchOptions &options) {
     // Initialise the transposition table.
     Cache::transposition_table.set_delete();
-
+    Cache::history_table.clear();
     PrincipleLine principle;
     board.set_root();
 
@@ -430,11 +459,6 @@ score_t Search::search(Board &board, const depth_t max_depth, const int max_mill
 
         // Send the info for the search to uci
         uci_info(depth, score, options.nodes, nps, principle, (int)time_span.count(), board.get_root());
-
-        // If we've found a forced mate, just play it.
-        if (is_mating(score)) {
-            break;
-        }
 
         // Estimate the next time span.
         t_est = branching_factor * time_span;

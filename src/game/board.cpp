@@ -213,7 +213,8 @@ void Board::make_move(Move &move) {
     const Bitboard from_to_bb = from_bb ^ to_bb;
 
     if (move.is_king_castle()) {
-        const Bitboard rook_from_to_bb = sq_to_bb(RookSquare[us][KINGSIDE]) ^ sq_to_bb(move.origin + Direction::E);
+        const Bitboard rook_from_to_bb =
+            sq_to_bb(RookSquares[us][KINGSIDE]) ^ sq_to_bb(RookCastleSquares[us][KINGSIDE]);
         occupied_bb ^= from_to_bb;
         occupied_bb ^= rook_from_to_bb;
         colour_bb[us] ^= from_to_bb;
@@ -222,7 +223,8 @@ void Board::make_move(Move &move) {
         piece_bb[ROOK] ^= rook_from_to_bb;
 
     } else if (move.is_queen_castle()) {
-        const Bitboard rook_from_to_bb = sq_to_bb(RookSquare[us][QUEENSIDE]) ^ sq_to_bb(move.origin + Direction::W);
+        const Bitboard rook_from_to_bb =
+            sq_to_bb(RookSquares[us][QUEENSIDE]) ^ sq_to_bb(RookCastleSquares[us][QUEENSIDE]);
         occupied_bb ^= from_to_bb;
         occupied_bb ^= rook_from_to_bb;
         colour_bb[us] ^= from_to_bb;
@@ -285,21 +287,21 @@ void Board::make_move(Move &move) {
     }
 
     // Check if we've moved our rook to update our castling rights.
-    if ((move.origin == RookSquare[us][KINGSIDE]) & can_castle(us, KINGSIDE)) {
+    if ((move.origin == RookSquares[us][KINGSIDE]) & can_castle(us, KINGSIDE)) {
         aux_info->castling_rights[us][KINGSIDE] = false;
         castling_rights_change[us][KINGSIDE] = true;
-    } else if ((move.origin == RookSquare[us][QUEENSIDE]) & can_castle(us, QUEENSIDE)) {
+    } else if ((move.origin == RookSquares[us][QUEENSIDE]) & can_castle(us, QUEENSIDE)) {
         aux_info->castling_rights[us][QUEENSIDE] = false;
         castling_rights_change[us][QUEENSIDE] = true;
     }
 
     // Check for rook captures to update their castling rights
     if (move.is_capture()) {
-        if ((move.target == RookSquare[them][KINGSIDE]) & can_castle(them, KINGSIDE)) {
+        if ((move.target == RookSquares[them][KINGSIDE]) & can_castle(them, KINGSIDE)) {
             aux_info->castling_rights[them][KINGSIDE] = false;
             castling_rights_change[them][KINGSIDE] = true;
         }
-        if ((move.target == RookSquare[them][QUEENSIDE]) & can_castle(them, QUEENSIDE)) {
+        if ((move.target == RookSquares[them][QUEENSIDE]) & can_castle(them, QUEENSIDE)) {
             aux_info->castling_rights[them][QUEENSIDE] = false;
             castling_rights_change[them][QUEENSIDE] = true;
         }
@@ -333,6 +335,8 @@ void Board::make_move(Move &move) {
         hash_history[ply_counter - 1] ^ Zorbist::diff(move, us, last_ep_file, castling_rights_change);
 
     assert(hash() == Zorbist::hash(*this));
+
+    aux_info->last_move = move;
 }
 
 void Board::unmake_move(const Move move) {
@@ -361,7 +365,7 @@ void Board::unmake_move(const Move move) {
     const Bitboard from_to_bb = from_bb ^ to_bb;
 
     if (move.is_king_castle()) {
-        const Bitboard rook_from_to_bb = sq_to_bb(RookSquare[us][KINGSIDE]) ^ sq_to_bb(move.origin + Direction::E);
+        const Bitboard rook_from_to_bb = sq_to_bb(RookSquares[us][KINGSIDE]) ^ sq_to_bb(move.origin + Direction::E);
         occupied_bb ^= from_to_bb;
         occupied_bb ^= rook_from_to_bb;
         colour_bb[us] ^= from_to_bb;
@@ -370,7 +374,7 @@ void Board::unmake_move(const Move move) {
         piece_bb[ROOK] ^= rook_from_to_bb;
 
     } else if (move.is_queen_castle()) {
-        const Bitboard rook_from_to_bb = sq_to_bb(RookSquare[us][QUEENSIDE]) ^ sq_to_bb(move.origin + Direction::W);
+        const Bitboard rook_from_to_bb = sq_to_bb(RookSquares[us][QUEENSIDE]) ^ sq_to_bb(move.origin + Direction::W);
         occupied_bb ^= from_to_bb;
         occupied_bb ^= rook_from_to_bb;
         colour_bb[us] ^= from_to_bb;
@@ -462,6 +466,8 @@ void Board::make_nullmove() {
     // Update the zorbist hash
     hash_history[ply_counter] = hash_history[ply_counter - 1] ^ Zorbist::nulldiff(us, last_ep_file);
     assert(hash() == Zorbist::hash(*this));
+
+    aux_info->last_move = NULL_MOVE;
 }
 
 void Board::unmake_nullmove() {
@@ -476,15 +482,26 @@ void Board::unmake_nullmove() {
     whos_move = ~whos_move;
 }
 
-bool Board::try_uci_move(const std::string move_sting) {
+Move Board::fetch_move(const std::string move_sting) {
+    // Get the move object for a move from a uci string.
     std::vector<Move> legal_moves = get_moves();
     for (Move move : legal_moves) {
         if (move_sting == move.pretty()) {
-            make_move(move);
-            return true;
+            return move;
         }
     }
-    return false;
+    return NULL_MOVE;
+}
+
+bool Board::try_uci_move(const std::string move_sting) {
+    // Play a move from a uci string.
+    Move move = fetch_move(move_sting);
+    if (move != NULL_MOVE) {
+        make_move(move);
+        return true;
+    } else {
+        return false;
+    }
 }
 
 bool Board::is_attacked(const Square origin, const Colour us) const {
@@ -610,11 +627,11 @@ bool Board::gives_check(const Move move) {
         }
     } else if (move.is_king_castle()) {
         // The only piece that could give check here is the rook.
-        if (check_squares(ROOK) & RookSquare[who_to_play()][KINGSIDE]) {
+        if (check_squares(ROOK) & sq_to_bb(RookCastleSquares[who_to_play()][KINGSIDE])) {
             return true;
         }
     } else if (move.is_queen_castle()) {
-        if (check_squares(ROOK) & RookSquare[who_to_play()][QUEENSIDE]) {
+        if (check_squares(ROOK) & sq_to_bb(RookCastleSquares[who_to_play()][QUEENSIDE])) {
             return true;
         }
     } else if (move.is_ep_capture()) {

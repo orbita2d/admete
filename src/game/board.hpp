@@ -23,6 +23,9 @@ struct AuxilliaryInfo {
     // Pieces belonging to the player to move, that if moved would give discovered check.
     Bitboard blockers;
     int material;
+
+    // Move that brought us to this position.
+    Move last_move = NULL_MOVE;
 };
 
 class Board {
@@ -94,7 +97,9 @@ class Board {
     void make_nullmove();
     void unmake_nullmove();
 
+    Move fetch_move(const std::string move_sting);
     bool try_uci_move(const std::string move_sting);
+
     Square find_king(const Colour us) const;
     void search_kings();
     bool is_pinned(const Square origin) const;
@@ -118,6 +123,7 @@ class Board {
     bool is_endgame() const;
     ply_t halfmove_clock() const { return aux_info->halfmove_clock; }
     void flip();
+    Move last_move() const { return aux_info->last_move; }
 
   private:
     AuxilliaryInfo *aux_info;
