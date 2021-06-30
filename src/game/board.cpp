@@ -478,15 +478,26 @@ void Board::unmake_nullmove() {
     whos_move = ~whos_move;
 }
 
-bool Board::try_uci_move(const std::string move_sting) {
+Move Board::fetch_move(const std::string move_sting) {
+    // Get the move object for a move from a uci string.
     std::vector<Move> legal_moves = get_moves();
     for (Move move : legal_moves) {
         if (move_sting == move.pretty()) {
-            make_move(move);
-            return true;
+            return move;
         }
     }
-    return false;
+    return NULL_MOVE;
+}
+
+bool Board::try_uci_move(const std::string move_sting) {
+    // Play a move from a uci string.
+    Move move = fetch_move(move_sting);
+    if (move != NULL_MOVE) {
+        make_move(move);
+        return true;
+    } else {
+        return false;
+    }
 }
 
 bool Board::is_attacked(const Square origin, const Colour us) const {

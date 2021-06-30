@@ -7,6 +7,30 @@
 
 #define toDigit(c) (c - '0')
 
+namespace Printing {
+
+std::string piece_name(const PieceType p) {
+    switch (p) {
+    case PAWN:
+        return "Pawn";
+    case KNIGHT:
+        return "Knight";
+    case BISHOP:
+        return "Bishop";
+    case ROOK:
+        return "Rook";
+    case QUEEN:
+        return "Queen";
+    case KING:
+        return "King";
+    case NO_PIECE:
+        return "No Piece";
+    default:
+        break;
+    }
+}
+} // namespace Printing
+
 std::map<char, Square::square_t> file_decode_map = {
     {'a', 0}, {'b', 1}, {'c', 2}, {'d', 3}, {'e', 4}, {'f', 5}, {'g', 6}, {'h', 7},
 

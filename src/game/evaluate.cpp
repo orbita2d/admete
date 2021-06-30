@@ -232,7 +232,7 @@ void init() {
     pb_passed[BLACK] = reverse_board(pb_passed[WHITE]);
 }
 
-score_t piece_material(const PieceType p) { return material[p]; }
+score_t piece_material(const PieceType p) { return p == NO_PIECE ? 0 : material[p]; }
 Score piece_value(const PieceType p) { return piece_values[p]; }
 
 } // namespace Evaluation

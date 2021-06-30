@@ -94,7 +94,9 @@ class Board {
     void make_nullmove();
     void unmake_nullmove();
 
+    Move fetch_move(const std::string move_sting);
     bool try_uci_move(const std::string move_sting);
+
     Square find_king(const Colour us) const;
     void search_kings();
     bool is_pinned(const Square origin) const;
