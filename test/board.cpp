@@ -1,5 +1,6 @@
 #include "board.hpp"
 #include <gtest/gtest.h>
+#include <tuple>
 
 TEST(Board, NullMoves) {
   std::string fens[] = {
@@ -80,5 +81,29 @@ TEST(Board, Flip) {
     EXPECT_EQ(board.fen_encode(), out);
     board.flip();
     EXPECT_EQ(board.fen_encode(), in);
+  }
+}
+
+TEST(Board, LastMove) {
+  Board board = Board();
+  std::tuple<std::string, std::string, std::string> testcases[] = {
+      {"r1bqkbnr/pp1p1pp1/7p/n3p3/2B1P3/1QN2N2/PP3PPP/R1B1K2R w KQkq - 2 8",
+       "c4f7", "e8e7"},
+      {"rn1qkbnr/pp3ppp/2p1p3/3pPb2/3P4/5N2/PPP2PPP/RNBQKB1R w KQkq - 0 5",
+       "f1e2", "g8e7"},
+  };
+  for (const auto &[fen, movestring1, movestring2] : testcases) {
+    board.fen_decode(fen);
+    EXPECT_EQ(board.last_move(), NULL_MOVE);
+    Move move1 = board.fetch_move(movestring1);
+    board.make_move(move1);
+    EXPECT_EQ(board.last_move(), move1);
+    Move move2 = board.fetch_move(movestring2);
+    board.make_move(move2);
+    EXPECT_EQ(board.last_move(), move2);
+    board.unmake_move(move2);
+    EXPECT_EQ(board.last_move(), move1);
+    board.unmake_move(move1);
+    EXPECT_EQ(board.last_move(), NULL_MOVE);
   }
 }

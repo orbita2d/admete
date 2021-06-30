@@ -335,6 +335,8 @@ void Board::make_move(Move &move) {
         hash_history[ply_counter - 1] ^ Zorbist::diff(move, us, last_ep_file, castling_rights_change);
 
     assert(hash() == Zorbist::hash(*this));
+
+    aux_info->last_move = move;
 }
 
 void Board::unmake_move(const Move move) {
@@ -464,6 +466,8 @@ void Board::make_nullmove() {
     // Update the zorbist hash
     hash_history[ply_counter] = hash_history[ply_counter - 1] ^ Zorbist::nulldiff(us, last_ep_file);
     assert(hash() == Zorbist::hash(*this));
+
+    aux_info->last_move = NULL_MOVE;
 }
 
 void Board::unmake_nullmove() {
