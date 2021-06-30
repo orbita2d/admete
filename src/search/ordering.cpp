@@ -110,6 +110,15 @@ score_t see_capture(Board &board, const Move move) {
     return gain;
 }
 
+score_t see_quiet(Board &board, const Move move) {
+    assert(move.is_quiet());
+    assert(move != NULL_MOVE);
+    Bitboard mask = Bitboards::omega ^ move.origin;
+    score_t see_gain = see(board, move.target, ~board.who_to_play(), move.moving_piece, mask);
+    score_t gain = -see_gain;
+    return gain;
+}
+
 void sort_moves(Board &board, MoveList &legal_moves, const DenseMove hash_dmove, const KillerTableRow killer_moves) {
     MoveList checks, quiet_moves, good_captures, bad_captures, sorted_moves, killer;
     size_t n_moves = legal_moves.size();

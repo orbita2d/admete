@@ -82,3 +82,23 @@ TEST(Ordering, SeeCapture) {
     EXPECT_EQ(Ordering::see_capture(board, move), score);
   }
 }
+
+TEST(Ordering, SeeQuiet) {
+  std::tuple<std::string, std::string, score_t> testcases[] = {
+      {"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", "e2e4", 0},
+      {"4k3/8/8/8/3Q4/8/8/4K3 w - - 0 1", "d4d7",
+       -Evaluation::piece_material(QUEEN)},
+      {"4k3/8/8/2q5/8/2PP4/8/4K3 w - - 0 1", "d3d4", 0},
+      {"4k3/8/4n3/2q5/8/2QP4/8/4K3 w - - 0 1", "d3d4",
+       -Evaluation::piece_material(PAWN)},
+      {"4k3/8/4n3/2b5/8/2QP4/8/4K3 w - - 0 1", "d3d4",
+       -Evaluation::piece_material(PAWN)},
+  };
+  Board board = Board();
+
+  for (const auto &[fen, movestring, score] : testcases) {
+    board.fen_decode(fen);
+    Move move = board.fetch_move(movestring);
+    EXPECT_EQ(Ordering::see_quiet(board, move), score);
+  }
+}
