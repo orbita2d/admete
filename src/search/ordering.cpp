@@ -133,6 +133,7 @@ void sort_moves(Board &board, MoveList &legal_moves, const DenseMove hash_dmove,
     even_captures.reserve(n_moves);
     quiet_moves.reserve(n_moves);
     bad_captures.reserve(n_moves);
+    constexpr score_t check_bonus = 100;
     // The moves from get_moves already have captures first
     for (Move &move : legal_moves) {
         if (move == hash_dmove) {
@@ -144,6 +145,9 @@ void sort_moves(Board &board, MoveList &legal_moves, const DenseMove hash_dmove,
             // Make sure to lookup and record the piece captured
             move.captured_piece = board.piece_type(move.target);
             move.score = SEE::see_capture(board, move);
+            if (board.gives_check(move)) {
+                move.score += check_bonus;
+            }
             if (move.score >= 50) {
                 good_captures.push_back(move);
             } else if (move.score >= -50) {
@@ -153,6 +157,9 @@ void sort_moves(Board &board, MoveList &legal_moves, const DenseMove hash_dmove,
             }
         } else {
             move.score = SEE::see_quiet(board, move);
+            if (board.gives_check(move)) {
+                move.score += check_bonus;
+            }
             quiet_moves.push_back(move);
         }
     }
