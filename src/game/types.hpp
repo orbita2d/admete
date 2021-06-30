@@ -165,6 +165,8 @@ constexpr Piece BLANK_PIECE = Piece(WHITE, NO_PIECE);
 std::ostream &operator<<(std::ostream &os, const Piece piece);
 
 typedef uint8_t depth_t;
+constexpr depth_t MAX_DEPTH = 127;
+
 typedef unsigned int ply_t;
 constexpr ply_t MAX_PLY = 512;
 typedef int16_t score_t;
@@ -345,3 +347,5 @@ inline bool is_legal(const Move move, const MoveList &legal_moves) {
     }
     return false;
 }
+
+enum NodeType { PVNODE, ALLNODE, CUTNODE };
