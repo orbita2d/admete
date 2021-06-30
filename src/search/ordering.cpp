@@ -2,6 +2,7 @@
 #include "board.hpp"
 #include "evaluate.hpp"
 #include "printing.hpp"
+#include "transposition.hpp"
 #include "types.hpp"
 #include <algorithm>
 #include <assert.h>
@@ -125,7 +126,7 @@ score_t see_quiet(Board &board, const Move move) {
 
 namespace Ordering {
 void sort_moves(Board &board, MoveList &legal_moves, const DenseMove hash_dmove, const KillerTableRow killer_moves) {
-    MoveList quiet_moves, good_captures, even_captures, bad_captures, sorted_moves, killer;
+    MoveList quiet_moves, good_captures, even_captures, bad_captures, checks, sorted_moves, killer;
     size_t n_moves = legal_moves.size();
     sorted_moves.reserve(n_moves);
     good_captures.reserve(n_moves);
@@ -156,9 +157,9 @@ void sort_moves(Board &board, MoveList &legal_moves, const DenseMove hash_dmove,
                 bad_captures.push_back(move);
             }
         } else {
-            move.score = SEE::see_quiet(board, move);
+            move.score = Cache::history_table.probe(move.moving_piece, move.target);
             if (board.gives_check(move)) {
-                move.score += check_bonus;
+                move.score += 10000;
             }
             quiet_moves.push_back(move);
         }
@@ -173,7 +174,7 @@ void sort_moves(Board &board, MoveList &legal_moves, const DenseMove hash_dmove,
     // Checks
     // Killer moves
     // Captures -50 < SEE < 50
-    // Quiet moves
+    // Quiet moves, sorted by history heuristic
     // Captures with SEE < -50
 
     legal_moves.clear();

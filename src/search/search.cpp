@@ -63,13 +63,13 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
             if (hit.lower()) {
                 // The saved score is a lower bound for the score of the sub tree
                 if (tt_eval >= beta) {
-                    // beta cutoff
+                    // Fail high
                     return tt_eval;
                 }
             } else if (hit.upper()) {
                 // The saved score is an upper bound for the score of the subtree.
                 if (tt_eval <= alpha) {
-                    // rare negamax alpha-cutoff
+                    // Fail low
                     return tt_eval;
                 }
             } else {
@@ -129,6 +129,7 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
 
         if (best_score >= beta) {
             Cache::killer_table.store(board.ply(), best_move);
+            Cache::history_table.store(depth, best_move);
             Cache::transposition_table.store(hash, best_score, alpha, beta, depth, best_move, board.ply());
             return best_score;
         }
@@ -153,6 +154,7 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
         }
     }
     Cache::killer_table.store(board.ply(), best_move);
+    Cache::history_table.store(depth, best_move);
     Cache::transposition_table.store(hash, best_score, alpha, beta, depth, best_move, board.ply());
     return best_score;
 }
@@ -242,6 +244,7 @@ score_t Search::pv_search(Board &board, depth_t depth, const score_t alpha_start
         if (alpha >= beta) {
             line = pv;
             Cache::killer_table.store(board.ply(), pv.back());
+            Cache::history_table.store(depth, pv.back());
             Cache::transposition_table.store(hash, best_score, alpha_start, beta, depth, pv.back(), board.ply());
             return best_score;
         }
@@ -288,6 +291,7 @@ score_t Search::pv_search(Board &board, depth_t depth, const score_t alpha_start
     line = pv;
 
     Cache::killer_table.store(board.ply(), pv.back());
+    Cache::history_table.store(depth, pv.back());
     Cache::transposition_table.store(hash, best_score, alpha_start, beta, depth, pv.back(), board.ply());
     return best_score;
 }
@@ -336,10 +340,15 @@ score_t Search::quiesce(Board &board, const score_t alpha_start, const score_t b
         return stand_pat;
     }
 
-    // Sort the captures.
+    // Sort the captures and record SEE.
     Ordering::sort_moves(board, moves, NULL_DMOVE, NULL_KROW);
 
     for (Move move : moves) {
+        // For a capture, the recorded score is the SEE value.
+        // It makes sense to not consider losing captures in qsearch.
+        if (move.is_capture() && (move.score < 0)) {
+            continue;
+        }
         board.make_move(move);
         options.nodes++;
         score_t score = -quiesce(board, -beta, -alpha, options);
@@ -356,7 +365,7 @@ score_t Search::search(Board &board, const depth_t max_depth, const int max_mill
                        SearchOptions &options) {
     // Initialise the transposition table.
     Cache::transposition_table.set_delete();
-
+    Cache::history_table.clear();
     PrincipleLine principle;
     board.set_root();
 

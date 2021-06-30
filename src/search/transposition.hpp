@@ -19,7 +19,9 @@ score_t eval_from_tt(const score_t eval, const ply_t ply);
 struct TransElement {
     TransElement() = default;
     TransElement(score_t eval, score_t a, score_t b, depth_t d, Move m, ply_t ply)
-        : score(eval_to_tt(eval, ply)), _depth(d), info((eval <= a) ? UPPER : (eval >= b) ? LOWER : EXACT),
+        : score(eval_to_tt(eval, ply)), _depth(d), info((eval <= a)   ? UPPER
+                                                        : (eval >= b) ? LOWER
+                                                                      : EXACT),
           hash_move(pack_move(m)){};
     score_t eval(ply_t ply) const { return eval_from_tt(score, ply); }
     bool lower() const { return (info & bound_mask) == LOWER; }
@@ -91,6 +93,24 @@ class KillerTable {
 };
 
 inline KillerTable killer_table;
+
+class HistoryTable {
+    // Table for the history heuristic;
+  public:
+    HistoryTable() = default;
+    uint probe(const PieceType, const Square);
+    void store(const depth_t depth, const Move move);
+    bool is_enabled() { return enabled; }
+    void enable() { enabled = true; }
+    void disable() { enabled = false; }
+
+    void clear();
+
+  private:
+    uint _data[N_PIECE][N_SQUARE];
+    bool enabled = true;
+};
+inline HistoryTable history_table;
 
 void init();
 } // namespace Cache
