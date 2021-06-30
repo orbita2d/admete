@@ -126,16 +126,18 @@ score_t see_quiet(Board &board, const Move move) {
 
 namespace Ordering {
 void sort_moves(Board &board, MoveList &legal_moves, const DenseMove hash_dmove, const KillerTableRow killer_moves) {
+
     MoveList quiet_moves, good_captures, even_captures, bad_captures, checks, sorted_moves, killer;
     size_t n_moves = legal_moves.size();
+
     sorted_moves.reserve(n_moves);
     good_captures.reserve(n_moves);
     killer.reserve(n_krow);
     even_captures.reserve(n_moves);
     quiet_moves.reserve(n_moves);
     bad_captures.reserve(n_moves);
+
     constexpr score_t check_bonus = 100;
-    // The moves from get_moves already have captures first
     for (Move &move : legal_moves) {
         if (move == hash_dmove) {
             // The search handles the hash move itself. Here we just make sure it doesn't end up in the final move
@@ -164,6 +166,7 @@ void sort_moves(Board &board, MoveList &legal_moves, const DenseMove hash_dmove,
             quiet_moves.push_back(move);
         }
     }
+
     std::sort(good_captures.begin(), good_captures.end(), cmp);
     std::sort(even_captures.begin(), even_captures.end(), cmp);
     std::sort(bad_captures.begin(), bad_captures.end(), cmp);
@@ -171,13 +174,13 @@ void sort_moves(Board &board, MoveList &legal_moves, const DenseMove hash_dmove,
 
     // Move order is:
     // Captures with SEE > 50
-    // Checks
     // Killer moves
     // Captures -50 < SEE < 50
     // Quiet moves, sorted by history heuristic
     // Captures with SEE < -50
 
     legal_moves.clear();
+    legal_moves.reserve(n_moves);
     legal_moves.insert(legal_moves.end(), good_captures.begin(), good_captures.end());
     legal_moves.insert(legal_moves.end(), killer.begin(), killer.end());
     legal_moves.insert(legal_moves.end(), even_captures.begin(), even_captures.end());
