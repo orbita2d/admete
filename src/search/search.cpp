@@ -130,6 +130,7 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
         if (best_score >= beta) {
             Cache::killer_table.store(board.ply(), best_move);
             Cache::history_table.store(depth, best_move);
+            Cache::countermove_table.store(board.last_move(), best_move);
             Cache::transposition_table.store(hash, best_score, alpha, beta, depth, best_move, board.ply());
             return best_score;
         }
@@ -155,6 +156,7 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
     }
     Cache::killer_table.store(board.ply(), best_move);
     Cache::history_table.store(depth, best_move);
+    Cache::countermove_table.store(board.last_move(), best_move);
     Cache::transposition_table.store(hash, best_score, alpha, beta, depth, best_move, board.ply());
     return best_score;
 }
@@ -245,6 +247,7 @@ score_t Search::pv_search(Board &board, depth_t depth, const score_t alpha_start
             line = pv;
             Cache::killer_table.store(board.ply(), pv.back());
             Cache::history_table.store(depth, pv.back());
+            Cache::countermove_table.store(board.last_move(), pv.back());
             Cache::transposition_table.store(hash, best_score, alpha_start, beta, depth, pv.back(), board.ply());
             return best_score;
         }
@@ -292,6 +295,7 @@ score_t Search::pv_search(Board &board, depth_t depth, const score_t alpha_start
 
     Cache::killer_table.store(board.ply(), pv.back());
     Cache::history_table.store(depth, pv.back());
+    Cache::countermove_table.store(board.last_move(), pv.back());
     Cache::transposition_table.store(hash, best_score, alpha_start, beta, depth, pv.back(), board.ply());
     return best_score;
 }

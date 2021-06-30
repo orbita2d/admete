@@ -105,6 +105,8 @@ void Cache::KillerTable::store(const ply_t ply, const Move move) {
 void Cache::init() {
     killer_table = KillerTable();
     transposition_table = TranspositionTable();
+    history_table = HistoryTable();
+    countermove_table = CountermoveTable();
 }
 
 uint Cache::HistoryTable::probe(const PieceType pt, const Square sq) { return _data[pt][sq]; }
@@ -134,6 +136,46 @@ void Cache::HistoryTable::clear() {
     for (int p = PAWN; p < N_PIECE; p++) {
         for (int sq = 0; sq < N_SQUARE; sq++) {
             _data[p][sq] = 0;
+        }
+    }
+}
+
+DenseMove Cache::CountermoveTable::probe(const Move prev_move) {
+    const PieceType pt = prev_move.moving_piece;
+    const Square to_square = prev_move.target;
+    return _data[pt][to_square];
+}
+
+void Cache::CountermoveTable::store(const Move prev_move, const Move move) {
+
+    if (is_enabled() == false) {
+        return;
+    }
+
+    // Put this check here rather than in the search for simplicity
+    if (move == NULL_MOVE) {
+        return;
+    }
+
+    if (prev_move == NULL_MOVE) {
+        return;
+    }
+
+    // Only record quiet moves.
+    if (!move.is_quiet()) {
+        return;
+    }
+
+    const PieceType pt = prev_move.moving_piece;
+    const Square to_square = prev_move.target;
+
+    _data[pt][to_square] = pack_move(move);
+}
+
+void Cache::CountermoveTable::clear() {
+    for (int p = PAWN; p < N_PIECE; p++) {
+        for (int sq = 0; sq < N_SQUARE; sq++) {
+            _data[p][sq] = NULL_DMOVE;
         }
     }
 }

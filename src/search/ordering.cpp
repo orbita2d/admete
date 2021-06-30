@@ -137,7 +137,7 @@ void sort_moves(Board &board, MoveList &legal_moves, const DenseMove hash_dmove,
     quiet_moves.reserve(n_moves);
     bad_captures.reserve(n_moves);
 
-    constexpr score_t check_bonus = 100;
+    DenseMove countermove = Cache::countermove_table.probe(board.last_move());
     for (Move &move : legal_moves) {
         if (move == hash_dmove) {
             // The search handles the hash move itself. Here we just make sure it doesn't end up in the final move
@@ -149,7 +149,7 @@ void sort_moves(Board &board, MoveList &legal_moves, const DenseMove hash_dmove,
             move.captured_piece = board.piece_type(move.target);
             move.score = SEE::see_capture(board, move);
             if (board.gives_check(move)) {
-                move.score += check_bonus;
+                move.score += 100;
             }
             if (move.score >= 50) {
                 good_captures.push_back(move);
@@ -160,6 +160,9 @@ void sort_moves(Board &board, MoveList &legal_moves, const DenseMove hash_dmove,
             }
         } else {
             move.score = Cache::history_table.probe(move.moving_piece, move.target);
+            if (move == countermove) {
+                move.score += 20;
+            }
             if (board.gives_check(move)) {
                 move.score += 10000;
             }
