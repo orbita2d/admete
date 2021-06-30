@@ -256,6 +256,7 @@ class Move {
     void make_knight_promotion() { type = (MoveType)((type & CAPTURE) | (PROMOTION | SPECIAL2)); }
     void make_rook_promotion() { type = (MoveType)((type & CAPTURE) | (PROMOTION | SPECIAL1)); }
     void make_queen_promotion() { type = (MoveType)((type & CAPTURE) | (PROMOTION | SPECIAL1 | SPECIAL2)); }
+    constexpr bool is_quiet() const { return !is_capture(); }
     constexpr bool is_capture() const { return type & CAPTURE; }
     constexpr bool is_ep_capture() const { return type == EN_PASSENT; }
     constexpr bool is_double_push() const { return type == DOUBLE_PUSH; }
