@@ -373,6 +373,8 @@ score_t Search::search(Board &board, const depth_t max_depth, const int max_mill
     PrincipleLine principle;
     board.set_root();
 
+    const ply_t mate_in_ply = 2 * options.mate_depth;
+
     score_t score = 0;
 
     // Initialise variables for time control.
@@ -471,6 +473,13 @@ score_t Search::search(Board &board, const depth_t max_depth, const int max_mill
         // Calculate the last effective branching factor
         if (depth >= 5) {
             branching_factor = int(time_span.count() / time_span_last.count());
+        }
+
+        // Break if reached mate in N depth.
+        if (is_mating(score)) {
+            if (mate_score_to_ply(score) <= mate_in_ply) {
+                break;
+            }
         }
 
         time_span_last = time_span;

@@ -36,7 +36,7 @@ void position(Board &board, std::istringstream &is) {
         the last position sent to the engine, the GUI should have sent a "ucinewgame" inbetween.
     */
     std::string token, fen;
-    is >> token;
+    is >> std::ws >> token;
     // Need to know what the position is.
     if (token == "startpos") {
         fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
@@ -44,11 +44,14 @@ void position(Board &board, std::istringstream &is) {
     } else if (token == "fen") {
         while (is >> token && token != "moves") {
             // munch through the command string
+            if (token == "\"") {
+                continue;
+            }
             fen += token + " ";
         }
     } else {
         // This is invalid. Just ignore it
-        std::cerr << "Invalid position string: \"" << token << "\n" << std::endl;
+        std::cerr << "Invalid position string: \"" << token << "\"" << std::endl;
         return;
     }
     board.fen_decode(fen);
@@ -161,6 +164,8 @@ void go(Board &board, std::istringstream &is, Search::SearchOptions &options) {
             is >> max_depth;
         } else if (token == "movetime") {
             is >> move_time;
+        } else if (token == "mate") {
+            is >> options.mate_depth;
         }
     }
     const int our_time = board.is_white_move() ? wtime : btime;

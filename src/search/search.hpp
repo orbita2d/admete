@@ -24,6 +24,7 @@ struct SearchOptions {
     unsigned long nodes = 0;        // How many nodes have been accessed
     std::thread running_thread;     // The thread object for the search itself.
     std::atomic<bool> running_flag; // Flag set when the search is running.
+    ply_t mate_depth = 0;           // Mate in N distance to look for UCI go mate N commands.
     bool is_running() const { return running_flag.load(); }
     bool stop() const { return stop_flag.load(); }
     void set_stop() { stop_flag.store(true); }

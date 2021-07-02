@@ -32,6 +32,9 @@ void Board::fen_decode(const std::string &fen) {
     // First, go through the board position part of the fen string.
     for (uint i = 0; i < N; i++) {
         my_char = fen[i];
+        if (my_char == '\"') {
+            continue;
+        }
         if (my_char == '/') {
             rank++;
             file = 0;
