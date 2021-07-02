@@ -43,11 +43,15 @@ struct TransElement {
 typedef std::pair<long, TransElement> tt_pair;
 typedef std::unordered_map<long, TransElement> tt_map;
 // Limit transposition table to 64MB
-constexpr size_t tt_max = (1 << 26) / sizeof(tt_pair);
+constexpr unsigned hash_default = 64u;
+constexpr unsigned hash_min = 1u;
+constexpr unsigned hash_max = 512u;
+
+inline size_t tt_max = (hash_default * (1 << 20)) / sizeof(tt_pair);
 
 class TranspositionTable {
   public:
-    TranspositionTable() = default;
+    TranspositionTable();
     bool probe(const long);
     TransElement last_hit() const { return _last_hit; };
     void store(const long hash, const score_t eval, const score_t lower, const score_t upper, const depth_t depth,
@@ -69,7 +73,9 @@ class TranspositionTable {
     TransElement _last_hit;
     depth_t _min_depth = 0;
     size_t index;
+    size_t max_index = 0;
     bool enabled = true;
+    std::vector<long> key_array;
 };
 
 inline TranspositionTable transposition_table;
@@ -128,4 +134,5 @@ class CountermoveTable {
 };
 inline CountermoveTable countermove_table;
 void init();
+void reinit();
 } // namespace Cache

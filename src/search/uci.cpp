@@ -3,6 +3,7 @@
 #include "board.hpp"
 #include "evaluate.hpp"
 #include "search.hpp"
+#include "transposition.hpp"
 #include <chrono>
 #include <iomanip>
 #include <iostream>
@@ -21,11 +22,39 @@ namespace UCI {
 void init_uci() {
     std::cout << "id name " << ENGINE_NAME << std::endl;
     std::cout << "id author " << ENGINE_AUTH << std::endl;
-    std::cout << "setoption name Nullmove value false" << std::endl;
+    std::cout << "option name Hash type spin default " << Cache::hash_default << " min " << Cache::hash_min << " max "
+              << Cache::hash_max << std::endl;
     std::cout << "uciok" << std::endl;
     ::uci_enable = true;
 }
 
+void set_option(std::istringstream &is) {
+    std::string token, option;
+    is >> std::ws >> token;
+    if (token == "name") {
+        is >> std::ws >> option;
+    } else {
+        return;
+    }
+    if (option == "Hash") {
+        is >> std::ws >> token;
+        unsigned value = 1;
+        if (token == "value") {
+            is >> std::ws >> value;
+        } else {
+            return;
+        }
+        if (value > Cache::hash_max) {
+            std::cerr << "Hash max = " << Cache::hash_max << " MiB" << std::endl;
+            return;
+        } else if (value < Cache::hash_min) {
+            std::cerr << "Hash min = " << Cache::hash_min << " MiB" << std::endl;
+            return;
+        }
+        Cache::tt_max = (value * (1 << 20)) / sizeof(Cache::tt_pair);
+        Cache::reinit();
+    }
+}
 void position(Board &board, std::istringstream &is) {
     /*
         position [fen <fenstring> | startpos ]  moves <move1> .... <movei>
@@ -221,46 +250,6 @@ void stop(Search::SearchOptions &options) {
     }
 }
 
-void uci() {
-    init_uci();
-    std::string command, token;
-    Board board = Board();
-    Search::SearchOptions options = Search::SearchOptions();
-    while (true) {
-        std::getline(std::cin, command);
-        cleanup_thread(options);
-        std::istringstream is(command);
-        is >> std::ws >> token;
-        if (token == "isready") {
-            // interface is asking if we can continue, if we are here, we clearly can.
-            stop(options);
-            std::cout << "readyok" << std::endl;
-        } else if (token == "ucinewgame") {
-            board.initialise_starting_position();
-        } else if (token == "position") {
-            stop(options);
-            position(board, is);
-        } else if (token == "go") {
-            stop(options);
-            go(board, is, options);
-        } else if (token == "perft") {
-            stop(options);
-            perft(board, is, options);
-        } else if (token == "stop") {
-            stop(options);
-        } else if (token == "quit") {
-            exit(EXIT_SUCCESS);
-        } else if (token == "d") {
-            board.pretty();
-        } else if (token == "h") {
-            score_t v = Evaluation::heuristic(board);
-            std::cout << std::dec << (int)v << std::endl;
-        } else {
-            // std::cerr << "!#" << token << ":"<< command << std::endl;
-        }
-    }
-}
-
 void uci_info(depth_t depth, score_t eval, unsigned long nodes, unsigned long nps, PrincipleLine principle,
               unsigned int time, ply_t root_ply) {
     if (!::uci_enable) {
@@ -326,4 +315,48 @@ void uci_info_nodes(unsigned long nodes, unsigned long nps) {
     }
     std::cout << std::endl;
 }
+
+void uci() {
+    init_uci();
+    std::string command, token;
+    Board board = Board();
+    Search::SearchOptions options = Search::SearchOptions();
+    while (true) {
+        std::getline(std::cin, command);
+        cleanup_thread(options);
+        std::istringstream is(command);
+        is >> std::ws >> token;
+        if (token == "isready") {
+            // interface is asking if we can continue, if we are here, we clearly can.
+            stop(options);
+            std::cout << "readyok" << std::endl;
+        } else if (token == "ucinewgame") {
+            board.initialise_starting_position();
+        } else if (token == "setoption") {
+            stop(options);
+            set_option(is);
+        } else if (token == "position") {
+            stop(options);
+            position(board, is);
+        } else if (token == "go") {
+            stop(options);
+            go(board, is, options);
+        } else if (token == "perft") {
+            stop(options);
+            perft(board, is, options);
+        } else if (token == "stop") {
+            stop(options);
+        } else if (token == "quit") {
+            exit(EXIT_SUCCESS);
+        } else if (token == "d") {
+            board.pretty();
+        } else if (token == "h") {
+            score_t v = Evaluation::heuristic(board);
+            std::cout << std::dec << (int)v << std::endl;
+        } else {
+            // std::cerr << "!#" << token << ":"<< command << std::endl;
+        }
+    }
+}
+
 } // namespace UCI

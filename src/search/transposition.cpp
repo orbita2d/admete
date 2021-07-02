@@ -2,7 +2,11 @@
 #include <algorithm>
 #include <array>
 
-std::array<long, Cache::tt_max> key_array;
+Cache::TranspositionTable::TranspositionTable() {
+    max_index = Cache::tt_max;
+    index = 0;
+    key_array.resize(max_index, 0);
+}
 
 bool Cache::TranspositionTable::probe(const long hash) {
     if (is_enabled() == false) {
@@ -53,13 +57,13 @@ void Cache::TranspositionTable::store(const long hash, const score_t eval, const
         return;
     }
     const TransElement elem = TransElement(eval, lower, upper, depth, move, ply);
-    if (index < tt_max) {
+    if (index < max_index) {
         // We are doing the first fill of the table;
         _data[hash] = elem;
         key_array[index] = hash;
     } else {
         // Replace oldest value
-        replace(index % tt_max, hash, elem);
+        replace(index % max_index, hash, elem);
     }
     index++;
 }
@@ -107,6 +111,11 @@ void Cache::init() {
     transposition_table = TranspositionTable();
     history_table = HistoryTable();
     countermove_table = CountermoveTable();
+}
+
+void Cache::reinit() {
+    // Create a new transposition table, of the new size.
+    transposition_table = TranspositionTable();
 }
 
 uint Cache::HistoryTable::probe(const PieceType pt, const Square sq) { return _data[pt][sq]; }
