@@ -30,7 +30,7 @@ struct SearchOptions {
     void set_stop() { stop_flag.store(true); }
 };
 score_t scout_search(Board &board, depth_t depth, const score_t alpha, my_clock::time_point time_cutoff,
-                     const bool allow_cutoff, const bool allow_null, SearchOptions &options);
+                     const bool allow_cutoff, const bool allow_null, NodeType node, SearchOptions &options);
 score_t pv_search(Board &board, depth_t depth, const score_t alpha, const score_t beta, PrincipleLine &line,
                   my_clock::time_point time_cutoff, const bool allow_cutoff, SearchOptions &options);
 score_t quiesce(Board &board, score_t alpha, const score_t beta, SearchOptions &options);

@@ -175,9 +175,9 @@ constexpr score_t MIN_SCORE = -16382;
 constexpr score_t MAX_SCORE = -MIN_SCORE;
 
 constexpr score_t MATING_SCORE = 16381;
-constexpr score_t MIN_MATE_SCORE = MATING_SCORE - MAX_PLY;
+constexpr score_t MIN_MATE_SCORE = MATING_SCORE - MAX_DEPTH;
 
-inline bool is_mating(const score_t score) { return (score > MIN_MATE_SCORE); }
+inline bool is_mating(const score_t score) { return (score >= MIN_MATE_SCORE) && (score <= MATING_SCORE); }
 
 inline ply_t mate_score_to_ply(const score_t score) { return MATING_SCORE - score; }
 

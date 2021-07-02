@@ -3,6 +3,7 @@
 #include "ordering.hpp"
 #include "transposition.hpp"
 #include "uci.hpp"
+#include <assert.h>
 #include <chrono>
 #include <iostream>
 #include <time.h>
@@ -12,10 +13,12 @@ constexpr score_t futility_margins[] = {0, 330, 500, 900};
 constexpr depth_t null_move_depth_reduction = 2;
 
 score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, my_clock::time_point time_cutoff,
-                             const bool allow_cutoff, const bool allow_null, SearchOptions &options) {
+                             const bool allow_cutoff, const bool allow_null, NodeType node, SearchOptions &options) {
     // Perform a null window 'scout' search on a subtree.
-    // All nodes examined with this tree are not PV nodes (unless proven otherwise, when they should be researched)
+    // All nodes examined with this tree are not PV nodes (unless proven otherwise, when they should be re-searched)
     // Has bounds [alpha, alpha + 1]
+    assert(node != PVNODE);
+    assert(depth < MAX_DEPTH);
     const score_t beta = alpha + 1;
 
     // Check extentions
@@ -97,11 +100,12 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
         }
     }
 
-    // Null move pruning
+    // Null move pruning.
+    // We expect (null move observation) the node after a null move to fail high.
     if (!board.is_endgame() && allow_null && (depth > null_move_depth_reduction) && !board.is_check()) {
         board.make_nullmove();
         score_t score = -scout_search(board, depth - 1 - null_move_depth_reduction, -alpha - 1, time_cutoff,
-                                      allow_cutoff, false, options);
+                                      allow_cutoff, false, CUTNODE, options);
         board.unmake_nullmove();
         if (score >= beta) {
             // beta cutoff
@@ -119,7 +123,9 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
     if (!(hash_move == NULL_MOVE)) {
         board.make_move(hash_move);
         options.nodes++;
-        best_score = -scout_search(board, depth - 1, -alpha - 1, time_cutoff, allow_cutoff, true, options);
+        // We expect first child of a cut node to be an all node, such that it would cause the cut node to fail high.
+        best_score = -scout_search(board, depth - 1, -alpha - 1, time_cutoff, allow_cutoff, true,
+                                   node == CUTNODE ? ALLNODE : CUTNODE, options);
         board.unmake_move(hash_move);
         best_move = hash_move;
 
@@ -136,11 +142,39 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
         }
     }
 
+    uint counter = 0;
     Ordering::sort_moves(board, legal_moves, hash_dmove, killer_move);
     for (Move move : legal_moves) {
+        counter++;
+        depth_t search_depth = depth - 1;
+
+        NodeType child;
+        if ((node == CUTNODE) && (counter >= 5)) {
+            // In a cut node, the cut is most likely to happen early, if we get through the hash move and and first few
+            // other moves without a cut, this is probably actually an All node.
+            node = ALLNODE;
+        }
+
+        // Late move reductions:
+        // At an expected All node, the most likely moves to prove us wrong and fail high are
+        // one's ranked earliest in move ordering. We can be less careful about proving later moves.
+        if ((node == ALLNODE) && (counter > 5) && !move.is_promotion() && move.is_quiet() && (depth > 3) &&
+            !board.gives_check(move) && !board.is_check()) {
+            search_depth--;
+            child = CUTNODE;
+        } else {
+            child = node == CUTNODE ? ALLNODE : CUTNODE;
+        }
+
         board.make_move(move);
         options.nodes++;
-        score_t score = -scout_search(board, depth - 1, -beta, time_cutoff, allow_cutoff, true, options);
+        score_t score = -scout_search(board, search_depth, -beta, time_cutoff, allow_cutoff, true, child, options);
+        // If our search at lower depth did raise alpha, and this is an All node, re-search at full depth before failing
+        // high.
+        if ((node == ALLNODE) && (score > alpha) && (search_depth < depth - 1)) {
+            score = -scout_search(board, depth - 1, -beta, time_cutoff, allow_cutoff, true, child, options);
+        }
+
         board.unmake_move(move);
         if (options.stop()) {
             return MAX_SCORE;
@@ -268,7 +302,7 @@ score_t Search::pv_search(Board &board, depth_t depth, const score_t alpha_start
             score = -pv_search(board, depth - 1, -beta, -alpha, temp_line, time_cutoff, allow_cutoff, options);
         } else {
             // Search with a null window
-            score = -scout_search(board, depth - 1, -alpha - 1, time_cutoff, allow_cutoff, true, options);
+            score = -scout_search(board, depth - 1, -alpha - 1, time_cutoff, allow_cutoff, true, CUTNODE, options);
             if (score > alpha && score < beta) {
                 // Do a full search
                 score = -pv_search(board, depth - 1, -beta, -alpha, temp_line, time_cutoff, allow_cutoff, options);
