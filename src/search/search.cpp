@@ -12,6 +12,12 @@ constexpr size_t futility_max_depth = 3;
 constexpr score_t futility_margins[] = {0, 330, 500, 900};
 constexpr depth_t null_move_depth_reduction = 2;
 
+// Offsets from our score guess for our aspiration window in cp.
+// When it gets to the end it just sets the limit it's failing on to MATING_SCORE
+constexpr score_t aspration_windows[] = {30, 80, 200, 500};
+constexpr score_t iid_aspration_windows[] = {50, 200, 1000};
+constexpr size_t n_aw = sizeof(aspration_windows) / sizeof(score_t);
+
 score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, my_clock::time_point time_cutoff,
                              const bool allow_cutoff, const bool allow_null, NodeType node, SearchOptions &options) {
     // Perform a null window 'scout' search on a subtree.
@@ -101,7 +107,7 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
     }
 
     // Null move pruning.
-    // We expect (null move observation) the node after a null move to fail high.
+    // We expect (null move observation) the node after a null move to fail high, making it a cut node.
     if (!board.is_endgame() && allow_null && (depth > null_move_depth_reduction) && !board.is_check()) {
         board.make_nullmove();
         score_t score = -scout_search(board, depth - 1 - null_move_depth_reduction, -alpha - 1, time_cutoff,
@@ -112,8 +118,6 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
             return score;
         }
     }
-
-    KillerTableRow killer_move = Cache::killer_table.probe(board.ply());
 
     score_t best_score = MIN_SCORE;
     Move best_move = NULL_MOVE;
@@ -143,6 +147,7 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
     }
 
     uint counter = 0;
+    KillerTableRow killer_move = Cache::killer_table.probe(board.ply());
     Ordering::sort_moves(board, legal_moves, hash_dmove, killer_move);
     for (Move move : legal_moves) {
         counter++;
@@ -195,7 +200,7 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
     return best_score;
 }
 
-score_t Search::pv_search(Board &board, depth_t depth, const score_t alpha_start, const score_t beta,
+score_t Search::pv_search(Board &board, const depth_t start_depth, const score_t alpha_start, const score_t beta,
                           PrincipleLine &line, my_clock::time_point time_cutoff, const bool allow_cutoff,
                           SearchOptions &options) {
     // Perform an alpha-beta pruning tree search.
@@ -204,6 +209,7 @@ score_t Search::pv_search(Board &board, depth_t depth, const score_t alpha_start
     // Has bounds [alpha, beta]
 
     score_t alpha = alpha_start;
+    depth_t depth = start_depth;
 
     // Check extentions
     if (board.is_check()) {
@@ -242,7 +248,6 @@ score_t Search::pv_search(Board &board, depth_t depth, const score_t alpha_start
 
     // Lookup position in transposition table for hashmove.
     DenseMove hash_dmove = NULL_DMOVE;
-    KillerTableRow killer_move = Cache::killer_table.probe(board.ply());
     const long hash = board.hash();
     if (Cache::transposition_table.probe(hash)) {
         const Cache::TransElement hit = Cache::transposition_table.last_hit();
@@ -263,10 +268,24 @@ score_t Search::pv_search(Board &board, depth_t depth, const score_t alpha_start
     score_t best_score = MIN_SCORE;
     Move hash_move = unpack_move(hash_dmove, legal_moves);
 
+    // Apply internal iterative deepening recursivly to find a decent PV move.
+    /*
+    if ((hash_move == NULL_MOVE) && (start_depth > 2)) {
+        PrincipleLine temp_line;
+        temp_line.reserve(start_depth);
+        // This won't work if the search below fails low.
+        pv_search(board, start_depth - 2, alpha, beta, temp_line, time_cutoff, allow_cutoff, options);
+        if (!temp_line.empty()) {
+            hash_move = temp_line.back();
+        }
+        if (options.stop()) {
+            return MAX_SCORE;
+        }
+    }
+    */
+
     // Do the hash move explicitly to avoid sorting moves if our hash moves provides a beta-cutoff
     if (!(hash_move == NULL_MOVE)) {
-        PrincipleLine temp_line;
-        temp_line.reserve(16);
         board.make_move(hash_move);
         options.nodes++;
         best_score = -pv_search(board, depth - 1, -beta, -alpha, pv, time_cutoff, allow_cutoff, options);
@@ -288,6 +307,7 @@ score_t Search::pv_search(Board &board, depth_t depth, const score_t alpha_start
         is_first_child = false;
     }
 
+    KillerTableRow killer_move = Cache::killer_table.probe(board.ply());
     // Sort the remaining moves, and remove the hash move if it exists
     Ordering::sort_moves(board, legal_moves, hash_dmove, killer_move);
 
@@ -326,11 +346,12 @@ score_t Search::pv_search(Board &board, depth_t depth, const score_t alpha_start
         is_first_child = false;
     }
     line = pv;
-
-    Cache::killer_table.store(board.ply(), pv.back());
-    Cache::history_table.store(depth, pv.back());
-    Cache::countermove_table.store(board.last_move(), pv.back());
-    Cache::transposition_table.store(hash, best_score, alpha_start, beta, depth, pv.back(), board.ply());
+    if (!pv.empty()) {
+        Cache::killer_table.store(board.ply(), pv.back());
+        Cache::history_table.store(depth, pv.back());
+        Cache::countermove_table.store(board.last_move(), pv.back());
+        Cache::transposition_table.store(hash, best_score, alpha_start, beta, depth, pv.back(), board.ply());
+    }
     return best_score;
 }
 
@@ -363,8 +384,9 @@ score_t Search::quiesce(Board &board, const score_t alpha_start, const score_t b
         return stand_pat;
     }
 
+    score_t delta = 900;
     // Delta pruning
-    if (stand_pat < alpha - 900) {
+    if (stand_pat < alpha - delta) {
         return stand_pat;
     }
 
@@ -422,11 +444,6 @@ score_t Search::search(Board &board, const depth_t max_depth, const int max_mill
     int branching_factor = 4;
 
     bool allow_cutoff = false;
-
-    // Offsets from our score guess for our aspiration window in cp.
-    // When it gets to the end it just sets the limit it's failing on to MATING_SCORE
-    constexpr score_t aspration_windows[] = {30, 80, 200, 500};
-    constexpr size_t n_aw = sizeof(aspration_windows) / sizeof(score_t);
 
     // Iterative deepening
     for (depth_t depth = 2; depth <= max_depth; depth++) {
