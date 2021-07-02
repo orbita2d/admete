@@ -124,7 +124,7 @@ int main(int argc, char *argv[]) {
     if (perft_flag) {
         std::cout << board.fen_encode() << std::endl;
         for (unsigned int i = 1; i <= depth; i++) {
-            std::cout << std::dec << perft(i, board) << std::endl;
+            std::cout << std::dec << Search::perft_bulk(i, board) << std::endl;
         }
         exit(EXIT_SUCCESS);
     }
@@ -134,7 +134,7 @@ int main(int argc, char *argv[]) {
         std::chrono::high_resolution_clock::time_point time_origin, time_now;
         time_origin = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double, std::milli> time_span;
-        long nodes = perft_comparison(depth, board);
+        long nodes = Search::perft(depth, board);
         time_now = std::chrono::high_resolution_clock::now();
         time_span = time_now - time_origin;
         std::cout << "nodes: " << nodes << " in " << time_span.count() / 1000 << "seconds" << std::endl;
@@ -145,7 +145,7 @@ int main(int argc, char *argv[]) {
 
     if (divide_flag) {
         std::cout << board.fen_encode() << std::endl;
-        perft_divide(depth, board);
+        Search::perft_divide(depth, board);
         exit(EXIT_SUCCESS);
     }
 
@@ -155,7 +155,7 @@ int main(int argc, char *argv[]) {
     std::cin >> command;
 
     if (command == "uci") {
-        uci();
+        UCI::uci();
     } else if (command == "test") {
         // Testing section
         board.pretty();

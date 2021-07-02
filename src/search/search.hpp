@@ -6,14 +6,8 @@
 
 typedef std::vector<Move> PrincipleLine;
 
-// perft.cpp
-unsigned long perft_comparison(depth_t depth, Board &board);
-unsigned long perft(depth_t depth, Board &board);
-void perft_divide(depth_t depth, Board &board);
-
 typedef std::chrono::high_resolution_clock my_clock;
 
-// search.cpp
 namespace Search {
 
 struct SearchOptions {
@@ -41,4 +35,9 @@ score_t pv_search(Board &board, depth_t depth, const score_t alpha, const score_
 score_t quiesce(Board &board, score_t alpha, const score_t beta, SearchOptions &options);
 score_t search(Board &board, const depth_t depth, const int max_millis, PrincipleLine &line, SearchOptions &options);
 score_t search(Board &board, const depth_t depth, PrincipleLine &line);
+
+unsigned long perft(depth_t depth, Board &board);
+unsigned long perft_bulk(depth_t depth, Board &board);
+void perft_divide(depth_t depth, Board &board);
+
 } // namespace Search

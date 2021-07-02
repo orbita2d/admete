@@ -17,6 +17,7 @@ typedef std::chrono::high_resolution_clock my_clock;
 
 bool uci_enable = false;
 
+namespace UCI {
 void init_uci() {
     std::cout << "id name " << ENGINE_NAME << std::endl;
     std::cout << "id author " << ENGINE_AUTH << std::endl;
@@ -203,6 +204,9 @@ void uci() {
         } else if (token == "go") {
             stop(options);
             go(board, is, options);
+        } else if (token == "perft") {
+            stop(options);
+            go(board, is, options);
         } else if (token == "stop") {
             stop(options);
         } else if (token == "quit") {
@@ -264,3 +268,4 @@ void uci_info_nodes(unsigned long nodes, unsigned long nps) {
     }
     std::cout << std::endl;
 }
+} // namespace UCI

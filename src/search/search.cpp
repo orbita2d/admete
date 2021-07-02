@@ -458,7 +458,7 @@ score_t Search::search(Board &board, const depth_t max_depth, const int max_mill
         unsigned long nps = int(1000 * (options.nodes / time_span.count()));
 
         // Send the info for the search to uci
-        uci_info(depth, score, options.nodes, nps, principle, (int)time_span.count(), board.get_root());
+        UCI::uci_info(depth, score, options.nodes, nps, principle, (int)time_span.count(), board.get_root());
 
         // Estimate the next time span.
         t_est = branching_factor * time_span;

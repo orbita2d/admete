@@ -3,15 +3,9 @@
 #include "transposition.hpp"
 #include <iostream>
 
+namespace Search {
+
 unsigned long perft_bulk(depth_t depth, Board &board);
-unsigned long perft_spenny(depth_t depth, Board &board);
-
-unsigned long perft_comparison(depth_t depth, Board &board) {
-    // Perft with no bulk counting, no transposition tables for nodes/second calculation.
-    return perft_spenny(depth, board);
-}
-
-unsigned long perft(depth_t depth, Board &board) { return perft_bulk(depth, board); }
 
 unsigned long perft_bulk(depth_t depth, Board &board) {
 
@@ -43,7 +37,7 @@ void perft_divide(depth_t depth, Board &board) {
     std::cout << "nodes searched: " << nodes << std::endl;
 }
 
-unsigned long perft_spenny(depth_t depth, Board &board) {
+unsigned long perft(depth_t depth, Board &board) {
 
     std::vector<Move> legal_moves = board.get_moves();
     if (depth == 0) {
@@ -53,8 +47,9 @@ unsigned long perft_spenny(depth_t depth, Board &board) {
     unsigned long nodes = 0;
     for (Move move : legal_moves) {
         board.make_move(move);
-        nodes += perft_spenny(depth - 1, board);
+        nodes += perft(depth - 1, board);
         board.unmake_move(move);
     }
     return nodes;
 }
+} // namespace Search
