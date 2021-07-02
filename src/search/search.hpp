@@ -37,6 +37,7 @@ score_t search(Board &board, const depth_t depth, const int max_millis, Principl
 score_t search(Board &board, const depth_t depth, PrincipleLine &line);
 
 unsigned long perft(depth_t depth, Board &board);
+unsigned long perft(depth_t depth, Board &board, SearchOptions &options);
 unsigned long perft_bulk(depth_t depth, Board &board);
 void perft_divide(depth_t depth, Board &board);
 

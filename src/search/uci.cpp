@@ -143,7 +143,6 @@ void go(Board &board, std::istringstream &is, Search::SearchOptions &options) {
         search until the "stop" command. Do not exit the search without being told so in this mode!
     */
 
-    // That's a lot, let's just search to a fixed depth for now.
     int wtime = POS_INF, btime = POS_INF;
     int winc = 0, binc = 0, move_time = POS_INF;
     uint max_depth = 20;
@@ -171,13 +170,48 @@ void go(Board &board, std::istringstream &is, Search::SearchOptions &options) {
     options.running_thread = std::thread(&do_search, &board, (depth_t)max_depth, cutoff_time, &options);
 }
 
+void do_perft(Board *board, const depth_t depth, Search::SearchOptions *options) {
+    // Mark the search thread as running.
+    options->running_flag.store(true);
+    options->stop_flag = false;
+    options->nodes = 0;
+
+    my_clock::time_point time_origin = my_clock::now();
+
+    options->nodes = Search::perft(depth, *board, *options);
+
+    std::chrono::duration<double, std::milli> time_span = my_clock::now() - time_origin;
+    unsigned long nps = int(1000 * (options->nodes / time_span.count()));
+
+    if (!options->stop()) {
+        uci_info(depth, options->nodes, nps, time_span.count());
+    }
+
+    // Mark the search thread as finished (and ready to join)
+    options->running_flag.store(false);
+}
+
+void perft(Board &board, std::istringstream &is, Search::SearchOptions &options) {
+    /* perft <depth> <fen>
+     */
+
+    // This command ignores the <fen> part (and relies on position being set already).
+    // Returns the perft score for that depth.
+
+    // std::istringstream >> uint8_t doesn't do what you think.
+    int depth;
+    is >> depth;
+
+    options.running_thread = std::thread(&do_perft, &board, (depth_t)depth, &options);
+}
+
 void stop(Search::SearchOptions &options) {
     /*
     stop calculating as soon as possible,
     don't forget the "bestmove" and possibly the "ponder" token when finishing the search
     */
     if (options.is_running()) {
-        options.stop_flag.store(true);
+        options.set_stop();
         options.running_thread.join();
     }
 }
@@ -206,7 +240,7 @@ void uci() {
             go(board, is, options);
         } else if (token == "perft") {
             stop(options);
-            go(board, is, options);
+            perft(board, is, options);
         } else if (token == "stop") {
             stop(options);
         } else if (token == "quit") {
@@ -251,6 +285,25 @@ void uci_info(depth_t depth, score_t eval, unsigned long nodes, unsigned long np
     std::cout << " pv ";
     for (PrincipleLine::reverse_iterator it = principle.rbegin(); it != principle.rend(); ++it) {
         std::cout << it->pretty() << " ";
+    }
+    std::cout << " time " << time;
+    std::cout << std::endl;
+}
+
+void uci_info(depth_t depth, unsigned long nodes, unsigned long nps, unsigned int time) {
+    // This one only used for perft.
+    if (!::uci_enable) {
+        return;
+    }
+    std::cout << std::dec;
+    std::cout << "info";
+    std::cout << " depth " << (uint)depth;
+
+    if (nodes > 0) {
+        std::cout << " nodes " << nodes;
+    }
+    if (nps > 0) {
+        std::cout << " nps " << nps;
     }
     std::cout << " time " << time;
     std::cout << std::endl;

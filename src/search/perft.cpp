@@ -5,8 +5,6 @@
 
 namespace Search {
 
-unsigned long perft_bulk(depth_t depth, Board &board);
-
 unsigned long perft_bulk(depth_t depth, Board &board) {
 
     std::vector<Move> legal_moves = board.get_moves();
@@ -38,17 +36,30 @@ void perft_divide(depth_t depth, Board &board) {
 }
 
 unsigned long perft(depth_t depth, Board &board) {
+    SearchOptions options = SearchOptions();
+    return perft(depth, board, options);
+}
+
+unsigned long perft(depth_t depth, Board &board, SearchOptions &options) {
 
     std::vector<Move> legal_moves = board.get_moves();
     if (depth == 0) {
         return 1;
     }
 
+    if (options.stop()) {
+        return 0;
+    }
+
     unsigned long nodes = 0;
     for (Move move : legal_moves) {
         board.make_move(move);
-        nodes += perft(depth - 1, board);
+        nodes += perft(depth - 1, board, options);
         board.unmake_move(move);
+
+        if (options.stop()) {
+            return 0;
+        }
     }
     return nodes;
 }
