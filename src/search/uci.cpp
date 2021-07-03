@@ -22,19 +22,40 @@ void init_uci() {
     std::cout << "id author " << ENGINE_AUTH << std::endl;
     std::cout << "option name Hash type spin default " << Cache::hash_default << " min " << Cache::hash_min << " max "
               << Cache::hash_max << std::endl;
+    std::cout << "option name TablesPath type string default <empty>" << std::endl;
     std::cout << "uciok" << std::endl;
 }
 
 void set_option(std::istringstream &is) {
+    /*
+     * setoption name  [value ]
+     *        this is sent to the engine when the user wants to change the internal parameters
+     *        of the engine. For the "button" type no value is needed.
+     *        One string will be sent for each parameter and this will only be sent when the engine is waiting.
+     *        The name of the option in  should not be case sensitive and can inludes spaces like also the value.
+     *        The substrings "value" and "name" should be avoided in  and  to allow unambiguous parsing,
+     *        for example do not use  = "draw value".
+     *        Here are some strings for the example below:
+     *           "setoption name Nullmove value true\n"
+     *      "setoption name Selectivity value 3\n"
+     *           "setoption name Style value Risky\n"
+     *           "setoption name Clear Hash\n"
+     *           "setoption name NalimovPath value c:\chess\tb\4;c:\chess\tb\5\n"
+     */
     std::string token, option;
     is >> std::ws >> token;
     if (token == "name") {
-        is >> std::ws >> option;
+        while (is >> token && token != "value") {
+            if (option.empty()) {
+                option += token;
+            } else {
+                option += " " + token;
+            }
+        }
     } else {
         return;
     }
     if (option == "Hash") {
-        is >> std::ws >> token;
         unsigned value = 1;
         if (token == "value") {
             is >> std::ws >> value;
@@ -50,17 +71,23 @@ void set_option(std::istringstream &is) {
         }
         Cache::tt_max = (value * (1 << 20)) / sizeof(Cache::tt_pair);
         Cache::reinit();
-    }
-    if (option == "TablesPath") {
+    } else if (option == "TablesPath") {
         // Set the path to a file of input paramters
-        is >> std::ws >> token;
         std::string value;
         if (token == "value") {
-            is >> std::ws >> value;
+            while (is >> token) {
+                if (value.empty()) {
+                    value += token;
+                } else {
+                    value += " " + token;
+                }
+            }
         } else {
             return;
         }
         Evaluation::load_tables(value);
+    } else {
+        std::cout << "Unknown option: \"" << option << "\"" << std::endl;
     }
 }
 void position(Board &board, std::istringstream &is) {
