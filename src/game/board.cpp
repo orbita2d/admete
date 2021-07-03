@@ -328,6 +328,8 @@ void Board::make_move(Move &move) {
     if ((p == PAWN) | (move.captured_piece == PAWN)) {
         pawn_atk_bb[WHITE] = Bitboards::pawn_attacks(WHITE, pieces(WHITE, PAWN));
         pawn_atk_bb[BLACK] = Bitboards::pawn_attacks(BLACK, pieces(BLACK, PAWN));
+        weak_sq_bb[WHITE] = Bitboards::middle_ranks & ~Bitboards::forward_atk_span(WHITE, pieces(WHITE, PAWN));
+        weak_sq_bb[BLACK] = Bitboards::middle_ranks & ~Bitboards::forward_atk_span(BLACK, pieces(BLACK, PAWN));
     }
 
     assert(pawn_controlled(WHITE) == Bitboards::pawn_attacks(WHITE, pieces(WHITE, PAWN)));
@@ -440,6 +442,8 @@ void Board::unmake_move(const Move move) {
     if ((p == PAWN) | (cp == PAWN)) {
         pawn_atk_bb[WHITE] = Bitboards::pawn_attacks(WHITE, pieces(WHITE, PAWN));
         pawn_atk_bb[BLACK] = Bitboards::pawn_attacks(BLACK, pieces(BLACK, PAWN));
+        weak_sq_bb[WHITE] = Bitboards::middle_ranks & ~Bitboards::forward_atk_span(WHITE, pieces(WHITE, PAWN));
+        weak_sq_bb[BLACK] = Bitboards::middle_ranks & ~Bitboards::forward_atk_span(BLACK, pieces(BLACK, PAWN));
     }
 }
 

@@ -20,9 +20,10 @@ constexpr size_t n_aw = sizeof(aspration_windows) / sizeof(score_t);
 
 score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, my_clock::time_point time_cutoff,
                              const bool allow_cutoff, const bool allow_null, NodeType node, SearchOptions &options) {
-    // Perform a null window 'scout' search on a subtree.
-    // All nodes examined with this tree are not PV nodes (unless proven otherwise, when they should be re-searched)
-    // Has bounds [alpha, alpha + 1]
+    /* Perform a null window 'scout' search on a subtree.
+     * All nodes examined with this tree are not PV nodes (unless proven otherwise, when they should be re-searched)
+     * Has bounds [alpha, alpha + 1]
+     */
     assert(node != PVNODE);
     assert(depth < MAX_DEPTH);
     const score_t beta = alpha + 1;
@@ -34,8 +35,8 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
 
     MoveList legal_moves = board.get_moves();
     // Terminal node.
-    if (legal_moves.size() == 0) {
-        return Evaluation::evaluate(board, legal_moves);
+    if (legal_moves.empty()) {
+        return Evaluation::terminal(board, legal_moves);
     }
 
     // If this is a draw by repetition or insufficient material, return the drawn score.
@@ -100,7 +101,7 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
 
     // Reverse futility pruning
     if (!board.is_endgame() && allow_null && depth <= futility_max_depth && !board.is_check()) {
-        const score_t node_heuristic = Evaluation::negamax_heuristic(board);
+        const score_t node_heuristic = Evaluation::eval(board);
         if (node_heuristic - futility_margins[depth] >= beta) {
             return node_heuristic - futility_margins[depth];
         }
@@ -218,8 +219,8 @@ score_t Search::pv_search(Board &board, const depth_t start_depth, const score_t
 
     MoveList legal_moves = board.get_moves();
     // Terminal node
-    if (legal_moves.size() == 0) {
-        return Evaluation::evaluate(board, legal_moves);
+    if (legal_moves.empty()) {
+        return Evaluation::terminal(board, legal_moves);
     }
 
     // If this is a draw by repetition or insufficient material, return the drawn score.
@@ -366,7 +367,7 @@ score_t Search::quiesce(Board &board, const score_t alpha_start, const score_t b
         // Generates all evasions.
         moves = board.get_moves();
         if (moves.empty()) {
-            return Evaluation::evaluate(board, moves);
+            return Evaluation::terminal(board, moves);
         }
     }
 
@@ -375,7 +376,7 @@ score_t Search::quiesce(Board &board, const score_t alpha_start, const score_t b
         return Evaluation::drawn_score(board);
     }
 
-    score_t stand_pat = Evaluation::negamax_heuristic(board);
+    score_t stand_pat = Evaluation::eval(board);
 
     alpha = std::max(alpha, stand_pat);
 

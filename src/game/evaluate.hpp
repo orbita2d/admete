@@ -34,10 +34,10 @@ class Score {
 namespace Evaluation {
 void init();
 void load_tables(std::string filename);
-score_t heuristic(Board &board);
-score_t negamax_heuristic(Board &board);
-score_t evaluate(Board &board);
-score_t evaluate(Board &board, std::vector<Move> &legal_moves);
+score_t evaluate_white(Board &board);
+score_t eval(Board &board);
+score_t evaluate_safe(Board &board);
+score_t terminal(Board &board, std::vector<Move> &legal_moves);
 score_t piece_material(const PieceType p);
 Score piece_value(const PieceType p);
 score_t count_material(const Board &board);

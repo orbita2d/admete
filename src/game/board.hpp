@@ -87,8 +87,9 @@ class Board {
         return pieces(c, PAWN) & ~Bitboards::full_atk_span(pieces(c, PAWN));
     }
     Bitboard weak_squares(const Colour c) const {
-        return Bitboards::middle_ranks & ~Bitboards::forward_atk_span(c, pieces(c, PAWN));
-    } // Squares that can never be defended by a pawn
+        // Squares that can never be defended by a pawn
+        return weak_sq_bb[c];
+    }
     Bitboard outposts(const Colour c) const { return pawn_controlled(c) & weak_squares(~c); }
 
     void make_move(Move &move);
@@ -131,6 +132,7 @@ class Board {
     std::array<Bitboard, N_COLOUR> colour_bb;
     std::array<Bitboard, N_PIECE> piece_bb;
     std::array<Bitboard, N_COLOUR> pawn_atk_bb;
+    std::array<Bitboard, N_COLOUR> weak_sq_bb;
     int piece_counts[N_COLOUR][N_PIECE];
     Colour whos_move = WHITE;
     uint fullmove_counter = 1;

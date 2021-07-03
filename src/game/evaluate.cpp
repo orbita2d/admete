@@ -237,9 +237,12 @@ Score piece_value(const PieceType p) { return piece_values[p]; }
 
 } // namespace Evaluation
 
-score_t Evaluation::heuristic(Board &board) {
+score_t Evaluation::evaluate_white(Board &board) {
+    // Calculate the evaluation heuristic from white's POV.
     int material_value = 0;
     Score score = Score(0, 0);
+
+    // Peice Square Tables and Material
     for (int p = 0; p < N_PIECE; p++) {
         Bitboard occ = board.pieces(WHITE, (PieceType)p);
         while (occ) {
@@ -582,29 +585,31 @@ score_t Evaluation::count_material(const Board &board) {
     return material_value;
 }
 
-score_t Evaluation::negamax_heuristic(Board &board) {
+score_t Evaluation::eval(Board &board) {
+    // Return the eval from the point of view of the current player.
     int side_multiplier = board.is_white_move() ? 1 : -1;
-    return heuristic(board) * side_multiplier;
+    return evaluate_white(board) * side_multiplier;
 }
 
-score_t Evaluation::evaluate(Board &board, std::vector<Move> &legal_moves) {
-    // evaluate the position relative to the current player.
-    // First check if we have been mated.
-    if (legal_moves.size() == 0) {
-        if (board.is_check()) {
-            // This is checkmate
-            return -MATING_SCORE + board.ply();
-        } else {
-            // This is stalemate.
-            return drawn_score(board);
-        }
+score_t Evaluation::terminal(Board &board, std::vector<Move> &legal_moves) {
+    // The eval for a terminal node.
+    if (board.is_check()) {
+        // This is checkmate
+        return -MATING_SCORE + board.ply();
+    } else {
+        // This is stalemate.
+        return drawn_score(board);
     }
-    return negamax_heuristic(board);
 }
 
-score_t Evaluation::evaluate(Board &board) {
+score_t Evaluation::evaluate_safe(Board &board) {
+    // Get the true static evaluation for any node, does the check if the node is a terminal node.
     std::vector<Move> legal_moves = board.get_moves();
-    return evaluate(board, legal_moves);
+    if (legal_moves.empty()) {
+        return terminal(board, legal_moves);
+    } else {
+        return eval(board);
+    }
 }
 
 score_t Evaluation::drawn_score(const Board &board) {

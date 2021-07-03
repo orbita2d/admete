@@ -92,6 +92,60 @@ void position(Board &board, std::istringstream &is) {
     }
 }
 
+void show_tests(Board &board) {
+    // Show a lot of calculated bitboards for the position. This can be helpful in improving the evaluation.
+    board.pretty();
+
+    std::cout << "White Passed Pawns:" << std::endl;
+    Bitboards::pretty(board.passed_pawns(WHITE));
+
+    std::cout << "Black Passed Pawns:" << std::endl;
+    Bitboards::pretty(board.passed_pawns(BLACK));
+
+    std::cout << "White Weak Pawns:" << std::endl;
+    Bitboards::pretty(board.weak_pawns(WHITE));
+
+    std::cout << "Black Weak Pawns:" << std::endl;
+    Bitboards::pretty(board.weak_pawns(BLACK));
+
+    std::cout << "White Half-Open Files:" << std::endl;
+    Bitboards::pretty(board.half_open_files(WHITE));
+
+    std::cout << "Black Half-Open Files:" << std::endl;
+    Bitboards::pretty(board.half_open_files(BLACK));
+
+    std::cout << "Open Files:" << std::endl;
+    Bitboards::pretty(board.open_files());
+
+    std::cout << "White Isolated Pawns:" << std::endl;
+    Bitboards::pretty(board.isolated_pawns(WHITE));
+
+    std::cout << "Black Isolated Pawns:" << std::endl;
+    Bitboards::pretty(board.isolated_pawns(BLACK));
+
+    std::cout << "White Connected Passed Pawns:" << std::endl;
+    Bitboards::pretty(board.connected_passed_pawns(WHITE));
+
+    std::cout << "Black Connected Passed Pawns:" << std::endl;
+    Bitboards::pretty(board.connected_passed_pawns(BLACK));
+
+    std::cout << "King Saftey:" << std::endl;
+    Bitboard occ = Bitboards::attacks<QUEEN>(board.pieces(PAWN), board.find_king(WHITE));
+    occ &= ~board.pieces(PAWN);
+    occ &= ~Bitboards::pawn_attacks(WHITE, board.pieces(WHITE, PAWN));
+    Bitboards::pretty(occ);
+
+    std::cout << "White weak squares:" << std::endl;
+    Bitboards::pretty(board.weak_squares(WHITE));
+    std::cout << "Black weak squares:" << std::endl;
+    Bitboards::pretty(board.weak_squares(BLACK));
+
+    std::cout << "White Outposts:" << std::endl;
+    Bitboards::pretty(board.outposts(WHITE));
+    std::cout << "Black Outposts:" << std::endl;
+    Bitboards::pretty(board.outposts(BLACK));
+}
+
 void bestmove(Board &board, const Move move) {
     /*
     bestmove <move1> [ ponder <move2> ]
@@ -351,8 +405,10 @@ void uci() {
         } else if (token == "d") {
             board.pretty();
         } else if (token == "h") {
-            score_t v = Evaluation::heuristic(board);
+            score_t v = Evaluation::evaluate_white(board);
             std::cout << std::dec << (int)v << std::endl;
+        } else if (token == "test") {
+            show_tests(board);
         } else {
             // std::cerr << "!#" << token << ":"<< command << std::endl;
         }

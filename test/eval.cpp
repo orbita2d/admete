@@ -66,10 +66,10 @@ TEST(Eval, Symmetry) {
   Board board = Board();
   for (std::string board_fen : fens) {
     board.fen_decode(board_fen);
-    const score_t score1 = Evaluation::heuristic(board);
-    const score_t rscore1 = Evaluation::negamax_heuristic(board);
+    const score_t score1 = Evaluation::evaluate_white(board);
+    const score_t rscore1 = Evaluation::eval(board);
     board.flip();
-    EXPECT_EQ(score1, -Evaluation::heuristic(board));
-    EXPECT_EQ(rscore1, Evaluation::negamax_heuristic(board));
+    EXPECT_EQ(score1, -Evaluation::evaluate_white(board));
+    EXPECT_EQ(rscore1, Evaluation::eval(board));
   }
 }
