@@ -357,6 +357,9 @@ void stop(Search::SearchOptions &options) {
 
 void uci_info(depth_t depth, score_t eval, unsigned long nodes, unsigned long nps, PrincipleLine principle,
               unsigned int time, ply_t root_ply) {
+    if (!uci_enabled) {
+        return;
+    }
     std::cout << std::dec;
     std::cout << "info";
     std::cout << " depth " << (uint)depth;
@@ -388,6 +391,9 @@ void uci_info(depth_t depth, score_t eval, unsigned long nodes, unsigned long np
 
 void uci_info(depth_t depth, unsigned long nodes, unsigned long nps, unsigned int time) {
     // This one only used for perft.
+    if (!uci_enabled) {
+        return;
+    }
     std::cout << std::dec;
     std::cout << "info";
     std::cout << " depth " << (uint)depth;
@@ -403,6 +409,9 @@ void uci_info(depth_t depth, unsigned long nodes, unsigned long nps, unsigned in
 }
 
 void uci_info_nodes(unsigned long nodes, unsigned long nps) {
+    if (!uci_enabled) {
+        return;
+    }
     if (nodes > 0) {
         std::cout << "nodes " << nodes;
     }
@@ -413,6 +422,7 @@ void uci_info_nodes(unsigned long nodes, unsigned long nps) {
 }
 
 void uci() {
+    uci_enabled = true;
     std::string command, token;
     Board board = Board();
     Search::SearchOptions options = Search::SearchOptions();
