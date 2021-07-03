@@ -164,6 +164,8 @@ void Board::initialise() {
     }
     pawn_atk_bb[WHITE] = Bitboards::pawn_attacks(WHITE, pieces(WHITE, PAWN));
     pawn_atk_bb[BLACK] = Bitboards::pawn_attacks(BLACK, pieces(BLACK, PAWN));
+    weak_sq_bb[WHITE] = Bitboards::middle_ranks & ~Bitboards::forward_atk_span(WHITE, pieces(WHITE, PAWN));
+    weak_sq_bb[BLACK] = Bitboards::middle_ranks & ~Bitboards::forward_atk_span(BLACK, pieces(BLACK, PAWN));
     set_root();
 }
 

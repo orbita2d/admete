@@ -484,7 +484,7 @@ void print_table(const position_board table) {
     std::cout << std::endl;
 }
 
-void print_tables() {
+void Evaluation::print_tables() {
     std::cout << "MATERIAL" << std::endl;
     for (int i = 0; i < 6; i++) {
         std::cout << std::setfill(' ') << std::setw(4) << material[i] << " ";
@@ -533,7 +533,7 @@ void Evaluation::load_tables(std::string filename) {
     file.open(filename, std::ios::in);
     if (!file) {
         std::cout << "No such file: " << filename << std::endl;
-        exit(EXIT_FAILURE);
+        return;
     }
     // Start by reading opening tables.
     for (int i = 8; i < 48; i++) {
@@ -591,7 +591,7 @@ score_t Evaluation::eval(Board &board) {
     return evaluate_white(board) * side_multiplier;
 }
 
-score_t Evaluation::terminal(Board &board, std::vector<Move> &legal_moves) {
+score_t Evaluation::terminal(Board &board) {
     // The eval for a terminal node.
     if (board.is_check()) {
         // This is checkmate
@@ -606,7 +606,7 @@ score_t Evaluation::evaluate_safe(Board &board) {
     // Get the true static evaluation for any node, does the check if the node is a terminal node.
     std::vector<Move> legal_moves = board.get_moves();
     if (legal_moves.empty()) {
-        return terminal(board, legal_moves);
+        return terminal(board);
     } else {
         return eval(board);
     }

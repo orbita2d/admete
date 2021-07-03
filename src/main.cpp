@@ -8,16 +8,11 @@
 #include "uci.hpp"
 #include <iostream>
 
-int main(int argc, char *argv[]) {
+int main() {
     Bitboards::init();
     Zorbist::init();
     Evaluation::init();
     Cache::init();
 
-    std::string command;
-    std::cin >> command;
-
-    if (command == "uci") {
-        UCI::uci();
-    }
+    UCI::uci();
 }

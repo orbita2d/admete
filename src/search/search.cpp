@@ -36,7 +36,7 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
     MoveList legal_moves = board.get_moves();
     // Terminal node.
     if (legal_moves.empty()) {
-        return Evaluation::terminal(board, legal_moves);
+        return Evaluation::terminal(board);
     }
 
     // If this is a draw by repetition or insufficient material, return the drawn score.
@@ -220,7 +220,7 @@ score_t Search::pv_search(Board &board, const depth_t start_depth, const score_t
     MoveList legal_moves = board.get_moves();
     // Terminal node
     if (legal_moves.empty()) {
-        return Evaluation::terminal(board, legal_moves);
+        return Evaluation::terminal(board);
     }
 
     // If this is a draw by repetition or insufficient material, return the drawn score.
@@ -367,7 +367,7 @@ score_t Search::quiesce(Board &board, const score_t alpha_start, const score_t b
         // Generates all evasions.
         moves = board.get_moves();
         if (moves.empty()) {
-            return Evaluation::terminal(board, moves);
+            return Evaluation::terminal(board);
         }
     }
 

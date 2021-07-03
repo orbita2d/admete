@@ -97,7 +97,6 @@ void summary(std::string filename) {
 }
 
 int main(int argc, char *argv[]) {
-    depth_t depth = 4;
     std::string tuning_table = "";
     std::string input_file = "";
     static int tuning_table_flag = 0;
@@ -122,9 +121,6 @@ int main(int argc, char *argv[]) {
             if (optarg)
                 fprintf(stdout, " with arg %s", optarg);
             fprintf(stdout, "\n");
-            break;
-        case 'd':
-            depth = atoi(optarg);
             break;
         case 'T':
             tuning_table_flag = 1;

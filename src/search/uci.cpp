@@ -16,8 +16,6 @@
 
 typedef std::chrono::high_resolution_clock my_clock;
 
-bool uci_enable = false;
-
 namespace UCI {
 void init_uci() {
     std::cout << "id name " << ENGINE_NAME << std::endl;
@@ -25,7 +23,6 @@ void init_uci() {
     std::cout << "option name Hash type spin default " << Cache::hash_default << " min " << Cache::hash_min << " max "
               << Cache::hash_max << std::endl;
     std::cout << "uciok" << std::endl;
-    ::uci_enable = true;
 }
 
 void set_option(std::istringstream &is) {
@@ -53,6 +50,17 @@ void set_option(std::istringstream &is) {
         }
         Cache::tt_max = (value * (1 << 20)) / sizeof(Cache::tt_pair);
         Cache::reinit();
+    }
+    if (option == "TablesPath") {
+        // Set the path to a file of input paramters
+        is >> std::ws >> token;
+        std::string value;
+        if (token == "value") {
+            is >> std::ws >> value;
+        } else {
+            return;
+        }
+        Evaluation::load_tables(value);
     }
 }
 void position(Board &board, std::istringstream &is) {
@@ -306,9 +314,6 @@ void stop(Search::SearchOptions &options) {
 
 void uci_info(depth_t depth, score_t eval, unsigned long nodes, unsigned long nps, PrincipleLine principle,
               unsigned int time, ply_t root_ply) {
-    if (!::uci_enable) {
-        return;
-    }
     std::cout << std::dec;
     std::cout << "info";
     std::cout << " depth " << (uint)depth;
@@ -340,9 +345,6 @@ void uci_info(depth_t depth, score_t eval, unsigned long nodes, unsigned long np
 
 void uci_info(depth_t depth, unsigned long nodes, unsigned long nps, unsigned int time) {
     // This one only used for perft.
-    if (!::uci_enable) {
-        return;
-    }
     std::cout << std::dec;
     std::cout << "info";
     std::cout << " depth " << (uint)depth;
@@ -358,9 +360,6 @@ void uci_info(depth_t depth, unsigned long nodes, unsigned long nps, unsigned in
 }
 
 void uci_info_nodes(unsigned long nodes, unsigned long nps) {
-    if (!::uci_enable) {
-        return;
-    }
     if (nodes > 0) {
         std::cout << "nodes " << nodes;
     }
@@ -371,7 +370,6 @@ void uci_info_nodes(unsigned long nodes, unsigned long nps) {
 }
 
 void uci() {
-    init_uci();
     std::string command, token;
     Board board = Board();
     Search::SearchOptions options = Search::SearchOptions();
@@ -380,8 +378,10 @@ void uci() {
         cleanup_thread(options);
         std::istringstream is(command);
         is >> std::ws >> token;
-        if (token == "isready") {
-            // interface is asking if we can continue, if we are here, we clearly can.
+        if (token == "uci") {
+            init_uci();
+        } else if (token == "isready") {
+            // Interface is asking if we can continue, if we are here, we clearly can.
             stop(options);
             std::cout << "readyok" << std::endl;
         } else if (token == "ucinewgame") {
@@ -409,8 +409,10 @@ void uci() {
             std::cout << std::dec << (int)v << std::endl;
         } else if (token == "test") {
             show_tests(board);
+        } else if (token == "tables") {
+            Evaluation::print_tables();
         } else {
-            // std::cerr << "!#" << token << ":"<< command << std::endl;
+            std::cerr << "Unknown command: " << token << std::endl;
         }
     }
 }
