@@ -264,9 +264,11 @@ void go(Board &board, std::istringstream &is, Search::SearchOptions &options) {
         search until the "stop" command. Do not exit the search without being told so in this mode!
     */
 
-    int wtime = POS_INF, btime = POS_INF;
-    int winc = 0, binc = 0, move_time = POS_INF;
-    uint max_depth = 20;
+    int wtime = POS_INF, btime = POS_INF; // Time left in this time control.
+    int winc = 0, binc = 0;               // Increments
+    int move_time = POS_INF;              // Absolute max time to spend on this move.
+    uint max_depth = 20;                  // Absolute max depth to calculate to.
+    uint movestogo = 0;                   // How many moves till the next time control.
     std::string token;
     while (is >> token) {
         // munch through the command string
@@ -284,11 +286,25 @@ void go(Board &board, std::istringstream &is, Search::SearchOptions &options) {
             is >> move_time;
         } else if (token == "mate") {
             is >> options.mate_depth;
+        } else if (token == "movestogo") {
+            is >> movestogo;
         }
     }
     const int our_time = board.is_white_move() ? wtime : btime;
     const int our_inc = board.is_white_move() ? winc : binc;
-    int cutoff_time = our_time == POS_INF ? POS_INF : our_time / 18 + (our_inc * 3) / 5;
+    int cutoff_time; // How much time to spend on this move.
+    if (our_time == POS_INF) {
+        // Infinite analysis
+        cutoff_time = POS_INF;
+    } else if (movestogo == 0) {
+        // Sudden death time control, try fit sd_N_move moves in the rest of the game
+        constexpr int sd_n_move = 16;
+        cutoff_time = our_time / sd_n_move + our_inc;
+    } else {
+        // Classical type time control. Try fit however many moves till the next time control in the game, this will
+        // mean that every move will take equally long, which isn't ideal.
+        cutoff_time = our_time / movestogo + our_inc;
+    }
     cutoff_time = std::min(move_time, cutoff_time);
     options.running_thread = std::thread(&do_search, &board, (depth_t)max_depth, cutoff_time, &options);
 }

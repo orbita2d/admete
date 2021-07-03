@@ -440,9 +440,9 @@ score_t Search::search(Board &board, const depth_t max_depth, const int max_mill
     // Time at start of search.
     time_origin = my_clock::now();
     // Time when the search should be stopped
-    time_cutoff = time_origin + std::chrono::milliseconds((int)(1.2 * max_millis));
+    time_cutoff = time_origin + std::chrono::milliseconds(max_millis);
     // Estimate effective branching factor empirically
-    int branching_factor = 4;
+    double branching_factor = 3.5;
 
     bool allow_cutoff = false;
 
@@ -517,14 +517,14 @@ score_t Search::search(Board &board, const depth_t max_depth, const int max_mill
         // Estimate the next time span.
         t_est = branching_factor * time_span;
 
-        // Check if our estimate of the next depth will take us over our time limit
-        if (int(t_est.count()) > max_millis) {
+        // Check if our estimate of the next depth will take us over our time limit.
+        if (t_est.count() > .9 * (max_millis)) {
             break;
         }
 
         // Calculate the last effective branching factor
         if (depth >= 5) {
-            branching_factor = int(time_span.count() / time_span_last.count());
+            branching_factor = time_span.count() / time_span_last.count();
         }
 
         // Break if reached mate in N depth.
