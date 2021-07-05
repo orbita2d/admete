@@ -3,6 +3,7 @@
 #include "board.hpp"
 #include "evaluate.hpp"
 #include "search.hpp"
+#include "tablebase.hpp"
 #include "transposition.hpp"
 #include <chrono>
 #include <iomanip>
@@ -23,10 +24,11 @@ void init_uci() {
     std::cout << "option name Hash type spin default " << Cache::hash_default << " min " << Cache::hash_min << " max "
               << Cache::hash_max << std::endl;
     std::cout << "option name TablesPath type string default <empty>" << std::endl;
+    std::cout << "option name SyzygyPath type string default <empty>" << std::endl;
     std::cout << "uciok" << std::endl;
 }
 
-void set_option(std::istringstream &is) {
+void set_option(std::istringstream &is, Search::SearchOptions &options) {
     /*
      * setoption name  [value ]
      *        this is sent to the engine when the user wants to change the internal parameters
@@ -71,6 +73,27 @@ void set_option(std::istringstream &is) {
         }
         Cache::tt_max = (value * (1 << 20)) / sizeof(Cache::tt_pair);
         Cache::reinit();
+    } else if (option == "SyzygyPath") {
+        // Set the path to a file of input paramters
+        std::string value;
+        if (token == "value") {
+            while (is >> token) {
+                if (value.empty()) {
+                    value += token;
+                } else {
+                    value += " " + token;
+                }
+            }
+            options.tbenable = true;
+            const bool success = Tablebase::init(value);
+            if (success) {
+                std::cerr << "successful" << std::endl;
+            } else {
+                std::cerr << "unsuccessful" << std::endl;
+            }
+        } else {
+            return;
+        }
     } else if (option == "TablesPath") {
         // Set the path to a file of input paramters
         std::string value;
@@ -331,8 +354,7 @@ void do_perft(Board *board, const depth_t depth, Search::SearchOptions *options)
 }
 
 void perft(Board &board, std::istringstream &is, Search::SearchOptions &options) {
-    /* perft <depth> <fen>
-     */
+    // perft <depth>
 
     // This command ignores the <fen> part (and relies on position being set already).
     // Returns the perft score for that depth.
@@ -342,6 +364,19 @@ void perft(Board &board, std::istringstream &is, Search::SearchOptions &options)
     is >> depth;
 
     options.running_thread = std::thread(&do_perft, &board, (depth_t)depth, &options);
+}
+
+void divide(Board &board, std::istringstream &is, Search::SearchOptions) {
+    /* perft <depth>
+     */
+
+    // This command ignores the <fen> part (and relies on position being set already).
+    // Returns the perft score for that depth.
+
+    // std::istringstream >> uint8_t doesn't do what you think.
+    int depth = 1;
+    is >> depth;
+    Search::perft_divide(depth, board);
 }
 
 void stop(Search::SearchOptions &options) {
@@ -441,7 +476,7 @@ void uci() {
             board.initialise_starting_position();
         } else if (token == "setoption") {
             stop(options);
-            set_option(is);
+            set_option(is, options);
         } else if (token == "position") {
             stop(options);
             position(board, is);
@@ -451,6 +486,9 @@ void uci() {
         } else if (token == "perft") {
             stop(options);
             perft(board, is, options);
+        } else if (token == "divide") {
+            stop(options);
+            divide(board, is, options);
         } else if (token == "stop") {
             stop(options);
         } else if (token == "quit") {

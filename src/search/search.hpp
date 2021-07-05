@@ -25,6 +25,7 @@ struct SearchOptions {
     std::thread running_thread;     // The thread object for the search itself.
     std::atomic<bool> running_flag; // Flag set when the search is running.
     ply_t mate_depth = 0;           // Mate in N distance to look for UCI go mate N commands.
+    bool tbenable = false;          // Set true if the tablebase is enabled.
     bool is_running() const { return running_flag.load(); }
     bool stop() const { return stop_flag.load(); }
     void set_stop() { stop_flag.store(true); }

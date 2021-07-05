@@ -1,6 +1,7 @@
 #include "search.hpp"
 #include "evaluate.hpp"
 #include "ordering.hpp"
+#include "tablebase.hpp"
 #include "transposition.hpp"
 #include "uci.hpp"
 #include <assert.h>
@@ -57,6 +58,16 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
         // Fail high.
         return -ply_to_mate_score(board.ply());
     }
+
+    // Probe the tablebase
+    /*
+    if (options.tbenable) {
+        score_t tbresult;
+        if (Tablebase::probe_wdl(board, tbresult)) {
+            return tbresult;
+        }
+    }
+    */
 
     // Leaf node for main tree.
     if (depth == 0) {
@@ -149,7 +160,7 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
 
     uint counter = 0;
     KillerTableRow killer_move = Cache::killer_table.probe(board.ply());
-    Ordering::sort_moves(board, legal_moves, hash_dmove, killer_move);
+    Ordering::rank_and_sort_moves(board, legal_moves, hash_dmove, killer_move);
     for (Move move : legal_moves) {
         counter++;
         depth_t search_depth = depth - 1;
@@ -223,7 +234,19 @@ score_t Search::pv_search(Board &board, const depth_t start_depth, const score_t
         return Evaluation::terminal(board);
     }
 
-    // If this is a draw by repetition or insufficient material, return the drawn score.
+    // Probe the tablebase
+    /*
+    if (options.tbenable && board.is_root()) {
+        bool tbsuccess = Tablebase::probe_root(board, legal_moves);
+        if (tbsuccess) {
+            assert(!legal_moves.empty());
+            line.push_back(legal_moves.front());
+            return legal_moves.front().score;
+        }
+    }
+    */
+
+    // If this is a draw by repetition, 50 moves, or insufficient material, return the drawn score.
     if (board.is_draw() && !board.is_root()) {
         return Evaluation::drawn_score(board);
     }
@@ -242,6 +265,15 @@ score_t Search::pv_search(Board &board, const depth_t start_depth, const score_t
         return -ply_to_mate_score(board.ply());
     }
 
+    /*
+        // Probe the tablebase for WDL
+        if (options.tbenable && !board.is_root()) {
+            score_t tbresult;
+            if (Tablebase::probe_wdl(board, tbresult)) {
+                return tbresult;
+            }
+        }
+    */
     // Leaf node for the main tree.
     if (depth == 0) {
         return quiesce(board, alpha, beta, options);
@@ -310,7 +342,7 @@ score_t Search::pv_search(Board &board, const depth_t start_depth, const score_t
 
     KillerTableRow killer_move = Cache::killer_table.probe(board.ply());
     // Sort the remaining moves, and remove the hash move if it exists
-    Ordering::sort_moves(board, legal_moves, hash_dmove, killer_move);
+    Ordering::rank_and_sort_moves(board, legal_moves, hash_dmove, killer_move);
 
     for (Move move : legal_moves) {
         PrincipleLine temp_line;
@@ -402,7 +434,7 @@ score_t Search::quiesce(Board &board, const score_t alpha_start, const score_t b
     }
 
     // Sort the captures and record SEE.
-    Ordering::sort_moves(board, moves, NULL_DMOVE, NULL_KROW);
+    Ordering::rank_and_sort_moves(board, moves, NULL_DMOVE, NULL_KROW);
 
     for (Move move : moves) {
         // For a capture, the recorded score is the SEE value.
@@ -457,6 +489,7 @@ score_t Search::search(Board &board, const depth_t max_depth, const int max_mill
         score_t alpha = score - aspration_windows[0];
         score_t beta = score + aspration_windows[0];
         for (size_t aw = 0; aw <= n_aw; aw++) {
+            temp_line.clear();
             new_score = pv_search(board, depth, alpha, beta, temp_line, time_cutoff, allow_cutoff, options);
 
             // Exit search if we've been asked to stop.

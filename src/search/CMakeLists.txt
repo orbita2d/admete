@@ -1,10 +1,13 @@
-add_library(search_library search.cpp search.hpp
+add_library(search_library 
+    search.cpp search.hpp
     perft.cpp 
     transposition.cpp transposition.hpp
     uci.cpp uci.hpp
-    ordering.cpp ordering.hpp)
+    ordering.cpp ordering.hpp
+    tablebase.cpp tablebase.hpp)
 
-target_link_libraries(search_library game_library pthread)
+add_subdirectory(fathom)
+target_link_libraries(search_library game_library pthread fathom)
 
 set_property(TARGET search_library PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
 
