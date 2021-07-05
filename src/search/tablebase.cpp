@@ -60,10 +60,24 @@ bool probe_root(Board &board, MoveList &moves) {
 }
 
 bool probe_wdl(Board &board, score_t &result) {
+
+    // Don't probe unless the 50 move rule counter was just reset.
     if (board.halfmove_clock() != 0) {
         return false;
     }
+
     unsigned castling_rights = board.can_castle(WHITE) | board.can_castle(BLACK);
+
+    // Don't probe if there are castling rights.
+    if (castling_rights) {
+        return false;
+    }
+
+    // Don't probe if there are more pieces on the board than the tablebase supports.
+    if (count_bits(board.pieces()) > 6) {
+        return false;
+    }
+
     unsigned ep_sq = 0;
     if (!(board.en_passent() == Square(0))) {
         ep_sq = board.en_passent().get_value();

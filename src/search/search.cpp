@@ -59,15 +59,6 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
         return -ply_to_mate_score(board.ply());
     }
 
-    // Probe the tablebase
-
-    if (options.tbenable) {
-        score_t tbresult;
-        if (Tablebase::probe_wdl(board, tbresult)) {
-            return tbresult;
-        }
-    }
-
     // Leaf node for main tree.
     if (depth == 0) {
         return quiesce(board, alpha, beta, options);
@@ -106,6 +97,15 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
         if (time_now > time_cutoff) {
             options.set_stop();
             return MAX_SCORE;
+        }
+    }
+
+    // Probe the tablebase
+    if (options.tbenable) {
+        score_t tbresult;
+        if (Tablebase::probe_wdl(board, tbresult)) {
+            Cache::transposition_table.store(hash, tbresult, -TBWIN, TBWIN, MAX_DEPTH, NULL_MOVE, board.ply());
+            return tbresult;
         }
     }
 
@@ -234,10 +234,10 @@ score_t Search::pv_search(Board &board, const depth_t start_depth, const score_t
     }
 
     // Probe the tablebase for the winning move at root.
-
     if (options.tbenable && board.is_root()) {
         if (Tablebase::probe_root(board, legal_moves)) {
             assert(!legal_moves.empty());
+            // Only move in legal_moves will be the best move from the tablebase. Its score is set to the eval.
             line.push_back(legal_moves.front());
             return legal_moves.front().score;
         }
@@ -250,7 +250,7 @@ score_t Search::pv_search(Board &board, const depth_t start_depth, const score_t
 
     // The absolute upper bound for a score on this node is ply_to_mate_score(board.ply()).
     if (ply_to_mate_score(board.ply()) <= alpha) {
-        // We've already found a mate at a lower ply than this node, we can't do better.
+        // Alpha is a mate at a lower ply than this node, we can't do better.
         // Fail low.
         return ply_to_mate_score(board.ply());
     }
@@ -258,16 +258,9 @@ score_t Search::pv_search(Board &board, const depth_t start_depth, const score_t
     // The absolute lower bound for a score on this node is -ply_to_mate_score(board.ply()).
     // (That is, we are being mated on this node)
     if (-ply_to_mate_score(board.ply()) >= beta) {
+        // Beta is us being mated at a lower ply than this node, we can't do worse.
         // Fail high.
         return -ply_to_mate_score(board.ply());
-    }
-
-    // Probe the tablebase for WDL
-    if (options.tbenable && !board.is_root()) {
-        score_t tbresult;
-        if (Tablebase::probe_wdl(board, tbresult)) {
-            return tbresult;
-        }
     }
 
     // Leaf node for the main tree.
@@ -289,6 +282,15 @@ score_t Search::pv_search(Board &board, const depth_t start_depth, const score_t
         if (time_now > time_cutoff) {
             options.set_stop();
             return MAX_SCORE;
+        }
+    }
+
+    // Probe the tablebase for WDL
+    if (options.tbenable && !board.is_root()) {
+        score_t tbresult;
+        if (Tablebase::probe_wdl(board, tbresult)) {
+            Cache::transposition_table.store(hash, tbresult, -TBWIN, TBWIN, MAX_DEPTH, NULL_MOVE, board.ply());
+            return tbresult;
         }
     }
 

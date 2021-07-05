@@ -158,6 +158,12 @@ constexpr score_t MIN_MATE_SCORE = MATING_SCORE - MAX_PLY;
 constexpr score_t TBWIN = MIN_MATE_SCORE - 1;
 constexpr score_t TBWIN_MIN = TBWIN - MAX_PLY;
 
+enum Bounds {
+    LOWER,
+    UPPER,
+    EXACT
+};
+
 inline bool is_mating(const score_t score) { return (score >= MIN_MATE_SCORE) && (score <= MATING_SCORE); }
 
 inline ply_t mate_score_to_ply(const score_t score) { return MATING_SCORE - score; }
