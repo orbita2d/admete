@@ -11,13 +11,13 @@ enum GamePhase { OPENING, ENDGAME, N_GAMEPHASE };
 
 inline int reverse_rank(int square) {
     // Square from Black's perspective;
-    return (56 - (square & 0x38)) | (square & 0x07);
+    return 56 ^ square;
 }
 
 position_board reverse_board(position_board in) {
     position_board pb;
     for (int s = 0; s < 64; s++) {
-        pb[s] = -in[reverse_rank(s)];
+        pb[s] = in[reverse_rank(s)];
     }
     return pb;
 }
@@ -209,27 +209,27 @@ static std::array<score_t, 6> material = {{100, 300, 350, 500, 900, 0}};
 
 namespace Evaluation {
 void init() {
-    piece_square_tables[OPENING][WHITE][PAWN] = pb_pawn_opening;
-    piece_square_tables[OPENING][WHITE][KNIGHT] = pb_knight;
-    piece_square_tables[OPENING][WHITE][BISHOP] = pb_bishop;
-    piece_square_tables[OPENING][WHITE][ROOK] = pb_rook_op;
-    piece_square_tables[OPENING][WHITE][QUEEN] = pb_queen;
-    piece_square_tables[OPENING][WHITE][KING] = pb_king_opening;
+    piece_square_tables[OPENING][BLACK][PAWN] = pb_pawn_opening;
+    piece_square_tables[OPENING][BLACK][KNIGHT] = pb_knight;
+    piece_square_tables[OPENING][BLACK][BISHOP] = pb_bishop;
+    piece_square_tables[OPENING][BLACK][ROOK] = pb_rook_op;
+    piece_square_tables[OPENING][BLACK][QUEEN] = pb_queen;
+    piece_square_tables[OPENING][BLACK][KING] = pb_king_opening;
 
-    piece_square_tables[ENDGAME][WHITE][PAWN] = pb_pawn_endgame;
-    piece_square_tables[ENDGAME][WHITE][KNIGHT] = pb_knight;
-    piece_square_tables[ENDGAME][WHITE][BISHOP] = pb_bishop;
-    piece_square_tables[ENDGAME][WHITE][ROOK] = pb_rook_eg;
-    piece_square_tables[ENDGAME][WHITE][QUEEN] = pb_queen;
-    piece_square_tables[ENDGAME][WHITE][KING] = pb_king_endgame;
+    piece_square_tables[ENDGAME][BLACK][PAWN] = pb_pawn_endgame;
+    piece_square_tables[ENDGAME][BLACK][KNIGHT] = pb_knight;
+    piece_square_tables[ENDGAME][BLACK][BISHOP] = pb_bishop;
+    piece_square_tables[ENDGAME][BLACK][ROOK] = pb_rook_eg;
+    piece_square_tables[ENDGAME][BLACK][QUEEN] = pb_queen;
+    piece_square_tables[ENDGAME][BLACK][KING] = pb_king_endgame;
 
     for (int p = 0; p < N_PIECE; p++) {
-        piece_square_tables[OPENING][BLACK][p] = reverse_board(piece_square_tables[OPENING][WHITE][p]);
-        piece_square_tables[ENDGAME][BLACK][p] = reverse_board(piece_square_tables[ENDGAME][WHITE][p]);
+        piece_square_tables[OPENING][WHITE][p] = reverse_board(piece_square_tables[OPENING][BLACK][p]);
+        piece_square_tables[ENDGAME][WHITE][p] = reverse_board(piece_square_tables[ENDGAME][BLACK][p]);
     }
 
-    pb_passed[WHITE] = pb_p_pawn;
-    pb_passed[BLACK] = reverse_board(pb_passed[WHITE]);
+    pb_passed[BLACK] = pb_p_pawn;
+    pb_passed[WHITE] = reverse_board(pb_passed[BLACK]);
 }
 
 score_t piece_material(const PieceType p) { return p == NO_PIECE ? 0 : material[p]; }
@@ -256,7 +256,7 @@ score_t Evaluation::evaluate_white(Board &board) {
             material_value += material[p];
             Square sq = pop_lsb(&occ);
             score -= piece_values[p];
-            score += Score(piece_square_tables[OPENING][BLACK][p][sq], piece_square_tables[ENDGAME][BLACK][p][sq]);
+            score -= Score(piece_square_tables[OPENING][BLACK][p][sq], piece_square_tables[ENDGAME][BLACK][p][sq]);
         }
     }
 
@@ -361,7 +361,7 @@ score_t Evaluation::evaluate_white(Board &board) {
     occ = board.passed_pawns(BLACK);
     while (occ) {
         Square sq = pop_lsb(&occ);
-        score += passed_mult * pb_passed[BLACK][sq];
+        score -= passed_mult * pb_passed[BLACK][sq];
     }
 
     // Bonus for connected passers.
@@ -476,7 +476,7 @@ score_t Evaluation::evaluate_white(Board &board) {
 
 void print_table(const position_board table) {
     for (int i = 0; i < 64; i++) {
-        std::cout << std::setfill(' ') << std::setw(4) << table[i] << " ";
+        std::cout << std::setfill(' ') << std::setw(4) << table[56 ^ i] << " ";
         if (i % 8 == 7) {
             std::cout << std::endl;
         }
@@ -489,6 +489,7 @@ void Evaluation::print_tables() {
     for (int i = 0; i < 6; i++) {
         std::cout << std::setfill(' ') << std::setw(4) << material[i] << " ";
     }
+    std::cout << std::endl;
     std::cout << "VALUES" << std::endl;
     for (int i = 0; i < 6; i++) {
         std::cout << std::setfill(' ') << std::setw(4) << material[i] << " ";
@@ -524,7 +525,6 @@ void Evaluation::print_tables() {
 
     std::cout << "PASSED PAWN" << std::endl;
     print_table(pb_passed[WHITE]);
-    print_table(pb_passed[BLACK]);
 }
 
 void Evaluation::load_tables(std::string filename) {
