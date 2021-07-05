@@ -45,9 +45,19 @@ class Board {
     bool is_free(const Square target) const;
     bool is_colour(const Colour c, const Square target) const;
     Square slide_to_edge(const Square origin, const Square direction, const uint to_edge) const;
+
+    MoveList get_moves() const;
+    MoveList get_capture_moves() const;
     MoveList get_evasion_moves() const;
-    MoveList get_moves();
-    MoveList get_quiessence_moves();
+    MoveList get_quiessence_moves() const;
+
+    void get_moves(MoveList &) const;
+    void get_capture_moves(MoveList &) const;
+    void get_evasion_moves(MoveList &) const;
+    void get_quiessence_moves(MoveList &) const;
+
+    // Return true if there are no legal moves in the position.
+    bool is_terminal() const { return !get_moves().empty(); }
 
     bool is_attacked(const Square square, const Colour us) const;
     void update_checkers();
@@ -62,6 +72,7 @@ class Board {
     bool is_check() const { return aux_info->is_check; };
 
     long int hash() const { return hash_history[ply()]; }
+    long int material_key() const;
     Piece pieces(const Square sq) const;
     PieceType piece_type(const Square sq) const;
     int count_pieces(const Colour c, const PieceType p) const { return piece_counts[c][p]; }
@@ -115,6 +126,7 @@ class Board {
     Square en_passent() const { return aux_info->en_passent_target; }
     int material() const { return aux_info->material; }
     ply_t repetitions(const ply_t start) const;
+    ply_t repetitions(const ply_t start, const ply_t query) const;
     bool is_draw() const;
     ply_t ply() const { return ply_counter; }
     ply_t height() const { return ply_counter - root_node_ply; }
@@ -178,10 +190,17 @@ constexpr Square relative_rank(const Colour c, const Square sq) {
 }
 
 // zorbist.cpp
-namespace Zorbist {
+namespace Zobrist {
 void init();
 long hash(const Board &board);
+long material(const Board &board);
 long diff(const Move move, const Colour us, const int last_ep_file,
           const std::array<std::array<bool, N_COLOUR>, N_CASTLE> castling_rights_change);
 long nulldiff(const Colour us, const int last_ep_file);
-} // namespace Zorbist
+
+inline long zobrist_table[N_COLOUR][N_PIECE][N_SQUARE];
+inline long zobrist_table_cr[N_COLOUR][2];
+inline long zobrist_table_move[N_COLOUR];
+inline long zobrist_table_ep[8];
+
+} // namespace Zobrist

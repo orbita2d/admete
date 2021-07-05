@@ -2,12 +2,7 @@
 #include "types.hpp"
 #include <random>
 
-long int zobrist_table[N_COLOUR][N_PIECE][N_SQUARE];
-long int zobrist_table_cr[N_COLOUR][2];
-long int zobrist_table_move[N_COLOUR];
-long int zobrist_table_ep[8];
-
-void Zorbist::init() {
+void Zobrist::init() {
     std::mt19937_64 generator(0x3243f6a8885a308d);
     std::uniform_int_distribution<unsigned long> distribution;
     // Fill table with random bitstrings
@@ -32,7 +27,7 @@ void Zorbist::init() {
     zobrist_table_cr[BLACK][QUEENSIDE] = distribution(generator);
 }
 
-long int Zorbist::hash(const Board &board) {
+long int Zobrist::hash(const Board &board) {
     long int hash = 0;
 
     for (int p = 0; p < N_PIECE; p++) {
@@ -71,7 +66,24 @@ long int Zorbist::hash(const Board &board) {
     return hash;
 }
 
-long Zorbist::diff(const Move move, const Colour us, const int last_ep_file,
+// Material Key. Unique key for N1 pawns, N2 knights, ... etc
+long int Zobrist::material(const Board &board) {
+    long int hash = 0;
+
+    for (PieceType p = PAWN; p < N_PIECE; p++) {
+        Bitboard occ = board.pieces(WHITE, p);
+        for (int i = 0; i < count_bits(occ); i++) {
+            hash ^= zobrist_table[WHITE][p][i];
+        }
+        occ = board.pieces(BLACK, p);
+        for (int i = 0; i < count_bits(occ); i++) {
+            hash ^= zobrist_table[BLACK][p][i];
+        }
+    }
+    return hash;
+}
+
+long Zobrist::diff(const Move move, const Colour us, const int last_ep_file,
                    const std::array<std::array<bool, N_COLOUR>, N_CASTLE> castling_rights_change) {
     long int hash = 0;
     Colour them = ~us;
@@ -116,7 +128,7 @@ long Zorbist::diff(const Move move, const Colour us, const int last_ep_file,
     return hash;
 }
 
-long Zorbist::nulldiff(const Colour us, const int last_ep_file) {
+long Zobrist::nulldiff(const Colour us, const int last_ep_file) {
     long int hash = 0;
     Colour them = ~us;
 

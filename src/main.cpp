@@ -10,7 +10,7 @@
 
 int main() {
     Bitboards::init();
-    Zorbist::init();
+    Zobrist::init();
     Evaluation::init();
     Cache::init();
 

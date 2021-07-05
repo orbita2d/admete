@@ -2,7 +2,9 @@
 #include "types.hpp"
 
 namespace Ordering {
-void sort_moves(Board &board, MoveList &legal_moves, const DenseMove hash_dmove, const KillerTableRow killer_moves);
+void sort_moves(MoveList &legal_moves);
+void rank_and_sort_moves(Board &board, MoveList &legal_moves, const DenseMove hash_dmove,
+                         const KillerTableRow killer_moves);
 } // namespace Ordering
 
 namespace SEE {
@@ -12,4 +14,4 @@ Bitboard get_smallest_attacker(Board &board, const Square origin, const Bitboard
 score_t see(Board &board, const Square target, Colour side, PieceType pt, Bitboard mask);
 score_t see_capture(Board &board, const Move move);
 score_t see_quiet(Board &board, const Move move);
-}
+} // namespace SEE

@@ -155,11 +155,11 @@ void Board::initialise() {
     update_checkers();
     update_check_squares();
     aux_info->material = Evaluation::count_material(*this);
-    hash_history[0] = Zorbist::hash(*this);
+    hash_history[0] = Zobrist::hash(*this);
 
     for (int c = WHITE; c < N_COLOUR; c++) {
-        for (int p = 0; p < N_PIECE; p++) {
-            piece_counts[c][p] = count_bits(pieces((Colour)c, (PieceType)p));
+        for (PieceType p = PAWN; p < N_PIECE; p++) {
+            piece_counts[c][p] = count_bits(pieces((Colour)c, p));
         }
     }
     pawn_atk_bb[WHITE] = Bitboards::pawn_attacks(WHITE, pieces(WHITE, PAWN));
@@ -314,8 +314,8 @@ void Board::make_move(Move &move) {
 
     // Checks that the piece counts (updated incrementally) are being tracked properly
     for (int c = WHITE; c < N_COLOUR; c++) {
-        for (int p = 0; p < N_PIECE; p++) {
-            assert(count_pieces((Colour)c, (PieceType)p) == count_bits(pieces((Colour)c, (PieceType)p)));
+        for (PieceType p = PAWN; p < N_PIECE; p++) {
+            assert(count_pieces((Colour)c, p) == count_bits(pieces((Colour)c, p)));
         }
     }
 
@@ -339,9 +339,9 @@ void Board::make_move(Move &move) {
 
     // Update the zorbist hash
     hash_history[ply_counter] =
-        hash_history[ply_counter - 1] ^ Zorbist::diff(move, us, last_ep_file, castling_rights_change);
+        hash_history[ply_counter - 1] ^ Zobrist::diff(move, us, last_ep_file, castling_rights_change);
 
-    assert(hash() == Zorbist::hash(*this));
+    assert(hash() == Zobrist::hash(*this));
 
     aux_info->last_move = move;
 }
@@ -473,8 +473,8 @@ void Board::make_nullmove() {
     update_check_squares();
 
     // Update the zorbist hash
-    hash_history[ply_counter] = hash_history[ply_counter - 1] ^ Zorbist::nulldiff(us, last_ep_file);
-    assert(hash() == Zorbist::hash(*this));
+    hash_history[ply_counter] = hash_history[ply_counter - 1] ^ Zobrist::nulldiff(us, last_ep_file);
+    assert(hash() == Zobrist::hash(*this));
 
     aux_info->last_move = NULL_MOVE;
 }
@@ -669,10 +669,10 @@ bool Board::gives_check(const Move move) {
 
 PieceType Board::piece_type(const Square sq) const {
     Bitboard square_bb = sq_to_bb(sq);
-    for (int p = 0; p < N_PIECE; p++) {
-        Bitboard occ = pieces((PieceType)p);
+    for (PieceType p = PAWN; p < N_PIECE; p++) {
+        Bitboard occ = pieces(p);
         if (square_bb & occ) {
-            return (PieceType)p;
+            return p;
         }
     }
     return NO_PIECE;
@@ -680,14 +680,14 @@ PieceType Board::piece_type(const Square sq) const {
 
 Piece Board::pieces(const Square sq) const {
     Bitboard square_bb = sq_to_bb(sq);
-    for (int p = 0; p < N_PIECE; p++) {
-        Bitboard occ = pieces(WHITE, (PieceType)p);
+    for (PieceType p = PAWN; p < N_PIECE; p++) {
+        Bitboard occ = pieces(WHITE, p);
         if (square_bb & occ) {
-            return Piece(WHITE, (PieceType)p);
+            return Piece(WHITE, p);
         }
-        occ = pieces(BLACK, (PieceType)p);
+        occ = pieces(BLACK, p);
         if (square_bb & occ) {
-            return Piece(BLACK, (PieceType)p);
+            return Piece(BLACK, p);
         }
     }
     return Piece(WHITE, NO_PIECE);
@@ -748,12 +748,25 @@ bool Board::is_draw() const {
     }
 };
 
+// Check to see if current position is draw by repetition
 ply_t Board::repetitions(const ply_t start) const {
-    // Check to see if current position is draw by repetition
     long current = hash_history[ply_counter];
     ply_t n = 0;
 
     for (unsigned int i = start; i < ply_counter; i++) {
+        if (hash_history[i] == current) {
+            n++;
+        }
+    }
+    return n;
+}
+
+// Returns number of times the position at ply query has repeated after ply start
+ply_t Board::repetitions(const ply_t start, const ply_t query) const {
+    long current = hash_history[query];
+    ply_t n = 0;
+
+    for (unsigned int i = start; i < query; i++) {
         if (hash_history[i] == current) {
             n++;
         }
@@ -769,10 +782,12 @@ void Board::flip() {
     colour_bb[WHITE] = Bitboards::flip_vertical(colour_bb[WHITE]);
     colour_bb[BLACK] = Bitboards::flip_vertical(colour_bb[BLACK]);
     std::swap(colour_bb[WHITE], colour_bb[BLACK]);
-    for (int p = PAWN; p < N_PIECE; p++) {
+    for (PieceType p = PAWN; p < N_PIECE; p++) {
         piece_bb[p] = Bitboards::flip_vertical(piece_bb[p]);
     }
 
     std::swap(aux_info->castling_rights[WHITE], aux_info->castling_rights[BLACK]);
     initialise();
 }
+
+long int Board::material_key() const { return Zobrist::material(*this); }

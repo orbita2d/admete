@@ -243,15 +243,15 @@ score_t Evaluation::evaluate_white(Board &board) {
     Score score = Score(0, 0);
 
     // Peice Square Tables and Material
-    for (int p = 0; p < N_PIECE; p++) {
-        Bitboard occ = board.pieces(WHITE, (PieceType)p);
+    for (PieceType p = PAWN; p < N_PIECE; p++) {
+        Bitboard occ = board.pieces(WHITE, p);
         while (occ) {
             material_value += material[p];
             Square sq = pop_lsb(&occ);
             score += piece_values[p];
             score += Score(piece_square_tables[OPENING][WHITE][p][sq], piece_square_tables[ENDGAME][WHITE][p][sq]);
         }
-        occ = board.pieces(BLACK, (PieceType)p);
+        occ = board.pieces(BLACK, p);
         while (occ) {
             material_value += material[p];
             Square sq = pop_lsb(&occ);
@@ -262,19 +262,19 @@ score_t Evaluation::evaluate_white(Board &board) {
 
     // Mobility
     // A bonus is given to every square accessible to every piece, which isn't blocked by one of our pieces.
-    for (int p = (int)KNIGHT; p < KING; p++) {
-        Bitboard occ = board.pieces(WHITE, (PieceType)p);
+    for (PieceType p = KNIGHT; p < KING; p++) {
+        Bitboard occ = board.pieces(WHITE, p);
         while (occ) {
             Square sq = pop_lsb(&occ);
-            Bitboard mob = Bitboards::attacks((PieceType)p, board.pieces(), sq);
+            Bitboard mob = Bitboards::attacks(p, board.pieces(), sq);
             mob &= ~board.pawn_controlled(BLACK);
             mob &= ~board.pieces(WHITE);
             score += mobility * count_bits(mob);
         }
-        occ = board.pieces(BLACK, (PieceType)p);
+        occ = board.pieces(BLACK, p);
         while (occ) {
             Square sq = pop_lsb(&occ);
-            Bitboard mob = Bitboards::attacks((PieceType)p, board.pieces(), sq);
+            Bitboard mob = Bitboards::attacks(p, board.pieces(), sq);
             mob &= ~board.pawn_controlled(WHITE);
             mob &= ~board.pieces(BLACK);
             score -= mobility * count_bits(mob);
@@ -578,9 +578,8 @@ void Evaluation::load_tables(std::string filename) {
 
 score_t Evaluation::count_material(const Board &board) {
     score_t material_value = 0;
-    for (score_t p = 0; p < N_PIECE; p++) {
-        material_value +=
-            material[p] * (board.count_pieces(WHITE, (PieceType)p) + board.count_pieces(BLACK, (PieceType)p));
+    for (PieceType p = PAWN; p < N_PIECE; p++) {
+        material_value += material[p] * (board.count_pieces(WHITE, p) + board.count_pieces(BLACK, p));
     }
     return material_value;
 }

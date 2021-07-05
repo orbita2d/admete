@@ -5,6 +5,7 @@ add_executable(tests main.cpp
                 fen.cpp
                 board.cpp
                 eval.cpp
+                zobrist.cpp
                 ordering.cpp)
 
 target_link_libraries(tests

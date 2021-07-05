@@ -145,7 +145,7 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
     Bitboards::init();
-    Zorbist::init();
+    Zobrist::init();
     Evaluation::init();
     Cache::init();
     Cache::transposition_table.disable();

@@ -545,7 +545,7 @@ template <> void gen_moves<EVASIONS>(const Board &board, MoveList &moves) {
     }
 }
 
-template <GenType gen> void generate_moves(Board &board, MoveList &moves) {
+template <GenType gen> void generate_moves(const Board &board, MoveList &moves) {
     // Generate all legal non-evasion moves
     if (gen == CAPTURES) {
         gen_moves<CAPTURES>(board, moves);
@@ -556,7 +556,7 @@ template <GenType gen> void generate_moves(Board &board, MoveList &moves) {
     return;
 }
 
-template <> void generate_moves<EVASIONS>(Board &board, MoveList &moves) {
+template <> void generate_moves<EVASIONS>(const Board &board, MoveList &moves) {
     // Generate all legal moves
     const Colour us = board.who_to_play();
     const Square king_square = board.find_king(us);
@@ -571,7 +571,7 @@ template <> void generate_moves<EVASIONS>(Board &board, MoveList &moves) {
     return;
 }
 
-MoveList Board::get_moves() {
+MoveList Board::get_moves() const {
     MoveList moves;
     moves.reserve(MAX_MOVES);
     if (is_check()) {
@@ -582,7 +582,7 @@ MoveList Board::get_moves() {
     return moves;
 }
 
-MoveList Board::get_quiessence_moves() {
+MoveList Board::get_quiessence_moves() const {
     MoveList moves;
     moves.reserve(MAX_MOVES);
     if (is_check()) {
@@ -593,4 +593,40 @@ MoveList Board::get_quiessence_moves() {
         generate_moves<CAPTURES>(*this, moves);
     }
     return moves;
+}
+
+MoveList Board::get_capture_moves() const {
+    MoveList moves;
+    moves.reserve(MAX_MOVES);
+    generate_moves<CAPTURES>(*this, moves);
+    return moves;
+}
+
+MoveList Board::get_evasion_moves() const {
+    MoveList moves;
+    moves.reserve(MAX_MOVES);
+    generate_moves<EVASIONS>(*this, moves);
+    return moves;
+}
+
+void Board::get_moves(MoveList &moves) const {
+    if (is_check()) {
+        generate_moves<EVASIONS>(*this, moves);
+    } else {
+        generate_moves<LEGAL>(*this, moves);
+    }
+}
+
+void Board::get_capture_moves(MoveList &moves) const { generate_moves<CAPTURES>(*this, moves); }
+
+void Board::get_evasion_moves(MoveList &moves) const { generate_moves<EVASIONS>(*this, moves); }
+
+void Board::get_quiessence_moves(MoveList &moves) const {
+    if (is_check()) {
+        generate_moves<EVASIONS>(*this, moves);
+    } else {
+        // For later, currently unfortunately increases branching factor too much to be useful.
+        // gen_moves<QUIETCHECKS>(*this, moves);
+        generate_moves<CAPTURES>(*this, moves);
+    }
 }

@@ -26,7 +26,7 @@ enum Direction : int {
 constexpr int N_SQUARE = 64;
 class Square {
   public:
-    typedef signed int square_t;
+    typedef unsigned int square_t;
     constexpr Square(const square_t val) : value(val){};
     constexpr Square(const square_t rank, const square_t file) { value = to_index(rank, file); };
     Square(const std::string rf);
@@ -140,10 +140,11 @@ enum Colour : int { WHITE, BLACK, N_COLOUR };
 constexpr Colour operator~(Colour c) {
     return Colour(c ^ Colour::BLACK); // Toggle color
 }
-
 // Pieces
 
 enum PieceType { PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING, N_PIECE, NO_PIECE };
+inline PieceType operator++(PieceType &p, int) { return p = PieceType(int(p) + 1); };
+inline PieceType operator--(PieceType &p, int) { return p = PieceType(int(p) - 1); };
 
 class Piece {
   public:
@@ -171,11 +172,16 @@ typedef unsigned int ply_t;
 constexpr ply_t MAX_PLY = 512;
 typedef int16_t score_t;
 
-constexpr score_t MIN_SCORE = -16382;
-constexpr score_t MAX_SCORE = -MIN_SCORE;
+constexpr score_t MAX_SCORE = 32767;
+constexpr score_t MIN_SCORE = -MAX_SCORE;
 
-constexpr score_t MATING_SCORE = 16381;
+// Space for mating scores [MIN_MATE_SCORE, MATING_SCORE]
+constexpr score_t MATING_SCORE = 32766;
 constexpr score_t MIN_MATE_SCORE = MATING_SCORE - MAX_PLY;
+
+// Space for Tablebase wins [TBWIN_MIN, TBWIN]
+constexpr score_t TBWIN = MIN_MATE_SCORE - 1;
+constexpr score_t TBWIN_MIN = TBWIN - MAX_PLY;
 
 inline bool is_mating(const score_t score) { return (score >= MIN_MATE_SCORE) && (score <= MATING_SCORE); }
 

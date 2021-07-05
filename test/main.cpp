@@ -5,7 +5,7 @@
 #include <gtest/gtest.h>
 
 int main(int argc, char **argv) {
-  ::Zorbist::init();
+  ::Zobrist::init();
   ::Bitboards::init();
   ::Evaluation::init();
   ::Cache::init();

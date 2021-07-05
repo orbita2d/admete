@@ -125,7 +125,9 @@ score_t see_quiet(Board &board, const Move move) {
 } // namespace SEE
 
 namespace Ordering {
-void sort_moves(Board &board, MoveList &legal_moves, const DenseMove hash_dmove, const KillerTableRow killer_moves) {
+void sort_moves(MoveList &legal_moves) { std::sort(legal_moves.begin(), legal_moves.end(), cmp); }
+void rank_and_sort_moves(Board &board, MoveList &legal_moves, const DenseMove hash_dmove,
+                         const KillerTableRow killer_moves) {
 
     MoveList quiet_moves, good_captures, even_captures, bad_captures, checks, sorted_moves, killer;
     size_t n_moves = legal_moves.size();
