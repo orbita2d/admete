@@ -44,9 +44,9 @@ std::map<Square::square_t, char> file_encode_map = {
 std::string Board::fen_encode() const {
     uint space_counter = 0;
     std::stringstream ss;
-    for (uint rank = 0; rank < 8; rank++) {
+    for (uint rank = 8; rank > 0; rank--) {
         for (uint file = 0; file < 8; file++) {
-            int idx = rank * 8 + file;
+            int idx = (rank - 1) * 8 + file;
             if (pieces(idx).is_blank()) {
                 space_counter++;
                 continue;
@@ -63,7 +63,7 @@ std::string Board::fen_encode() const {
             ss << space_counter;
             space_counter = 0;
         }
-        if (rank < 7) {
+        if (rank > 1) {
             ss << "/";
         }
     }
@@ -101,25 +101,25 @@ std::string Board::fen_encode() const {
 }
 
 void Board::pretty() const {
-    for (uint rank = 0; rank < 8; rank++) {
+    for (uint rank = 8; rank > 0; rank--) {
         for (uint file = 0; file < 8; file++) {
-            Square::square_t idx = 8 * rank + file;
+            Square::square_t idx = 8 * (rank - 1) + file;
             Square sq = Square(idx);
             if ((sq == aux_info->en_passent_target) & (aux_info->en_passent_target.get_value() != 0) &
                 pieces(sq).is_blank()) {
-                std::cout << "! ";
+                std::cout << "!";
             } else {
                 std::cout << pieces(sq).pretty();
             }
             std::cout << " ";
         }
-        if ((rank == 0) & (whos_move == Colour::BLACK)) {
+        if ((rank == 8) & (whos_move == Colour::BLACK)) {
             std::cout << "  ***";
         }
-        if ((rank == 7) & (whos_move == Colour::WHITE)) {
+        if ((rank == 1) & (whos_move == Colour::WHITE)) {
             std::cout << "  ***";
         }
-        if (rank == 1) {
+        if (rank == 7) {
             std::cout << "  ";
             if (aux_info->castling_rights[BLACK][KINGSIDE]) {
                 std::cout << 'k';
@@ -128,7 +128,7 @@ void Board::pretty() const {
                 std::cout << 'q';
             }
         }
-        if (rank == 6) {
+        if (rank == 2) {
             std::cout << "  ";
             if (aux_info->castling_rights[WHITE][KINGSIDE]) {
                 std::cout << 'K';
@@ -137,7 +137,7 @@ void Board::pretty() const {
                 std::cout << 'Q';
             }
         }
-        if (rank == 3) {
+        if (rank == 5) {
             std::cout << "  " << std::setw(3) << std::setfill(' ') << aux_info->halfmove_clock;
         }
         if (rank == 4) {
@@ -157,16 +157,16 @@ Square::Square(const std::string rf) {
         throw std::domain_error("Coordinate length != 2");
     }
 
-    uint rank = 7 - (toDigit(rf[1]) - 1);
+    uint rank = (toDigit(rf[1]) - 1);
     uint file = file_decode_map[rf[0]];
 
     value = 8 * rank + file;
 }
 
-std::string Square::pretty() const { return file_encode_map[file_index()] + std::to_string(8 - rank_index()); };
+std::string Square::pretty() const { return file_encode_map[file_index()] + std::to_string(1 + rank_index()); };
 
-std::ostream &operator<<(std::ostream &os, const Square move) {
-    os << move.pretty();
+std::ostream &operator<<(std::ostream &os, const Square sq) {
+    os << sq.pretty();
     return os;
 }
 

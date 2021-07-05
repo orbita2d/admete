@@ -22,6 +22,7 @@ unsigned long perft_bulk(depth_t depth, Board &board) {
 }
 
 void perft_divide(depth_t depth, Board &board) {
+    std::cout << "divide()" << std::endl;
     std::vector<Move> legal_moves = board.get_moves();
     unsigned long nodes = 0;
     unsigned long child_nodes;

@@ -17,18 +17,17 @@ void Board::fen_decode(const std::string &fen) {
     ply_counter = 0;
     aux_info = aux_history.begin();
     uint N = fen.length(), board_position;
-    uint rank = 0, file = 0;
+    uint rank = 7, file = 0;
     char my_char;
 
     // Reset board.
     occupied_bb = 0;
     colour_bb[WHITE] = 0;
     colour_bb[BLACK] = 0;
-    for (int i = 0; i < N_PIECE; i++) {
-        piece_bb[i] = 0;
+    for (PieceType p = PAWN; p < N_PIECE; p++) {
+        piece_bb[p] = 0;
     }
 
-    std::stringstream stream;
     // First, go through the board position part of the fen string.
     for (uint i = 0; i < N; i++) {
         my_char = fen[i];
@@ -36,7 +35,7 @@ void Board::fen_decode(const std::string &fen) {
             continue;
         }
         if (my_char == '/') {
-            rank++;
+            rank--;
             file = 0;
             continue;
         }
@@ -60,7 +59,7 @@ void Board::fen_decode(const std::string &fen) {
 
     std::string side_to_move, castling, en_passent;
     int halfmove = 0, counter = 0;
-    stream = std::stringstream(fen.substr(board_position));
+    std::stringstream stream = std::stringstream(fen.substr(board_position));
     stream >> std::ws;
     stream >> side_to_move >> std::ws;
     stream >> castling >> std::ws;

@@ -3,9 +3,9 @@
 #include <random>
 
 void Bitboards::pretty(const Bitboard bb) {
-    for (uint rank = 0; rank < 8; rank++) {
+    for (uint rank = 8; rank > 0; rank--) {
         for (uint file = 0; file < 8; file++) {
-            uint idx = 8 * rank + file;
+            uint idx = 8 * (rank - 1) + file;
             std::cout << (((bb >> idx) & 1) ? "X" : ".") << ' ';
         }
         std::cout << std::endl;

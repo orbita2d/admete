@@ -6,12 +6,8 @@ typedef unsigned long int Bitboard;
 inline Bitboard PseudolegalAttacks[N_PIECE][N_SQUARE];
 inline Bitboard PawnAttacks[N_COLOUR][N_SQUARE];
 inline Bitboard PawnSpans[N_COLOUR][N_SQUARE];
-inline Bitboard RankBBs[8] = {0x00000000000000ff, 0x000000000000ff00, 0x0000000000ff0000, 0x00000000ff000000,
-                              0x000000ff00000000, 0x0000ff0000000000, 0x00ff000000000000, 0xff00000000000000};
-inline Bitboard FileBBs[8] = {0x0101010101010101, 0x0202020202020202, 0x0404040404040404, 0x0808080808080808,
-                              0x1010101010101010, 0x2020202020202020, 0x4040404040404040, 0x8080808080808080};
 inline Bitboard LineBBs[N_SQUARE][N_SQUARE];
-constexpr Bitboard CastleCheckBBs[N_COLOUR][N_CASTLE] = {{0x6000000000000000, 0xe00000000000000}, {0x60, 0xe}};
+constexpr Bitboard CastleCheckBBs[N_COLOUR][N_CASTLE] = {{0x60, 0xe}, {0x6000000000000000, 0xe00000000000000}};
 inline Bitboard SquareBBs[N_SQUARE];
 
 inline Bitboard sq_to_bb(const int s) {
@@ -67,54 +63,56 @@ inline Bitboard rook_xrays(Bitboard occ, const Square sq) {
 namespace Bitboards {
 void pretty(Bitboard);
 void init();
-constexpr Bitboard h_file = 0x0101010101010101;
-constexpr Bitboard g_file = 0x0202020202020202;
-constexpr Bitboard f_file = 0x0404040404040404;
-constexpr Bitboard e_file = 0x0808080808080808;
-constexpr Bitboard d_file = 0x1010101010101010;
-constexpr Bitboard c_file = 0x2020202020202020;
-constexpr Bitboard b_file = 0x4040404040404040;
-constexpr Bitboard a_file = 0x8080808080808080;
-constexpr Bitboard rank_1 = 0xff00000000000000;
-constexpr Bitboard rank_2 = 0x00ff000000000000;
-constexpr Bitboard rank_3 = 0x0000ff0000000000;
-constexpr Bitboard rank_4 = 0x000000ff00000000;
-constexpr Bitboard rank_5 = 0x00000000ff000000;
-constexpr Bitboard rank_6 = 0x0000000000ff0000;
-constexpr Bitboard rank_7 = 0x000000000000ff00;
-constexpr Bitboard rank_8 = 0x00000000000000ff;
+constexpr Bitboard a_file = 0x0101010101010101;
+constexpr Bitboard b_file = 0x0202020202020202;
+constexpr Bitboard c_file = 0x0404040404040404;
+constexpr Bitboard d_file = 0x0808080808080808;
+constexpr Bitboard e_file = 0x1010101010101010;
+constexpr Bitboard f_file = 0x2020202020202020;
+constexpr Bitboard g_file = 0x4040404040404040;
+constexpr Bitboard h_file = 0x8080808080808080;
+constexpr Bitboard rank_8 = 0xff00000000000000;
+constexpr Bitboard rank_7 = 0x00ff000000000000;
+constexpr Bitboard rank_6 = 0x0000ff0000000000;
+constexpr Bitboard rank_5 = 0x000000ff00000000;
+constexpr Bitboard rank_4 = 0x00000000ff000000;
+constexpr Bitboard rank_3 = 0x0000000000ff0000;
+constexpr Bitboard rank_2 = 0x000000000000ff00;
+constexpr Bitboard rank_1 = 0x00000000000000ff;
+constexpr Bitboard rank_bb[8] = {rank_1, rank_2, rank_3, rank_4, rank_5, rank_6, rank_7, rank_8};
+constexpr Bitboard file_bb[8] = {a_file, b_file, c_file, d_file, e_file, f_file, g_file, h_file};
 constexpr Bitboard middle_ranks = rank_3 | rank_4 | rank_5 | rank_6;
 constexpr Bitboard null = 0x0000000000000000;
 constexpr Bitboard omega = 0xffffffffffffffff;
 // Bitboard for squares where king is castled
-constexpr Bitboard castle_king[N_COLOUR][N_CASTLE] = {{0xe000000000000000, 0x700000000000000}, {0xe0, 0x7}};
+constexpr Bitboard castle_king[N_COLOUR][N_CASTLE] = {{0xe0, 0x7}, {0xe000000000000000, 0x700000000000000}};
 // Bitboard for king safetly pawns on 2nd rank
-constexpr Bitboard castle_pawn2[N_COLOUR][N_CASTLE] = {{0x00e0000000000000, 0x007000000000000}, {0xe000, 0x700}};
+constexpr Bitboard castle_pawn2[N_COLOUR][N_CASTLE] = {{0xe000, 0x700}, {0x00e0000000000000, 0x007000000000000}};
 // Bitboard for king safetly pawns on 3rd rank
-constexpr Bitboard castle_pawn3[N_COLOUR][N_CASTLE] = {{0x0000e00000000000, 0x000070000000000}, {0xe00000, 0x70000}};
+constexpr Bitboard castle_pawn3[N_COLOUR][N_CASTLE] = {{0xe00000, 0x70000}, {0x0000e00000000000, 0x000070000000000}};
 
-constexpr Bitboard light_squares = 0xAA55AA55AA55AA55;
-constexpr Bitboard dark_squares = 0x55AA55AA55AA55AA;
+constexpr Bitboard dark_squares = 0xAA55AA55AA55AA55;
+constexpr Bitboard light_squares = 0x55AA55AA55AA55AA;
 constexpr Bitboard bishop_squares[N_BISHOPTYPES] = {light_squares, dark_squares};
 
 template <Direction dir> constexpr Bitboard shift(const Bitboard bb) {
     // Bitboards are stored big-endian but who can remember that, so this hides the implementation a little
     if (dir == Direction::N) {
-        return (bb >> 8);
-    } else if (dir == Direction::S) {
         return (bb << 8);
+    } else if (dir == Direction::S) {
+        return (bb >> 8);
     } else if (dir == Direction::E) {
-        return (bb << 1) & ~Bitboards::h_file;
+        return (bb << 1) & ~Bitboards::a_file;
     } else if (dir == Direction::W) {
-        return (bb >> 1) & ~Bitboards::a_file;
+        return (bb >> 1) & ~Bitboards::h_file;
     } else if (dir == Direction::NW) {
-        return (bb >> 9) & ~Bitboards::a_file;
+        return (bb << 7) & ~Bitboards::h_file;
     } else if (dir == Direction::NE) {
-        return (bb >> 7) & ~Bitboards::h_file;
+        return (bb << 9) & ~Bitboards::a_file;
     } else if (dir == Direction::SW) {
-        return (bb << 7) & ~Bitboards::a_file;
+        return (bb >> 9) & ~Bitboards::h_file;
     } else if (dir == Direction::SE) {
-        return (bb << 9) & ~Bitboards::h_file;
+        return (bb >> 7) & ~Bitboards::a_file;
     }
 }
 
@@ -153,9 +151,9 @@ template <PieceType p> inline Bitboard attacks(const Bitboard occ, const Square 
 
 inline Bitboard pawn_attacks(const Colour c, const Square s) { return PawnAttacks[c][s]; }
 
-inline Bitboard rank(const Square s) { return RankBBs[s.rank_index()]; }
+inline Bitboard rank(const Square s) { return rank_bb[s.rank_index()]; }
 
-inline Bitboard file(const Square s) { return FileBBs[s.file_index()]; }
+inline Bitboard file(const Square s) { return file_bb[s.file_index()]; }
 inline Bitboard line(const Square s1, const Square s2) { return LineBBs[s1][s2]; }
 inline Bitboard between(const Square s1, const Square s2) {
     Bitboard bb = line(s1, s2);
@@ -170,16 +168,16 @@ inline Bitboard between(const Square s1, const Square s2) {
 constexpr Bitboard castle(const Colour c, const CastlingSide cs) { return CastleCheckBBs[c][cs]; }
 
 inline Bitboard north_fill(Bitboard g) {
-    g |= g >> 0x08;
-    g |= g >> 0x10;
-    g |= g >> 0x20;
+    g |= g << 0x08;
+    g |= g << 0x10;
+    g |= g << 0x20;
     return g;
 }
 
 inline Bitboard south_fill(Bitboard g) {
-    g |= g << 0x08;
-    g |= g << 0x10;
-    g |= g << 0x20;
+    g |= g >> 0x08;
+    g |= g >> 0x10;
+    g |= g >> 0x20;
     return g;
 }
 
@@ -310,12 +308,12 @@ inline Bitboard pawn_attacks(const Colour c, Bitboard g) {
 inline Bitboard flip_vertical(const Bitboard g) {
     // clang-format off
     return   (g << 56)           |
-            ((g << 40) & rank_2) | 
-            ((g << 24) & rank_3) | 
-            ((g <<  8) & rank_4) | 
-            ((g >>  8) & rank_5) |
-            ((g >> 24) & rank_6) | 
-            ((g >> 40) & rank_7) | 
+            ((g << 40) & rank_7) | 
+            ((g << 24) & rank_6) | 
+            ((g <<  8) & rank_5) | 
+            ((g >>  8) & rank_4) |
+            ((g >> 24) & rank_3) | 
+            ((g >> 40) & rank_2) | 
              (g >> 56);
     // clang-format on
 }

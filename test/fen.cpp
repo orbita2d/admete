@@ -1,5 +1,4 @@
 #include "board.hpp"
-#include "search.hpp"
 #include <gtest/gtest.h>
 
 TEST(FenEncoding, fen_encode) {

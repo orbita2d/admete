@@ -5,22 +5,22 @@
 #include <vector>
 
 enum Direction : int {
-    N = -8,
+    N = 8,
     E = 1,
-    S = 8,
+    S = -8,
     W = -1,
-    NW = -9,
-    NE = -7,
-    SE = 9,
-    SW = 7,
-    NNW = -17,
-    NNE = -15,
-    ENE = -6,
-    ESE = 10,
-    SSE = 17,
-    SSW = 15,
-    WSW = 6,
-    WNW = -10
+    NW = 7,
+    NE = 9,
+    SE = -7,
+    SW = -9,
+    NNW = 15,
+    NNE = 17,
+    ENE = 10,
+    ESE = -6,
+    SSE = -15,
+    SSW = -17,
+    WSW = -10,
+    WNW = 6
 };
 
 constexpr int N_SQUARE = 64;
@@ -28,7 +28,7 @@ class Square {
   public:
     typedef unsigned int square_t;
     constexpr Square(const square_t val) : value(val){};
-    constexpr Square(const square_t rank, const square_t file) { value = to_index(rank, file); };
+    constexpr Square(const square_t rank, const square_t file) { value = 8 * rank + file; };
     Square(const std::string rf);
     Square() = default;
 
@@ -50,39 +50,15 @@ class Square {
     constexpr square_t diagonal() const { return rank_index() + file_index(); }
     constexpr square_t anti_diagonal() const { return rank_index() - file_index() + 7; }
 
-    uint to_north() const { return rank_index(); };
+    uint to_north() const { return 7 - rank_index(); };
     uint to_east() const { return 7 - file_index(); };
-    uint to_south() const { return 7 - rank_index(); };
+    uint to_south() const { return rank_index(); };
     uint to_west() const { return file_index(); };
 
     square_t to_northeast() const { return std::min(to_north(), to_east()); };
     square_t to_southeast() const { return std::min(to_south(), to_east()); };
     square_t to_southwest() const { return std::min(to_south(), to_west()); };
     square_t to_northwest() const { return std::min(to_north(), to_west()); };
-    square_t to_dirx(const int dirx) const {
-        switch (dirx) {
-        case 0:
-            return to_north();
-        case 1:
-            return to_east();
-        case 2:
-            return to_south();
-        case 3:
-            return to_west();
-        case 4:
-            return to_northeast();
-        case 5:
-            return to_southeast();
-        case 6:
-            return to_southwest();
-        case 7:
-            return to_northwest();
-        default:
-            return 0;
-        }
-    }
-
-    static constexpr square_t to_index(const square_t rank, const square_t file) { return 8 * rank + file; }
 
     constexpr operator square_t() const { return value; };
 
@@ -99,14 +75,14 @@ class Square {
 std::ostream &operator<<(std::ostream &os, const Square square);
 
 namespace Squares {
-static constexpr Square Rank1 = 7 * 8;
-static constexpr Square Rank2 = 6 * 8;
-static constexpr Square Rank3 = 5 * 8;
-static constexpr Square Rank4 = 4 * 8;
-static constexpr Square Rank5 = 3 * 8;
-static constexpr Square Rank6 = 2 * 8;
-static constexpr Square Rank7 = 1 * 8;
-static constexpr Square Rank8 = 0 * 8;
+static constexpr Square Rank1 = 0 * 8;
+static constexpr Square Rank2 = 1 * 8;
+static constexpr Square Rank3 = 2 * 8;
+static constexpr Square Rank4 = 3 * 8;
+static constexpr Square Rank5 = 4 * 8;
+static constexpr Square Rank6 = 5 * 8;
+static constexpr Square Rank7 = 6 * 8;
+static constexpr Square Rank8 = 7 * 8;
 
 static constexpr Square FileA = 0;
 static constexpr Square FileB = 1;
@@ -117,7 +93,6 @@ static constexpr Square FileF = 5;
 static constexpr Square FileG = 6;
 static constexpr Square FileH = 7;
 
-static constexpr std::array<Square, 8> by_dirx = {N, E, S, W, NE, SE, SW, NW};
 } // namespace Squares
 
 constexpr int N_CASTLE = 2;
