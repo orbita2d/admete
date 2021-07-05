@@ -9,7 +9,7 @@ bool probe_root(Board &board, MoveList &moves) {
     unsigned castling_rights = board.can_castle(WHITE) | board.can_castle(BLACK);
     unsigned ep_sq = 0;
     if (!(board.en_passent() == Square(0))) {
-        ep_sq = board.en_passent().get_value() ^ 56;
+        ep_sq = board.en_passent().get_value();
     }
     unsigned results[256];
     unsigned tbresult =
@@ -19,8 +19,8 @@ bool probe_root(Board &board, MoveList &moves) {
     if (tbresult == TB_RESULT_FAILED) {
         return false;
     }
-    const Square tb_from = Square(TB_GET_FROM(tbresult) ^ 56);
-    const Square tb_to = Square(TB_GET_TO(tbresult) ^ 56);
+    const Square tb_from = Square(TB_GET_FROM(tbresult));
+    const Square tb_to = Square(TB_GET_TO(tbresult));
     PieceType promotes = NO_PIECE;
     if (TB_GET_PROMOTES(tbresult) == TB_PROMOTES_KNIGHT) {
         promotes = KNIGHT;
@@ -66,7 +66,7 @@ bool probe_wdl(Board &board, score_t &result) {
     unsigned castling_rights = board.can_castle(WHITE) | board.can_castle(BLACK);
     unsigned ep_sq = 0;
     if (!(board.en_passent() == Square(0))) {
-        ep_sq = board.en_passent().get_value() ^ 56;
+        ep_sq = board.en_passent().get_value();
     }
     unsigned tbresult = tb_probe_wdl(board.pieces(WHITE), board.pieces(BLACK), board.pieces(KING), board.pieces(QUEEN),
                                      board.pieces(ROOK), board.pieces(BISHOP), board.pieces(KNIGHT), board.pieces(PAWN),

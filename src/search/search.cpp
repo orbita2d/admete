@@ -60,14 +60,13 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
     }
 
     // Probe the tablebase
-    /*
+
     if (options.tbenable) {
         score_t tbresult;
         if (Tablebase::probe_wdl(board, tbresult)) {
             return tbresult;
         }
     }
-    */
 
     // Leaf node for main tree.
     if (depth == 0) {
@@ -234,17 +233,15 @@ score_t Search::pv_search(Board &board, const depth_t start_depth, const score_t
         return Evaluation::terminal(board);
     }
 
-    // Probe the tablebase
-    /*
+    // Probe the tablebase for the winning move at root.
+
     if (options.tbenable && board.is_root()) {
-        bool tbsuccess = Tablebase::probe_root(board, legal_moves);
-        if (tbsuccess) {
+        if (Tablebase::probe_root(board, legal_moves)) {
             assert(!legal_moves.empty());
             line.push_back(legal_moves.front());
             return legal_moves.front().score;
         }
     }
-    */
 
     // If this is a draw by repetition, 50 moves, or insufficient material, return the drawn score.
     if (board.is_draw() && !board.is_root()) {
@@ -265,15 +262,14 @@ score_t Search::pv_search(Board &board, const depth_t start_depth, const score_t
         return -ply_to_mate_score(board.ply());
     }
 
-    /*
-        // Probe the tablebase for WDL
-        if (options.tbenable && !board.is_root()) {
-            score_t tbresult;
-            if (Tablebase::probe_wdl(board, tbresult)) {
-                return tbresult;
-            }
+    // Probe the tablebase for WDL
+    if (options.tbenable && !board.is_root()) {
+        score_t tbresult;
+        if (Tablebase::probe_wdl(board, tbresult)) {
+            return tbresult;
         }
-    */
+    }
+
     // Leaf node for the main tree.
     if (depth == 0) {
         return quiesce(board, alpha, beta, options);
