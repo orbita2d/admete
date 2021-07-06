@@ -107,6 +107,7 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
         score_t tbresult;
         Bounds bounds;
         if (Tablebase::probe_wdl(board, tbresult, bounds)) {
+            options.tbhits++;
             if (bounds == UPPER) {
                 // TB result is an upper bound (i.e. TBLOSS)
                 if (tbresult <= alpha) {
@@ -260,6 +261,7 @@ score_t Search::pv_search(Board &board, const depth_t start_depth, const score_t
     if (options.tbenable && board.is_root()) {
         if (Tablebase::probe_root(board, legal_moves)) {
             assert(!legal_moves.empty());
+            options.tbhits++;
             // Only move in legal_moves will be the best move from the tablebase. Its score is set to the eval.
             line.push_back(legal_moves.front());
             return legal_moves.front().score;
@@ -308,8 +310,8 @@ score_t Search::pv_search(Board &board, const depth_t start_depth, const score_t
         }
     }
 
-    // The TB can bound our score < some bound. At the end, the best score should be compared to this, and the lower
-    // taken. It's an upper bound on our score.
+    // The TB can bound our score < TBLOSS. At the end, the best score should be compared to this, and the lower
+    // taken.
     score_t score_ub = MAX_SCORE;
     score_t best_score = MIN_SCORE;
     // Probe the tablebase for WDL
@@ -317,6 +319,7 @@ score_t Search::pv_search(Board &board, const depth_t start_depth, const score_t
         score_t tbresult;
         Bounds bounds;
         if (Tablebase::probe_wdl(board, tbresult, bounds)) {
+            options.tbhits++;
             if (bounds == UPPER) {
                 // TB result is an upper bound (i.e. TBLOSS)
                 if (tbresult <= alpha) {
@@ -526,7 +529,8 @@ score_t Search::search(Board &board, const depth_t max_depth, const int max_mill
     double branching_factor = 2.5;
 
     bool allow_cutoff = false;
-
+    options.tbhits = 0;
+    options.nodes = 0;
     // Iterative deepening
     for (depth_t depth = 2; depth <= max_depth; depth++) {
         PrincipleLine temp_line;
@@ -594,7 +598,8 @@ score_t Search::search(Board &board, const depth_t max_depth, const int max_mill
         unsigned long nps = int(1000 * (options.nodes / time_span.count()));
 
         // Send the info for the search to uci
-        UCI::uci_info(depth, score, options.nodes, nps, principle, (int)time_span.count(), board.get_root());
+        UCI::uci_info(depth, score, options.nodes, options.tbhits, nps, principle, (int)time_span.count(),
+                      board.get_root());
 
         // Estimate the next time span.
         t_est = branching_factor * time_span;

@@ -321,7 +321,7 @@ void go(Board &board, std::istringstream &is, Search::SearchOptions &options) {
         cutoff_time = POS_INF;
     } else if (movestogo == 0) {
         // Sudden death time control, try fit sd_N_move moves in the rest of the game
-        constexpr int sd_n_move = 16;
+        constexpr int sd_n_move = 14;
         cutoff_time = our_time / sd_n_move + our_inc;
     } else {
         // Classical type time control. Try fit however many moves till the next time control plus one in the game.
@@ -389,8 +389,8 @@ void stop(Search::SearchOptions &options) {
     }
 }
 
-void uci_info(depth_t depth, score_t eval, unsigned long nodes, unsigned long nps, PrincipleLine principle,
-              unsigned int time, ply_t root_ply) {
+void uci_info(depth_t depth, score_t eval, unsigned long nodes, unsigned long tbhits, unsigned long nps,
+              PrincipleLine principle, unsigned int time, ply_t root_ply) {
     if (!uci_enabled) {
         return;
     }
@@ -411,6 +411,9 @@ void uci_info(depth_t depth, score_t eval, unsigned long nodes, unsigned long np
     }
     if (nodes > 0) {
         std::cout << " nodes " << nodes;
+    }
+    if (tbhits > 0) {
+        std::cout << " tbhits " << tbhits;
     }
     if (nps > 0) {
         std::cout << " nps " << nps;
