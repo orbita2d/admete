@@ -103,9 +103,23 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
     // Probe the tablebase
     if (options.tbenable) {
         score_t tbresult;
-        if (Tablebase::probe_wdl(board, tbresult)) {
-            Cache::transposition_table.store(hash, tbresult, -TBWIN, TBWIN, MAX_DEPTH, NULL_MOVE, board.ply());
-            return tbresult;
+        Bounds bounds;
+        if (Tablebase::probe_wdl(board, tbresult, bounds)) {
+            if (bounds == UPPER) {
+                // TB result is an upper bound (i.e. TBLOSS)
+                Cache::transposition_table.store(hash, tbresult, -TBWIN, TBWIN, MAX_DEPTH, NULL_MOVE, board.ply());
+                return tbresult;
+            } else if (bounds == LOWER) {
+                // TB Result is a lower bound
+                if (tbresult >= beta) {
+                    Cache::transposition_table.store(hash, tbresult, -TBWIN, TBWIN, MAX_DEPTH, NULL_MOVE, board.ply());
+                    return tbresult;
+                }
+            } else {
+                // The TB score is exact.
+                Cache::transposition_table.store(hash, tbresult, -TBWIN, TBWIN, MAX_DEPTH, NULL_MOVE, board.ply());
+                return tbresult;
+            }
         }
     }
 
@@ -285,18 +299,35 @@ score_t Search::pv_search(Board &board, const depth_t start_depth, const score_t
         }
     }
 
+    score_t best_score = MIN_SCORE;
     // Probe the tablebase for WDL
     if (options.tbenable && !board.is_root()) {
         score_t tbresult;
-        if (Tablebase::probe_wdl(board, tbresult)) {
-            Cache::transposition_table.store(hash, tbresult, -TBWIN, TBWIN, MAX_DEPTH, NULL_MOVE, board.ply());
-            return tbresult;
+        Bounds bounds;
+        if (Tablebase::probe_wdl(board, tbresult, bounds)) {
+            if (bounds == UPPER) {
+                // TB result is an upper bound (i.e. TBLOSS)
+                Cache::transposition_table.store(hash, tbresult, -TBWIN, TBWIN, MAX_DEPTH, NULL_MOVE, board.ply());
+                return tbresult;
+            } else if (bounds == LOWER) {
+                // TB Result is a lower bound
+                if (tbresult >= beta) {
+                    Cache::transposition_table.store(hash, tbresult, -TBWIN, TBWIN, MAX_DEPTH, NULL_MOVE, board.ply());
+                    return tbresult;
+                } else {
+                    best_score = tbresult;
+                    alpha = std::max(alpha, tbresult);
+                }
+            } else {
+                // The TB score is exact.
+                Cache::transposition_table.store(hash, tbresult, -TBWIN, TBWIN, MAX_DEPTH, NULL_MOVE, board.ply());
+                return tbresult;
+            }
         }
     }
 
     bool is_first_child = true;
     PrincipleLine pv;
-    score_t best_score = MIN_SCORE;
     Move hash_move = unpack_move(hash_dmove, legal_moves);
 
     // Apply internal iterative deepening recursivly to find a decent PV move.
@@ -319,14 +350,15 @@ score_t Search::pv_search(Board &board, const depth_t start_depth, const score_t
     if (!(hash_move == NULL_MOVE)) {
         board.make_move(hash_move);
         options.nodes++;
-        best_score = -pv_search(board, depth - 1, -beta, -alpha, pv, time_cutoff, allow_cutoff, options);
+        score_t score = -pv_search(board, depth - 1, -beta, -alpha, pv, time_cutoff, allow_cutoff, options);
         board.unmake_move(hash_move);
         pv.push_back(hash_move);
 
         if (options.stop()) {
             return MAX_SCORE;
         }
-        alpha = std::max(alpha, best_score);
+        best_score = std::max(best_score, score);
+        alpha = std::max(alpha, score);
         if (alpha >= beta) {
             line = pv;
             Cache::killer_table.store(board.ply(), pv.back());
@@ -406,12 +438,12 @@ score_t Search::quiesce(Board &board, const score_t alpha_start, const score_t b
         return Evaluation::drawn_score(board);
     }
 
-    score_t stand_pat = Evaluation::eval(board);
+    const score_t stand_pat = Evaluation::eval(board);
 
     alpha = std::max(alpha, stand_pat);
 
-    // Beta cutoff
-    if (stand_pat >= beta) {
+    // Beta cutoff, but don't allow stand-pat in check.
+    if (!board.is_check() && stand_pat >= beta) {
         return stand_pat;
     }
 
@@ -422,12 +454,13 @@ score_t Search::quiesce(Board &board, const score_t alpha_start, const score_t b
     }
 
     // Get a list of moves for quiessence. If it's check, it we already have all evasions from the checkmate test.
-    // Otherwise it generates quiet checks and captures.
+    // Not in check, we generate quiet checks and all captures.
     if (!board.is_check()) {
         moves = board.get_quiessence_moves();
     }
 
-    if (moves.size() == 0) {
+    // We already know it's not mate, if there are no captures in a position, return stand pat.
+    if (moves.empty()) {
         return stand_pat;
     }
 

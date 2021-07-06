@@ -59,7 +59,7 @@ bool probe_root(Board &board, MoveList &moves) {
     }
 }
 
-bool probe_wdl(Board &board, score_t &result) {
+bool probe_wdl(Board &board, score_t &result, Bounds &bounds) {
 
     // Don't probe unless the 50 move rule counter was just reset.
     if (board.halfmove_clock() != 0) {
@@ -89,18 +89,25 @@ bool probe_wdl(Board &board, score_t &result) {
         return false;
     } else if (tbresult == TB_WIN) {
         result = TBWIN;
+        // If the result is a TBWIN, we could still have a mate in N
+        bounds = LOWER;
         return true;
     } else if (tbresult == TB_CURSED_WIN) {
         result = Evaluation::drawn_score(board) + 2;
+        bounds = EXACT;
         return true;
     } else if (tbresult == TB_DRAW) {
         result = Evaluation::drawn_score(board);
+        bounds = EXACT;
         return true;
     } else if (tbresult == TB_BLESSED_LOSS) {
         result = Evaluation::drawn_score(board) - 2;
+        bounds = EXACT;
         return true;
     } else if (tbresult == TB_LOSS) {
         result = -TBWIN;
+        // If the result is a TBLOSS, we could still have a mate in -N
+        bounds = UPPER;
         return true;
     } else {
         return false;
