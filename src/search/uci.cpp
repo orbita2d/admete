@@ -324,9 +324,8 @@ void go(Board &board, std::istringstream &is, Search::SearchOptions &options) {
         constexpr int sd_n_move = 16;
         cutoff_time = our_time / sd_n_move + our_inc;
     } else {
-        // Classical type time control. Try fit however many moves till the next time control in the game, this will
-        // mean that every move will take equally long, which isn't ideal.
-        cutoff_time = our_time / movestogo + our_inc;
+        // Classical type time control. Try fit however many moves till the next time control plus one in the game.
+        cutoff_time = our_time / (movestogo + 1) + our_inc;
     }
     cutoff_time = std::min(move_time, cutoff_time);
     options.running_thread = std::thread(&do_search, &board, (depth_t)max_depth, cutoff_time, &options);

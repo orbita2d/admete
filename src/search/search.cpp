@@ -523,7 +523,7 @@ score_t Search::search(Board &board, const depth_t max_depth, const int max_mill
     // Time when the search should be stopped
     time_cutoff = time_origin + std::chrono::milliseconds(max_millis);
     // Estimate effective branching factor empirically
-    double branching_factor = 3.5;
+    double branching_factor = 2.5;
 
     bool allow_cutoff = false;
 
