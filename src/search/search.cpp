@@ -100,6 +100,8 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
         }
     }
 
+    score_t score_ub = MAX_SCORE;
+    score_t best_score = MIN_SCORE;
     // Probe the tablebase
     if (options.tbenable) {
         score_t tbresult;
@@ -107,13 +109,19 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
         if (Tablebase::probe_wdl(board, tbresult, bounds)) {
             if (bounds == UPPER) {
                 // TB result is an upper bound (i.e. TBLOSS)
-                Cache::transposition_table.store(hash, tbresult, -TBWIN, TBWIN, MAX_DEPTH, NULL_MOVE, board.ply());
-                return tbresult;
+                if (tbresult <= alpha) {
+                    Cache::transposition_table.store(hash, tbresult, -TBWIN, TBWIN, MAX_DEPTH, NULL_MOVE, board.ply());
+                    return tbresult;
+                } else {
+                    score_ub = tbresult;
+                }
             } else if (bounds == LOWER) {
                 // TB Result is a lower bound
                 if (tbresult >= beta) {
                     Cache::transposition_table.store(hash, tbresult, -TBWIN, TBWIN, MAX_DEPTH, NULL_MOVE, board.ply());
                     return tbresult;
+                } else {
+                    best_score = tbresult;
                 }
             } else {
                 // The TB score is exact.
@@ -144,12 +152,11 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
         }
     }
 
-    score_t best_score = MIN_SCORE;
     Move best_move = NULL_MOVE;
     Move hash_move = unpack_move(hash_dmove, legal_moves);
 
     // Do the hash move explicitly to avoid sorting moves if our hash moves provides a beta-cutoff
-    if (!(hash_move == NULL_MOVE)) {
+    if (hash_move != NULL_MOVE) {
         board.make_move(hash_move);
         options.nodes++;
         // We expect first child of a cut node to be an all node, such that it would cause the cut node to fail high.
@@ -166,6 +173,7 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
             Cache::killer_table.store(board.ply(), best_move);
             Cache::history_table.store(depth, best_move);
             Cache::countermove_table.store(board.last_move(), best_move);
+            best_score = std::min(best_score, score_ub);
             Cache::transposition_table.store(hash, best_score, alpha, beta, depth, best_move, board.ply());
             return best_score;
         }
@@ -221,6 +229,7 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
     Cache::killer_table.store(board.ply(), best_move);
     Cache::history_table.store(depth, best_move);
     Cache::countermove_table.store(board.last_move(), best_move);
+    best_score = std::min(best_score, score_ub);
     Cache::transposition_table.store(hash, best_score, alpha, beta, depth, best_move, board.ply());
     return best_score;
 }
@@ -299,6 +308,9 @@ score_t Search::pv_search(Board &board, const depth_t start_depth, const score_t
         }
     }
 
+    // The TB can bound our score < some bound. At the end, the best score should be compared to this, and the lower
+    // taken. It's an upper bound on our score.
+    score_t score_ub = MAX_SCORE;
     score_t best_score = MIN_SCORE;
     // Probe the tablebase for WDL
     if (options.tbenable && !board.is_root()) {
@@ -307,8 +319,12 @@ score_t Search::pv_search(Board &board, const depth_t start_depth, const score_t
         if (Tablebase::probe_wdl(board, tbresult, bounds)) {
             if (bounds == UPPER) {
                 // TB result is an upper bound (i.e. TBLOSS)
-                Cache::transposition_table.store(hash, tbresult, -TBWIN, TBWIN, MAX_DEPTH, NULL_MOVE, board.ply());
-                return tbresult;
+                if (tbresult <= alpha) {
+                    Cache::transposition_table.store(hash, tbresult, -TBWIN, TBWIN, MAX_DEPTH, NULL_MOVE, board.ply());
+                    return tbresult;
+                } else {
+                    score_ub = tbresult;
+                }
             } else if (bounds == LOWER) {
                 // TB Result is a lower bound
                 if (tbresult >= beta) {
@@ -347,7 +363,7 @@ score_t Search::pv_search(Board &board, const depth_t start_depth, const score_t
     */
 
     // Do the hash move explicitly to avoid sorting moves if our hash moves provides a beta-cutoff
-    if (!(hash_move == NULL_MOVE)) {
+    if (hash_move != NULL_MOVE) {
         board.make_move(hash_move);
         options.nodes++;
         score_t score = -pv_search(board, depth - 1, -beta, -alpha, pv, time_cutoff, allow_cutoff, options);
@@ -364,6 +380,7 @@ score_t Search::pv_search(Board &board, const depth_t start_depth, const score_t
             Cache::killer_table.store(board.ply(), pv.back());
             Cache::history_table.store(depth, pv.back());
             Cache::countermove_table.store(board.last_move(), pv.back());
+            best_score = std::min(best_score, score_ub);
             Cache::transposition_table.store(hash, best_score, alpha_start, beta, depth, pv.back(), board.ply());
             return best_score;
         }
@@ -413,6 +430,7 @@ score_t Search::pv_search(Board &board, const depth_t start_depth, const score_t
         Cache::killer_table.store(board.ply(), pv.back());
         Cache::history_table.store(depth, pv.back());
         Cache::countermove_table.store(board.last_move(), pv.back());
+        best_score = std::min(best_score, score_ub);
         Cache::transposition_table.store(hash, best_score, alpha_start, beta, depth, pv.back(), board.ply());
     }
     return best_score;
