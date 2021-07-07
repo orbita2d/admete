@@ -5,3 +5,5 @@ set_property(TARGET fathom PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
 target_include_directories(fathom PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
+
+target_compile_options(fathom PRIVATE "-static-libgcc")

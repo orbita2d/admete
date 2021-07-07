@@ -66,7 +66,7 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
 
     // Lookup position in transposition table.
     DenseMove hash_dmove = NULL_DMOVE;
-    const long hash = board.hash();
+    const zobrist_t hash = board.hash();
     if (Cache::transposition_table.probe(hash)) {
         const Cache::TransElement hit = Cache::transposition_table.last_hit();
         if (hit.depth() >= depth) {
@@ -295,7 +295,7 @@ score_t Search::pv_search(Board &board, const depth_t start_depth, const score_t
 
     // Lookup position in transposition table for hashmove.
     DenseMove hash_dmove = NULL_DMOVE;
-    const long hash = board.hash();
+    const zobrist_t hash = board.hash();
     if (Cache::transposition_table.probe(hash)) {
         const Cache::TransElement hit = Cache::transposition_table.last_hit();
         hash_dmove = hit.move();

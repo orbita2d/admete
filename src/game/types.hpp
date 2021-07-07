@@ -4,6 +4,9 @@
 #include <string>
 #include <vector>
 
+typedef unsigned int uint;
+typedef uint64_t zobrist_t;
+
 enum Direction : int {
     N = 8,
     E = 1,
@@ -158,11 +161,7 @@ constexpr score_t MIN_MATE_SCORE = MATING_SCORE - MAX_PLY;
 constexpr score_t TBWIN = MIN_MATE_SCORE - 1;
 constexpr score_t TBWIN_MIN = TBWIN - MAX_PLY;
 
-enum Bounds {
-    LOWER,
-    UPPER,
-    EXACT
-};
+enum Bounds { LOWER, UPPER, EXACT };
 
 inline bool is_mating(const score_t score) { return (score >= MIN_MATE_SCORE) && (score <= MATING_SCORE); }
 

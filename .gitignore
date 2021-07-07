@@ -1,6 +1,9 @@
 # Build directory
 build
 dist
+lib
+bin
+_deps
 
 # .vscode directory
 .vscode
@@ -9,3 +12,12 @@ dist
 gmon.out
 
 *.gen
+*.exe
+*.cmake
+*.dll
+*.dll.a
+Makefile
+
+CMakeFiles
+
+CMakeCache.txt

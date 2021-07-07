@@ -18,7 +18,7 @@ target_include_directories(search_library PUBLIC
 
 
 if ( CMAKE_COMPILER_IS_GNUCXX )
-target_compile_options(search_library PRIVATE "-Wall" PRIVATE "-Wextra" PRIVATE "-std=c++17")
+target_compile_options(search_library PRIVATE "-Wall" PRIVATE "-Wextra" PRIVATE "-std=c++17" PRIVATE "-static-libgcc" PRIVATE "-static-libstdc++")
 endif()
 if ( MSVC )
 target_compile_options(search_library PRIVATE "/W4" PRIVATE "/std=c++17")

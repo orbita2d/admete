@@ -71,8 +71,8 @@ class Board {
     int number_checkers() const { return aux_info->number_checkers; }
     bool is_check() const { return aux_info->is_check; };
 
-    long int hash() const { return hash_history[ply()]; }
-    long int material_key() const;
+    zobrist_t hash() const { return hash_history[ply()]; }
+    zobrist_t material_key() const;
     Piece pieces(const Square sq) const;
     PieceType piece_type(const Square sq) const;
     int count_pieces(const Colour c, const PieceType p) const { return piece_counts[c][p]; }
@@ -151,7 +151,7 @@ class Board {
     ply_t ply_counter = 0;
     std::array<Square, 2> king_square;
     std::array<AuxilliaryInfo, MAX_PLY> aux_history;
-    std::array<long, MAX_PLY> hash_history;
+    std::array<zobrist_t, MAX_PLY> hash_history;
     ply_t root_node_ply;
 };
 
@@ -192,15 +192,15 @@ constexpr Square relative_rank(const Colour c, const Square sq) {
 // zorbist.cpp
 namespace Zobrist {
 void init();
-long hash(const Board &board);
-long material(const Board &board);
-long diff(const Move move, const Colour us, const int last_ep_file,
-          const std::array<std::array<bool, N_COLOUR>, N_CASTLE> castling_rights_change);
-long nulldiff(const Colour us, const int last_ep_file);
+zobrist_t hash(const Board &board);
+zobrist_t material(const Board &board);
+zobrist_t diff(const Move move, const Colour us, const int last_ep_file,
+               const std::array<std::array<bool, N_COLOUR>, N_CASTLE> castling_rights_change);
+zobrist_t nulldiff(const Colour us, const int last_ep_file);
 
-inline long zobrist_table[N_COLOUR][N_PIECE][N_SQUARE];
-inline long zobrist_table_cr[N_COLOUR][2];
-inline long zobrist_table_move[N_COLOUR];
-inline long zobrist_table_ep[8];
+inline zobrist_t zobrist_table[N_COLOUR][N_PIECE][N_SQUARE];
+inline zobrist_t zobrist_table_cr[N_COLOUR][2];
+inline zobrist_t zobrist_table_move[N_COLOUR];
+inline zobrist_t zobrist_table_ep[8];
 
 } // namespace Zobrist

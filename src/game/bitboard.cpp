@@ -16,15 +16,15 @@ void Bitboards::pretty(const Bitboard bb) {
 
 class PRNG {
   public:
-    PRNG(long s) {
+    PRNG(uint64_t s) {
         std::mt19937_64 generator(s);
         _gen = generator;
     }
-    long rand() {
-        std::uniform_int_distribution<long> distribution;
+    uint64_t rand() {
+        std::uniform_int_distribution<uint64_t> distribution;
         return distribution(_gen);
     }
-    long sparse() {
+    uint64_t sparse() {
         // Average of 64/8 = 8 bits set
         return rand() & rand() & rand();
     }
