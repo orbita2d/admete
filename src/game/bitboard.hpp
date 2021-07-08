@@ -328,7 +328,7 @@ inline Square lsb(Bitboard b) { return Square(__builtin_ctzll(b)); }
 
 inline Square msb(Bitboard b) { return Square(63 ^ __builtin_clzll(b)); }
 
-inline int count_bits(Bitboard bb) { return __builtin_popcountl(bb); }
+inline int count_bits(Bitboard b) { return __builtin_popcountl(b); }
 
 #elif defined(_MSC_VER) // MSVC
 
@@ -338,16 +338,16 @@ inline int count_bits(Bitboard bb) { return __builtin_popcountl(bb); }
 inline Square lsb(Bitboard b) {
     unsigned long idx;
     _BitScanForward64(&idx, b);
-    return (Square)idx;
+    return Square(idx);
 }
 
 inline Square msb(Bitboard b) {
     unsigned long idx;
     _BitScanReverse64(&idx, b);
-    return (Square)idx;
+    return Square(idx);
 }
 
-inline int count_bits(Bitboard bb) { return __popcnt64(bb); }
+inline int count_bits(Bitboard b) { return __popcnt64(b); }
 
 #else // MSVC, WIN32
 

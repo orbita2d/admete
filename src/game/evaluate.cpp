@@ -242,7 +242,7 @@ score_t Evaluation::evaluate_white(Board &board) {
     int material_value = 0;
     Score score = Score(0, 0);
 
-    // Peice Square Tables and Material
+    // Piece Square Tables and Material
     for (PieceType p = PAWN; p < N_PIECE; p++) {
         Bitboard occ = board.pieces(WHITE, p);
         while (occ) {
