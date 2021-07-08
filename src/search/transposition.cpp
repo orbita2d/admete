@@ -8,7 +8,7 @@ Cache::TranspositionTable::TranspositionTable() {
     key_array.resize(max_index, 0);
 }
 
-bool Cache::TranspositionTable::probe(const long hash) {
+bool Cache::TranspositionTable::probe(const zobrist_t hash) {
     if (is_enabled() == false) {
         return false;
     }
@@ -22,8 +22,8 @@ bool Cache::TranspositionTable::probe(const long hash) {
     }
 }
 
-void Cache::TranspositionTable::replace(const size_t index, const long new_hash, const TransElement elem) {
-    const long old_hash = key_array[index];
+void Cache::TranspositionTable::replace(const size_t index, const zobrist_t new_hash, const TransElement elem) {
+    const zobrist_t old_hash = key_array[index];
     key_array[index] = new_hash;
     _data.erase(old_hash);
     _data[new_hash] = elem;
@@ -51,8 +51,8 @@ score_t Cache::eval_from_tt(const score_t eval, const ply_t ply) {
     }
 }
 
-void Cache::TranspositionTable::store(const long hash, const score_t eval, const score_t lower, const score_t upper,
-                                      const depth_t depth, const Move move, const ply_t ply) {
+void Cache::TranspositionTable::store(const zobrist_t hash, const score_t eval, const score_t lower,
+                                      const score_t upper, const depth_t depth, const Move move, const ply_t ply) {
     if (is_enabled() == false) {
         return;
     }

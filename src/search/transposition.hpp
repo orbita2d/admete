@@ -40,8 +40,8 @@ struct TransElement {
     DenseMove hash_move = NULL_DMOVE;
 };
 
-typedef std::pair<long, TransElement> tt_pair;
-typedef std::unordered_map<long, TransElement> tt_map;
+typedef std::pair<zobrist_t, TransElement> tt_pair;
+typedef std::unordered_map<zobrist_t, TransElement> tt_map;
 // Limit transposition table to 64MB
 constexpr unsigned hash_default = 64u;
 constexpr unsigned hash_min = 1u;
@@ -52,11 +52,11 @@ inline size_t tt_max = (hash_default * (1 << 20)) / sizeof(tt_pair);
 class TranspositionTable {
   public:
     TranspositionTable();
-    bool probe(const long);
+    bool probe(const zobrist_t);
     TransElement last_hit() const { return _last_hit; };
-    void store(const long hash, const score_t eval, const score_t lower, const score_t upper, const depth_t depth,
+    void store(const zobrist_t hash, const score_t eval, const score_t lower, const score_t upper, const depth_t depth,
                const Move move, const ply_t ply);
-    void replace(const size_t index, const long new_hash, const TransElement elem);
+    void replace(const size_t index, const zobrist_t new_hash, const TransElement elem);
     void clear() {
         _data.clear();
         index = 0ul;

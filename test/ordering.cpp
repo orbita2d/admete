@@ -3,6 +3,7 @@
 #include "evaluate.hpp"
 #include <gtest/gtest.h>
 #include <tuple>
+#include <iostream>
 
 TEST(Ordering, SmallestAttacker) {
   std::tuple<std::string, Square, Colour, PieceType> testcases[] = {
@@ -29,9 +30,14 @@ TEST(Ordering, SmallestAttacker) {
     board.fen_decode(fen);
     const Bitboard atk =
         SEE::get_smallest_attacker(board, sq, Bitboards::omega, side);
-    const Square atksq = lsb(atk);
-    EXPECT_LE(count_bits(atk), 1);
-    EXPECT_EQ(board.piece_type(atksq), piece);
+        
+    PieceType pt = NO_PIECE;
+    if (atk) {
+      const Square atksq = lsb(atk);
+      pt = board.piece_type(atksq);
+    }
+
+    EXPECT_EQ(pt, piece);
     EXPECT_EQ(SEE::get_smallest_attacker(board, sq, Bitboards::null, side),
               Bitboards::null);
   }

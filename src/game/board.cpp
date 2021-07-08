@@ -15,7 +15,7 @@ std::map<char, Piece> fen_decode_map = {
 
 void Board::fen_decode(const std::string &fen) {
     ply_counter = 0;
-    aux_info = aux_history.begin();
+    aux_info = &(*aux_history.begin());
     uint N = fen.length(), board_position;
     uint rank = 7, file = 0;
     char my_char;
@@ -694,7 +694,7 @@ Piece Board::pieces(const Square sq) const {
 
 bool Board::is_draw() const {
     // Check to see if current position is draw by repetition
-    long current = hash_history[ply_counter];
+    zobrist_t current = hash_history[ply_counter];
     int repetition_before_root = 0;
     int repetition_after_root = 0;
 
@@ -749,7 +749,7 @@ bool Board::is_draw() const {
 
 // Check to see if current position is draw by repetition
 ply_t Board::repetitions(const ply_t start) const {
-    long current = hash_history[ply_counter];
+    zobrist_t current = hash_history[ply_counter];
     ply_t n = 0;
 
     for (unsigned int i = start; i < ply_counter; i++) {
@@ -762,7 +762,7 @@ ply_t Board::repetitions(const ply_t start) const {
 
 // Returns number of times the position at ply query has repeated after ply start
 ply_t Board::repetitions(const ply_t start, const ply_t query) const {
-    long current = hash_history[query];
+    zobrist_t current = hash_history[query];
     ply_t n = 0;
 
     for (unsigned int i = start; i < query; i++) {
@@ -789,4 +789,4 @@ void Board::flip() {
     initialise();
 }
 
-long int Board::material_key() const { return Zobrist::material(*this); }
+zobrist_t Board::material_key() const { return Zobrist::material(*this); }

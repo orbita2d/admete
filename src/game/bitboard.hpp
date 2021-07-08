@@ -1,7 +1,8 @@
 #pragma once
 #include "types.hpp"
+#include <inttypes.h>
 
-typedef unsigned long int Bitboard;
+typedef uint64_t Bitboard;
 
 inline Bitboard PseudolegalAttacks[N_PIECE][N_SQUARE];
 inline Bitboard PawnAttacks[N_COLOUR][N_SQUARE];
@@ -157,7 +158,7 @@ inline Bitboard file(const Square s) { return file_bb[s.file_index()]; }
 inline Bitboard line(const Square s1, const Square s2) { return LineBBs[s1][s2]; }
 inline Bitboard between(const Square s1, const Square s2) {
     Bitboard bb = line(s1, s2);
-    if (line) {
+    if (bb) {
         bb &= ((omega << s1) ^ (omega << s2));
         return bb & (bb - 1);
     } else {
@@ -328,6 +329,31 @@ inline Square lsb(Bitboard b) { return Square(__builtin_ctzll(b)); }
 inline Square msb(Bitboard b) { return Square(63 ^ __builtin_clzll(b)); }
 
 inline int count_bits(Bitboard bb) { return __builtin_popcountl(bb); }
+
+#elif defined(_MSC_VER) // MSVC
+
+#ifdef _WIN64 // MSVC, WIN64
+#include <intrin.h>
+
+inline Square lsb(Bitboard b) {
+    unsigned long idx;
+    _BitScanForward64(&idx, b);
+    return (Square)idx;
+}
+
+inline Square msb(Bitboard b) {
+    unsigned long idx;
+    _BitScanReverse64(&idx, b);
+    return (Square)idx;
+}
+
+inline int count_bits(Bitboard bb) { return __popcnt64(bb); }
+
+#else // MSVC, WIN32
+
+#error "Will only compile in 64-bit mode"
+
+#endif
 
 #else // Compiler is neither GCC nor MSVC compatible
 

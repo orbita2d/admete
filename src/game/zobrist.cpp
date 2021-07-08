@@ -4,7 +4,7 @@
 
 void Zobrist::init() {
     std::mt19937_64 generator(0x3243f6a8885a308d);
-    std::uniform_int_distribution<unsigned long> distribution;
+    std::uniform_int_distribution<zobrist_t> distribution;
     // Fill table with random bitstrings
     for (int c = 0; c < N_COLOUR; c++) {
         for (int p = 0; p < N_PIECE; p++) {
@@ -27,8 +27,8 @@ void Zobrist::init() {
     zobrist_table_cr[BLACK][QUEENSIDE] = distribution(generator);
 }
 
-long int Zobrist::hash(const Board &board) {
-    long int hash = 0;
+zobrist_t Zobrist::hash(const Board &board) {
+    zobrist_t hash = 0;
 
     for (int p = 0; p < N_PIECE; p++) {
         Bitboard occ = board.pieces(WHITE, (PieceType)p);
@@ -67,8 +67,8 @@ long int Zobrist::hash(const Board &board) {
 }
 
 // Material Key. Unique key for N1 pawns, N2 knights, ... etc
-long int Zobrist::material(const Board &board) {
-    long int hash = 0;
+zobrist_t Zobrist::material(const Board &board) {
+    zobrist_t hash = 0;
 
     for (PieceType p = PAWN; p < N_PIECE; p++) {
         Bitboard occ = board.pieces(WHITE, p);
@@ -83,9 +83,9 @@ long int Zobrist::material(const Board &board) {
     return hash;
 }
 
-long Zobrist::diff(const Move move, const Colour us, const int last_ep_file,
-                   const std::array<std::array<bool, N_COLOUR>, N_CASTLE> castling_rights_change) {
-    long int hash = 0;
+zobrist_t Zobrist::diff(const Move move, const Colour us, const int last_ep_file,
+                        const std::array<std::array<bool, N_COLOUR>, N_CASTLE> castling_rights_change) {
+    zobrist_t hash = 0;
     Colour them = ~us;
     hash ^= zobrist_table[us][move.moving_piece][move.origin];
     hash ^= zobrist_table[us][move.moving_piece][move.target];
@@ -128,8 +128,8 @@ long Zobrist::diff(const Move move, const Colour us, const int last_ep_file,
     return hash;
 }
 
-long Zobrist::nulldiff(const Colour us, const int last_ep_file) {
-    long int hash = 0;
+zobrist_t Zobrist::nulldiff(const Colour us, const int last_ep_file) {
+    zobrist_t hash = 0;
     Colour them = ~us;
 
     if (last_ep_file >= 0) {
