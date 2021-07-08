@@ -99,21 +99,21 @@ constexpr Bitboard bishop_squares[N_BISHOPTYPES] = {light_squares, dark_squares}
 
 template <Direction dir> constexpr Bitboard shift(const Bitboard bb) {
     // Bitboards are stored big-endian but who can remember that, so this hides the implementation a little
-    if (dir == Direction::N) {
+    if constexpr (dir == Direction::N) {
         return (bb << 8);
-    } else if (dir == Direction::S) {
+    } else if constexpr (dir == Direction::S) {
         return (bb >> 8);
-    } else if (dir == Direction::E) {
+    } else if constexpr (dir == Direction::E) {
         return (bb << 1) & ~Bitboards::a_file;
-    } else if (dir == Direction::W) {
+    } else if constexpr (dir == Direction::W) {
         return (bb >> 1) & ~Bitboards::h_file;
-    } else if (dir == Direction::NW) {
+    } else if constexpr (dir == Direction::NW) {
         return (bb << 7) & ~Bitboards::h_file;
-    } else if (dir == Direction::NE) {
+    } else if constexpr (dir == Direction::NE) {
         return (bb << 9) & ~Bitboards::a_file;
-    } else if (dir == Direction::SW) {
+    } else if constexpr (dir == Direction::SW) {
         return (bb >> 9) & ~Bitboards::h_file;
-    } else if (dir == Direction::SE) {
+    } else if constexpr (dir == Direction::SE) {
         return (bb >> 7) & ~Bitboards::a_file;
     }
 }
@@ -124,29 +124,25 @@ inline Bitboard pseudo_attacks(const PieceType p, const Square s) {
 }
 
 inline Bitboard attacks(const PieceType p, const Bitboard occ, const Square sq) {
-    // Get the value from the pseudolegal attacks table
-    switch (p) {
-    case ROOK:
+    if (p == ROOK) {
         return rook_attacks(occ, sq);
-    case BISHOP:
+    } else if (p == BISHOP) {
         return bishop_attacks(occ, sq);
-    case QUEEN:
+    } else if (p == QUEEN) {
         return bishop_attacks(occ, sq) | rook_attacks(occ, sq);
-    default:
+    } else {
         return PseudolegalAttacks[p][sq];
     }
 }
 
 template <PieceType p> inline Bitboard attacks(const Bitboard occ, const Square sq) {
-    // Get the value from the pseudolegal attacks table
-    switch (p) {
-    case ROOK:
+    if constexpr (p == ROOK) {
         return rook_attacks(occ, sq);
-    case BISHOP:
+    } else if constexpr (p == BISHOP) {
         return bishop_attacks(occ, sq);
-    case QUEEN:
+    } else if constexpr (p == QUEEN) {
         return bishop_attacks(occ, sq) | rook_attacks(occ, sq);
-    default:
+    } else {
         return PseudolegalAttacks[p][sq];
     }
 }

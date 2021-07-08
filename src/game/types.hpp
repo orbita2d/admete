@@ -53,10 +53,10 @@ class Square {
     constexpr square_t diagonal() const { return rank_index() + file_index(); }
     constexpr square_t anti_diagonal() const { return rank_index() - file_index() + 7; }
 
-    uint to_north() const { return 7 - rank_index(); };
-    uint to_east() const { return 7 - file_index(); };
-    uint to_south() const { return rank_index(); };
-    uint to_west() const { return file_index(); };
+    square_t to_north() const { return 7 - rank_index(); };
+    square_t to_east() const { return 7 - file_index(); };
+    square_t to_south() const { return rank_index(); };
+    square_t to_west() const { return file_index(); };
 
     square_t to_northeast() const { return std::min(to_north(), to_east()); };
     square_t to_southeast() const { return std::min(to_south(), to_east()); };
