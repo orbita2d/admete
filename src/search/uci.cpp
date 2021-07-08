@@ -13,6 +13,7 @@
 #include <thread>
 
 #define ENGINE_NAME "admete"
+#define ENGINE_VERS "v1.1.0"
 #define ENGINE_AUTH "orbita"
 
 typedef std::chrono::high_resolution_clock my_clock;
@@ -463,6 +464,7 @@ void uci() {
     std::string command, token;
     Board board = Board();
     Search::SearchOptions options = Search::SearchOptions();
+    std::cout << ENGINE_NAME << " " << ENGINE_VERS << " by " << ENGINE_AUTH << std::endl;
     while (true) {
         std::getline(std::cin, command);
         cleanup_thread(options);
