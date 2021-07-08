@@ -488,20 +488,20 @@ score_t Search::quiesce(Board &board, const score_t alpha_start, const score_t b
     // Sort the captures and record SEE.
     Ordering::rank_and_sort_moves(board, moves, NULL_DMOVE, NULL_KROW);
 
-    constexpr score_t see_margin = 100;
     for (Move move : moves) {
         // For a capture, the recorded score is the SEE value.
         // It makes sense to not consider losing captures in qsearch.
         if (!board.is_check() && move.is_capture() && (move.score < 0)) {
             continue;
         }
+        constexpr score_t see_margin = 100;
         // In qsearch, only consider moves with a decent chance of raising alpha.
         if (!board.is_check() && move.is_capture() && (stand_pat + move.score < alpha - see_margin)) {
             continue;
         }
         board.make_move(move);
         options.nodes++;
-        score_t score = -quiesce(board, -beta, -alpha, options);
+        const score_t score = -quiesce(board, -beta, -alpha, options);
         board.unmake_move(move);
         alpha = std::max(alpha, score);
         if (alpha >= beta) {
