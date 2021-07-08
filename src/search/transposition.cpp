@@ -120,7 +120,6 @@ void Cache::reinit() {
 
 uint Cache::HistoryTable::probe(const PieceType pt, const Square sq) { return _data[pt][sq]; }
 void Cache::HistoryTable::store(const depth_t depth, const Move move) {
-
     if (is_enabled() == false) {
         return;
     }

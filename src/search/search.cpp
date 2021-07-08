@@ -141,7 +141,8 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
     }
 
     // Null move pruning.
-    // We expect (null move observation) the node after a null move to fail high, making it a cut node.
+    // We expect (null move observation) the node after a null move to fail high, making it a cut node. If it fails low,
+    // this node will fail high, unless we are in Zugzwang.
     if (!board.is_endgame() && allow_null && (depth > null_move_depth_reduction) && !board.is_check()) {
         board.make_nullmove();
         score_t score = -scout_search(board, depth - 1 - null_move_depth_reduction, -alpha - 1, time_cutoff,
@@ -185,15 +186,15 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
     Ordering::rank_and_sort_moves(board, legal_moves, hash_dmove, killer_move);
     for (Move move : legal_moves) {
         counter++;
-        depth_t search_depth = depth - 1;
-        bool gives_check = board.gives_check(move);
-        NodeType child;
+        const bool gives_check = board.gives_check(move);
         if ((node == CUTNODE) && (counter >= 5)) {
             // In a cut node, the cut is most likely to happen early, if we get through the hash move and and first few
             // other moves without a cut, this is probably actually an All node.
             node = ALLNODE;
         }
-        child = node == CUTNODE ? ALLNODE : CUTNODE;
+        NodeType child = node == CUTNODE ? ALLNODE : CUTNODE;
+
+        int search_depth = depth - 1;
         // Late move reductions:
         // At an expected All node, the most likely moves to prove us wrong and fail high are
         // one's ranked earliest in move ordering. We can be less careful about proving later moves.
@@ -207,6 +208,13 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
         if ((node == ALLNODE) && !move.is_promotion() && move.is_capture() && (search_depth > 2) && !gives_check &&
             !board.is_check() && move.score < -100) {
             search_depth--;
+        }
+
+        // History pruning
+        // On a quiet move, the score is a history score. If this is low, it's less likely to cause a beta cutoff.
+        if ((node == ALLNODE) && (counter > 3) && !move.is_promotion() && move.is_quiet() && (search_depth <= 2) &&
+            !gives_check && !board.is_check() && move.score < 15) {
+            continue;
         }
 
         board.make_move(move);

@@ -145,6 +145,7 @@ void rank_and_sort_moves(Board &board, MoveList &legal_moves, const DenseMove ha
             // The search handles the hash move itself. Here we just make sure it doesn't end up in the final move
             // list.
         } else if (move == killer_moves) {
+            move.score = 10000;
             killer.push_back(move);
         } else if (move.is_capture()) {
             // Make sure to lookup and record the piece captured
