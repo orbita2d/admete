@@ -26,7 +26,7 @@ std::string piece_name(const PieceType p) {
     case NO_PIECE:
         return "No Piece";
     default:
-        break;
+        return "X";
     }
 }
 } // namespace Printing
