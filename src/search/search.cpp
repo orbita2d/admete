@@ -186,23 +186,27 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
     for (Move move : legal_moves) {
         counter++;
         depth_t search_depth = depth - 1;
-
+        bool gives_check = board.gives_check(move);
         NodeType child;
         if ((node == CUTNODE) && (counter >= 5)) {
             // In a cut node, the cut is most likely to happen early, if we get through the hash move and and first few
             // other moves without a cut, this is probably actually an All node.
             node = ALLNODE;
         }
-
+        child = node == CUTNODE ? ALLNODE : CUTNODE;
         // Late move reductions:
         // At an expected All node, the most likely moves to prove us wrong and fail high are
         // one's ranked earliest in move ordering. We can be less careful about proving later moves.
-        if ((node == ALLNODE) && (counter > 5) && !move.is_promotion() && move.is_quiet() && (depth > 3) &&
-            !board.gives_check(move) && !board.is_check()) {
+        if ((node == ALLNODE) && (counter > 5) && !move.is_promotion() && move.is_quiet() && (search_depth > 2) &&
+            !gives_check && !board.is_check()) {
             search_depth--;
-            child = CUTNODE;
-        } else {
-            child = node == CUTNODE ? ALLNODE : CUTNODE;
+        }
+
+        // SEE reductions
+        // If the SEE for a capture is very bad, we can search to a lower depth as it's unlikely to cause a cut.
+        if ((node == ALLNODE) && !move.is_promotion() && move.is_capture() && (search_depth > 2) && !gives_check &&
+            !board.is_check() && move.score < -100) {
+            search_depth--;
         }
 
         board.make_move(move);
@@ -477,7 +481,7 @@ score_t Search::quiesce(Board &board, const score_t alpha_start, const score_t b
     // Get a list of moves for quiessence. If it's check, it we already have all evasions from the checkmate test.
     // Not in check, we generate quiet checks and all captures.
     if (!board.is_check()) {
-        moves = board.get_quiessence_moves();
+        moves = board.get_capture_moves();
     }
 
     // We already know it's not mate, if there are no captures in a position, return stand pat.
