@@ -1,5 +1,6 @@
 #pragma once
 #include "types.hpp"
+#include <assert.h>
 #include <inttypes.h>
 
 typedef uint64_t Bitboard;
@@ -324,9 +325,15 @@ inline Bitboard flip_vertical(const Bitboard g) {
 
 #if defined(__GNUC__) // GCC, Clang, ICC
 
-inline Square lsb(Bitboard b) { return Square(__builtin_ctzll(b)); }
+inline Square lsb(Bitboard b) {
+    assert(b);
+    return Square(__builtin_ctzll(b));
+}
 
-inline Square msb(Bitboard b) { return Square(63 ^ __builtin_clzll(b)); }
+inline Square msb(Bitboard b) {
+    assert(b);
+    return Square(63 ^ __builtin_clzll(b));
+}
 
 inline int count_bits(Bitboard b) { return __builtin_popcountl(b); }
 
@@ -336,12 +343,14 @@ inline int count_bits(Bitboard b) { return __builtin_popcountl(b); }
 #include <intrin.h>
 
 inline Square lsb(Bitboard b) {
+    assert(b);
     unsigned long idx;
     _BitScanForward64(&idx, b);
     return Square(idx);
 }
 
 inline Square msb(Bitboard b) {
+    assert(b);
     unsigned long idx;
     _BitScanReverse64(&idx, b);
     return Square(idx);
