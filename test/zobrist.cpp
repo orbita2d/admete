@@ -16,9 +16,9 @@ TEST(Zobrist, MaterialKeyEqual) {
   };
   for (const auto &[fen1, fen2] : testcases) {
     board.fen_decode(fen1);
-    long hash1 = Zobrist::material(board);
+    zobrist_t hash1 = Zobrist::material(board);
     board.fen_decode(fen2);
-    long hash2 = Zobrist::material(board);
+    zobrist_t hash2 = Zobrist::material(board);
     EXPECT_EQ(hash1, hash2);
   }
 }

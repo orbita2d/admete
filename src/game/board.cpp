@@ -15,7 +15,7 @@ std::map<char, Piece> fen_decode_map = {
 
 void Board::fen_decode(const std::string &fen) {
     ply_counter = 0;
-    aux_info = aux_history.begin();
+    aux_info = &(*aux_history.begin());
     uint N = fen.length(), board_position;
     uint rank = 7, file = 0;
     char my_char;

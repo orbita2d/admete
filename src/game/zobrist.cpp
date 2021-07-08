@@ -4,7 +4,7 @@
 
 void Zobrist::init() {
     std::mt19937_64 generator(0x3243f6a8885a308d);
-    std::uniform_int_distribution<unsigned long> distribution;
+    std::uniform_int_distribution<zobrist_t> distribution;
     // Fill table with random bitstrings
     for (int c = 0; c < N_COLOUR; c++) {
         for (int p = 0; p < N_PIECE; p++) {

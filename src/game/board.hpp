@@ -36,7 +36,7 @@ class Board {
     void initialise_starting_position() { fen_decode("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"); }
 
     Board() {
-        aux_info = aux_history.begin();
+        aux_info = &(*aux_history.begin());
         initialise_starting_position();
     };
 

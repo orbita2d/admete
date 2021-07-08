@@ -333,22 +333,21 @@ inline int count_bits(Bitboard bb) { return __builtin_popcountl(bb); }
 #elif defined(_MSC_VER) // MSVC
 
 #ifdef _WIN64 // MSVC, WIN64
+#include <intrin.h>
 
 inline Square lsb(Bitboard b) {
-    assert(b);
     unsigned long idx;
     _BitScanForward64(&idx, b);
     return (Square)idx;
 }
 
 inline Square msb(Bitboard b) {
-    assert(b);
     unsigned long idx;
     _BitScanReverse64(&idx, b);
     return (Square)idx;
 }
 
-inline int count_bits(Bitboard bb) { return __popcount64(bb); }
+inline int count_bits(Bitboard bb) { return __popcnt64(bb); }
 
 #else // MSVC, WIN32
 
