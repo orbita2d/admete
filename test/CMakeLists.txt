@@ -16,6 +16,8 @@ target_link_libraries(tests
 add_test(NAME tests
         COMMAND tests)
 
+set_property(TARGET tests PROPERTY CXX_STANDARD 17)
+
 include(FetchContent)
 FetchContent_Declare(
         googletest
@@ -25,4 +27,3 @@ FetchContent_Declare(
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
-target_compile_options(tests PRIVATE "-std=c++17" PRIVATE "-static-libgcc" PRIVATE "-static-libstdc++")
