@@ -10,15 +10,10 @@
 
 enum GamePhase { OPENING, ENDGAME, N_GAMEPHASE };
 
-inline int reverse_rank(int square) {
-    // Square from Black's perspective;
-    return 56 ^ square;
-}
-
 position_board reverse_board(position_board in) {
     position_board pb;
     for (int s = 0; s < 64; s++) {
-        pb[s] = in[reverse_rank(s)];
+        pb[s] = in[56 ^ s];
     }
     return pb;
 }
@@ -110,7 +105,7 @@ constexpr position_board pb_pawn_endgame = { 0,  0,  0,  0,  0,  0,  0,  0,
                                             20, 20, 20, 20, 20, 20, 20, 20,
                                             15, 15, 15, 15, 15, 15, 15, 15,
                                             10, 10, 10, 10, 10, 10, 10, 10,
-                                             5, 10, 10, 10, 10, 10, 10, 10,
+                                            10, 10, 10, 10, 10, 10, 10, 10,
                                              0,  0,  0,  0,  0,  0,  0,  0,
                                              0,  0,  0,  0,  0,  0,  0,  0,
                                              0,  0,  0,  0,  0,  0,  0,  0};
@@ -233,34 +228,138 @@ void init() {
     pb_passed[WHITE] = reverse_board(pb_passed[BLACK]);
 }
 
-score_t piece_material(const PieceType p) { return p == NO_PIECE ? 0 : material[p]; }
+score_t piece_material(const PieceType p) {
+    assert(p != NO_PIECE);
+    return p == NO_PIECE ? 0 : material[p];
+}
 Score piece_value(const PieceType p) { return piece_values[p]; }
 
-} // namespace Evaluation
-
-score_t Evaluation::evaluate_white(Board &board) {
-    // Calculate the evaluation heuristic from white's POV.
-    int material_value = 0;
+Score psqt(const Board &board) {
     Score score = Score(0, 0);
 
     // Piece Square Tables and Material
     for (PieceType p = PAWN; p < N_PIECE; p++) {
         Bitboard occ = board.pieces(WHITE, p);
         while (occ) {
-            material_value += material[p];
             Square sq = pop_lsb(&occ);
             score += piece_values[p];
             score += Score(piece_square_tables[OPENING][WHITE][p][sq], piece_square_tables[ENDGAME][WHITE][p][sq]);
         }
         occ = board.pieces(BLACK, p);
         while (occ) {
-            material_value += material[p];
             Square sq = pop_lsb(&occ);
             score -= piece_values[p];
             score -= Score(piece_square_tables[OPENING][BLACK][p][sq], piece_square_tables[ENDGAME][BLACK][p][sq]);
         }
     }
+    return score;
+}
 
+Score psqt_diff(const Colour moving, const Move &move) {
+    Score score = Score(0, 0);
+    assert(move != NULL_MOVE);
+    const PieceType p = move.moving_piece;
+    assert(p < NO_PIECE);
+    // Apply psqt
+    if (moving == WHITE) {
+        score += Score(piece_square_tables[OPENING][WHITE][p][move.target],
+                       piece_square_tables[ENDGAME][WHITE][p][move.target]);
+        score -= Score(piece_square_tables[OPENING][WHITE][p][move.origin],
+                       piece_square_tables[ENDGAME][WHITE][p][move.origin]);
+    } else {
+        score -= Score(piece_square_tables[OPENING][BLACK][p][move.target],
+                       piece_square_tables[ENDGAME][BLACK][p][move.target]);
+        score += Score(piece_square_tables[OPENING][BLACK][p][move.origin],
+                       piece_square_tables[ENDGAME][BLACK][p][move.origin]);
+    }
+
+    // Apply piece value for captures.
+    if (move.is_ep_capture()) {
+        const Square captured_square = move.origin.rank() | move.target.file();
+        assert(move.captured_piece == PAWN);
+        if (moving == WHITE) {
+            score += piece_values[PAWN];
+            score += Score(piece_square_tables[OPENING][BLACK][PAWN][captured_square],
+                           piece_square_tables[ENDGAME][BLACK][PAWN][captured_square]);
+        } else {
+            score -= piece_values[PAWN];
+            score -= Score(piece_square_tables[OPENING][WHITE][PAWN][captured_square],
+                           piece_square_tables[ENDGAME][WHITE][PAWN][captured_square]);
+        }
+    } else if (move.is_capture()) {
+        assert(move.captured_piece < NO_PIECE);
+        const PieceType cp = move.captured_piece;
+        if (moving == WHITE) {
+            score += piece_values[move.captured_piece];
+            score += Score(piece_square_tables[OPENING][BLACK][cp][move.target],
+                           piece_square_tables[ENDGAME][BLACK][cp][move.target]);
+        } else {
+            score -= piece_values[move.captured_piece];
+            score -= Score(piece_square_tables[OPENING][WHITE][cp][move.target],
+                           piece_square_tables[ENDGAME][WHITE][cp][move.target]);
+        }
+    }
+
+    // Promotions
+    if (move.is_promotion()) {
+        const PieceType promoted = get_promoted(move);
+        assert(promoted < NO_PIECE);
+        // We've already dealt with moving the pawn to the 8th rank, where the score is zero. Just add the score from
+        // the promoted piece.
+        if (moving == WHITE) {
+            score += piece_values[promoted];
+            score -= piece_values[PAWN];
+            score += Score(piece_square_tables[OPENING][WHITE][promoted][move.target],
+                           piece_square_tables[ENDGAME][WHITE][promoted][move.target]);
+        } else {
+            score -= piece_values[promoted];
+            score += piece_values[PAWN];
+            score -= Score(piece_square_tables[OPENING][BLACK][promoted][move.target],
+                           piece_square_tables[ENDGAME][BLACK][promoted][move.target]);
+        }
+    }
+
+    // Castling needs the rook to be moved.
+    if (move.is_king_castle()) {
+        if (moving == WHITE) {
+            constexpr Square rook_from = RookSquares[WHITE][KINGSIDE];
+            constexpr Square rook_to = RookCastleSquares[WHITE][KINGSIDE];
+            score += Score(piece_square_tables[OPENING][WHITE][ROOK][rook_to],
+                           piece_square_tables[ENDGAME][WHITE][ROOK][rook_to]);
+            score -= Score(piece_square_tables[OPENING][WHITE][ROOK][rook_from],
+                           piece_square_tables[ENDGAME][WHITE][ROOK][rook_from]);
+        } else {
+            constexpr Square rook_from = RookSquares[BLACK][KINGSIDE];
+            constexpr Square rook_to = RookCastleSquares[BLACK][KINGSIDE];
+            score -= Score(piece_square_tables[OPENING][BLACK][ROOK][rook_to],
+                           piece_square_tables[ENDGAME][BLACK][ROOK][rook_to]);
+            score += Score(piece_square_tables[OPENING][BLACK][ROOK][rook_from],
+                           piece_square_tables[ENDGAME][BLACK][ROOK][rook_from]);
+        }
+    } else if (move.is_queen_castle()) {
+        if (moving == WHITE) {
+            constexpr Square rook_from = RookSquares[WHITE][QUEENSIDE];
+            constexpr Square rook_to = RookCastleSquares[WHITE][QUEENSIDE];
+            score += Score(piece_square_tables[OPENING][WHITE][ROOK][rook_to],
+                           piece_square_tables[ENDGAME][WHITE][ROOK][rook_to]);
+            score -= Score(piece_square_tables[OPENING][WHITE][ROOK][rook_from],
+                           piece_square_tables[ENDGAME][WHITE][ROOK][rook_from]);
+        } else {
+            constexpr Square rook_from = RookSquares[BLACK][QUEENSIDE];
+            constexpr Square rook_to = RookCastleSquares[BLACK][QUEENSIDE];
+            score -= Score(piece_square_tables[OPENING][BLACK][ROOK][rook_to],
+                           piece_square_tables[ENDGAME][BLACK][ROOK][rook_to]);
+            score += Score(piece_square_tables[OPENING][BLACK][ROOK][rook_from],
+                           piece_square_tables[ENDGAME][BLACK][ROOK][rook_from]);
+        }
+    }
+    return score;
+}
+
+score_t evaluate_white(Board &board) {
+    // Calculate the evaluation heuristic from white's POV.
+    int material_value = board.material();
+    Score score = board.get_psqt();
     // Mobility
     // A bonus is given to every square accessible to every piece, which isn't blocked by one of our pieces.
     for (PieceType p = KNIGHT; p < KING; p++) {
@@ -474,6 +573,8 @@ score_t Evaluation::evaluate_white(Board &board) {
     }
     return value;
 }
+
+} // namespace Evaluation
 
 void print_table(const position_board table) {
     for (int i = 0; i < 64; i++) {

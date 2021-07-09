@@ -13,6 +13,8 @@ void init();
 void load_tables(std::string filename);
 void print_tables();
 score_t evaluate_white(Board &board);
+Score psqt(const Board &board);
+Score psqt_diff(const Colour moving, const Move &move);
 score_t eval(Board &board);
 score_t evaluate_safe(Board &board);
 score_t terminal(Board &board);

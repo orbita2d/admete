@@ -182,6 +182,7 @@ constexpr int POS_INF = +1000000000;
 // Class for a score object with opening and endgame scores.
 class Score {
   public:
+    Score() = default;
     constexpr Score(score_t o, score_t e) : opening_score(o), endgame_score(e) {}
     inline Score operator+(Score that) {
         return Score(opening_score + that.opening_score, endgame_score + that.endgame_score);
@@ -199,9 +200,12 @@ class Score {
         endgame_score -= that.endgame_score;
         return *this;
     }
-    score_t opening_score;
-    score_t endgame_score;
+    score_t opening_score = 0;
+    score_t endgame_score = 0;
 };
+inline bool operator==(const Score s1, const Score s2) {
+    return s1.opening_score == s2.opening_score && s1.endgame_score == s2.endgame_score;
+}
 
 enum BishopTypes { LIGHTSQUARE, DARKSQUARE, N_BISHOPTYPES };
 

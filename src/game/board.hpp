@@ -22,7 +22,6 @@ struct AuxilliaryInfo {
 
     // Pieces belonging to the player to move, that if moved would give discovered check.
     Bitboard blockers;
-    int material;
 
     // Move that brought us to this position.
     Move last_move = NULL_MOVE;
@@ -124,7 +123,8 @@ class Board {
     }
     bool can_castle(const Colour c, const CastlingSide s) const { return aux_info->castling_rights[c][s]; }
     Square en_passent() const { return aux_info->en_passent_target; }
-    int material() const { return aux_info->material; }
+    int material() const { return _material; }
+    Score get_psqt() const { return psqt; }
     ply_t repetitions(const ply_t start) const;
     ply_t repetitions(const ply_t start, const ply_t query) const;
     bool is_draw() const;
@@ -153,6 +153,8 @@ class Board {
     std::array<AuxilliaryInfo, MAX_PLY> aux_history;
     std::array<zobrist_t, MAX_PLY> hash_history;
     ply_t root_node_ply;
+    Score psqt;
+    int _material;
 };
 
 inline Move unpack_move(const DenseMove dm, const Board &board) {
