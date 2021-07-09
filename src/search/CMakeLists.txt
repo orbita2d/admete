@@ -6,7 +6,6 @@ add_library(search_library
     ordering.cpp ordering.hpp
     tablebase.cpp tablebase.hpp)
 
-add_subdirectory(fathom)
 target_link_libraries(search_library game_library fathom)
 
 
