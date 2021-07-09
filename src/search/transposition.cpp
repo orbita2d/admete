@@ -31,6 +31,7 @@ void Cache::TranspositionTable::replace(const size_t index, const zobrist_t new_
     key_array[index] = new_hash;
     _data.erase(old_hash);
     _data[new_hash] = elem;
+    assert(_data.size() <= max_index);
 }
 
 score_t Cache::eval_to_tt(const score_t eval, const ply_t ply) {

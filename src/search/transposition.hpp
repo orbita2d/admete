@@ -77,7 +77,7 @@ class TranspositionTable {
     size_t index;
     size_t max_index = 0;
     bool enabled = true;
-    std::vector<long> key_array;
+    std::vector<zobrist_t> key_array;
 };
 
 inline TranspositionTable transposition_table;
