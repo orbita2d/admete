@@ -1,8 +1,8 @@
-name: CMake
+name: Tests - Linux
 
 on:
   push:
-    branches: [ dev ]
+    branches: [ dev , master]
   pull_request:
     branches: [ master ]
 
