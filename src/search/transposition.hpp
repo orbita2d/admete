@@ -18,15 +18,17 @@ score_t eval_from_tt(const score_t eval, const ply_t ply);
 // 6 bytes
 struct TransElement {
     TransElement() = default;
-    TransElement(score_t eval, score_t a, score_t b, depth_t d, Move m, ply_t ply)
-        : score(eval_to_tt(eval, ply)), _depth(d), info((eval <= a) ? UPPER : (eval >= b) ? LOWER : EXACT),
+    TransElement(score_t eval, Bounds bound, depth_t d, Move m, ply_t ply)
+        : score(eval_to_tt(eval, ply)), _depth(d),
+          info((bound == Bounds::UPPER) ? TransState::UPPER
+                                        : (bound == Bounds::LOWER) ? TransState::LOWER : TransState::EXACT),
           hash_move(pack_move(m)){};
     score_t eval(ply_t ply) const { return eval_from_tt(score, ply); }
-    bool lower() const { return (info & bound_mask) == LOWER; }
-    bool upper() const { return (info & bound_mask) == UPPER; }
-    bool exact() const { return (info & bound_mask) == EXACT; }
-    bool is_delete() const { return (info & DELETE) == DELETE; }
-    bool is_cache_hit() const { return (info & CACHEHIT) == CACHEHIT; }
+    bool lower() const { return (info & bound_mask) == TransState::LOWER; }
+    bool upper() const { return (info & bound_mask) == TransState::UPPER; }
+    bool exact() const { return (info & bound_mask) == TransState::EXACT; }
+    bool is_delete() const { return (info & TransState::DELETE) == TransState::DELETE; }
+    bool is_cache_hit() const { return (info & TransState::CACHEHIT) == TransState::CACHEHIT; }
     void set_delete() { info |= TransState::DELETE; }
     void set_cache_hit() { info |= TransState::CACHEHIT; }
     tt_flags_t flags() { return info; }
@@ -54,8 +56,8 @@ class TranspositionTable {
     TranspositionTable();
     bool probe(const zobrist_t);
     TransElement last_hit() const { return _last_hit; };
-    void store(const zobrist_t hash, const score_t eval, const score_t lower, const score_t upper, const depth_t depth,
-               const Move move, const ply_t ply);
+    void store(const zobrist_t hash, const score_t eval, const Bounds bound, const depth_t depth, const Move move,
+               const ply_t ply);
     void replace(const size_t index, const zobrist_t new_hash, const TransElement elem);
     void clear() {
         _data.clear();

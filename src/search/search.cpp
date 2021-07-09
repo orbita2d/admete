@@ -111,7 +111,7 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
             if (bounds == UPPER) {
                 // TB result is an upper bound (i.e. TBLOSS)
                 if (tbresult <= alpha) {
-                    Cache::transposition_table.store(hash, tbresult, -TBWIN, TBWIN, MAX_DEPTH, NULL_MOVE, board.ply());
+                    Cache::transposition_table.store(hash, tbresult, bounds, MAX_DEPTH, NULL_MOVE, board.ply());
                     return tbresult;
                 } else {
                     score_ub = tbresult;
@@ -119,14 +119,14 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
             } else if (bounds == LOWER) {
                 // TB Result is a lower bound
                 if (tbresult >= beta) {
-                    Cache::transposition_table.store(hash, tbresult, -TBWIN, TBWIN, MAX_DEPTH, NULL_MOVE, board.ply());
+                    Cache::transposition_table.store(hash, tbresult, bounds, MAX_DEPTH, NULL_MOVE, board.ply());
                     return tbresult;
                 } else {
                     best_score = tbresult;
                 }
             } else {
                 // The TB score is exact.
-                Cache::transposition_table.store(hash, tbresult, -TBWIN, TBWIN, MAX_DEPTH, NULL_MOVE, board.ply());
+                Cache::transposition_table.store(hash, tbresult, bounds, MAX_DEPTH, NULL_MOVE, board.ply());
                 return tbresult;
             }
         }
@@ -178,7 +178,7 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
             Cache::history_table.store(depth, best_move);
             Cache::countermove_table.store(board.last_move(), best_move);
             best_score = std::min(best_score, score_ub);
-            Cache::transposition_table.store(hash, best_score, alpha, beta, depth, best_move, board.ply());
+            Cache::transposition_table.store(hash, best_score, LOWER, depth, best_move, board.ply());
             return best_score;
         }
     }
@@ -246,7 +246,8 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
     Cache::history_table.store(depth, best_move);
     Cache::countermove_table.store(board.last_move(), best_move);
     best_score = std::min(best_score, score_ub);
-    Cache::transposition_table.store(hash, best_score, alpha, beta, depth, best_move, board.ply());
+    const Bounds bound = best_score <= alpha ? UPPER : best_score >= beta ? LOWER : EXACT;
+    Cache::transposition_table.store(hash, best_score, bound, depth, best_move, board.ply());
     return best_score;
 }
 
@@ -338,7 +339,7 @@ score_t Search::pv_search(Board &board, const depth_t start_depth, const score_t
             if (bounds == UPPER) {
                 // TB result is an upper bound (i.e. TBLOSS)
                 if (tbresult <= alpha) {
-                    Cache::transposition_table.store(hash, tbresult, -TBWIN, TBWIN, MAX_DEPTH, NULL_MOVE, board.ply());
+                    Cache::transposition_table.store(hash, tbresult, bounds, MAX_DEPTH, NULL_MOVE, board.ply());
                     return tbresult;
                 } else {
                     score_ub = tbresult;
@@ -346,7 +347,7 @@ score_t Search::pv_search(Board &board, const depth_t start_depth, const score_t
             } else if (bounds == LOWER) {
                 // TB Result is a lower bound
                 if (tbresult >= beta) {
-                    Cache::transposition_table.store(hash, tbresult, -TBWIN, TBWIN, MAX_DEPTH, NULL_MOVE, board.ply());
+                    Cache::transposition_table.store(hash, tbresult, bounds, MAX_DEPTH, NULL_MOVE, board.ply());
                     return tbresult;
                 } else {
                     best_score = tbresult;
@@ -354,7 +355,7 @@ score_t Search::pv_search(Board &board, const depth_t start_depth, const score_t
                 }
             } else {
                 // The TB score is exact.
-                Cache::transposition_table.store(hash, tbresult, -TBWIN, TBWIN, MAX_DEPTH, NULL_MOVE, board.ply());
+                Cache::transposition_table.store(hash, tbresult, bounds, MAX_DEPTH, NULL_MOVE, board.ply());
                 return tbresult;
             }
         }
@@ -399,7 +400,7 @@ score_t Search::pv_search(Board &board, const depth_t start_depth, const score_t
             Cache::history_table.store(depth, pv.back());
             Cache::countermove_table.store(board.last_move(), pv.back());
             best_score = std::min(best_score, score_ub);
-            Cache::transposition_table.store(hash, best_score, alpha_start, beta, depth, pv.back(), board.ply());
+            Cache::transposition_table.store(hash, best_score, LOWER, depth, pv.back(), board.ply());
             return best_score;
         }
         is_first_child = false;
@@ -449,7 +450,8 @@ score_t Search::pv_search(Board &board, const depth_t start_depth, const score_t
         Cache::history_table.store(depth, pv.back());
         Cache::countermove_table.store(board.last_move(), pv.back());
         best_score = std::min(best_score, score_ub);
-        Cache::transposition_table.store(hash, best_score, alpha_start, beta, depth, pv.back(), board.ply());
+        const Bounds bound = best_score <= alpha_start ? UPPER : best_score >= beta ? LOWER : EXACT;
+        Cache::transposition_table.store(hash, best_score, bound, depth, pv.back(), board.ply());
     }
     return best_score;
 }
