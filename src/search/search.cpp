@@ -9,14 +9,15 @@
 #include <iostream>
 #include <time.h>
 
-constexpr size_t futility_max_depth = 3;
-constexpr score_t futility_margins[] = {0, 330, 500, 900};
 constexpr depth_t null_move_depth_reduction = 2;
+constexpr score_t extended_futility_margins[] = {0, 200, 500};
+constexpr score_t reverse_futility_margins[] = {0, 330, 500, 900};
+constexpr depth_t efp_max_depth = sizeof(extended_futility_margins) / sizeof(score_t) - 1;
+constexpr depth_t rfp_max_depth = sizeof(reverse_futility_margins) / sizeof(score_t) - 1;
 
 // Offsets from our score guess for our aspiration window in cp.
 // When it gets to the end it just sets the limit it's failing on to MATING_SCORE
 constexpr score_t aspration_windows[] = {30, 80, 200, 500};
-constexpr score_t iid_aspration_windows[] = {50, 200, 1000};
 constexpr size_t n_aw = sizeof(aspration_windows) / sizeof(score_t);
 
 score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, my_clock::time_point time_cutoff,
@@ -139,11 +140,12 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
 
     // Calculate the node evaluation heuristic.
     const score_t node_eval = Evaluation::eval(board);
+
     // Reverse futility pruning
     // Prune if this node is almost certain to fail high.
-    if (!board.is_endgame() && allow_null && depth <= futility_max_depth && !board.is_check()) {
-        if (node_eval - futility_margins[depth] >= beta) {
-            return node_eval - futility_margins[depth];
+    if (!board.is_endgame() && allow_null && depth <= rfp_max_depth && !board.is_check()) {
+        if (node_eval - reverse_futility_margins[depth] >= beta) {
+            return node_eval - reverse_futility_margins[depth];
         }
     }
 
@@ -222,6 +224,19 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
         // On a quiet move, the score is a history score. If this is low, it's less likely to cause a beta cutoff.
         if ((node == ALLNODE) && (counter > 3) && !move.is_promotion() && move.is_quiet() && (search_depth < 3) &&
             !gives_check && !board.is_check() && move.score < 15) {
+            continue;
+        }
+
+        // Extended futility pruning
+        // At frontier nodes (depth == 1, search_depth == 0), prune moves which have no chance of raising alpha.
+        // At pre-frontier nodes (depth == 2), we can prune moves similarly.
+        if ((counter > 1) && !move.is_promotion() && move.is_capture() && (depth <= efp_max_depth) && !gives_check &&
+            !board.is_check() && (node_eval + move.score + extended_futility_margins[depth] <= alpha)) {
+            continue;
+        }
+
+        if ((counter > 1) && !move.is_promotion() && move.is_quiet() && (depth <= efp_max_depth) && !gives_check &&
+            !board.is_check() && (node_eval + extended_futility_margins[depth] <= alpha)) {
             continue;
         }
 
@@ -374,22 +389,6 @@ score_t Search::pv_search(Board &board, const depth_t start_depth, const score_t
     bool is_first_child = true;
     PrincipleLine pv;
     Move hash_move = unpack_move(hash_dmove, legal_moves);
-
-    // Apply internal iterative deepening recursivly to find a decent PV move.
-    /*
-    if ((hash_move == NULL_MOVE) && (start_depth > 2)) {
-        PrincipleLine temp_line;
-        temp_line.reserve(start_depth);
-        // This won't work if the search below fails low.
-        pv_search(board, start_depth - 2, alpha, beta, temp_line, time_cutoff, allow_cutoff, options);
-        if (!temp_line.empty()) {
-            hash_move = temp_line.back();
-        }
-        if (options.stop()) {
-            return MAX_SCORE;
-        }
-    }
-    */
 
     // Do the hash move explicitly to avoid sorting moves if our hash moves provides a beta-cutoff
     if (hash_move != NULL_MOVE) {

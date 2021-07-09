@@ -18,7 +18,7 @@ TEST(Search, MateInTwo) {
       {"1rb4r/pkPp3p/1b1P3n/1Q6/N3Pp2/8/P1P3PP/7K w - - 1 0", MATING_SCORE - 3},
   };
   Board board = Board();
-  constexpr depth_t depth = 4;
+  constexpr depth_t depth = 8;
   PrincipleLine line;
   line.reserve(depth);
 
