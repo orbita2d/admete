@@ -10,10 +10,11 @@ Cache::TranspositionTable::TranspositionTable() {
 }
 
 bool Cache::TranspositionTable::probe(const zobrist_t hash) {
+    assert(_data.size() <= max_index);
+    assert(key_array.size() == max_index);
     if (is_enabled() == false) {
         return false;
     }
-    assert(index < key_array.size());
     tt_map::iterator it = _data.find(hash);
     if (it == _data.end()) {
         return false;
@@ -56,7 +57,9 @@ score_t Cache::eval_from_tt(const score_t eval, const ply_t ply) {
 
 void Cache::TranspositionTable::store(const zobrist_t hash, const score_t eval, const Bounds bound, const depth_t depth,
                                       const Move move, const ply_t ply) {
-    assert(_data.size() < max_index);
+    assert(_data.size() <= max_index);
+    assert(key_array.size() == max_index);
+
     if (is_enabled() == false) {
         return;
     }
