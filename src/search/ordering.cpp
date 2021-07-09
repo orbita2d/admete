@@ -173,10 +173,10 @@ void rank_and_sort_moves(Board &board, MoveList &legal_moves, const DenseMove ha
         }
     }
 
-    std::stable_sort(good_captures.begin(), good_captures.end(), cmp);
-    std::stable_sort(even_captures.begin(), even_captures.end(), cmp);
-    std::stable_sort(bad_captures.begin(), bad_captures.end(), cmp);
-    std::stable_sort(quiet_moves.begin(), quiet_moves.end(), cmp);
+    std::sort(good_captures.begin(), good_captures.end(), cmp);
+    std::sort(even_captures.begin(), even_captures.end(), cmp);
+    std::sort(bad_captures.begin(), bad_captures.end(), cmp);
+    std::sort(quiet_moves.begin(), quiet_moves.end(), cmp);
 
     // Move order is:
     // Captures with SEE > 50
