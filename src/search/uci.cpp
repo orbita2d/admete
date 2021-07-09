@@ -13,14 +13,14 @@
 #include <thread>
 
 #define ENGINE_NAME "admete"
-#define ENGINE_VERS "v1.1.0"
+#define ENGINE_VERS "1.1"
 #define ENGINE_AUTH "orbita"
 
 typedef std::chrono::high_resolution_clock my_clock;
 
 namespace UCI {
 void init_uci() {
-    std::cout << "id name " << ENGINE_NAME << std::endl;
+    std::cout << "id name " << ENGINE_NAME << " " << ENGINE_VERS << std::endl;
     std::cout << "id author " << ENGINE_AUTH << std::endl;
     std::cout << "option name Hash type spin default " << Cache::hash_default << " min " << Cache::hash_min << " max "
               << Cache::hash_max << std::endl;
