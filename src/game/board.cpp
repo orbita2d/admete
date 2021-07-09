@@ -218,8 +218,7 @@ void Board::make_move(Move &move) {
     const Bitboard from_to_bb = from_bb ^ to_bb;
 
     if (move.is_king_castle()) {
-        const Bitboard rook_from_to_bb =
-            sq_to_bb(RookSquares[us][KINGSIDE]) ^ sq_to_bb(RookCastleSquares[us][KINGSIDE]);
+        const Bitboard rook_from_to_bb = Bitboards::rook_from_to[us][KINGSIDE];
         occupied_bb ^= from_to_bb;
         occupied_bb ^= rook_from_to_bb;
         colour_bb[us] ^= from_to_bb;
@@ -228,8 +227,7 @@ void Board::make_move(Move &move) {
         piece_bb[ROOK] ^= rook_from_to_bb;
 
     } else if (move.is_queen_castle()) {
-        const Bitboard rook_from_to_bb =
-            sq_to_bb(RookSquares[us][QUEENSIDE]) ^ sq_to_bb(RookCastleSquares[us][QUEENSIDE]);
+        const Bitboard rook_from_to_bb = Bitboards::rook_from_to[us][QUEENSIDE];
         occupied_bb ^= from_to_bb;
         occupied_bb ^= rook_from_to_bb;
         colour_bb[us] ^= from_to_bb;
@@ -271,33 +269,14 @@ void Board::make_move(Move &move) {
     }
 
     // And now do the promotion if it is one.
-    if (move.is_knight_promotion()) {
+    if (move.is_promotion()) {
+        const PieceType promoted = get_promoted(move);
+        assert(promoted < KING);
         piece_bb[PAWN] ^= to_bb;
-        piece_bb[KNIGHT] ^= to_bb;
+        piece_bb[promoted] ^= to_bb;
         piece_counts[us][PAWN]--;
-        piece_counts[us][KNIGHT]++;
-        _material += Evaluation::piece_material(KNIGHT);
-        _material -= Evaluation::piece_material(PAWN);
-    } else if (move.is_bishop_promotion()) {
-        piece_bb[PAWN] ^= to_bb;
-        piece_bb[BISHOP] ^= to_bb;
-        piece_counts[us][PAWN]--;
-        piece_counts[us][BISHOP]++;
-        _material += Evaluation::piece_material(BISHOP);
-        _material -= Evaluation::piece_material(PAWN);
-    } else if (move.is_rook_promotion()) {
-        piece_bb[PAWN] ^= to_bb;
-        piece_bb[ROOK] ^= to_bb;
-        piece_counts[us][PAWN]--;
-        piece_counts[us][ROOK]++;
-        _material += Evaluation::piece_material(ROOK);
-        _material -= Evaluation::piece_material(PAWN);
-    } else if (move.is_queen_promotion()) {
-        piece_bb[PAWN] ^= to_bb;
-        piece_bb[QUEEN] ^= to_bb;
-        piece_counts[us][PAWN]--;
-        piece_counts[us][QUEEN]++;
-        _material += Evaluation::piece_material(QUEEN);
+        piece_counts[us][promoted]++;
+        _material += Evaluation::piece_material(promoted);
         _material -= Evaluation::piece_material(PAWN);
     }
 
@@ -387,7 +366,7 @@ void Board::unmake_move(const Move move) {
     const Bitboard from_to_bb = from_bb ^ to_bb;
 
     if (move.is_king_castle()) {
-        const Bitboard rook_from_to_bb = sq_to_bb(RookSquares[us][KINGSIDE]) ^ sq_to_bb(move.origin + Direction::E);
+        const Bitboard rook_from_to_bb = Bitboards::rook_from_to[us][KINGSIDE];
         occupied_bb ^= from_to_bb;
         occupied_bb ^= rook_from_to_bb;
         colour_bb[us] ^= from_to_bb;
@@ -396,7 +375,7 @@ void Board::unmake_move(const Move move) {
         piece_bb[ROOK] ^= rook_from_to_bb;
 
     } else if (move.is_queen_castle()) {
-        const Bitboard rook_from_to_bb = sq_to_bb(RookSquares[us][QUEENSIDE]) ^ sq_to_bb(move.origin + Direction::W);
+        const Bitboard rook_from_to_bb = Bitboards::rook_from_to[us][QUEENSIDE];
         occupied_bb ^= from_to_bb;
         occupied_bb ^= rook_from_to_bb;
         colour_bb[us] ^= from_to_bb;
@@ -436,33 +415,14 @@ void Board::unmake_move(const Move move) {
     // And now do the promotion if it is one.
     // The quiet move method above moved a pawn from to->from
     // We need to remove the promoted piece and add a pawn
-    if (move.is_knight_promotion()) {
-        piece_bb[KNIGHT] ^= to_bb;
+    if (move.is_promotion()) {
+        const PieceType promoted = get_promoted(move);
+        assert(promoted < KING);
+        piece_bb[promoted] ^= to_bb;
         piece_bb[PAWN] ^= to_bb;
         piece_counts[us][PAWN]++;
-        piece_counts[us][KNIGHT]--;
-        _material -= Evaluation::piece_material(KNIGHT);
-        _material += Evaluation::piece_material(PAWN);
-    } else if (move.is_bishop_promotion()) {
-        piece_bb[BISHOP] ^= to_bb;
-        piece_bb[PAWN] ^= to_bb;
-        piece_counts[us][PAWN]++;
-        piece_counts[us][BISHOP]--;
-        _material -= Evaluation::piece_material(BISHOP);
-        _material += Evaluation::piece_material(PAWN);
-    } else if (move.is_rook_promotion()) {
-        piece_bb[ROOK] ^= to_bb;
-        piece_bb[PAWN] ^= to_bb;
-        piece_counts[us][PAWN]++;
-        piece_counts[us][ROOK]--;
-        _material -= Evaluation::piece_material(ROOK);
-        _material += Evaluation::piece_material(PAWN);
-    } else if (move.is_queen_promotion()) {
-        piece_bb[QUEEN] ^= to_bb;
-        piece_bb[PAWN] ^= to_bb;
-        piece_counts[us][PAWN]++;
-        piece_counts[us][QUEEN]--;
-        _material -= Evaluation::piece_material(QUEEN);
+        piece_counts[us][promoted]--;
+        _material -= Evaluation::piece_material(promoted);
         _material += Evaluation::piece_material(PAWN);
     }
 

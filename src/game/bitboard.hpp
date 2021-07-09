@@ -97,6 +97,8 @@ constexpr Bitboard dark_squares = 0xAA55AA55AA55AA55;
 constexpr Bitboard light_squares = 0x55AA55AA55AA55AA;
 constexpr Bitboard bishop_squares[N_BISHOPTYPES] = {light_squares, dark_squares};
 
+constexpr Bitboard rook_from_to[N_COLOUR][N_CASTLE] = {{0xa0, 0x09}, {0xa000000000000000, 0x900000000000000}};
+
 template <Direction dir> constexpr Bitboard shift(const Bitboard bb) {
     // Bitboards are stored big-endian but who can remember that, so this hides the implementation a little
     if constexpr (dir == Direction::N) {

@@ -99,8 +99,7 @@ static constexpr Square FileH = 7;
 
 } // namespace Squares
 
-constexpr int N_CASTLE = 2;
-enum CastlingSide { KINGSIDE, QUEENSIDE };
+enum CastlingSide { KINGSIDE, QUEENSIDE, N_CASTLE };
 
 // Squares the rooks sit on (for castling).
 constexpr std::array<std::array<Square, 2>, 2> RookSquares = {
