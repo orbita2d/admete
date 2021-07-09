@@ -53,10 +53,10 @@ class Square {
     constexpr square_t diagonal() const { return rank_index() + file_index(); }
     constexpr square_t anti_diagonal() const { return rank_index() - file_index() + 7; }
 
-    uint to_north() const { return 7 - rank_index(); };
-    uint to_east() const { return 7 - file_index(); };
-    uint to_south() const { return rank_index(); };
-    uint to_west() const { return file_index(); };
+    square_t to_north() const { return 7 - rank_index(); };
+    square_t to_east() const { return 7 - file_index(); };
+    square_t to_south() const { return rank_index(); };
+    square_t to_west() const { return file_index(); };
 
     square_t to_northeast() const { return std::min(to_north(), to_east()); };
     square_t to_southeast() const { return std::min(to_south(), to_east()); };
@@ -202,8 +202,7 @@ struct DenseMove {
 inline bool operator==(const DenseMove m1, const DenseMove m2) { return (m1.v == m2.v); }
 constexpr DenseMove NULL_DMOVE = DenseMove();
 
-class Move {
-  public:
+struct Move {
     Move(const PieceType p, const Square o, const Square t) : origin(o), target(t), moving_piece(p){};
     Move(const PieceType p, const Square o, const Square t, const MoveType m)
         : origin(o), target(t), moving_piece(p), type(m){};
@@ -211,6 +210,9 @@ class Move {
 
     Square origin;
     Square target;
+    PieceType moving_piece = NO_PIECE;
+    PieceType captured_piece = NO_PIECE;
+    MoveType type = QUIETmv;
     int score = 0;
 
     std::string pretty() const {
@@ -255,9 +257,6 @@ class Move {
     constexpr bool is_rook_promotion() const { return (type & ~CAPTURE) == (PROMOTION | SPECIAL1); }
     constexpr bool is_queen_promotion() const { return (type & ~CAPTURE) == (PROMOTION | SPECIAL1 | SPECIAL2); }
     constexpr bool is_promotion() const { return (type & PROMOTION); }
-    PieceType captured_piece = NO_PIECE;
-    PieceType moving_piece = NO_PIECE;
-    MoveType type = QUIETmv;
 };
 
 constexpr Move NULL_MOVE = Move();

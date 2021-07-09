@@ -24,7 +24,7 @@ template <Colour us, GenType gen> void gen_pawn_moves(const Board &board, const 
     Move move;
     // Moves are North
     // Look for double pawn push possibility
-    if (gen == QUIET) {
+    if constexpr (gen == QUIET) {
         if (origin.rank() == relative_rank(us, Squares::Rank2)) {
             target = origin + (forwards(us) + forwards(us));
             if (board.is_free(target) & board.is_free(origin + forwards(us))) {
@@ -43,7 +43,7 @@ template <Colour us, GenType gen> void gen_pawn_moves(const Board &board, const 
                 moves.push_back(move);
             }
         }
-    } else if (gen == CAPTURES) {
+    } else if constexpr (gen == CAPTURES) {
         // Normal captures.
         Bitboard atk = Bitboards::pawn_attacks(us, origin);
         atk &= board.pieces(them);
@@ -97,7 +97,7 @@ void gen_pawn_moves(const Board &board, const Square origin, MoveList &moves, Bi
     Move move;
     // Moves are North
     // Look for double pawn push possibility
-    if (gen == QUIET) {
+    if constexpr (gen == QUIET) {
         if (origin.rank() == relative_rank(us, Squares::Rank2)) {
             target = origin + (forwards(us) + forwards(us));
             if (target_mask & target) {
@@ -120,7 +120,7 @@ void gen_pawn_moves(const Board &board, const Square origin, MoveList &moves, Bi
                 }
             }
         }
-    } else if (gen == CAPTURES) {
+    } else if constexpr (gen == CAPTURES) {
         // Normal captures.
         Bitboard atk = Bitboards::pawn_attacks(us, origin);
         atk &= board.pieces(them);
@@ -174,7 +174,7 @@ template <GenType gen> void gen_king_moves(const Board &board, const Square orig
     Colour us = board.who_to_play();
     const Colour them = ~us;
     Bitboard atk = Bitboards::attacks<KING>(board.pieces(), origin);
-    if (gen == QUIET) {
+    if constexpr (gen == QUIET) {
         atk &= ~board.pieces();
         while (atk) {
             Square sq = pop_lsb(&atk);
@@ -185,7 +185,7 @@ template <GenType gen> void gen_king_moves(const Board &board, const Square orig
             Move move = Move(KING, origin, sq);
             moves.push_back(move);
         }
-    } else if (gen == CAPTURES) {
+    } else if constexpr (gen == CAPTURES) {
         atk &= board.pieces(them);
         while (atk) {
             Square sq = pop_lsb(&atk);
@@ -200,20 +200,20 @@ template <GenType gen> void gen_king_moves(const Board &board, const Square orig
     }
 }
 template <GenType gen, PieceType pt> void gen_moves(const Board &board, const Square origin, MoveList &moves) {
-    if (pt == KING) {
+    if constexpr (pt == KING) {
         return gen_king_moves<gen>(board, origin, moves);
     } else {
         Colour us = board.who_to_play();
         const Colour them = ~us;
         Bitboard atk = Bitboards::attacks<pt>(board.pieces(), origin);
-        if (gen == QUIET) {
+        if constexpr (gen == QUIET) {
             atk &= ~board.pieces();
             while (atk) {
                 Square sq = pop_lsb(&atk);
                 Move move = Move(pt, origin, sq);
                 moves.push_back(move);
             }
-        } else if (gen == CAPTURES) {
+        } else if constexpr (gen == CAPTURES) {
             atk &= board.pieces(them);
             while (atk) {
                 Square sq = pop_lsb(&atk);
@@ -232,14 +232,14 @@ void gen_moves(const Board &board, const Square origin, MoveList &moves, Bitboar
     Bitboard atk = Bitboards::attacks<pt>(board.pieces(), origin);
     // Mask the target squares.
     atk &= target_mask;
-    if (gen == QUIET) {
+    if constexpr (gen == QUIET) {
         atk &= ~board.pieces();
         while (atk) {
             Square sq = pop_lsb(&atk);
             Move move = Move(pt, origin, sq);
             moves.push_back(move);
         }
-    } else if (gen == CAPTURES) {
+    } else if constexpr (gen == CAPTURES) {
         atk &= board.pieces(them);
         while (atk) {
             Square sq = pop_lsb(&atk);
@@ -289,7 +289,7 @@ template <GenType gen> void gen_moves(const Board &board, MoveList &moves) {
     Square ks = board.find_king(us);
 
     // If we are generating quiet moves, add castling
-    if (gen == QUIET) {
+    if constexpr (gen == QUIET) {
         if (us == WHITE) {
             gen_castle_moves<WHITE>(board, moves);
         } else {
@@ -547,9 +547,9 @@ template <> void gen_moves<EVASIONS>(const Board &board, MoveList &moves) {
 
 template <GenType gen> void generate_moves(const Board &board, MoveList &moves) {
     // Generate all legal non-evasion moves
-    if (gen == CAPTURES) {
+    if constexpr (gen == CAPTURES) {
         gen_moves<CAPTURES>(board, moves);
-    } else if (gen == LEGAL) {
+    } else if constexpr (gen == LEGAL) {
         gen_moves<CAPTURES>(board, moves);
         gen_moves<QUIET>(board, moves);
     }

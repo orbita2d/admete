@@ -59,6 +59,11 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
         return -ply_to_mate_score(board.ply());
     }
 
+    // Max ply
+    if (board.ply() >= MAX_PLY) {
+        return Evaluation::eval(board);
+    }
+
     // Leaf node for main tree.
     if (depth == 0) {
         return quiesce(board, alpha, beta, options);
@@ -111,7 +116,7 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
             if (bounds == UPPER) {
                 // TB result is an upper bound (i.e. TBLOSS)
                 if (tbresult <= alpha) {
-                    Cache::transposition_table.store(hash, tbresult, -TBWIN, TBWIN, MAX_DEPTH, NULL_MOVE, board.ply());
+                    Cache::transposition_table.store(hash, tbresult, bounds, MAX_DEPTH, NULL_MOVE, board.ply());
                     return tbresult;
                 } else {
                     score_ub = tbresult;
@@ -119,29 +124,32 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
             } else if (bounds == LOWER) {
                 // TB Result is a lower bound
                 if (tbresult >= beta) {
-                    Cache::transposition_table.store(hash, tbresult, -TBWIN, TBWIN, MAX_DEPTH, NULL_MOVE, board.ply());
+                    Cache::transposition_table.store(hash, tbresult, bounds, MAX_DEPTH, NULL_MOVE, board.ply());
                     return tbresult;
                 } else {
                     best_score = tbresult;
                 }
             } else {
                 // The TB score is exact.
-                Cache::transposition_table.store(hash, tbresult, -TBWIN, TBWIN, MAX_DEPTH, NULL_MOVE, board.ply());
+                Cache::transposition_table.store(hash, tbresult, bounds, MAX_DEPTH, NULL_MOVE, board.ply());
                 return tbresult;
             }
         }
     }
 
+    // Calculate the node evaluation heuristic.
+    const score_t node_eval = Evaluation::eval(board);
     // Reverse futility pruning
+    // Prune if this node is almost certain to fail high.
     if (!board.is_endgame() && allow_null && depth <= futility_max_depth && !board.is_check()) {
-        const score_t node_heuristic = Evaluation::eval(board);
-        if (node_heuristic - futility_margins[depth] >= beta) {
-            return node_heuristic - futility_margins[depth];
+        if (node_eval - futility_margins[depth] >= beta) {
+            return node_eval - futility_margins[depth];
         }
     }
 
     // Null move pruning.
-    // We expect (null move observation) the node after a null move to fail high, making it a cut node.
+    // We expect (null move observation) the node after a null move to fail high, making it a cut node. If it fails low,
+    // this node will fail high, unless we are in Zugzwang.
     if (!board.is_endgame() && allow_null && (depth > null_move_depth_reduction) && !board.is_check()) {
         board.make_nullmove();
         score_t score = -scout_search(board, depth - 1 - null_move_depth_reduction, -alpha - 1, time_cutoff,
@@ -175,7 +183,7 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
             Cache::history_table.store(depth, best_move);
             Cache::countermove_table.store(board.last_move(), best_move);
             best_score = std::min(best_score, score_ub);
-            Cache::transposition_table.store(hash, best_score, alpha, beta, depth, best_move, board.ply());
+            Cache::transposition_table.store(hash, best_score, LOWER, depth, best_move, board.ply());
             return best_score;
         }
     }
@@ -185,24 +193,36 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
     Ordering::rank_and_sort_moves(board, legal_moves, hash_dmove, killer_move);
     for (Move move : legal_moves) {
         counter++;
-        depth_t search_depth = depth - 1;
-
-        NodeType child;
+        const bool gives_check = board.gives_check(move);
         if ((node == CUTNODE) && (counter >= 5)) {
             // In a cut node, the cut is most likely to happen early, if we get through the hash move and and first few
             // other moves without a cut, this is probably actually an All node.
             node = ALLNODE;
         }
+        NodeType child = node == CUTNODE ? ALLNODE : CUTNODE;
+
+        int search_depth = depth - 1;
 
         // Late move reductions:
         // At an expected All node, the most likely moves to prove us wrong and fail high are
         // one's ranked earliest in move ordering. We can be less careful about proving later moves.
-        if ((node == ALLNODE) && (counter > 5) && !move.is_promotion() && move.is_quiet() && (depth > 3) &&
-            !board.gives_check(move) && !board.is_check()) {
+        if ((node == ALLNODE) && (counter > 5) && !move.is_promotion() && move.is_quiet() && (search_depth > 2) &&
+            !gives_check && !board.is_check()) {
             search_depth--;
-            child = CUTNODE;
-        } else {
-            child = node == CUTNODE ? ALLNODE : CUTNODE;
+        }
+
+        // SEE reductions
+        // If the SEE for a capture is very bad, we can search to a lower depth as it's unlikely to cause a cut.
+        if ((node == ALLNODE) && !move.is_promotion() && move.is_capture() && (search_depth > 2) && !gives_check &&
+            !board.is_check() && move.score < -100) {
+            search_depth--;
+        }
+
+        // History pruning
+        // On a quiet move, the score is a history score. If this is low, it's less likely to cause a beta cutoff.
+        if ((node == ALLNODE) && (counter > 3) && !move.is_promotion() && move.is_quiet() && (search_depth < 3) &&
+            !gives_check && !board.is_check() && move.score < 15) {
+            continue;
         }
 
         board.make_move(move);
@@ -231,7 +251,8 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
     Cache::history_table.store(depth, best_move);
     Cache::countermove_table.store(board.last_move(), best_move);
     best_score = std::min(best_score, score_ub);
-    Cache::transposition_table.store(hash, best_score, alpha, beta, depth, best_move, board.ply());
+    const Bounds bound = best_score <= alpha ? UPPER : best_score >= beta ? LOWER : EXACT;
+    Cache::transposition_table.store(hash, best_score, bound, depth, best_move, board.ply());
     return best_score;
 }
 
@@ -288,6 +309,11 @@ score_t Search::pv_search(Board &board, const depth_t start_depth, const score_t
         return -ply_to_mate_score(board.ply());
     }
 
+    // Max ply
+    if (board.ply() >= MAX_PLY) {
+        return Evaluation::eval(board);
+    }
+
     // Leaf node for the main tree.
     if (depth == 0) {
         return quiesce(board, alpha, beta, options);
@@ -323,7 +349,7 @@ score_t Search::pv_search(Board &board, const depth_t start_depth, const score_t
             if (bounds == UPPER) {
                 // TB result is an upper bound (i.e. TBLOSS)
                 if (tbresult <= alpha) {
-                    Cache::transposition_table.store(hash, tbresult, -TBWIN, TBWIN, MAX_DEPTH, NULL_MOVE, board.ply());
+                    Cache::transposition_table.store(hash, tbresult, bounds, MAX_DEPTH, NULL_MOVE, board.ply());
                     return tbresult;
                 } else {
                     score_ub = tbresult;
@@ -331,7 +357,7 @@ score_t Search::pv_search(Board &board, const depth_t start_depth, const score_t
             } else if (bounds == LOWER) {
                 // TB Result is a lower bound
                 if (tbresult >= beta) {
-                    Cache::transposition_table.store(hash, tbresult, -TBWIN, TBWIN, MAX_DEPTH, NULL_MOVE, board.ply());
+                    Cache::transposition_table.store(hash, tbresult, bounds, MAX_DEPTH, NULL_MOVE, board.ply());
                     return tbresult;
                 } else {
                     best_score = tbresult;
@@ -339,7 +365,7 @@ score_t Search::pv_search(Board &board, const depth_t start_depth, const score_t
                 }
             } else {
                 // The TB score is exact.
-                Cache::transposition_table.store(hash, tbresult, -TBWIN, TBWIN, MAX_DEPTH, NULL_MOVE, board.ply());
+                Cache::transposition_table.store(hash, tbresult, bounds, MAX_DEPTH, NULL_MOVE, board.ply());
                 return tbresult;
             }
         }
@@ -384,7 +410,7 @@ score_t Search::pv_search(Board &board, const depth_t start_depth, const score_t
             Cache::history_table.store(depth, pv.back());
             Cache::countermove_table.store(board.last_move(), pv.back());
             best_score = std::min(best_score, score_ub);
-            Cache::transposition_table.store(hash, best_score, alpha_start, beta, depth, pv.back(), board.ply());
+            Cache::transposition_table.store(hash, best_score, LOWER, depth, pv.back(), board.ply());
             return best_score;
         }
         is_first_child = false;
@@ -434,7 +460,8 @@ score_t Search::pv_search(Board &board, const depth_t start_depth, const score_t
         Cache::history_table.store(depth, pv.back());
         Cache::countermove_table.store(board.last_move(), pv.back());
         best_score = std::min(best_score, score_ub);
-        Cache::transposition_table.store(hash, best_score, alpha_start, beta, depth, pv.back(), board.ply());
+        const Bounds bound = best_score <= alpha_start ? UPPER : best_score >= beta ? LOWER : EXACT;
+        Cache::transposition_table.store(hash, best_score, bound, depth, pv.back(), board.ply());
     }
     return best_score;
 }
@@ -477,7 +504,7 @@ score_t Search::quiesce(Board &board, const score_t alpha_start, const score_t b
     // Get a list of moves for quiessence. If it's check, it we already have all evasions from the checkmate test.
     // Not in check, we generate quiet checks and all captures.
     if (!board.is_check()) {
-        moves = board.get_quiessence_moves();
+        moves = board.get_capture_moves();
     }
 
     // We already know it's not mate, if there are no captures in a position, return stand pat.
@@ -491,12 +518,17 @@ score_t Search::quiesce(Board &board, const score_t alpha_start, const score_t b
     for (Move move : moves) {
         // For a capture, the recorded score is the SEE value.
         // It makes sense to not consider losing captures in qsearch.
-        if (move.is_capture() && (move.score < 0)) {
+        if (!board.is_check() && move.is_capture() && (move.score < 0)) {
+            continue;
+        }
+        constexpr score_t see_margin = 100;
+        // In qsearch, only consider moves with a decent chance of raising alpha.
+        if (!board.is_check() && move.is_capture() && (stand_pat + move.score < alpha - see_margin)) {
             continue;
         }
         board.make_move(move);
         options.nodes++;
-        score_t score = -quiesce(board, -beta, -alpha, options);
+        const score_t score = -quiesce(board, -beta, -alpha, options);
         board.unmake_move(move);
         alpha = std::max(alpha, score);
         if (alpha >= beta) {

@@ -62,7 +62,7 @@ class Board {
     bool is_attacked(const Square square, const Colour us) const;
     void update_checkers();
     void update_check_squares();
-    bool gives_check(const Move move);
+    bool gives_check(const Move move) const;
     Bitboard check_squares(const PieceType p) const { return aux_info->check_squares[p]; };
     Bitboard blockers() const { return aux_info->blockers; };
 

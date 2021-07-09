@@ -51,12 +51,12 @@ score_t Cache::eval_from_tt(const score_t eval, const ply_t ply) {
     }
 }
 
-void Cache::TranspositionTable::store(const zobrist_t hash, const score_t eval, const score_t lower,
-                                      const score_t upper, const depth_t depth, const Move move, const ply_t ply) {
+void Cache::TranspositionTable::store(const zobrist_t hash, const score_t eval, const Bounds bound, const depth_t depth,
+                                      const Move move, const ply_t ply) {
     if (is_enabled() == false) {
         return;
     }
-    const TransElement elem = TransElement(eval, lower, upper, depth, move, ply);
+    const TransElement elem = TransElement(eval, bound, depth, move, ply);
     if (index < max_index) {
         // We are doing the first fill of the table;
         _data[hash] = elem;
@@ -120,7 +120,6 @@ void Cache::reinit() {
 
 uint Cache::HistoryTable::probe(const PieceType pt, const Square sq) { return _data[pt][sq]; }
 void Cache::HistoryTable::store(const depth_t depth, const Move move) {
-
     if (is_enabled() == false) {
         return;
     }

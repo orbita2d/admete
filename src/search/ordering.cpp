@@ -8,7 +8,7 @@
 #include <assert.h>
 #include <iostream>
 
-bool cmp(Move &m1, Move &m2) {
+bool cmp(const Move &m1, const Move &m2) {
     // Comparison for the sort function. Should return true if m1 goes before m2.
     return m1.score > m2.score;
 }
@@ -63,7 +63,7 @@ score_t see(Board &board, const Square target, Colour side, PieceType pt, Bitboa
     // Vector the the relative gain on the square for each iteration of exchanges.
     std::vector<score_t> gain;
     gain.reserve(16);
-    depth_t depth = 1;
+    int depth = 1;
     score_t value = SEE::material[pt];
     gain.push_back(value);
     while (smallest_atk) {
@@ -78,19 +78,19 @@ score_t see(Board &board, const Square target, Colour side, PieceType pt, Bitboa
         depth++;
         smallest_atk = get_smallest_attacker(board, target, mask, side);
     }
-    // Gain has (depth) elements, we start at depth - 2 because this is the second to last element.
-    // The last element is the gain if the final piece were under attack, but it's not (that's why it's last).
 
     if (depth == 1) {
         // There were no captures to be made.
         return 0;
     } else {
-        for (depth_t d = depth - 2; d > 0; d--) {
+        // Gain has (depth) elements, we start at depth - 3 because this compares to the second to last element.
+        // The last element is the gain if the final piece were under attack, but it's not (that's why it's last)
+        for (int d = depth - 3; d >= 0; d--) {
             // The oponent won't give us material, so the gain at depth d-1 is going to be whichever is worse (for us)
             // of if they capture or don't.
             // Their gain at depth d, is (gain[d]), our gain if they do that is -gain[d]. (That is, if they capture)
             // If they don't capture, our gain is gain[d-1], because they do something else.
-            gain[d - 1] = std::min(gain[d - 1], (score_t)-gain[d]);
+            gain[d] = std::min(gain[d], (score_t)-gain[d + 1]);
         }
 
         // Can chose not to capture, with gain 0.
@@ -145,6 +145,7 @@ void rank_and_sort_moves(Board &board, MoveList &legal_moves, const DenseMove ha
             // The search handles the hash move itself. Here we just make sure it doesn't end up in the final move
             // list.
         } else if (move == killer_moves) {
+            move.score = 10000;
             killer.push_back(move);
         } else if (move.is_capture()) {
             // Make sure to lookup and record the piece captured
