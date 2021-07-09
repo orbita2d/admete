@@ -586,15 +586,18 @@ score_t Evaluation::count_material(const Board &board) {
 
 score_t Evaluation::eval(Board &board) {
     // Return the eval from the point of view of the current player.
-    int side_multiplier = board.is_white_move() ? 1 : -1;
-    return evaluate_white(board) * side_multiplier;
+    if (board.is_white_move()) {
+        return evaluate_white(board);
+    } else {
+        return -evaluate_white(board);
+    }
 }
 
 score_t Evaluation::terminal(Board &board) {
     // The eval for a terminal node.
     if (board.is_check()) {
         // This is checkmate
-        return -MATING_SCORE + board.ply();
+        return -ply_to_mate_score(board.ply());
     } else {
         // This is stalemate.
         return drawn_score(board);

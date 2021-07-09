@@ -13,7 +13,7 @@
 #include <thread>
 
 #define ENGINE_NAME "admete"
-#define ENGINE_VERS "1.1"
+#define ENGINE_VERS "1.2"
 #define ENGINE_AUTH "orbita"
 
 typedef std::chrono::high_resolution_clock my_clock;
@@ -376,7 +376,7 @@ void divide(Board &board, std::istringstream &is, Search::SearchOptions) {
     // std::istringstream >> uint8_t doesn't do what you think.
     int depth = 1;
     is >> depth;
-    Search::perft_divide(depth, board);
+    Search::perft_divide((depth_t)depth, board);
 }
 
 void stop(Search::SearchOptions &options) {
@@ -401,7 +401,7 @@ void uci_info(depth_t depth, score_t eval, unsigned long nodes, unsigned long tb
 
     if (is_mating(eval)) {
         // Mate for white. Score is (MATING_SCORE - mate_ply)
-        score_t n = (MATING_SCORE - (eval)-root_ply + 1) / 2;
+        score_t n = (MATING_SCORE - eval - root_ply + 1) / 2;
         std::cout << " score mate " << (int)n;
     } else if (is_mating(-eval)) {
         // Mate for black. Score is (mate_ply - MATING_SCORE)

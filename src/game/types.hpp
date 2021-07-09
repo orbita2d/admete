@@ -3,6 +3,7 @@
 #include <inttypes.h>
 #include <string>
 #include <vector>
+#include <assert.h>
 
 typedef unsigned int uint;
 typedef uint64_t zobrist_t;
@@ -165,9 +166,9 @@ enum Bounds { LOWER, UPPER, EXACT };
 
 inline bool is_mating(const score_t score) { return (score >= MIN_MATE_SCORE) && (score <= MATING_SCORE); }
 
-inline ply_t mate_score_to_ply(const score_t score) { return MATING_SCORE - score; }
+inline ply_t mate_score_to_ply(const score_t score) { assert(score < MATING_SCORE); return MATING_SCORE - score; }
 
-inline score_t ply_to_mate_score(const ply_t ply) { return MATING_SCORE - ply; }
+inline score_t ply_to_mate_score(const ply_t ply) { assert(ply < MAX_PLY); return MATING_SCORE - ply; }
 
 constexpr int NEG_INF = -1000000000;
 constexpr int POS_INF = +1000000000;
