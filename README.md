@@ -23,10 +23,12 @@ cmake --build build --config Release
 
 ## Tests
 Run tests with:
+
 Linux:
 ```
 ./build/tests`
 ```
+
 Windows:
 ```
 .\build\Release\tests.exe
