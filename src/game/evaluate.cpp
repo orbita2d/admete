@@ -535,32 +535,30 @@ void Evaluation::load_tables(std::string filename) {
         std::cout << "No such file: " << filename << std::endl;
         return;
     }
-    // Start by reading opening tables.
-    for (int i = 8; i < 48; i++) {
+    // Opening tables.
+    for (int sq = 8; sq < 48; sq++) {
         // Pawn Table
         int value;
         file >> value;
-        piece_square_tables[OPENING][WHITE][PAWN].at(i) = value;
+        piece_square_tables[OPENING][BLACK][PAWN][sq] = value;
     }
-    piece_square_tables[OPENING][BLACK][PAWN] = reverse_board(piece_square_tables[OPENING][WHITE][PAWN]);
     file >> std::ws;
     for (int p = KNIGHT; p < N_PIECE; p++) {
         for (int sq = 0; sq < 64; sq++) {
             // Other Tables
             int value;
             file >> value;
-            piece_square_tables[OPENING][WHITE][p].at(sq) = value;
+            piece_square_tables[OPENING][BLACK][p][sq] = value;
         }
-        piece_square_tables[OPENING][BLACK][p] = reverse_board(piece_square_tables[OPENING][WHITE][p]);
         file >> std::ws;
     }
+
     // Endgame tables.
-    for (int i = 8; i < 48; i++) {
+    for (int sq = 8; sq < 48; sq++) {
         // Pawn Table
         int value;
         file >> value;
-        piece_square_tables[ENDGAME][WHITE][PAWN].at(i) = value;
-        piece_square_tables[ENDGAME][BLACK][PAWN] = reverse_board(piece_square_tables[ENDGAME][WHITE][PAWN]);
+        piece_square_tables[OPENING][BLACK][PAWN][sq] = value;
     }
     file >> std::ws;
     for (int p = KNIGHT; p < N_PIECE; p++) {
@@ -568,12 +566,16 @@ void Evaluation::load_tables(std::string filename) {
             // Other Tables
             int value;
             file >> value;
-            piece_square_tables[ENDGAME][WHITE][p].at(sq) = value;
-            piece_square_tables[ENDGAME][BLACK][p] = reverse_board(piece_square_tables[ENDGAME][WHITE][p]);
+            piece_square_tables[ENDGAME][BLACK][p][sq] = value;
         }
         file >> std::ws;
     }
     file.close();
+
+    for (PieceType p = PAWN; p < N_PIECE; p++) {
+        piece_square_tables[OPENING][WHITE][p] = reverse_board(piece_square_tables[OPENING][BLACK][p]);
+        piece_square_tables[ENDGAME][WHITE][p] = reverse_board(piece_square_tables[ENDGAME][BLACK][p]);
+    }
 }
 
 score_t Evaluation::count_material(const Board &board) {
