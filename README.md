@@ -26,7 +26,7 @@ Run tests with:
 
 Linux:
 ```
-./build/tests`
+./build/tests
 ```
 
 Windows:
