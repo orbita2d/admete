@@ -59,6 +59,11 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
         return -ply_to_mate_score(board.ply());
     }
 
+    // Max ply
+    if (board.ply() >= MAX_PLY) {
+        return Evaluation::eval(board);
+    }
+
     // Leaf node for main tree.
     if (depth == 0) {
         return quiesce(board, alpha, beta, options);
@@ -302,6 +307,11 @@ score_t Search::pv_search(Board &board, const depth_t start_depth, const score_t
         // Beta is us being mated at a lower ply than this node, we can't do worse.
         // Fail high.
         return -ply_to_mate_score(board.ply());
+    }
+
+    // Max ply
+    if (board.ply() >= MAX_PLY) {
+        return Evaluation::eval(board);
     }
 
     // Leaf node for the main tree.
