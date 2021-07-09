@@ -8,7 +8,7 @@
 #include <assert.h>
 #include <iostream>
 
-bool cmp(Move &m1, Move &m2) {
+bool cmp(const Move &m1, const Move &m2) {
     // Comparison for the sort function. Should return true if m1 goes before m2.
     return m1.score > m2.score;
 }
@@ -173,10 +173,10 @@ void rank_and_sort_moves(Board &board, MoveList &legal_moves, const DenseMove ha
         }
     }
 
-    std::sort(good_captures.begin(), good_captures.end(), cmp);
-    std::sort(even_captures.begin(), even_captures.end(), cmp);
-    std::sort(bad_captures.begin(), bad_captures.end(), cmp);
-    std::sort(quiet_moves.begin(), quiet_moves.end(), cmp);
+    std::stable_sort(good_captures.begin(), good_captures.end(), cmp);
+    std::stable_sort(even_captures.begin(), even_captures.end(), cmp);
+    std::stable_sort(bad_captures.begin(), bad_captures.end(), cmp);
+    std::stable_sort(quiet_moves.begin(), quiet_moves.end(), cmp);
 
     // Move order is:
     // Captures with SEE > 50
