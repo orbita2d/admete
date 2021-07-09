@@ -8,29 +8,6 @@ score_t piece_material(const PieceType);
 typedef std::array<score_t, 64> position_board;
 typedef std::array<position_board, 6> position_board_set;
 
-class Score {
-  public:
-    constexpr Score(score_t o, score_t e) : opening_score(o), endgame_score(e) {}
-    inline Score operator+(Score that) {
-        return Score(opening_score + that.opening_score, endgame_score + that.endgame_score);
-    }
-    inline Score operator-(Score that) {
-        return Score(opening_score - that.opening_score, endgame_score - that.endgame_score);
-    }
-    inline Score &operator+=(Score that) {
-        opening_score += that.opening_score;
-        endgame_score += that.endgame_score;
-        return *this;
-    }
-    inline Score &operator-=(Score that) {
-        opening_score -= that.opening_score;
-        endgame_score -= that.endgame_score;
-        return *this;
-    }
-    score_t opening_score;
-    score_t endgame_score;
-};
-
 namespace Evaluation {
 void init();
 void load_tables(std::string filename);

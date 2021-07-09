@@ -1,9 +1,9 @@
 #pragma once
 #include <array>
+#include <assert.h>
 #include <inttypes.h>
 #include <string>
 #include <vector>
-#include <assert.h>
 
 typedef unsigned int uint;
 typedef uint64_t zobrist_t;
@@ -166,12 +166,42 @@ enum Bounds { LOWER, UPPER, EXACT };
 
 inline bool is_mating(const score_t score) { return (score >= MIN_MATE_SCORE) && (score <= MATING_SCORE); }
 
-inline ply_t mate_score_to_ply(const score_t score) { assert(score < MATING_SCORE); return MATING_SCORE - score; }
+inline ply_t mate_score_to_ply(const score_t score) {
+    assert(score < MATING_SCORE);
+    return MATING_SCORE - score;
+}
 
-inline score_t ply_to_mate_score(const ply_t ply) { assert(ply < MAX_PLY); return MATING_SCORE - ply; }
+inline score_t ply_to_mate_score(const ply_t ply) {
+    assert(ply < MAX_PLY);
+    return MATING_SCORE - ply;
+}
 
 constexpr int NEG_INF = -1000000000;
 constexpr int POS_INF = +1000000000;
+
+// Class for a score object with opening and endgame scores.
+class Score {
+  public:
+    constexpr Score(score_t o, score_t e) : opening_score(o), endgame_score(e) {}
+    inline Score operator+(Score that) {
+        return Score(opening_score + that.opening_score, endgame_score + that.endgame_score);
+    }
+    inline Score operator-(Score that) {
+        return Score(opening_score - that.opening_score, endgame_score - that.endgame_score);
+    }
+    inline Score &operator+=(Score that) {
+        opening_score += that.opening_score;
+        endgame_score += that.endgame_score;
+        return *this;
+    }
+    inline Score &operator-=(Score that) {
+        opening_score -= that.opening_score;
+        endgame_score -= that.endgame_score;
+        return *this;
+    }
+    score_t opening_score;
+    score_t endgame_score;
+};
 
 enum BishopTypes { LIGHTSQUARE, DARKSQUARE, N_BISHOPTYPES };
 
