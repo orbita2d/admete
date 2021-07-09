@@ -64,7 +64,7 @@ void Cache::TranspositionTable::store(const zobrist_t hash, const score_t eval, 
     if (is_enabled() == false) {
         return;
     }
-    const TransElement elem = TransElement(eval, bound, depth, move, ply);
+    const TransElement elem = TransElement(eval_to_tt(eval, ply), bound, depth, move);
     if (index < max_index) {
         // We are doing the first fill of the table;
         _data[hash] = elem;

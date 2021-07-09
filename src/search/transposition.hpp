@@ -18,8 +18,8 @@ score_t eval_from_tt(const score_t eval, const ply_t ply);
 // 6 bytes
 struct TransElement {
     TransElement() = default;
-    TransElement(score_t eval, Bounds bound, depth_t d, Move m, ply_t ply)
-        : score(eval_to_tt(eval, ply)), _depth(d),
+    TransElement(score_t eval, Bounds bound, depth_t d, Move m)
+        : score(eval), _depth(d),
           info((bound == Bounds::UPPER) ? TransState::UPPER
                                         : (bound == Bounds::LOWER) ? TransState::LOWER : TransState::EXACT),
           hash_move(pack_move(m)){};
