@@ -132,11 +132,13 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
         }
     }
 
+    // Calculate the node evaluation heuristic.
+    const score_t node_eval = Evaluation::eval(board);
     // Reverse futility pruning
+    // Prune if this node is almost certain to fail high.
     if (!board.is_endgame() && allow_null && depth <= futility_max_depth && !board.is_check()) {
-        const score_t node_heuristic = Evaluation::eval(board);
-        if (node_heuristic - futility_margins[depth] >= beta) {
-            return node_heuristic - futility_margins[depth];
+        if (node_eval - futility_margins[depth] >= beta) {
+            return node_eval - futility_margins[depth];
         }
     }
 
@@ -195,6 +197,7 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
         NodeType child = node == CUTNODE ? ALLNODE : CUTNODE;
 
         int search_depth = depth - 1;
+
         // Late move reductions:
         // At an expected All node, the most likely moves to prove us wrong and fail high are
         // one's ranked earliest in move ordering. We can be less careful about proving later moves.
@@ -212,7 +215,7 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
 
         // History pruning
         // On a quiet move, the score is a history score. If this is low, it's less likely to cause a beta cutoff.
-        if ((node == ALLNODE) && (counter > 3) && !move.is_promotion() && move.is_quiet() && (search_depth <= 2) &&
+        if ((node == ALLNODE) && (counter > 3) && !move.is_promotion() && move.is_quiet() && (search_depth < 3) &&
             !gives_check && !board.is_check() && move.score < 15) {
             continue;
         }
