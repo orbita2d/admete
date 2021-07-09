@@ -17,7 +17,7 @@ Binaries for x86-64 CPUs are available for every release.
 
 Build from source with cmake with:
 ```
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build --config Release
 ```
 
