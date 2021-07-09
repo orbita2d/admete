@@ -84,6 +84,7 @@ void Cache::TranspositionTable::set_delete() {
 }
 
 KillerTableRow Cache::KillerTable::probe(const ply_t ply) {
+    assert(ply < MAX_PLY);
     if (is_enabled() == false) {
         return NULL_KROW;
     }
@@ -91,6 +92,7 @@ KillerTableRow Cache::KillerTable::probe(const ply_t ply) {
 }
 
 void Cache::KillerTable::store(const ply_t ply, const Move move) {
+    assert(ply < MAX_PLY);
     if (is_enabled() == false) {
         return;
     }
@@ -126,7 +128,12 @@ void Cache::reinit() {
     transposition_table = TranspositionTable();
 }
 
-uint Cache::HistoryTable::probe(const PieceType pt, const Square sq) { return _data[pt][sq]; }
+uint Cache::HistoryTable::probe(const PieceType pt, const Square sq) {
+    assert(sq < 64);
+    assert(pt >= PAWN);
+    assert(pt < N_PIECE);
+    return _data[pt][sq];
+}
 void Cache::HistoryTable::store(const depth_t depth, const Move move) {
     if (is_enabled() == false) {
         return;
@@ -145,6 +152,7 @@ void Cache::HistoryTable::store(const depth_t depth, const Move move) {
     const PieceType pt = move.moving_piece;
     const Square to_square = move.target;
     // We don't check for overflow because it will simply never happen, UINT_MAX is 4294967295.
+    assert(_data[pt][to_square] < 4290000000);
     _data[pt][to_square] += depth * depth;
 }
 
@@ -157,6 +165,9 @@ void Cache::HistoryTable::clear() {
 }
 
 DenseMove Cache::CountermoveTable::probe(const Move prev_move) {
+    if (prev_move == NULL_MOVE) {
+        return NULL_DMOVE;
+    }
     const PieceType pt = prev_move.moving_piece;
     const Square to_square = prev_move.target;
     return _data[pt][to_square];
