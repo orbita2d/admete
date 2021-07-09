@@ -14,7 +14,7 @@ target_link_libraries(tests
         search_library)
 
 add_test(NAME tests
-        COMMAND tests)
+        COMMAND tests )
 
 set_property(TARGET tests PROPERTY CXX_STANDARD 17)
 
