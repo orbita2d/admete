@@ -1,5 +1,6 @@
 #include "evaluate.hpp"
 #include "board.hpp"
+#include "printing.hpp"
 #include <array>
 #include <fstream>
 #include <iomanip>
@@ -496,32 +497,15 @@ void Evaluation::print_tables() {
     }
     std::cout << std::endl;
     std::cout << "OPENING" << std::endl;
-    std::cout << "PAWN" << std::endl;
-    print_table(piece_square_tables[OPENING][WHITE][PAWN]);
-    std::cout << "KNIGHT" << std::endl;
-    print_table(piece_square_tables[OPENING][WHITE][KNIGHT]);
-    std::cout << "BISHOP" << std::endl;
-    print_table(piece_square_tables[OPENING][WHITE][BISHOP]);
-    std::cout << "ROOK" << std::endl;
-    print_table(piece_square_tables[OPENING][WHITE][ROOK]);
-    std::cout << "QUEEN" << std::endl;
-    print_table(piece_square_tables[OPENING][WHITE][QUEEN]);
-    std::cout << "KING" << std::endl;
-    print_table(piece_square_tables[OPENING][WHITE][KING]);
-
+    for (PieceType p = PAWN; p < N_PIECE; p++) {
+        std::cout << Printing::piece_name(p) << std::endl;
+        print_table(piece_square_tables[OPENING][WHITE][p]);
+    }
     std::cout << "ENDGAME" << std::endl;
-    std::cout << "PAWN" << std::endl;
-    print_table(piece_square_tables[ENDGAME][WHITE][PAWN]);
-    std::cout << "KNIGHT" << std::endl;
-    print_table(piece_square_tables[ENDGAME][WHITE][KNIGHT]);
-    std::cout << "BISHOP" << std::endl;
-    print_table(piece_square_tables[ENDGAME][WHITE][BISHOP]);
-    std::cout << "ROOK" << std::endl;
-    print_table(piece_square_tables[ENDGAME][WHITE][ROOK]);
-    std::cout << "QUEEN" << std::endl;
-    print_table(piece_square_tables[ENDGAME][WHITE][QUEEN]);
-    std::cout << "KING" << std::endl;
-    print_table(piece_square_tables[ENDGAME][WHITE][KING]);
+    for (PieceType p = PAWN; p < N_PIECE; p++) {
+        std::cout << Printing::piece_name(p) << std::endl;
+        print_table(piece_square_tables[ENDGAME][WHITE][p]);
+    }
 
     std::cout << "PASSED PAWN" << std::endl;
     print_table(pb_passed[WHITE]);
