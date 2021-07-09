@@ -38,4 +38,4 @@ jobs:
 
     - name: gtest
       working-directory: ${{github.workspace}}/build
-      run: tests
+      run: ./tests
