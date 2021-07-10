@@ -88,9 +88,9 @@ void set_option(std::istringstream &is, Search::SearchOptions &options) {
             options.tbenable = true;
             const bool success = Tablebase::init(value);
             if (success) {
-                std::cerr << "successful" << std::endl;
+                std::cerr << "Load Syzygy EGTB successful." << std::endl;
             } else {
-                std::cerr << "unsuccessful" << std::endl;
+                std::cerr << "Load Syzygy EGTB unsuccessful." << std::endl;
             }
         } else {
             return;
