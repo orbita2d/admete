@@ -178,14 +178,16 @@ void Board::make_move(Move &move) {
     if (whos_move == Colour::BLACK) {
         fullmove_counter++;
     }
-    aux_history[ply_counter + 1] = *aux_info;
+    int last_ep_file = en_passent() ? en_passent().file_index() : -1;
+    aux_history[ply_counter + 1].castling_rights = aux_info->castling_rights;
+    aux_history[ply_counter + 1].halfmove_clock = aux_info->halfmove_clock;
+
     ply_counter++;
-    aux_info = &aux_history[ply_counter];
+    aux_info++;
     const Colour us = whos_move;
     const Colour them = ~us;
     const PieceType p = move.moving_piece;
     assert(p != NO_PIECE);
-    int last_ep_file = en_passent() ? en_passent().file_index() : -1;
 
     if (move.is_capture() | (p == PAWN)) {
         aux_info->halfmove_clock = 0;
@@ -217,33 +219,24 @@ void Board::make_move(Move &move) {
     const Bitboard to_bb = sq_to_bb(move.target);
     const Bitboard from_to_bb = from_bb ^ to_bb;
 
-    if (move.is_king_castle()) {
-        const Bitboard rook_from_to_bb = Bitboards::rook_from_to[us][KINGSIDE];
+    if (move.is_castle()) {
+        const CastlingSide side = move.get_castleside();
+        const Bitboard rook_from_to_bb = Bitboards::rook_from_to[us][side];
         occupied_bb ^= from_to_bb;
         occupied_bb ^= rook_from_to_bb;
         colour_bb[us] ^= from_to_bb;
         colour_bb[us] ^= rook_from_to_bb;
         piece_bb[KING] ^= from_to_bb;
         piece_bb[ROOK] ^= rook_from_to_bb;
-
-    } else if (move.is_queen_castle()) {
-        const Bitboard rook_from_to_bb = Bitboards::rook_from_to[us][QUEENSIDE];
-        occupied_bb ^= from_to_bb;
-        occupied_bb ^= rook_from_to_bb;
-        colour_bb[us] ^= from_to_bb;
-        colour_bb[us] ^= rook_from_to_bb;
-        piece_bb[KING] ^= from_to_bb;
-        piece_bb[ROOK] ^= rook_from_to_bb;
-
     } else if (move.is_ep_capture()) {
         const Square captured_square = move.origin.rank() | move.target.file();
+        const Bitboard captured_bb = sq_to_bb(captured_square);
         occupied_bb ^= from_to_bb;
-        occupied_bb ^= sq_to_bb(captured_square);
+        occupied_bb ^= captured_bb;
         colour_bb[us] ^= from_to_bb;
-        colour_bb[them] ^= sq_to_bb(captured_square);
+        colour_bb[them] ^= captured_bb;
         piece_bb[PAWN] ^= from_to_bb;
-
-        piece_bb[PAWN] ^= sq_to_bb(captured_square);
+        piece_bb[PAWN] ^= captured_bb;
         // Make sure to lookup and record the piece captured
         move.captured_piece = PAWN;
         piece_counts[them][PAWN]--;
@@ -346,7 +339,7 @@ void Board::unmake_move(const Move move) {
         fullmove_counter--;
     }
     ply_counter--;
-    aux_info = &aux_history[ply_counter];
+    aux_info--;
 
     // Switch whos turn it is to play
     whos_move = ~whos_move;
@@ -365,39 +358,31 @@ void Board::unmake_move(const Move move) {
     const Bitboard to_bb = sq_to_bb(move.target);
     const Bitboard from_to_bb = from_bb ^ to_bb;
 
-    if (move.is_king_castle()) {
-        const Bitboard rook_from_to_bb = Bitboards::rook_from_to[us][KINGSIDE];
+    if (move.is_castle()) {
+        const CastlingSide side = move.get_castleside();
+        const Bitboard rook_from_to_bb = Bitboards::rook_from_to[us][side];
         occupied_bb ^= from_to_bb;
         occupied_bb ^= rook_from_to_bb;
         colour_bb[us] ^= from_to_bb;
         colour_bb[us] ^= rook_from_to_bb;
         piece_bb[KING] ^= from_to_bb;
         piece_bb[ROOK] ^= rook_from_to_bb;
-
-    } else if (move.is_queen_castle()) {
-        const Bitboard rook_from_to_bb = Bitboards::rook_from_to[us][QUEENSIDE];
-        occupied_bb ^= from_to_bb;
-        occupied_bb ^= rook_from_to_bb;
-        colour_bb[us] ^= from_to_bb;
-        colour_bb[us] ^= rook_from_to_bb;
-        piece_bb[KING] ^= from_to_bb;
-        piece_bb[ROOK] ^= rook_from_to_bb;
-
     } else if (move.is_ep_capture()) {
         const Square captured_square = move.origin.rank() | move.target.file();
+        const Bitboard captured_bb = sq_to_bb(captured_square);
         occupied_bb ^= from_to_bb;
-        occupied_bb ^= sq_to_bb(captured_square);
+        occupied_bb ^= captured_bb;
         colour_bb[us] ^= from_to_bb;
-        colour_bb[them] ^= sq_to_bb(captured_square);
+        colour_bb[them] ^= captured_bb;
         piece_bb[PAWN] ^= from_to_bb;
-        piece_bb[PAWN] ^= sq_to_bb(captured_square);
+        piece_bb[PAWN] ^= captured_bb;
 
         // Update piece counts
         piece_counts[them][PAWN]++;
         _material += Evaluation::piece_material(PAWN);
 
     } else if (move.is_capture()) {
-        assert(move.captured_piece != NO_PIECE);
+        assert(move.captured_piece < KING);
         // Update the bitboards.
         occupied_bb ^= from_bb;
         colour_bb[us] ^= from_to_bb;
@@ -412,6 +397,7 @@ void Board::unmake_move(const Move move) {
         colour_bb[us] ^= from_to_bb;
         piece_bb[p] ^= from_to_bb;
     }
+
     // And now do the promotion if it is one.
     // The quiet move method above moved a pawn from to->from
     // We need to remove the promoted piece and add a pawn
@@ -623,13 +609,10 @@ bool Board::gives_check(const Move move) const {
         if (check_squares(get_promoted(move)) & move.target) {
             return true;
         }
-    } else if (move.is_king_castle()) {
+    } else if (move.is_castle()) {
+        const CastlingSide side = move.get_castleside();
         // The only piece that could give check here is the rook.
-        if (check_squares(ROOK) & sq_to_bb(RookCastleSquares[who_to_play()][KINGSIDE])) {
-            return true;
-        }
-    } else if (move.is_queen_castle()) {
-        if (check_squares(ROOK) & sq_to_bb(RookCastleSquares[who_to_play()][QUEENSIDE])) {
+        if (check_squares(ROOK) & sq_to_bb(RookCastleSquares[who_to_play()][side])) {
             return true;
         }
     } else if (move.is_ep_capture()) {

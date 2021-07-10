@@ -320,33 +320,16 @@ Score psqt_diff(const Colour moving, const Move &move) {
     }
 
     // Castling needs the rook to be moved.
-    if (move.is_king_castle()) {
+    if (move.is_castle()) {
+        const CastlingSide side = move.get_castleside();
+        const Square rook_from = RookSquares[moving][side];
+        const Square rook_to = RookCastleSquares[moving][side];
         if (moving == WHITE) {
-            constexpr Square rook_from = RookSquares[WHITE][KINGSIDE];
-            constexpr Square rook_to = RookCastleSquares[WHITE][KINGSIDE];
             score += Score(piece_square_tables[OPENING][WHITE][ROOK][rook_to],
                            piece_square_tables[ENDGAME][WHITE][ROOK][rook_to]);
             score -= Score(piece_square_tables[OPENING][WHITE][ROOK][rook_from],
                            piece_square_tables[ENDGAME][WHITE][ROOK][rook_from]);
         } else {
-            constexpr Square rook_from = RookSquares[BLACK][KINGSIDE];
-            constexpr Square rook_to = RookCastleSquares[BLACK][KINGSIDE];
-            score -= Score(piece_square_tables[OPENING][BLACK][ROOK][rook_to],
-                           piece_square_tables[ENDGAME][BLACK][ROOK][rook_to]);
-            score += Score(piece_square_tables[OPENING][BLACK][ROOK][rook_from],
-                           piece_square_tables[ENDGAME][BLACK][ROOK][rook_from]);
-        }
-    } else if (move.is_queen_castle()) {
-        if (moving == WHITE) {
-            constexpr Square rook_from = RookSquares[WHITE][QUEENSIDE];
-            constexpr Square rook_to = RookCastleSquares[WHITE][QUEENSIDE];
-            score += Score(piece_square_tables[OPENING][WHITE][ROOK][rook_to],
-                           piece_square_tables[ENDGAME][WHITE][ROOK][rook_to]);
-            score -= Score(piece_square_tables[OPENING][WHITE][ROOK][rook_from],
-                           piece_square_tables[ENDGAME][WHITE][ROOK][rook_from]);
-        } else {
-            constexpr Square rook_from = RookSquares[BLACK][QUEENSIDE];
-            constexpr Square rook_to = RookCastleSquares[BLACK][QUEENSIDE];
             score -= Score(piece_square_tables[OPENING][BLACK][ROOK][rook_to],
                            piece_square_tables[ENDGAME][BLACK][ROOK][rook_to]);
             score += Score(piece_square_tables[OPENING][BLACK][ROOK][rook_from],

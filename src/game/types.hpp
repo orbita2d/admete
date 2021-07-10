@@ -286,6 +286,11 @@ struct Move {
     constexpr bool is_double_push() const { return type == DOUBLE_PUSH; }
     constexpr bool is_king_castle() const { return type == KING_CASTLE; }
     constexpr bool is_queen_castle() const { return type == QUEEN_CASTLE; }
+    constexpr bool is_castle() const { return is_king_castle() || is_queen_castle(); };
+    constexpr CastlingSide get_castleside() const {
+        assert(is_castle());
+        return is_king_castle() ? KINGSIDE : QUEENSIDE;
+    }
     constexpr bool is_knight_promotion() const { return (type & ~CAPTURE) == (PROMOTION); }
     constexpr bool is_bishop_promotion() const { return (type & ~CAPTURE) == (PROMOTION | SPECIAL2); }
     constexpr bool is_rook_promotion() const { return (type & ~CAPTURE) == (PROMOTION | SPECIAL1); }

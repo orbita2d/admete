@@ -111,13 +111,15 @@ zobrist_t Zobrist::diff(const Move move, const Colour us, const int last_ep_file
         hash ^= zobrist_table[them][PAWN][captured_square];
     } else if (move.is_capture()) {
         hash ^= zobrist_table[them][move.captured_piece][move.target];
-    } else if (move.is_king_castle()) {
-        hash ^= zobrist_table[us][ROOK][RookSquares[us][KINGSIDE]];
-        hash ^= zobrist_table[us][ROOK][move.origin + Direction::E];
-    } else if (move.is_queen_castle()) {
-        hash ^= zobrist_table[us][ROOK][RookSquares[us][QUEENSIDE]];
-        hash ^= zobrist_table[us][ROOK][move.origin + Direction::W];
     }
+    if (move.is_castle()) {
+        const CastlingSide side = move.get_castleside();
+        const Square rook_from = RookSquares[us][side];
+        const Square rook_to = RookCastleSquares[us][side];
+        hash ^= zobrist_table[us][ROOK][rook_from];
+        hash ^= zobrist_table[us][ROOK][rook_to];
+    }
+
     if (move.is_promotion()) {
         hash ^= zobrist_table[us][PAWN][move.target];
         hash ^= zobrist_table[us][get_promoted(move)][move.target];
