@@ -84,7 +84,7 @@ zobrist_t Zobrist::material(const Board &board) {
 }
 
 zobrist_t Zobrist::diff(const Move move, const Colour us, const int last_ep_file,
-                        const std::array<std::array<bool, N_COLOUR>, N_CASTLE> castling_rights_change) {
+                        const unsigned castling_rights_change) {
     zobrist_t hash = 0;
     Colour them = ~us;
     hash ^= zobrist_table[us][move.moving_piece][move.origin];
@@ -97,13 +97,19 @@ zobrist_t Zobrist::diff(const Move move, const Colour us, const int last_ep_file
         hash ^= zobrist_table_ep[move.origin.file_index()];
     }
 
-    for (int i = 0; i < N_COLOUR; i++) {
-        for (int j = 0; j < N_CASTLE; j++) {
-            if (castling_rights_change[i][j]) {
-                hash ^= zobrist_table_cr[i][j];
-            }
-        }
+    if (castling_rights_change & WHITE_KINGSIDE) {
+        hash ^= zobrist_table_cr[WHITE][KINGSIDE];
     }
+    if (castling_rights_change & WHITE_QUEENSIDE) {
+        hash ^= zobrist_table_cr[WHITE][QUEENSIDE];
+    }
+    if (castling_rights_change & BLACK_KINGSIDE) {
+        hash ^= zobrist_table_cr[BLACK][KINGSIDE];
+    }
+    if (castling_rights_change & BLACK_QUEENSIDE) {
+        hash ^= zobrist_table_cr[BLACK][QUEENSIDE];
+    }
+
     if (move.is_ep_capture()) {
         // En-passent is weird.
         const Square captured_square = move.origin.rank() | move.target.file();

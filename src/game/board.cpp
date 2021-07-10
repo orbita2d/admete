@@ -84,10 +84,7 @@ void Board::fen_decode(const std::string &fen) {
         throw std::domain_error("Unrecognised <Side to move> character");
     }
 
-    aux_info->castling_rights[WHITE][KINGSIDE] = false;
-    aux_info->castling_rights[WHITE][QUEENSIDE] = false;
-    aux_info->castling_rights[BLACK][KINGSIDE] = false;
-    aux_info->castling_rights[BLACK][QUEENSIDE] = false;
+    aux_info->castling_rights = NO_RIGHTS;
     // Castling rights
     if (castling.length() > 4) {
         throw std::domain_error("<Castling> length > 4");
@@ -98,19 +95,19 @@ void Board::fen_decode(const std::string &fen) {
         for (uint i = 0; i < castling.length(); i++) {
             switch (castling[i]) {
             case 'q':
-                aux_info->castling_rights[BLACK][QUEENSIDE] = true;
+                aux_info->castling_rights |= BLACK_QUEENSIDE;
                 break;
 
             case 'Q':
-                aux_info->castling_rights[WHITE][QUEENSIDE] = true;
+                aux_info->castling_rights |= WHITE_QUEENSIDE;
                 break;
 
             case 'k':
-                aux_info->castling_rights[BLACK][KINGSIDE] = true;
+                aux_info->castling_rights |= BLACK_KINGSIDE;
                 break;
 
             case 'K':
-                aux_info->castling_rights[WHITE][KINGSIDE] = true;
+                aux_info->castling_rights |= WHITE_KINGSIDE;
                 break;
 
             default:
@@ -202,17 +199,21 @@ void Board::make_move(Move &move) {
     } else {
         aux_info->en_passent_target = 0;
     }
-    std::array<std::array<bool, N_COLOUR>, N_CASTLE> castling_rights_change = {{{{false, false}}, {{false, false}}}};
+    unsigned int castling_rights_change = NO_RIGHTS;
+    const CastlingRights us_kingside = us == WHITE ? WHITE_KINGSIDE : BLACK_KINGSIDE;
+    const CastlingRights us_queenside = us == WHITE ? WHITE_QUEENSIDE : BLACK_QUEENSIDE;
+    const CastlingRights them_kingside = them == WHITE ? WHITE_KINGSIDE : BLACK_KINGSIDE;
+    const CastlingRights them_queenside = them == WHITE ? WHITE_QUEENSIDE : BLACK_QUEENSIDE;
     if (p == KING) {
         king_square[us] = move.target;
         if (can_castle(us, KINGSIDE)) {
-            castling_rights_change[us][KINGSIDE] = true;
+            castling_rights_change |= us_kingside;
         }
         if (can_castle(us, QUEENSIDE)) {
-            castling_rights_change[us][QUEENSIDE] = true;
+            castling_rights_change |= us_queenside;
         }
-        aux_info->castling_rights[us][KINGSIDE] = false;
-        aux_info->castling_rights[us][QUEENSIDE] = false;
+        aux_info->castling_rights &= ~us_kingside;
+        aux_info->castling_rights &= ~us_queenside;
     }
 
     const Bitboard from_bb = sq_to_bb(move.origin);
@@ -275,22 +276,22 @@ void Board::make_move(Move &move) {
 
     // Check if we've moved our rook to update our castling rights.
     if ((move.origin == RookSquares[us][KINGSIDE]) & can_castle(us, KINGSIDE)) {
-        aux_info->castling_rights[us][KINGSIDE] = false;
-        castling_rights_change[us][KINGSIDE] = true;
+        aux_info->castling_rights &= ~us_kingside;
+        castling_rights_change |= us_kingside;
     } else if ((move.origin == RookSquares[us][QUEENSIDE]) & can_castle(us, QUEENSIDE)) {
-        aux_info->castling_rights[us][QUEENSIDE] = false;
-        castling_rights_change[us][QUEENSIDE] = true;
+        aux_info->castling_rights &= ~us_queenside;
+        castling_rights_change |= us_queenside;
     }
 
     // Check for rook captures to update their castling rights
     if (move.is_capture()) {
         if ((move.target == RookSquares[them][KINGSIDE]) & can_castle(them, KINGSIDE)) {
-            aux_info->castling_rights[them][KINGSIDE] = false;
-            castling_rights_change[them][KINGSIDE] = true;
+            aux_info->castling_rights &= ~them_kingside;
+            castling_rights_change |= them_kingside;
         }
         if ((move.target == RookSquares[them][QUEENSIDE]) & can_castle(them, QUEENSIDE)) {
-            aux_info->castling_rights[them][QUEENSIDE] = false;
-            castling_rights_change[them][QUEENSIDE] = true;
+            aux_info->castling_rights &= ~them_queenside;
+            castling_rights_change |= them_queenside;
         }
     }
 
@@ -758,7 +759,8 @@ void Board::flip() {
         piece_bb[p] = Bitboards::flip_vertical(piece_bb[p]);
     }
 
-    std::swap(aux_info->castling_rights[WHITE], aux_info->castling_rights[BLACK]);
+    const unsigned old_rights = aux_info->castling_rights;
+    aux_info->castling_rights = ((old_rights & get_rights(BLACK)) >> 2) | ((old_rights & get_rights(WHITE)) << 2);
     initialise();
 }
 

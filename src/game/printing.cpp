@@ -72,16 +72,16 @@ std::string Board::fen_encode() const {
     ss << (whos_move == Colour::WHITE ? "w" : "b");
     ss << " ";
 
-    if (aux_info->castling_rights[WHITE][KINGSIDE]) {
+    if (aux_info->castling_rights & WHITE_KINGSIDE) {
         ss << "K";
     }
-    if (aux_info->castling_rights[WHITE][QUEENSIDE]) {
+    if (aux_info->castling_rights & WHITE_QUEENSIDE) {
         ss << "Q";
     }
-    if (aux_info->castling_rights[BLACK][KINGSIDE]) {
+    if (aux_info->castling_rights & BLACK_KINGSIDE) {
         ss << "k";
     }
-    if (aux_info->castling_rights[BLACK][QUEENSIDE]) {
+    if (aux_info->castling_rights & BLACK_QUEENSIDE) {
         ss << "q";
     }
 
@@ -121,19 +121,19 @@ void Board::pretty() const {
         }
         if (rank == 7) {
             std::cout << "  ";
-            if (aux_info->castling_rights[BLACK][KINGSIDE]) {
+            if (aux_info->castling_rights & BLACK_KINGSIDE) {
                 std::cout << 'k';
             }
-            if (aux_info->castling_rights[BLACK][QUEENSIDE]) {
+            if (aux_info->castling_rights & BLACK_QUEENSIDE) {
                 std::cout << 'q';
             }
         }
         if (rank == 2) {
             std::cout << "  ";
-            if (aux_info->castling_rights[WHITE][KINGSIDE]) {
+            if (aux_info->castling_rights & WHITE_KINGSIDE) {
                 std::cout << 'K';
             }
-            if (aux_info->castling_rights[WHITE][QUEENSIDE]) {
+            if (aux_info->castling_rights & WHITE_QUEENSIDE) {
                 std::cout << 'Q';
             }
         }

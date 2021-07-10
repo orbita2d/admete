@@ -8,6 +8,13 @@
 typedef unsigned int uint;
 typedef uint64_t zobrist_t;
 
+// Colours
+
+enum Colour : int { WHITE, BLACK, N_COLOUR };
+
+constexpr Colour operator~(Colour c) {
+    return Colour(c ^ Colour::BLACK); // Toggle color
+}
 enum Direction : int {
     N = 8,
     E = 1,
@@ -100,6 +107,31 @@ static constexpr Square FileH = 7;
 } // namespace Squares
 
 enum CastlingSide { KINGSIDE, QUEENSIDE, N_CASTLE };
+enum CastlingRights { NO_RIGHTS = 0, WHITE_KINGSIDE = 1, WHITE_QUEENSIDE = 2, BLACK_KINGSIDE = 4, BLACK_QUEENSIDE = 8 };
+
+constexpr CastlingRights get_rights(const Colour c, const CastlingSide side) {
+    if (c == WHITE) {
+        if (side == KINGSIDE) {
+            return WHITE_KINGSIDE;
+        } else {
+            return WHITE_QUEENSIDE;
+        }
+    } else {
+        if (side == KINGSIDE) {
+            return BLACK_KINGSIDE;
+        } else {
+            return BLACK_QUEENSIDE;
+        }
+    }
+}
+
+constexpr unsigned get_rights(const Colour c) {
+    if (c == WHITE) {
+        return WHITE_KINGSIDE | WHITE_QUEENSIDE;
+    } else {
+        return BLACK_KINGSIDE | BLACK_QUEENSIDE;
+    }
+}
 
 // Squares the rooks sit on (for castling).
 constexpr std::array<std::array<Square, 2>, 2> RookSquares = {
@@ -111,13 +143,6 @@ constexpr std::array<std::array<Square, 2>, 2> RookCastleSquares = {
     {{Squares::FileF | Squares::Rank1, Squares::FileD | Squares::Rank1},
      {Squares::FileF | Squares::Rank8, Squares::FileD | Squares::Rank8}}};
 
-// Colours
-
-enum Colour : int { WHITE, BLACK, N_COLOUR };
-
-constexpr Colour operator~(Colour c) {
-    return Colour(c ^ Colour::BLACK); // Toggle color
-}
 // Pieces
 
 enum PieceType { PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING, N_PIECE, NO_PIECE };

@@ -9,7 +9,7 @@
 struct AuxilliaryInfo {
     // Information that is game history dependent, that would otherwise need to be encoded in a move.
     // Access like castling_rights[WHITE][KINGSIDE]
-    std::array<std::array<bool, N_COLOUR>, N_CASTLE> castling_rights;
+    unsigned castling_rights;
     ply_t halfmove_clock = 0;
     Square en_passent_target;
     Bitboard pinned;
@@ -118,10 +118,8 @@ class Board {
     Colour who_to_play() const { return whos_move; }
     bool is_black_move() const { return whos_move == BLACK; }
     bool is_white_move() const { return whos_move == WHITE; }
-    bool can_castle(const Colour c) const {
-        return aux_info->castling_rights[c][KINGSIDE] | aux_info->castling_rights[c][QUEENSIDE];
-    }
-    bool can_castle(const Colour c, const CastlingSide s) const { return aux_info->castling_rights[c][s]; }
+    bool can_castle(const Colour c) const { return aux_info->castling_rights & get_rights(c); }
+    bool can_castle(const Colour c, const CastlingSide s) const { return aux_info->castling_rights & get_rights(c, s); }
     Square en_passent() const { return aux_info->en_passent_target; }
     int material() const { return _material; }
     Score get_psqt() const { return psqt; }
@@ -196,8 +194,7 @@ namespace Zobrist {
 void init();
 zobrist_t hash(const Board &board);
 zobrist_t material(const Board &board);
-zobrist_t diff(const Move move, const Colour us, const int last_ep_file,
-               const std::array<std::array<bool, N_COLOUR>, N_CASTLE> castling_rights_change);
+zobrist_t diff(const Move move, const Colour us, const int last_ep_file, const unsigned castling_rights_change);
 zobrist_t nulldiff(const Colour us, const int last_ep_file);
 
 inline zobrist_t zobrist_table[N_COLOUR][N_PIECE][N_SQUARE];
