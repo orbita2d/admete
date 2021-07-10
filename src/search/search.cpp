@@ -10,7 +10,7 @@
 #include <time.h>
 
 constexpr depth_t null_move_depth_reduction = 2;
-constexpr score_t extended_futility_margins[] = {0, 200, 500};
+constexpr score_t extended_futility_margins[] = {0, 200, 700};
 constexpr score_t reverse_futility_margins[] = {0, 330, 500, 900};
 constexpr depth_t efp_max_depth = sizeof(extended_futility_margins) / sizeof(score_t) - 1;
 constexpr depth_t rfp_max_depth = sizeof(reverse_futility_margins) / sizeof(score_t) - 1;
