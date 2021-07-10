@@ -36,8 +36,8 @@ struct TransElement {
     DenseMove move() const { return hash_move; }
 
   private:
-    score_t score = 0;
-    depth_t _depth = 0;
+    int16_t score = 0;
+    uint8_t _depth = 0;
     tt_flags_t info = EXACT;
     DenseMove hash_move = NULL_DMOVE;
 };

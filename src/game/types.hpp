@@ -168,18 +168,18 @@ constexpr Piece BLANK_PIECE = Piece(WHITE, NO_PIECE);
 
 std::ostream &operator<<(std::ostream &os, const Piece piece);
 
-typedef uint8_t depth_t;
+typedef uint_fast8_t depth_t;
 constexpr depth_t MAX_DEPTH = 127;
 
 typedef unsigned int ply_t;
 constexpr ply_t MAX_PLY = 512;
-typedef int16_t score_t;
+typedef int_fast16_t score_t;
 
 constexpr score_t MAX_SCORE = 32767;
 constexpr score_t MIN_SCORE = -MAX_SCORE;
 
 // Space for mating scores [MIN_MATE_SCORE, MATING_SCORE]
-constexpr score_t MATING_SCORE = 32766;
+constexpr score_t MATING_SCORE = MAX_SCORE - 1;
 constexpr score_t MIN_MATE_SCORE = MATING_SCORE - MAX_PLY;
 
 // Space for Tablebase wins [TBWIN_MIN, TBWIN]
