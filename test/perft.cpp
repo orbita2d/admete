@@ -80,5 +80,23 @@ TEST(Perft, ep_weirdness) {
   for (const auto &[fen, nodes] : testcases) {
     board.fen_decode(fen);
     EXPECT_EQ(Search::perft_bulk(1, board), nodes);
+    board.flip();
+    EXPECT_EQ(Search::perft_bulk(1, board), nodes);
+  }
+}
+
+TEST(Perft, promotion_counting) {
+  std::pair<std::string, unsigned long> testcases[] = {
+      {"1K5r/4P3/8/8/8/8/8/1k6 w - - 0 1", 7},
+      {"5r2/4P3/8/8/8/5K2/8/1k6 w - - 0 1", 10},
+      {"7r/4P3/8/8/8/5K2/8/1k6 w - - 0 1", 12},
+      {"3r4/4P3/8/8/8/5K2/8/1k6 w - - 0 1", 16},
+  };
+  Board board = Board();
+  for (const auto &[fen, nodes] : testcases) {
+    board.fen_decode(fen);
+    EXPECT_EQ(Search::perft_bulk(1, board), nodes);
+    board.flip();
+    EXPECT_EQ(Search::perft_bulk(1, board), nodes);
   }
 }
