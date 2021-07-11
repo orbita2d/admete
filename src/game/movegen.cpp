@@ -11,22 +11,18 @@
 template <Colour us> void gen_pawn_push(const Square origin, MoveList &moves) {
     const Square target = origin + forwards(us);
     Move move(PAWN, origin, target);
-    moves.push_back(move);
-}
-
-// Generate a single pawn push that promotes.
-template <Colour us> void gen_pawn_push_prom(const Square origin, MoveList &moves) {
-    const Square target = origin + forwards(us);
-    Move move(PAWN, origin, target);
-
-    move.make_queen_promotion();
-    moves.push_back(move);
-    move.make_knight_promotion();
-    moves.push_back(move);
-    move.make_rook_promotion();
-    moves.push_back(move);
-    move.make_bishop_promotion();
-    moves.push_back(move);
+    if (origin.rank() == relative_rank(us, RANK7)) {
+        move.make_queen_promotion();
+        moves.push_back(move);
+        move.make_knight_promotion();
+        moves.push_back(move);
+        move.make_rook_promotion();
+        moves.push_back(move);
+        move.make_bishop_promotion();
+        moves.push_back(move);
+    } else {
+        moves.push_back(move);
+    }
 }
 
 template <Colour us> void gen_pawn_double_push(const Square origin, MoveList &moves) {
@@ -101,7 +97,18 @@ template <Colour us, Direction dir> void gen_pawn_cap(const Square origin, MoveL
     const Square target = (origin + forwards(us)) + dir;
     Move move(PAWN, origin, target);
     move.make_capture();
-    moves.push_back(move);
+    if (origin.rank() == relative_rank(us, RANK7)) {
+        move.make_queen_promotion();
+        moves.push_back(move);
+        move.make_knight_promotion();
+        moves.push_back(move);
+        move.make_rook_promotion();
+        moves.push_back(move);
+        move.make_bishop_promotion();
+        moves.push_back(move);
+    } else {
+        moves.push_back(move);
+    }
 }
 
 // Construct a simple pawn capture (no ep, no promotion) in given direction, but with the capture square constrained.
@@ -114,45 +121,18 @@ void gen_pawn_cap(const Square origin, MoveList &moves, const Bitboard target_ma
     }
     Move move(PAWN, origin, target);
     move.make_capture();
-    moves.push_back(move);
-}
-
-// Construct a promoting pawn capture in given direction.
-template <Colour us, Direction dir> void gen_pawn_prom_cap(const Square origin, MoveList &moves) {
-    assert(origin.rank() == relative_rank(us, RANK7));
-    assert(dir == W || dir == E);
-    const Square target = (origin + forwards(us)) + dir;
-    Move move(PAWN, origin, target);
-    move.make_capture();
-    move.make_queen_promotion();
-    moves.push_back(move);
-    move.make_knight_promotion();
-    moves.push_back(move);
-    move.make_rook_promotion();
-    moves.push_back(move);
-    move.make_bishop_promotion();
-    moves.push_back(move);
-}
-
-// Construct a promoting pawn capture in given direction, but with the capture square constrained.
-template <Colour us, Direction dir>
-void gen_pawn_prom_cap(const Square origin, MoveList &moves, const Bitboard target_mask) {
-    assert(origin.rank() == relative_rank(us, RANK7));
-    assert(dir == W || dir == E);
-    const Square target = (origin + forwards(us)) + dir;
-    if (!(target_mask & target)) {
-        return;
+    if (origin.rank() == relative_rank(us, RANK7)) {
+        move.make_queen_promotion();
+        moves.push_back(move);
+        move.make_knight_promotion();
+        moves.push_back(move);
+        move.make_rook_promotion();
+        moves.push_back(move);
+        move.make_bishop_promotion();
+        moves.push_back(move);
+    } else {
+        moves.push_back(move);
     }
-    Move move(PAWN, origin, target);
-    move.make_capture();
-    move.make_queen_promotion();
-    moves.push_back(move);
-    move.make_knight_promotion();
-    moves.push_back(move);
-    move.make_rook_promotion();
-    moves.push_back(move);
-    move.make_bishop_promotion();
-    moves.push_back(move);
 }
 
 // Generate all legal pawn moves for a specific gen type.
@@ -171,26 +151,19 @@ template <Colour us, GenType gen> void gen_pawn_moves(const Board &board, MoveLi
         occ &= ~Bitboards::shift<backwards(us)>(board.pieces());
 
         // Unpinned pawns on ranks 2 --> 6
-        q_nopin = occ & ~board.pinned() & ~Bitboards::rank(relative_rank(us, RANK7));
+        q_nopin = occ & ~board.pinned();
         while (q_nopin) {
             const Square sq = pop_lsb(&q_nopin);
             gen_pawn_push<us>(sq, moves);
         }
         // Pinned pawns on ranks 2 --> 6
-        q_pin = occ & board.pinned() & ~Bitboards::rank(relative_rank(us, RANK7));
+        q_pin = occ & board.pinned();
         while (q_pin) {
             const Square sq = pop_lsb(&q_pin);
             // Can push only if the pin is down a file.
             if (sq.file() == ks.file()) {
                 gen_pawn_push<us>(sq, moves);
             }
-        }
-
-        // Unpinned pieces on rank 7, pinned pawns on rank 7 cannot push.
-        q_nopin = occ & ~board.pinned() & Bitboards::rank(relative_rank(us, RANK7));
-        while (q_nopin) {
-            const Square sq = pop_lsb(&q_nopin);
-            gen_pawn_push_prom<us>(sq, moves);
         }
 
         // Double pawn pushes.
@@ -225,30 +198,17 @@ template <Colour us, GenType gen> void gen_pawn_moves(const Board &board, MoveLi
         constexpr Direction rSW = (Direction)(backwards(us) + W);
         occ &= Bitboards::shift<rSW>(board.pieces(~us));
 
-        // Non-promoting captures
-        Bitboard q_nopin = occ & ~board.pinned() & ~Bitboards::rank(relative_rank(us, RANK7));
+        // Captures
+        Bitboard q_nopin = occ & ~board.pinned();
         while (q_nopin) {
             const Square sq = pop_lsb(&q_nopin);
             gen_pawn_cap<us, E>(sq, moves);
         }
-        Bitboard q_pin = occ & board.pinned() & ~Bitboards::rank(relative_rank(us, RANK7));
+        Bitboard q_pin = occ & board.pinned();
         while (q_pin) {
             const Square sq = pop_lsb(&q_pin);
             const Bitboard target_squares = Bitboards::line(sq, ks);
             gen_pawn_cap<us, E>(sq, moves, target_squares);
-        }
-
-        // Promoting captures
-        q_nopin = occ & ~board.pinned() & Bitboards::rank(relative_rank(us, RANK7));
-        while (q_nopin) {
-            const Square sq = pop_lsb(&q_nopin);
-            gen_pawn_prom_cap<us, E>(sq, moves);
-        }
-        q_pin = occ & board.pinned() & Bitboards::rank(relative_rank(us, RANK7));
-        while (q_pin) {
-            const Square sq = pop_lsb(&q_pin);
-            const Bitboard target_squares = Bitboards::line(sq, ks);
-            gen_pawn_prom_cap<us, E>(sq, moves, target_squares);
         }
 
         occ = pawns;
@@ -257,29 +217,16 @@ template <Colour us, GenType gen> void gen_pawn_moves(const Board &board, MoveLi
         occ &= Bitboards::shift<rSE>(board.pieces(~us));
 
         // Non-promoting captures
-        q_nopin = occ & ~board.pinned() & ~Bitboards::rank(relative_rank(us, RANK7));
+        q_nopin = occ & ~board.pinned();
         while (q_nopin) {
             const Square sq = pop_lsb(&q_nopin);
             gen_pawn_cap<us, W>(sq, moves);
         }
-        q_pin = occ & board.pinned() & ~Bitboards::rank(relative_rank(us, RANK7));
+        q_pin = occ & board.pinned();
         while (q_pin) {
             const Square sq = pop_lsb(&q_pin);
             const Bitboard target_squares = Bitboards::line(sq, ks);
             gen_pawn_cap<us, W>(sq, moves, target_squares);
-        }
-
-        // Promoting captures
-        q_nopin = occ & ~board.pinned() & Bitboards::rank(relative_rank(us, RANK7));
-        while (q_nopin) {
-            const Square sq = pop_lsb(&q_nopin);
-            gen_pawn_prom_cap<us, W>(sq, moves);
-        }
-        q_pin = occ & board.pinned() & Bitboards::rank(relative_rank(us, RANK7));
-        while (q_pin) {
-            const Square sq = pop_lsb(&q_pin);
-            const Bitboard target_squares = Bitboards::line(sq, ks);
-            gen_pawn_prom_cap<us, W>(sq, moves, target_squares);
         }
 
         // ep-captures
@@ -306,7 +253,6 @@ template <Colour us, GenType gen> void gen_pawn_moves(const Board &board, MoveLi
         // We can capture the checker
         const Square ts = board.checkers(0);
         const Bitboard target_square = sq_to_bb(ts);
-        const bool on_eighth = ts.rank() == relative_rank(us, RANK8);
 
         Bitboard occ = pawns;
 
@@ -316,11 +262,7 @@ template <Colour us, GenType gen> void gen_pawn_moves(const Board &board, MoveLi
 
         while (occ) {
             const Square sq = pop_lsb(&occ);
-            if (on_eighth) {
-                gen_pawn_prom_cap<us, E>(sq, moves);
-            } else {
-                gen_pawn_cap<us, E>(sq, moves);
-            }
+            gen_pawn_cap<us, E>(sq, moves);
         }
 
         occ = pawns;
@@ -330,11 +272,7 @@ template <Colour us, GenType gen> void gen_pawn_moves(const Board &board, MoveLi
 
         while (occ) {
             const Square sq = pop_lsb(&occ);
-            if (on_eighth) {
-                gen_pawn_prom_cap<us, W>(sq, moves);
-            } else {
-                gen_pawn_cap<us, W>(sq, moves);
-            }
+            gen_pawn_cap<us, W>(sq, moves);
         }
 
         if (board.en_passent() != NO_FILE) {
@@ -356,7 +294,6 @@ template <Colour us, GenType gen> void gen_pawn_moves(const Board &board, MoveLi
         occ = pawns;
         // All of our pawns that can move that can block the check by pushing.
         occ &= Bitboards::shift<backwards(us)>(between_squares);
-
         while (occ) {
             const Square sq = pop_lsb(&occ);
             gen_pawn_push<us>(sq, moves);
