@@ -275,7 +275,7 @@ Score psqt_diff(const Colour moving, const Move &move) {
 
     // Apply piece value for captures.
     if (move.is_ep_capture()) {
-        const Square captured_square = move.origin.rank() | move.target.file();
+        const Square captured_square(move.origin.rank(), move.target.file());
         assert(move.captured_piece == PAWN);
         if (moving == WHITE) {
             score += piece_values[PAWN];

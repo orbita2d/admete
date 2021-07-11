@@ -15,6 +15,26 @@ enum Colour : int { WHITE, BLACK, N_COLOUR };
 constexpr Colour operator~(Colour c) {
     return Colour(c ^ Colour::BLACK); // Toggle color
 }
+
+enum Rank { RANK1, RANK2, RANK3, RANK4, RANK5, RANK6, RANK7, RANK8 };
+enum File { FILEA, FILEB, FILEC, FILED, FILEE, FILEF, FILEG, FILEH, N_FILES, NO_FILE };
+
+constexpr Rank relative_rank(const Colour c, const Rank r) {
+    if (c == WHITE) {
+        return r;
+    } else {
+        return (Rank)(7 - r);
+    }
+}
+
+constexpr Rank back_rank(const Colour us) {
+    if (us == WHITE) {
+        return RANK1;
+    } else {
+        return RANK8;
+    }
+}
+
 enum Direction : int {
     N = 8,
     E = 1,
@@ -39,24 +59,22 @@ class Square {
   public:
     typedef unsigned int square_t;
     constexpr Square(const square_t val) : value(val){};
-    constexpr Square(const square_t rank, const square_t file) { value = 8 * rank + file; };
+    constexpr Square(const Rank rank, const File file) { value = 8 * rank + file; };
     Square(const std::string rf);
     Square() = default;
 
     bool operator==(const Square that) const { return value == that.value; }
     bool operator!=(const Square that) const { return value != that.value; }
 
-    constexpr Square operator-(const Square that) const { return Square(value - that.value); };
-    constexpr Square operator|(const Square that) const { return Square(value | that.value); };
-
     constexpr square_t get_value() const { return value; }
 
     constexpr square_t rank_index() const { return value / 8; }
     constexpr square_t file_index() const { return value % 8; }
 
-    constexpr Square file() const { return value & 0x07; }
-
-    constexpr Square rank() const { return value & 0x38; }
+    constexpr File file() const { return File(value % 8); }
+    constexpr Rank rank() const { return Rank(value / 8); }
+    // constexpr File file() const { return File(value & 0x07); }
+    // constexpr Rank rank() const { return Rank((value & 0x38) >> 3); }
 
     constexpr square_t diagonal() const { return rank_index() + file_index(); }
     constexpr square_t anti_diagonal() const { return rank_index() - file_index() + 7; }
@@ -84,27 +102,6 @@ class Square {
     square_t value = 0;
 };
 std::ostream &operator<<(std::ostream &os, const Square square);
-
-namespace Squares {
-static constexpr Square Rank1 = 0 * 8;
-static constexpr Square Rank2 = 1 * 8;
-static constexpr Square Rank3 = 2 * 8;
-static constexpr Square Rank4 = 3 * 8;
-static constexpr Square Rank5 = 4 * 8;
-static constexpr Square Rank6 = 5 * 8;
-static constexpr Square Rank7 = 6 * 8;
-static constexpr Square Rank8 = 7 * 8;
-
-static constexpr Square FileA = 0;
-static constexpr Square FileB = 1;
-static constexpr Square FileC = 2;
-static constexpr Square FileD = 3;
-static constexpr Square FileE = 4;
-static constexpr Square FileF = 5;
-static constexpr Square FileG = 6;
-static constexpr Square FileH = 7;
-
-} // namespace Squares
 
 enum CastlingSide { KINGSIDE, QUEENSIDE, N_CASTLE };
 enum CastlingRights { NO_RIGHTS = 0, WHITE_KINGSIDE = 1, WHITE_QUEENSIDE = 2, BLACK_KINGSIDE = 4, BLACK_QUEENSIDE = 8 };
@@ -135,13 +132,11 @@ constexpr unsigned get_rights(const Colour c) {
 
 // Squares the rooks sit on (for castling).
 constexpr std::array<std::array<Square, 2>, 2> RookSquares = {
-    {{Squares::FileH | Squares::Rank1, Squares::FileA | Squares::Rank1},
-     {Squares::FileH | Squares::Rank8, Squares::FileA | Squares::Rank8}}};
+    {{Square(RANK1, FILEH), Square(RANK1, FILEA)}, {Square(RANK8, FILEH), Square(RANK8, FILEA)}}};
 
 // Squares the rooks move to when castling.
 constexpr std::array<std::array<Square, 2>, 2> RookCastleSquares = {
-    {{Squares::FileF | Squares::Rank1, Squares::FileD | Squares::Rank1},
-     {Squares::FileF | Squares::Rank8, Squares::FileD | Squares::Rank8}}};
+    {{Square(RANK1, FILEF), Square(RANK1, FILED)}, {Square(RANK8, FILEF), Square(RANK8, FILED)}}};
 
 // Pieces
 

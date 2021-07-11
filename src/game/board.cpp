@@ -49,7 +49,7 @@ void Board::fen_decode(const std::string &fen) {
             break;
         }
         // Otherwise should be a character for a piece
-        const Bitboard square_bb = sq_to_bb(Square(rank, file));
+        const Bitboard square_bb = sq_to_bb(Square((Rank)rank, (File)file));
         const Piece p = fen_decode_map[my_char];
         piece_bb[p.get_piece()] |= square_bb;
         colour_bb[p.get_colour()] |= square_bb;
@@ -122,9 +122,10 @@ void Board::fen_decode(const std::string &fen) {
     }
     if (en_passent[0] == '-') {
         // No en passent, continue
-        aux_info->en_passent_target = 0;
+        aux_info->en_passent_target = NO_FILE;
     } else {
-        aux_info->en_passent_target = Square(en_passent);
+        Square ep_square = Square(en_passent);
+        aux_info->en_passent_target = ep_square.file();
     }
 
     // Halfmove clock
@@ -175,7 +176,7 @@ void Board::make_move(Move &move) {
     if (whos_move == Colour::BLACK) {
         fullmove_counter++;
     }
-    int last_ep_file = en_passent() ? en_passent().file_index() : -1;
+    File last_ep_file = en_passent();
     aux_history[ply_counter + 1].castling_rights = aux_info->castling_rights;
     aux_history[ply_counter + 1].halfmove_clock = aux_info->halfmove_clock;
 
@@ -195,9 +196,9 @@ void Board::make_move(Move &move) {
     // Track en-passent square
     if (move.is_double_push()) {
         // Little hacky but this is the square in between.
-        aux_info->en_passent_target = (move.origin.get_value() + move.target.get_value()) / 2;
+        aux_info->en_passent_target = move.origin.file();
     } else {
-        aux_info->en_passent_target = 0;
+        aux_info->en_passent_target = NO_FILE;
     }
     unsigned int castling_rights_change = NO_RIGHTS;
     const CastlingRights us_kingside = us == WHITE ? WHITE_KINGSIDE : BLACK_KINGSIDE;
@@ -230,7 +231,7 @@ void Board::make_move(Move &move) {
         piece_bb[KING] ^= from_to_bb;
         piece_bb[ROOK] ^= rook_from_to_bb;
     } else if (move.is_ep_capture()) {
-        const Square captured_square = move.origin.rank() | move.target.file();
+        const Square captured_square(move.origin.rank(), move.target.file());
         const Bitboard captured_bb = sq_to_bb(captured_square);
         occupied_bb ^= from_to_bb;
         occupied_bb ^= captured_bb;
@@ -369,7 +370,7 @@ void Board::unmake_move(const Move move) {
         piece_bb[KING] ^= from_to_bb;
         piece_bb[ROOK] ^= rook_from_to_bb;
     } else if (move.is_ep_capture()) {
-        const Square captured_square = move.origin.rank() | move.target.file();
+        const Square captured_square(move.origin.rank(), move.target.file());
         const Bitboard captured_bb = sq_to_bb(captured_square);
         occupied_bb ^= from_to_bb;
         occupied_bb ^= captured_bb;
@@ -434,12 +435,12 @@ void Board::make_nullmove() {
     ply_counter++;
     aux_info = &aux_history[ply_counter];
     const Colour us = whos_move;
-    int last_ep_file = en_passent() ? en_passent().file_index() : -1;
+    File last_ep_file = en_passent();
 
     aux_info->halfmove_clock++;
 
     // Track en-passent square
-    aux_info->en_passent_target = 0;
+    aux_info->en_passent_target = NO_FILE;
 
     // Switch whos turn it is to play
     whos_move = ~whos_move;

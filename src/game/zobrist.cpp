@@ -59,8 +59,8 @@ zobrist_t Zobrist::hash(const Board &board) {
     }
     // en-passent
 
-    if (board.en_passent()) {
-        hash ^= zobrist_table_ep[board.en_passent().file_index()];
+    if (board.en_passent() != NO_FILE) {
+        hash ^= zobrist_table_ep[board.en_passent()];
     }
 
     return hash;
@@ -83,14 +83,14 @@ zobrist_t Zobrist::material(const Board &board) {
     return hash;
 }
 
-zobrist_t Zobrist::diff(const Move move, const Colour us, const int last_ep_file,
+zobrist_t Zobrist::diff(const Move move, const Colour us, const File last_ep_file,
                         const unsigned castling_rights_change) {
     zobrist_t hash = 0;
     Colour them = ~us;
     hash ^= zobrist_table[us][move.moving_piece][move.origin];
     hash ^= zobrist_table[us][move.moving_piece][move.target];
 
-    if (last_ep_file >= 0) {
+    if (last_ep_file != NO_FILE) {
         hash ^= zobrist_table_ep[last_ep_file];
     }
     if (move.is_double_push()) {
@@ -112,7 +112,7 @@ zobrist_t Zobrist::diff(const Move move, const Colour us, const int last_ep_file
 
     if (move.is_ep_capture()) {
         // En-passent is weird.
-        const Square captured_square = move.origin.rank() | move.target.file();
+        const Square captured_square(move.origin.rank(), move.target.file());
         // Remove their pawn from the ep-square
         hash ^= zobrist_table[them][PAWN][captured_square];
     } else if (move.is_capture()) {

@@ -2,27 +2,27 @@
 #include "board.hpp"
 #include "evaluate.hpp"
 #include <gtest/gtest.h>
-#include <tuple>
 #include <iostream>
+#include <tuple>
 
 TEST(Ordering, SmallestAttacker) {
   std::tuple<std::string, Square, Colour, PieceType> testcases[] = {
-      {"1k1r4/1pp4p/p7/4p3/8/P5P1/1PP4P/2K1R3 w - - ",
-       Squares::FileE | Squares::Rank5, WHITE, ROOK},
-      {"1k1r4/1pp4p/p7/4p3/8/P5P1/1PP4P/2K1R3 w - - ",
-       Squares::FileE | Squares::Rank5, BLACK, NO_PIECE},
-      {"1k1r4/1pp4p/p7/4p3/8/P5P1/1PP4P/2K1R3 b - - ",
-       Squares::FileE | Squares::Rank5, WHITE, ROOK},
-      {"1k1r4/1pp4p/p7/4p3/8/P5P1/1PP4P/2K1R3 b - - ",
-       Squares::FileE | Squares::Rank5, BLACK, NO_PIECE},
+      {"1k1r4/1pp4p/p7/4p3/8/P5P1/1PP4P/2K1R3 w - - ", Square(RANK5, FILEE),
+       WHITE, ROOK},
+      {"1k1r4/1pp4p/p7/4p3/8/P5P1/1PP4P/2K1R3 w - - ", Square(RANK5, FILEE),
+       BLACK, NO_PIECE},
+      {"1k1r4/1pp4p/p7/4p3/8/P5P1/1PP4P/2K1R3 b - - ", Square(RANK5, FILEE),
+       WHITE, ROOK},
+      {"1k1r4/1pp4p/p7/4p3/8/P5P1/1PP4P/2K1R3 b - - ", Square(RANK5, FILEE),
+       BLACK, NO_PIECE},
       {"1k1r3q/1ppn3p/p4b2/4p3/8/P2N2P1/1PP1R1BP/2K1Q3 w - - ",
-       Squares::FileE | Squares::Rank5, WHITE, KNIGHT},
+       Square(RANK5, FILEE), WHITE, KNIGHT},
       {"1k1r3q/1ppn3p/p4b2/4p3/8/P2N2P1/1PP1R1BP/2K1Q3 w - - ",
-       Squares::FileE | Squares::Rank5, BLACK, KNIGHT},
+       Square(RANK5, FILEE), BLACK, KNIGHT},
       {"1k1r3q/1ppn3p/p4b2/4p3/8/P2N2P1/1PP1R1BP/2K1Q3 b - - ",
-       Squares::FileE | Squares::Rank5, WHITE, KNIGHT},
+       Square(RANK5, FILEE), WHITE, KNIGHT},
       {"1k1r3q/1ppn3p/p4b2/4p3/8/P2N2P1/1PP1R1BP/2K1Q3 b - - ",
-       Squares::FileE | Squares::Rank5, BLACK, KNIGHT},
+       Square(RANK5, FILEE), BLACK, KNIGHT},
   };
   Board board = Board();
 
@@ -30,7 +30,7 @@ TEST(Ordering, SmallestAttacker) {
     board.fen_decode(fen);
     const Bitboard atk =
         SEE::get_smallest_attacker(board, sq, Bitboards::omega, side);
-        
+
     PieceType pt = NO_PIECE;
     if (atk) {
       const Square atksq = lsb(atk);
@@ -45,10 +45,10 @@ TEST(Ordering, SmallestAttacker) {
 
 TEST(Ordering, SEE) {
   std::tuple<std::string, Square, Colour, score_t> testcases[] = {
-      {"1k1r4/1pp4p/p7/4p3/8/P5P1/1PP4P/2K1R3 w - - ",
-       Squares::FileE | Squares::Rank5, WHITE, SEE::material[PAWN]},
+      {"1k1r4/1pp4p/p7/4p3/8/P5P1/1PP4P/2K1R3 w - - ", Square(RANK5, FILEE),
+       WHITE, SEE::material[PAWN]},
       {"1k1r3q/1ppn3p/p4b2/4p3/8/P2N2P1/1PP1R1BP/2K1Q3 w - -",
-       Squares::FileE | Squares::Rank5, WHITE, 0},
+       Square(RANK5, FILEE), WHITE, 0},
   };
   Board board = Board();
 

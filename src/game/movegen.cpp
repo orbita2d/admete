@@ -25,7 +25,7 @@ template <Colour us, GenType gen> void gen_pawn_moves(const Board &board, const 
     // Moves are North
     // Look for double pawn push possibility
     if constexpr (gen == QUIET) {
-        if (origin.rank() == relative_rank(us, Squares::Rank2)) {
+        if (origin.rank() == relative_rank(us, RANK2)) {
             target = origin + (forwards(us) + forwards(us));
             if (board.is_free(target) & board.is_free(origin + forwards(us))) {
                 move = Move(PAWN, origin, target);
@@ -37,7 +37,7 @@ template <Colour us, GenType gen> void gen_pawn_moves(const Board &board, const 
         target = origin + (forwards(us));
         if (board.is_free(target)) {
             move = Move(PAWN, origin, target);
-            if (origin.rank() == relative_rank(us, Squares::Rank7)) {
+            if (origin.rank() == relative_rank(us, RANK7)) {
                 add_pawn_promotions(move, moves);
             } else {
                 moves.push_back(move);
@@ -51,7 +51,7 @@ template <Colour us, GenType gen> void gen_pawn_moves(const Board &board, const 
             Square sq = pop_lsb(&atk);
             Move move = Move(PAWN, origin, sq);
             move.make_capture();
-            if (origin.rank() == relative_rank(us, Squares::Rank7)) {
+            if (origin.rank() == relative_rank(us, RANK7)) {
                 add_pawn_promotions(move, moves);
             } else {
                 moves.push_back(move);
@@ -59,8 +59,9 @@ template <Colour us, GenType gen> void gen_pawn_moves(const Board &board, const 
         }
 
         // En-passent
-        if (origin.rank() == relative_rank(us, Squares::Rank5)) {
-            atk = Bitboards::pawn_attacks(us, origin) & board.en_passent();
+        if (origin.rank() == relative_rank(us, RANK5)) {
+            target = Square(relative_rank(us, RANK6), board.en_passent());
+            atk = Bitboards::pawn_attacks(us, origin) & target;
             if (atk) {
                 target = lsb(atk);
                 Square ks = board.find_king(us);
@@ -76,12 +77,12 @@ template <Colour us, GenType gen> void gen_pawn_moves(const Board &board, const 
                     r_atk = rook_attacks(occ ^ (occ & r_atk), ks);
                     r_atk &= mask;
                     if (!(r_atk & board.pieces(them, ROOK, QUEEN))) {
-                        move = Move(PAWN, origin, board.en_passent());
+                        move = Move(PAWN, origin, target);
                         move.make_en_passent();
                         moves.push_back(move);
                     }
                 } else {
-                    move = Move(PAWN, origin, board.en_passent());
+                    move = Move(PAWN, origin, target);
                     move.make_en_passent();
                     moves.push_back(move);
                 }
@@ -98,7 +99,7 @@ void gen_pawn_moves(const Board &board, const Square origin, MoveList &moves, Bi
     // Moves are North
     // Look for double pawn push possibility
     if constexpr (gen == QUIET) {
-        if (origin.rank() == relative_rank(us, Squares::Rank2)) {
+        if (origin.rank() == relative_rank(us, RANK2)) {
             target = origin + (forwards(us) + forwards(us));
             if (target_mask & target) {
                 if (board.is_free(target) & board.is_free(origin + forwards(us))) {
@@ -113,7 +114,7 @@ void gen_pawn_moves(const Board &board, const Square origin, MoveList &moves, Bi
         if (target_mask & target) {
             if (board.is_free(target)) {
                 move = Move(PAWN, origin, target);
-                if (origin.rank() == relative_rank(us, Squares::Rank7)) {
+                if (origin.rank() == relative_rank(us, RANK7)) {
                     add_pawn_promotions(move, moves);
                 } else {
                     moves.push_back(move);
@@ -129,7 +130,7 @@ void gen_pawn_moves(const Board &board, const Square origin, MoveList &moves, Bi
             Square sq = pop_lsb(&atk);
             Move move = Move(PAWN, origin, sq);
             move.make_capture();
-            if (origin.rank() == relative_rank(us, Squares::Rank7)) {
+            if (origin.rank() == relative_rank(us, RANK7)) {
                 add_pawn_promotions(move, moves);
             } else {
                 moves.push_back(move);
@@ -138,10 +139,10 @@ void gen_pawn_moves(const Board &board, const Square origin, MoveList &moves, Bi
         // En-passent
         // This is a really weird case where the target square is not where you end up.
         // target_mask is always pieces we need to capture if this is called with captures
-        if (origin.rank() == relative_rank(us, Squares::Rank5)) {
-            atk = Bitboards::pawn_attacks(us, origin) & board.en_passent();
-            target = board.en_passent();
-            const Square ep_square = origin.rank() | target.file();
+        if (origin.rank() == relative_rank(us, RANK5)) {
+            target = Square(relative_rank(us, RANK6), board.en_passent());
+            atk = Bitboards::pawn_attacks(us, origin) & target;
+            const Square ep_square(origin.rank(), target.file());
             if ((bool)atk && (bool)(target_mask & ep_square)) {
                 Square ks = board.find_king(us);
                 // This can open a rank. if the king is on that rank it could be a problem.
@@ -156,12 +157,12 @@ void gen_pawn_moves(const Board &board, const Square origin, MoveList &moves, Bi
                     r_atk = rook_attacks(occ ^ (occ & r_atk), ks);
                     r_atk &= mask;
                     if (!(r_atk & board.pieces(them, ROOK, QUEEN))) {
-                        move = Move(PAWN, origin, board.en_passent());
+                        move = Move(PAWN, origin, target);
                         move.make_en_passent();
                         moves.push_back(move);
                     }
                 } else {
-                    move = Move(PAWN, origin, board.en_passent());
+                    move = Move(PAWN, origin, target);
                     move.make_en_passent();
                     moves.push_back(move);
                 }
@@ -257,9 +258,9 @@ template <Colour us, CastlingSide side> void gen_castle_moves(const Board &board
     if (board.can_castle(us, QUEENSIDE) && (side == QUEENSIDE)) {
         // Check for overlap of squares that need to be free, and occupied bb.
         if (!(Bitboards::castle(us, QUEENSIDE) & board.pieces())) {
-            if (!board.is_attacked(Squares::FileD | back_rank(us), us) &
-                !board.is_attacked(Squares::FileC | back_rank(us), us)) {
-                move = Move(KING, Squares::FileE | back_rank(us), Squares::FileC | back_rank(us));
+            if (!board.is_attacked(Square(back_rank(us), FILED), us) &
+                !board.is_attacked(Square(back_rank(us), FILEC), us)) {
+                move = Move(KING, Square(back_rank(us), FILEE), Square(back_rank(us), FILEC));
                 move.make_queen_castle();
                 moves.push_back(move);
             }
@@ -267,9 +268,9 @@ template <Colour us, CastlingSide side> void gen_castle_moves(const Board &board
     }
     if (board.can_castle(us, KINGSIDE) && (side == KINGSIDE)) {
         if (!(Bitboards::castle(us, KINGSIDE) & board.pieces())) {
-            if (!board.is_attacked(Squares::FileF | back_rank(us), us) &
-                !board.is_attacked(Squares::FileG | back_rank(us), us)) {
-                move = Move(KING, Squares::FileE | back_rank(us), Squares::FileG | back_rank(us));
+            if (!board.is_attacked(Square(back_rank(us), FILEF), us) &
+                !board.is_attacked(Square(back_rank(us), FILEG), us)) {
+                move = Move(KING, Square(back_rank(us), FILEE), Square(back_rank(us), FILEG));
                 move.make_king_castle();
                 moves.push_back(move);
             }

@@ -11,7 +11,7 @@ struct AuxilliaryInfo {
     // Access like castling_rights[WHITE][KINGSIDE]
     unsigned castling_rights;
     ply_t halfmove_clock = 0;
-    Square en_passent_target;
+    File en_passent_target;
     Bitboard pinned;
     uint number_checkers;
     // Locations of the (up to 2) checkers
@@ -120,7 +120,7 @@ class Board {
     bool is_white_move() const { return whos_move == WHITE; }
     bool can_castle(const Colour c) const { return aux_info->castling_rights & get_rights(c); }
     bool can_castle(const Colour c, const CastlingSide s) const { return aux_info->castling_rights & get_rights(c, s); }
-    Square en_passent() const { return aux_info->en_passent_target; }
+    File en_passent() const { return aux_info->en_passent_target; }
     int material() const { return _material; }
     Score get_psqt() const { return psqt; }
     ply_t repetitions(const ply_t start) const;
@@ -168,33 +168,16 @@ constexpr Direction forwards(const Colour us) {
     }
 }
 
-constexpr Square back_rank(const Colour us) {
-    if (us == WHITE) {
-        return Squares::Rank1;
-    } else {
-        return Squares::Rank8;
-    }
-}
-
 bool interposes(const Square origin, const Square target, const Square query);
 bool in_line(const Square, const Square, const Square);
 bool in_line(const Square, const Square);
-
-constexpr Square relative_rank(const Colour c, const Square sq) {
-    // Square from black's perspective perspective;
-    if (c == Colour::WHITE) {
-        return sq;
-    } else {
-        return Square(56 - sq.rank()) | sq.file();
-    }
-}
 
 // zorbist.cpp
 namespace Zobrist {
 void init();
 zobrist_t hash(const Board &board);
 zobrist_t material(const Board &board);
-zobrist_t diff(const Move move, const Colour us, const int last_ep_file, const unsigned castling_rights_change);
+zobrist_t diff(const Move move, const Colour us, const File last_ep_file, const unsigned castling_rights_change);
 zobrist_t nulldiff(const Colour us, const int last_ep_file);
 
 inline zobrist_t zobrist_table[N_COLOUR][N_PIECE][N_SQUARE];

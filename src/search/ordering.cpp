@@ -104,7 +104,7 @@ score_t see_capture(Board &board, const Move move) {
     Bitboard mask = Bitboards::omega ^ move.origin;
     score_t cap_gain;
     if (move.is_ep_capture()) {
-        const Square captured_square = move.origin.rank() | move.target.file();
+        const Square captured_square(move.origin.rank(), move.target.file());
         mask ^= sq_to_bb(captured_square);
         cap_gain = SEE::material[PAWN];
     } else {
