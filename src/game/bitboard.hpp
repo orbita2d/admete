@@ -117,6 +117,14 @@ template <Direction dir> constexpr Bitboard shift(const Bitboard bb) {
         return (bb >> 9) & ~Bitboards::h_file;
     } else if constexpr (dir == Direction::SE) {
         return (bb >> 7) & ~Bitboards::a_file;
+    } else if constexpr (dir == Direction::SS) {
+        return (bb >> 16);
+    } else if constexpr (dir == Direction::NN) {
+        return (bb << 16);
+    } else if constexpr (dir == Direction::EE) {
+        return (bb << 2) & ~(Bitboards::a_file | Bitboards::b_file);
+    } else if constexpr (dir == Direction::WW) {
+        return (bb >> 2) & ~(Bitboards::h_file | Bitboards::g_file);
     }
 }
 
@@ -151,9 +159,12 @@ template <PieceType p> inline Bitboard attacks(const Bitboard occ, const Square 
 
 inline Bitboard pawn_attacks(const Colour c, const Square s) { return PawnAttacks[c][s]; }
 
-inline Bitboard rank(const Square s) { return rank_bb[s.rank_index()]; }
+constexpr Bitboard rank(const Rank r) { return rank_bb[r]; }
+constexpr Bitboard file(const File f) { return file_bb[f]; }
 
-inline Bitboard file(const Square s) { return file_bb[s.file_index()]; }
+inline Bitboard rank(const Square s) { return rank(s.rank()); }
+inline Bitboard file(const Square s) { return file(s.file()); }
+
 inline Bitboard line(const Square s1, const Square s2) { return LineBBs[s1][s2]; }
 inline Bitboard between(const Square s1, const Square s2) {
     Bitboard bb = line(s1, s2);
@@ -239,12 +250,20 @@ inline Bitboard pawn_push(const Colour c, Bitboard g) {
 inline Bitboard reverse_pawn_push(const Colour c, Bitboard g) {
     if (c == WHITE) {
         g = shift<Direction::S>(g);
-        g |= shift<Direction::S>(g & rank_3);
         return g;
     } else {
         g = shift<Direction::N>(g);
-        g |= shift<Direction::N>(g & rank_6);
         return g;
+    }
+}
+
+inline Bitboard reverse_pawn_double_push(const Colour c, Bitboard g) {
+    if (c == WHITE) {
+        g = shift<Direction::S>(g);
+        return shift<Direction::S>(g);
+    } else {
+        g = shift<Direction::N>(g);
+        return shift<Direction::N>(g);
     }
 }
 

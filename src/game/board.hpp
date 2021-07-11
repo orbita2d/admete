@@ -160,14 +160,6 @@ inline Move unpack_move(const DenseMove dm, const Board &board) {
     return Move(p, dm.origin(), dm.target(), dm.type());
 }
 
-constexpr Direction forwards(const Colour us) {
-    if (us == WHITE) {
-        return Direction::N;
-    } else {
-        return Direction::S;
-    }
-}
-
 bool interposes(const Square origin, const Square target, const Square query);
 bool in_line(const Square, const Square, const Square);
 bool in_line(const Square, const Square);

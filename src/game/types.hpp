@@ -35,7 +35,7 @@ constexpr Rank back_rank(const Colour us) {
     }
 }
 
-enum Direction : int {
+enum Direction {
     N = 8,
     E = 1,
     S = -8,
@@ -51,8 +51,28 @@ enum Direction : int {
     SSE = -15,
     SSW = -17,
     WSW = -10,
-    WNW = 6
+    WNW = 6,
+    SS = -16,
+    EE = 2,
+    NN = 16,
+    WW = -2,
 };
+
+constexpr Direction forwards(const Colour us) {
+    if (us == WHITE) {
+        return Direction::N;
+    } else {
+        return Direction::S;
+    }
+}
+
+constexpr Direction backwards(const Colour us) {
+    if (us == WHITE) {
+        return Direction::S;
+    } else {
+        return Direction::N;
+    }
+}
 
 constexpr int N_SQUARE = 64;
 class Square {

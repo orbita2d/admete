@@ -5,168 +5,377 @@
 
 // Move Generation
 
-void add_pawn_promotions(const Move move, MoveList &moves) {
-    // Add all variations of promotions to a move.
-    Move my_move = move;
-    my_move.make_queen_promotion();
-    moves.push_back(my_move);
-    my_move.make_rook_promotion();
-    moves.push_back(my_move);
-    my_move.make_knight_promotion();
-    moves.push_back(my_move);
-    my_move.make_bishop_promotion();
-    moves.push_back(my_move);
+// Pawn moves are the most complicated in a legal movegen.
+
+// Generate a single pawn push from origin and add it to the movelist.
+template <Colour us> void gen_pawn_push(const Square origin, MoveList &moves) {
+    const Square target = origin + forwards(us);
+    Move move(PAWN, origin, target);
+    moves.push_back(move);
 }
 
-template <Colour us, GenType gen> void gen_pawn_moves(const Board &board, const Square origin, MoveList &moves) {
-    Colour them = ~us;
+// Generate a single pawn push that promotes.
+template <Colour us> void gen_pawn_push_prom(const Square origin, MoveList &moves) {
+    const Square target = origin + forwards(us);
+    Move move(PAWN, origin, target);
+
+    move.make_queen_promotion();
+    moves.push_back(move);
+    move.make_knight_promotion();
+    moves.push_back(move);
+    move.make_rook_promotion();
+    moves.push_back(move);
+    move.make_bishop_promotion();
+    moves.push_back(move);
+}
+
+template <Colour us> void gen_pawn_double_push(const Square origin, MoveList &moves) {
     Square target;
     Move move;
-    // Moves are North
-    // Look for double pawn push possibility
-    if constexpr (gen == QUIET) {
-        if (origin.rank() == relative_rank(us, RANK2)) {
-            target = origin + (forwards(us) + forwards(us));
-            if (board.is_free(target) & board.is_free(origin + forwards(us))) {
-                move = Move(PAWN, origin, target);
-                move.make_double_push();
-                moves.push_back(move);
-            }
-        }
-        // Normal pushes.
-        target = origin + (forwards(us));
-        if (board.is_free(target)) {
-            move = Move(PAWN, origin, target);
-            if (origin.rank() == relative_rank(us, RANK7)) {
-                add_pawn_promotions(move, moves);
-            } else {
-                moves.push_back(move);
-            }
-        }
-    } else if constexpr (gen == CAPTURES) {
-        // Normal captures.
-        Bitboard atk = Bitboards::pawn_attacks(us, origin);
-        atk &= board.pieces(them);
-        while (atk) {
-            Square sq = pop_lsb(&atk);
-            Move move = Move(PAWN, origin, sq);
-            move.make_capture();
-            if (origin.rank() == relative_rank(us, RANK7)) {
-                add_pawn_promotions(move, moves);
-            } else {
-                moves.push_back(move);
-            }
-        }
+    target = origin + (forwards(us) + forwards(us));
+    move = Move(PAWN, origin, target);
+    move.make_double_push();
+    moves.push_back(move);
+}
 
-        // En-passent
-        if (origin.rank() == relative_rank(us, RANK5)) {
-            target = Square(relative_rank(us, RANK6), board.en_passent());
-            atk = Bitboards::pawn_attacks(us, origin) & target;
-            if (atk) {
-                target = lsb(atk);
-                Square ks = board.find_king(us);
-                // This can open a rank. if the king is on that rank it could be a problem.
-                if (ks.rank() == origin.rank()) {
-                    Bitboard mask = Bitboards::line(ks, origin);
-                    Bitboard occ = board.pieces();
-                    // Rook attacks from the king
-                    Bitboard r_atk = rook_attacks(occ, ks);
-                    // Rook xrays from the king
-                    r_atk = rook_attacks(occ ^ (occ & r_atk), ks);
-                    // Rook double xrays from the king
-                    r_atk = rook_attacks(occ ^ (occ & r_atk), ks);
-                    r_atk &= mask;
-                    if (!(r_atk & board.pieces(them, ROOK, QUEEN))) {
-                        move = Move(PAWN, origin, target);
-                        move.make_en_passent();
-                        moves.push_back(move);
-                    }
-                } else {
-                    move = Move(PAWN, origin, target);
-                    move.make_en_passent();
-                    moves.push_back(move);
-                }
-            }
+// Generate en-passent captures with no restraint on where to go.
+template <Colour us> void gen_pawn_ep(const Board &board, const Square origin, MoveList &moves) {
+    const Square target = Square(relative_rank(us, RANK6), board.en_passent());
+    const Square ks = board.find_king(us);
+    // This can open a rank. if the king is on that rank it could be a problem.
+    if (ks.rank() == origin.rank()) {
+        Bitboard mask = Bitboards::line(ks, origin);
+        Bitboard occ = board.pieces();
+        // Rook attacks from the king
+        Bitboard r_atk = rook_attacks(occ, ks);
+        // Rook xrays from the king
+        r_atk = rook_attacks(occ ^ (occ & r_atk), ks);
+        // Rook double xrays from the king
+        r_atk = rook_attacks(occ ^ (occ & r_atk), ks);
+        r_atk &= mask;
+        if (!(r_atk & board.pieces(~us, ROOK, QUEEN))) {
+            Move move(PAWN, origin, target);
+            move.make_en_passent();
+            moves.push_back(move);
         }
+    } else {
+        Move move(PAWN, origin, target);
+        move.make_en_passent();
+        moves.push_back(move);
     }
 }
 
-template <Colour us, GenType gen>
-void gen_pawn_moves(const Board &board, const Square origin, MoveList &moves, Bitboard target_mask) {
-    Colour them = ~us;
-    Square target;
-    Move move;
-    // Moves are North
-    // Look for double pawn push possibility
+// Generate en-passent captures, where the pawn is pinned to a diagonal.
+template <Colour us> void gen_pawn_ep(const Board &board, const Square origin, MoveList &moves, Bitboard target_mask) {
+    Square target = Square(relative_rank(us, RANK6), board.en_passent());
+    if (!(target_mask & target)) {
+        return;
+    }
+    Square ks = board.find_king(us);
+    // This can open a rank. if the king is on that rank it could be a problem.
+    if (ks.rank() == origin.rank()) {
+        Bitboard mask = Bitboards::line(ks, origin);
+        Bitboard occ = board.pieces();
+        // Rook attacks from the king
+        Bitboard r_atk = rook_attacks(occ, ks);
+        // Rook xrays from the king
+        r_atk = rook_attacks(occ ^ (occ & r_atk), ks);
+        // Rook double xrays from the king
+        r_atk = rook_attacks(occ ^ (occ & r_atk), ks);
+        r_atk &= mask;
+        if (!(r_atk & board.pieces(~us, ROOK, QUEEN))) {
+            Move move(PAWN, origin, target);
+            move.make_en_passent();
+            moves.push_back(move);
+        }
+    } else {
+        Move move(PAWN, origin, target);
+        move.make_en_passent();
+        moves.push_back(move);
+    }
+}
+
+// Construct a simple pawn capture (no ep, no promotion) in given direction.
+template <Colour us, Direction dir> void gen_pawn_cap(const Square origin, MoveList &moves) {
+    assert(dir == W || dir == E);
+    const Square target = (origin + forwards(us)) + dir;
+    Move move(PAWN, origin, target);
+    move.make_capture();
+    moves.push_back(move);
+}
+
+// Construct a simple pawn capture (no ep, no promotion) in given direction, but with the capture square constrained.
+template <Colour us, Direction dir>
+void gen_pawn_cap(const Square origin, MoveList &moves, const Bitboard target_mask) {
+    assert(dir == W || dir == E);
+    const Square target = (origin + forwards(us)) + dir;
+    if (!(target_mask & target)) {
+        return;
+    }
+    Move move(PAWN, origin, target);
+    move.make_capture();
+    moves.push_back(move);
+}
+
+// Construct a promoting pawn capture in given direction.
+template <Colour us, Direction dir> void gen_pawn_prom_cap(const Square origin, MoveList &moves) {
+    assert(origin.rank() == relative_rank(us, RANK7));
+    assert(dir == W || dir == E);
+    const Square target = (origin + forwards(us)) + dir;
+    Move move(PAWN, origin, target);
+    move.make_capture();
+    move.make_queen_promotion();
+    moves.push_back(move);
+    move.make_knight_promotion();
+    moves.push_back(move);
+    move.make_rook_promotion();
+    moves.push_back(move);
+    move.make_bishop_promotion();
+    moves.push_back(move);
+}
+
+// Construct a promoting pawn capture in given direction, but with the capture square constrained.
+template <Colour us, Direction dir>
+void gen_pawn_prom_cap(const Square origin, MoveList &moves, const Bitboard target_mask) {
+    assert(origin.rank() == relative_rank(us, RANK7));
+    assert(dir == W || dir == E);
+    const Square target = (origin + forwards(us)) + dir;
+    if (!(target_mask & target)) {
+        return;
+    }
+    Move move(PAWN, origin, target);
+    move.make_capture();
+    move.make_queen_promotion();
+    moves.push_back(move);
+    move.make_knight_promotion();
+    moves.push_back(move);
+    move.make_rook_promotion();
+    moves.push_back(move);
+    move.make_bishop_promotion();
+    moves.push_back(move);
+}
+
+template <Colour us, GenType gen> void gen_pawn_moves(const Board &board, MoveList &moves) {
+    // Pawns which aren't pinned
+    assert(gen == QUIET || gen == CAPTURES || gen == EVASIONS);
+    Square ks = board.find_king(us);
+
     if constexpr (gen == QUIET) {
-        if (origin.rank() == relative_rank(us, RANK2)) {
-            target = origin + (forwards(us) + forwards(us));
-            if (target_mask & target) {
-                if (board.is_free(target) & board.is_free(origin + forwards(us))) {
-                    move = Move(PAWN, origin, target);
-                    move.make_double_push();
-                    moves.push_back(move);
-                }
+        const Bitboard pawns = board.pieces(us, PAWN);
+
+        // Single pawn pushes.
+        Bitboard q_pin;
+        Bitboard q_nopin;
+        // Ignore squares directly behind an occupied square.
+        Bitboard occ = pawns;
+        occ &= ~Bitboards::shift<backwards(us)>(board.pieces());
+
+        // Unpinned pawns on ranks 2--> 6
+        q_nopin = occ & ~board.pinned() & ~Bitboards::rank(relative_rank(us, RANK7));
+        while (q_nopin) {
+            const Square sq = pop_lsb(&q_nopin);
+            gen_pawn_push<us>(sq, moves);
+        }
+        // Pinned pawns on ranks 2--> 6
+        q_pin = occ & board.pinned() & ~Bitboards::rank(relative_rank(us, RANK7));
+        while (q_pin) {
+            const Square sq = pop_lsb(&q_pin);
+            // Can push only if the pin is down a file.
+            if (sq.file() == ks.file()) {
+                gen_pawn_push<us>(sq, moves);
             }
         }
-        // Normal pushes.
-        target = origin + forwards(us);
-        if (target_mask & target) {
-            if (board.is_free(target)) {
-                move = Move(PAWN, origin, target);
-                if (origin.rank() == relative_rank(us, RANK7)) {
-                    add_pawn_promotions(move, moves);
-                } else {
-                    moves.push_back(move);
-                }
+
+        // Unpinned pieces on rank 7, pinned pawns on rank 7 cannot push.
+        q_nopin = occ & ~board.pinned() & Bitboards::rank(relative_rank(us, RANK7));
+        while (q_nopin) {
+            const Square sq = pop_lsb(&q_nopin);
+            gen_pawn_push_prom<us>(sq, moves);
+        }
+
+        // Double pawn pushes.
+        occ = pawns;
+        // Consider only squares on the 2nd rank.
+        occ &= Bitboards::rank(relative_rank(us, RANK2));
+        // Ignores squares where either of the next two (forwards) squares are occupied.
+        Bitboard blk = Bitboards::shift<backwards(us)>(board.pieces());
+        blk |= Bitboards::shift<backwards(us)>(blk);
+        occ &= ~blk;
+
+        q_pin = occ & board.pinned();
+        q_nopin = occ & ~board.pinned();
+        while (q_nopin) {
+            const Square sq = pop_lsb(&q_nopin);
+            gen_pawn_double_push<us>(sq, moves);
+        }
+        while (q_pin) {
+            const Square sq = pop_lsb(&q_pin);
+            if (sq.file() == ks.file()) {
+                gen_pawn_double_push<us>(sq, moves);
             }
         }
+
     } else if constexpr (gen == CAPTURES) {
-        // Normal captures.
-        Bitboard atk = Bitboards::pawn_attacks(us, origin);
-        atk &= board.pieces(them);
-        atk &= target_mask;
-        while (atk) {
-            Square sq = pop_lsb(&atk);
-            Move move = Move(PAWN, origin, sq);
-            move.make_capture();
-            if (origin.rank() == relative_rank(us, RANK7)) {
-                add_pawn_promotions(move, moves);
-            } else {
-                moves.push_back(move);
+        const Bitboard pawns = board.pieces(us, PAWN);
+
+        // Simple captures
+        Bitboard occ = pawns;
+
+        // Relative southwest
+        constexpr Direction rSW = (Direction)(backwards(us) + W);
+        occ &= Bitboards::shift<rSW>(board.pieces(~us));
+
+        // Non-promoting captures
+        Bitboard q_nopin = occ & ~board.pinned() & ~Bitboards::rank(relative_rank(us, RANK7));
+        while (q_nopin) {
+            const Square sq = pop_lsb(&q_nopin);
+            gen_pawn_cap<us, E>(sq, moves);
+        }
+        Bitboard q_pin = occ & board.pinned() & ~Bitboards::rank(relative_rank(us, RANK7));
+        while (q_pin) {
+            const Square sq = pop_lsb(&q_pin);
+            const Bitboard target_squares = Bitboards::line(sq, ks);
+            gen_pawn_cap<us, E>(sq, moves, target_squares);
+        }
+
+        // Promoting captures
+        q_nopin = occ & ~board.pinned() & Bitboards::rank(relative_rank(us, RANK7));
+        while (q_nopin) {
+            const Square sq = pop_lsb(&q_nopin);
+            gen_pawn_prom_cap<us, E>(sq, moves);
+        }
+        q_pin = occ & board.pinned() & Bitboards::rank(relative_rank(us, RANK7));
+        while (q_pin) {
+            const Square sq = pop_lsb(&q_pin);
+            const Bitboard target_squares = Bitboards::line(sq, ks);
+            gen_pawn_prom_cap<us, E>(sq, moves, target_squares);
+        }
+
+        occ = pawns;
+        // Relative southeast
+        constexpr Direction rNE = (Direction)(forwards(us) + E);
+        constexpr Direction rSE = (Direction)(backwards(us) + E);
+        occ &= Bitboards::shift<rSE>(board.pieces(~us));
+
+        // Non-promoting captures
+        q_nopin = occ & ~board.pinned() & ~Bitboards::rank(relative_rank(us, RANK7));
+        while (q_nopin) {
+            const Square sq = pop_lsb(&q_nopin);
+            gen_pawn_cap<us, W>(sq, moves);
+        }
+        q_pin = occ & board.pinned() & ~Bitboards::rank(relative_rank(us, RANK7));
+        while (q_pin) {
+            const Square sq = pop_lsb(&q_pin);
+            const Bitboard target_squares = Bitboards::line(sq, ks);
+            gen_pawn_cap<us, W>(sq, moves, target_squares);
+        }
+
+        // Promoting captures
+        q_nopin = occ & ~board.pinned() & Bitboards::rank(relative_rank(us, RANK7));
+        while (q_nopin) {
+            const Square sq = pop_lsb(&q_nopin);
+            gen_pawn_prom_cap<us, W>(sq, moves);
+        }
+        q_pin = occ & board.pinned() & Bitboards::rank(relative_rank(us, RANK7));
+        while (q_pin) {
+            const Square sq = pop_lsb(&q_pin);
+            const Bitboard target_squares = Bitboards::line(sq, ks);
+            gen_pawn_prom_cap<us, W>(sq, moves, target_squares);
+        }
+
+        // ep-captures
+        if (board.en_passent() != NO_FILE) {
+            Bitboard occ = pawns;
+            const Bitboard ep_file = Bitboards::file(board.en_passent());
+            occ &= Bitboards::shift<W>(ep_file) | Bitboards::shift<E>(ep_file);
+            occ &= Bitboards::rank(relative_rank(us, RANK5));
+            q_pin = occ & board.pinned();
+            q_nopin = occ & ~board.pinned();
+            while (q_nopin) {
+                const Square sq = pop_lsb(&q_nopin);
+                gen_pawn_ep<us>(board, sq, moves);
+            }
+            while (q_pin) {
+                const Square sq = pop_lsb(&q_pin);
+                const Bitboard target_squares = Bitboards::line(sq, ks);
+                gen_pawn_ep<us>(board, sq, moves, target_squares);
             }
         }
-        // En-passent
-        // This is a really weird case where the target square is not where you end up.
-        // target_mask is always pieces we need to capture if this is called with captures
-        if (origin.rank() == relative_rank(us, RANK5)) {
-            target = Square(relative_rank(us, RANK6), board.en_passent());
-            atk = Bitboards::pawn_attacks(us, origin) & target;
-            const Square ep_square(origin.rank(), target.file());
-            if ((bool)atk && (bool)(target_mask & ep_square)) {
-                Square ks = board.find_king(us);
-                // This can open a rank. if the king is on that rank it could be a problem.
-                if (ks.rank() == origin.rank()) {
-                    Bitboard mask = Bitboards::line(ks, origin);
-                    Bitboard occ = board.pieces();
-                    // Rook attacks from the king
-                    Bitboard r_atk = rook_attacks(occ, ks);
-                    // Rook xrays from the king
-                    r_atk = rook_attacks(occ ^ (occ & r_atk), ks);
-                    // Rook double xrays from the king
-                    r_atk = rook_attacks(occ ^ (occ & r_atk), ks);
-                    r_atk &= mask;
-                    if (!(r_atk & board.pieces(them, ROOK, QUEEN))) {
-                        move = Move(PAWN, origin, target);
-                        move.make_en_passent();
-                        moves.push_back(move);
-                    }
-                } else {
-                    move = Move(PAWN, origin, target);
-                    move.make_en_passent();
-                    moves.push_back(move);
+    } else if constexpr (gen == EVASIONS) {
+        const Bitboard pawns = board.pieces(us, PAWN) & ~board.pinned();
+
+        // We can capture the checker
+        const Square ts = board.checkers(0);
+        const Bitboard target_square = sq_to_bb(ts);
+        const bool on_eighth = ts.rank() == relative_rank(us, RANK8);
+
+        Bitboard occ = pawns;
+
+        // Relative southwest
+        constexpr Direction rSW = (Direction)(backwards(us) + W);
+        occ &= Bitboards::shift<rSW>(target_square);
+
+        while (occ) {
+            const Square sq = pop_lsb(&occ);
+            if (on_eighth) {
+                gen_pawn_prom_cap<us, E>(sq, moves);
+            } else {
+                gen_pawn_cap<us, E>(sq, moves);
+            }
+        }
+
+        occ = pawns;
+        // Relative southwest
+        constexpr Direction rSE = (Direction)(backwards(us) + E);
+        occ &= Bitboards::shift<rSE>(target_square);
+
+        while (occ) {
+            const Square sq = pop_lsb(&occ);
+            if (on_eighth) {
+                gen_pawn_prom_cap<us, W>(sq, moves);
+            } else {
+                gen_pawn_cap<us, W>(sq, moves);
+            }
+        }
+
+        if (board.en_passent() != NO_FILE) {
+            const Square to_capture = Square(relative_rank(us, RANK5), board.en_passent());
+            if (to_capture == ts) {
+                const Bitboard ep_file = Bitboards::file(board.en_passent());
+                occ = pawns;
+                occ &= Bitboards::shift<W>(ep_file) | Bitboards::shift<E>(ep_file);
+                occ &= Bitboards::rank(relative_rank(us, RANK5));
+                while (occ) {
+                    const Square sq = pop_lsb(&occ);
+                    gen_pawn_ep<us>(board, sq, moves);
                 }
             }
+        }
+
+        // We can block the check.
+        const Bitboard between_squares = Bitboards::between(ks, ts);
+        occ = pawns;
+        // All of our pawns that can move that can block the check by pushing.
+        occ &= Bitboards::shift<backwards(us)>(between_squares);
+
+        while (occ) {
+            const Square sq = pop_lsb(&occ);
+            gen_pawn_push<us>(sq, moves);
+        }
+
+        // generate double pawn pushes.
+        occ = pawns;
+        // Relative south-south.
+        constexpr Direction rSS = (Direction)(backwards(us) + backwards(us));
+        occ &= Bitboards::shift<rSS>(between_squares);
+        occ &= Bitboards::rank(relative_rank(us, RANK2));
+        // There's no way a piece on the second square could be "between" the checker and king, so no need to verify.
+        Bitboard blk = Bitboards::shift<backwards(us)>(board.pieces());
+        occ &= ~blk;
+
+        while (occ) {
+            const Square sq = pop_lsb(&occ);
+            gen_pawn_double_push<us>(sq, moves);
         }
     }
 }
@@ -178,7 +387,7 @@ template <GenType gen> void gen_king_moves(const Board &board, const Square orig
     if constexpr (gen == QUIET) {
         atk &= ~board.pieces();
         while (atk) {
-            Square sq = pop_lsb(&atk);
+            const Square sq = pop_lsb(&atk);
             // Check legality of the move here.
             if (board.is_attacked(sq, us)) {
                 continue;
@@ -189,7 +398,7 @@ template <GenType gen> void gen_king_moves(const Board &board, const Square orig
     } else if constexpr (gen == CAPTURES) {
         atk &= board.pieces(them);
         while (atk) {
-            Square sq = pop_lsb(&atk);
+            const Square sq = pop_lsb(&atk);
             // Check legality of the move here.
             if (board.is_attacked(sq, us)) {
                 continue;
@@ -210,14 +419,14 @@ template <GenType gen, PieceType pt> void gen_moves(const Board &board, const Sq
         if constexpr (gen == QUIET) {
             atk &= ~board.pieces();
             while (atk) {
-                Square sq = pop_lsb(&atk);
+                const Square sq = pop_lsb(&atk);
                 Move move = Move(pt, origin, sq);
                 moves.push_back(move);
             }
         } else if constexpr (gen == CAPTURES) {
             atk &= board.pieces(them);
             while (atk) {
-                Square sq = pop_lsb(&atk);
+                const Square sq = pop_lsb(&atk);
                 Move move = Move(pt, origin, sq);
                 move.make_capture();
                 moves.push_back(move);
@@ -236,14 +445,14 @@ void gen_moves(const Board &board, const Square origin, MoveList &moves, Bitboar
     if constexpr (gen == QUIET) {
         atk &= ~board.pieces();
         while (atk) {
-            Square sq = pop_lsb(&atk);
+            const Square sq = pop_lsb(&atk);
             Move move = Move(pt, origin, sq);
             moves.push_back(move);
         }
     } else if constexpr (gen == CAPTURES) {
         atk &= board.pieces(them);
         while (atk) {
-            Square sq = pop_lsb(&atk);
+            const Square sq = pop_lsb(&atk);
             Move move = Move(pt, origin, sq);
             move.make_capture();
             moves.push_back(move);
@@ -298,158 +507,56 @@ template <GenType gen> void gen_moves(const Board &board, MoveList &moves) {
         }
     }
 
-    // Pawns which aren't pinned
-    occ = board.pieces(us, PAWN) & ~board.pinned();
-    while (occ) {
-        Square sq = pop_lsb(&occ);
-        if (us == WHITE) {
-            gen_pawn_moves<WHITE, gen>(board, sq, moves);
-        } else {
-            gen_pawn_moves<BLACK, gen>(board, sq, moves);
-        }
+    if (us == WHITE) {
+        gen_pawn_moves<WHITE, gen>(board, moves);
+    } else {
+        gen_pawn_moves<BLACK, gen>(board, moves);
     }
-    // Pawns which are
-    occ = board.pieces(us, PAWN) & board.pinned();
-    while (occ) {
-        Square sq = pop_lsb(&occ);
-        Bitboard target_squares = Bitboards::line(sq, ks);
-        if (us == WHITE) {
-            gen_pawn_moves<WHITE, gen>(board, sq, moves, target_squares);
-        } else {
-            gen_pawn_moves<BLACK, gen>(board, sq, moves, target_squares);
-        }
-    }
+
     // Pinned knights cannot move
     occ = board.pieces(us, KNIGHT) & ~board.pinned();
     while (occ) {
-        Square sq = pop_lsb(&occ);
+        const Square sq = pop_lsb(&occ);
         gen_moves<gen, KNIGHT>(board, sq, moves);
     }
     // Bishops which aren't pinned
     occ = board.pieces(us, BISHOP) & ~board.pinned();
     while (occ) {
-        Square sq = pop_lsb(&occ);
+        const Square sq = pop_lsb(&occ);
         gen_moves<gen, BISHOP>(board, sq, moves);
     }
     // Bisops which are pinned
     occ = board.pieces(us, BISHOP) & board.pinned();
     while (occ) {
-        Square sq = pop_lsb(&occ);
-        Bitboard target_squares = Bitboards::line(sq, ks);
+        const Square sq = pop_lsb(&occ);
+        const Bitboard target_squares = Bitboards::line(sq, ks);
         gen_moves<gen, BISHOP>(board, sq, moves, target_squares);
     }
     // Rooks which aren't pinned
     occ = board.pieces(us, ROOK) & ~board.pinned();
     while (occ) {
-        Square sq = pop_lsb(&occ);
+        const Square sq = pop_lsb(&occ);
         gen_moves<gen, ROOK>(board, sq, moves);
     }
     // Rooks which are pinned
     occ = board.pieces(us, ROOK) & board.pinned();
     while (occ) {
-        Square sq = pop_lsb(&occ);
-        Bitboard target_squares = Bitboards::line(sq, ks);
+        const Square sq = pop_lsb(&occ);
+        const Bitboard target_squares = Bitboards::line(sq, ks);
         gen_moves<gen, ROOK>(board, sq, moves, target_squares);
     }
     occ = board.pieces(us, QUEEN) & ~board.pinned();
     while (occ) {
-        Square sq = pop_lsb(&occ);
+        const Square sq = pop_lsb(&occ);
         gen_moves<gen, QUEEN>(board, sq, moves);
     }
     occ = board.pieces(us, QUEEN) & board.pinned();
     while (occ) {
-        Square sq = pop_lsb(&occ);
-        Bitboard target_squares = Bitboards::line(sq, ks);
+        const Square sq = pop_lsb(&occ);
+        const Bitboard target_squares = Bitboards::line(sq, ks);
         gen_moves<gen, QUEEN>(board, sq, moves, target_squares);
     }
     gen_moves<gen, KING>(board, ks, moves);
-}
-
-template <> void gen_moves<QUIETCHECKS>(const Board &board, MoveList &moves) {
-    Colour us = board.who_to_play();
-    Bitboard occ;
-    Square ks = board.find_king(us);
-
-    // Caslting with check can happen is the square the rook ends up on is a rook check square.
-    if (board.check_squares(ROOK) & sq_to_bb(RookCastleSquares[us][KINGSIDE])) {
-        if (us == WHITE) {
-            gen_castle_moves<WHITE, KINGSIDE>(board, moves);
-        } else {
-            gen_castle_moves<BLACK, KINGSIDE>(board, moves);
-        }
-    }
-    if (board.check_squares(ROOK) & sq_to_bb(RookCastleSquares[us][QUEENSIDE])) {
-        if (us == WHITE) {
-            gen_castle_moves<WHITE, QUEENSIDE>(board, moves);
-        } else {
-            gen_castle_moves<BLACK, QUEENSIDE>(board, moves);
-        }
-    }
-
-    // Pawns which aren't pinned
-    occ = board.pieces(us, PAWN) & ~board.pinned();
-    while (occ) {
-        Square sq = pop_lsb(&occ);
-        if (us == WHITE) {
-            gen_pawn_moves<WHITE, QUIET>(board, sq, moves, board.check_squares(PAWN));
-        } else {
-            gen_pawn_moves<BLACK, QUIET>(board, sq, moves, board.check_squares(PAWN));
-        }
-    }
-    // Pawns which are
-    occ = board.pieces(us, PAWN) & board.pinned();
-    while (occ) {
-        Square sq = pop_lsb(&occ);
-        Bitboard target_squares = Bitboards::line(sq, ks) & board.check_squares(PAWN);
-        if (us == WHITE) {
-            gen_pawn_moves<WHITE, QUIET>(board, sq, moves, target_squares);
-        } else {
-            gen_pawn_moves<BLACK, QUIET>(board, sq, moves, target_squares);
-        }
-    }
-    // Pinned knights cannot move
-    occ = board.pieces(us, KNIGHT) & ~board.pinned();
-    while (occ) {
-        Square sq = pop_lsb(&occ);
-        gen_moves<QUIET, KNIGHT>(board, sq, moves, board.check_squares(KNIGHT));
-    }
-    // Bishops which aren't pinned
-    occ = board.pieces(us, BISHOP) & ~board.pinned();
-    while (occ) {
-        Square sq = pop_lsb(&occ);
-        gen_moves<QUIET, BISHOP>(board, sq, moves, board.check_squares(BISHOP));
-    }
-    // Bisops which are pinned
-    occ = board.pieces(us, BISHOP) & board.pinned();
-    while (occ) {
-        Square sq = pop_lsb(&occ);
-        Bitboard target_squares = Bitboards::line(sq, ks) & board.check_squares(BISHOP);
-        gen_moves<QUIET, BISHOP>(board, sq, moves, target_squares);
-    }
-    // Rooks which aren't pinned
-    occ = board.pieces(us, ROOK) & ~board.pinned();
-    while (occ) {
-        Square sq = pop_lsb(&occ);
-        gen_moves<QUIET, ROOK>(board, sq, moves, board.check_squares(ROOK));
-    }
-    // Rooks which are pinned
-    occ = board.pieces(us, ROOK) & board.pinned();
-    while (occ) {
-        Square sq = pop_lsb(&occ);
-        Bitboard target_squares = Bitboards::line(sq, ks) & board.check_squares(ROOK);
-        gen_moves<QUIET, ROOK>(board, sq, moves, target_squares);
-    }
-    occ = board.pieces(us, QUEEN) & ~board.pinned();
-    while (occ) {
-        Square sq = pop_lsb(&occ);
-        gen_moves<QUIET, QUEEN>(board, sq, moves, board.check_squares(QUEEN));
-    }
-    occ = board.pieces(us, QUEEN) & board.pinned();
-    while (occ) {
-        Square sq = pop_lsb(&occ);
-        Bitboard target_squares = Bitboards::line(sq, ks) & board.check_squares(QUEEN);
-        gen_moves<QUIET, QUEEN>(board, sq, moves, target_squares);
-    }
 }
 
 template <> void gen_moves<EVASIONS>(const Board &board, MoveList &moves) {
@@ -464,10 +571,9 @@ template <> void gen_moves<EVASIONS>(const Board &board, MoveList &moves) {
     Bitboard pieces_bb = board.pieces();
     // We can capture the checker
     Square ts = board.checkers(0);
-    Bitboard target_square = sq_to_bb(ts);
     occ = Bitboards::attacks<KNIGHT>(pieces_bb, ts) & board.pieces(us, KNIGHT) & can_move;
     while (occ) {
-        Square sq = pop_lsb(&occ);
+        const Square sq = pop_lsb(&occ);
         Move move = Move(KNIGHT, sq, ts);
         move.make_capture();
         moves.push_back(move);
@@ -475,7 +581,7 @@ template <> void gen_moves<EVASIONS>(const Board &board, MoveList &moves) {
     const Bitboard bq_atk = Bitboards::attacks<BISHOP>(pieces_bb, ts) & can_move;
     occ = bq_atk & board.pieces(us, BISHOP);
     while (occ) {
-        Square sq = pop_lsb(&occ);
+        const Square sq = pop_lsb(&occ);
         Move move = Move(BISHOP, sq, ts);
         move.make_capture();
         moves.push_back(move);
@@ -483,65 +589,46 @@ template <> void gen_moves<EVASIONS>(const Board &board, MoveList &moves) {
     const Bitboard rq_atk = Bitboards::attacks<ROOK>(pieces_bb, ts) & can_move;
     occ = rq_atk & board.pieces(us, ROOK);
     while (occ) {
-        Square sq = pop_lsb(&occ);
+        const Square sq = pop_lsb(&occ);
         Move move = Move(ROOK, sq, ts);
         move.make_capture();
         moves.push_back(move);
     }
     occ = (rq_atk | bq_atk) & board.pieces(us, QUEEN);
     while (occ) {
-        Square sq = pop_lsb(&occ);
+        const Square sq = pop_lsb(&occ);
         Move move = Move(QUEEN, sq, ts);
         move.make_capture();
         moves.push_back(move);
     }
-    // Squares where a pawn could capture the checker
-    Bitboard pawn_atk = Bitboards::pawn_attacks(~us, target_square) |
-                        (Bitboards::shift<W>(target_square) | Bitboards::shift<E>(target_square));
-    occ = board.pieces(us, PAWN) & can_move & pawn_atk;
-    while (occ) {
-        Square sq = pop_lsb(&occ);
-        if (us == WHITE) {
-            // Weird pawn en-passent checks just make my life so much harder.
-            gen_pawn_moves<WHITE, CAPTURES>(board, sq, moves, target_square);
-        } else {
-            // Weird pawn en-passent checks just make my life so much harder.
-            gen_pawn_moves<BLACK, CAPTURES>(board, sq, moves, target_square);
-        }
+
+    if (us == WHITE) {
+        gen_pawn_moves<WHITE, EVASIONS>(board, moves);
+    } else {
+        gen_pawn_moves<BLACK, EVASIONS>(board, moves);
     }
 
     // Or we can block the check
     Bitboard between_squares = Bitboards::between(ks, ts);
 
-    // All of our pawns that can move that have some posibility of blocking the check. (We verify they can later)
-    occ = board.pieces(us, PAWN) & can_move & Bitboards::reverse_pawn_push(us, between_squares);
-    ;
-    while (occ) {
-        Square sq = pop_lsb(&occ);
-        if (us == WHITE) {
-            gen_pawn_moves<WHITE, QUIET>(board, sq, moves, between_squares);
-        } else {
-            gen_pawn_moves<BLACK, QUIET>(board, sq, moves, between_squares);
-        }
-    }
     occ = board.pieces(us, KNIGHT) & can_move;
     while (occ) {
-        Square sq = pop_lsb(&occ);
+        const Square sq = pop_lsb(&occ);
         gen_moves<QUIET, KNIGHT>(board, sq, moves, between_squares);
     }
     occ = board.pieces(us, BISHOP) & can_move;
     while (occ) {
-        Square sq = pop_lsb(&occ);
+        const Square sq = pop_lsb(&occ);
         gen_moves<QUIET, BISHOP>(board, sq, moves, between_squares);
     }
     occ = board.pieces(us, ROOK) & can_move;
     while (occ) {
-        Square sq = pop_lsb(&occ);
+        const Square sq = pop_lsb(&occ);
         gen_moves<QUIET, ROOK>(board, sq, moves, between_squares);
     }
     occ = board.pieces(us, QUEEN) & can_move;
     while (occ) {
-        Square sq = pop_lsb(&occ);
+        const Square sq = pop_lsb(&occ);
         gen_moves<QUIET, QUEEN>(board, sq, moves, between_squares);
     }
 }

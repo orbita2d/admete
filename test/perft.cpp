@@ -70,3 +70,15 @@ TEST(Perft, wikifive) {
   EXPECT_EQ(Search::perft_bulk(4, board), 2103487);
   EXPECT_EQ(Search::perft_bulk(5, board), 89941194);
 }
+
+TEST(Perft, ep_weirdness) {
+  std::pair<std::string, unsigned long> testcases[] = {
+      {"k6b/8/8/4Pp2/8/8/1K6/8 w - f6 0 1", 9},
+      {"k6b/8/8/4Pp2/6K1/8/8/8 w - f6 0 1", 9},
+  };
+  Board board = Board();
+  for (const auto &[fen, nodes] : testcases) {
+    board.fen_decode(fen);
+    EXPECT_EQ(Search::perft_bulk(1, board), nodes);
+  }
+}
