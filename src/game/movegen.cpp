@@ -155,8 +155,8 @@ void gen_pawn_prom_cap(const Square origin, MoveList &moves, const Bitboard targ
     moves.push_back(move);
 }
 
+// Generate all legal pawn moves for a specific gen type.
 template <Colour us, GenType gen> void gen_pawn_moves(const Board &board, MoveList &moves) {
-    // Pawns which aren't pinned
     assert(gen == QUIET || gen == CAPTURES || gen == EVASIONS);
     Square ks = board.find_king(us);
 
@@ -170,13 +170,13 @@ template <Colour us, GenType gen> void gen_pawn_moves(const Board &board, MoveLi
         Bitboard occ = pawns;
         occ &= ~Bitboards::shift<backwards(us)>(board.pieces());
 
-        // Unpinned pawns on ranks 2--> 6
+        // Unpinned pawns on ranks 2 --> 6
         q_nopin = occ & ~board.pinned() & ~Bitboards::rank(relative_rank(us, RANK7));
         while (q_nopin) {
             const Square sq = pop_lsb(&q_nopin);
             gen_pawn_push<us>(sq, moves);
         }
-        // Pinned pawns on ranks 2--> 6
+        // Pinned pawns on ranks 2 --> 6
         q_pin = occ & board.pinned() & ~Bitboards::rank(relative_rank(us, RANK7));
         while (q_pin) {
             const Square sq = pop_lsb(&q_pin);
@@ -253,7 +253,6 @@ template <Colour us, GenType gen> void gen_pawn_moves(const Board &board, MoveLi
 
         occ = pawns;
         // Relative southeast
-        constexpr Direction rNE = (Direction)(forwards(us) + E);
         constexpr Direction rSE = (Direction)(backwards(us) + E);
         occ &= Bitboards::shift<rSE>(board.pieces(~us));
 
