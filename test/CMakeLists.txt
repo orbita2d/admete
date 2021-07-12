@@ -17,7 +17,7 @@ target_link_libraries(tests
 add_test(NAME tests
         COMMAND tests )
 
-set_property(TARGET tests PROPERTY CXX_STANDARD 17)
+set_property(TARGET tests PROPERTY CXX_STANDARD 20)
 
 include(FetchContent)
 FetchContent_Declare(

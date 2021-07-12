@@ -1,6 +1,7 @@
 #pragma once
 #include "types.hpp"
 #include <assert.h>
+#include <bit>
 #include <inttypes.h>
 
 typedef uint64_t Bitboard;
@@ -340,52 +341,11 @@ inline Bitboard flip_vertical(const Bitboard g) {
 
 /// lsb() and msb() return the least/most significant bit in a non-zero bitboard
 
-#if defined(__GNUC__) // GCC, Clang, ICC
+inline Square lsb(Bitboard b) { return Square(std::countr_zero(b)); }
 
-inline Square lsb(Bitboard b) {
-    assert(b);
-    return Square(__builtin_ctzll(b));
-}
+inline Square msb(Bitboard b) { return Square(std::countl_zero(b)); }
 
-inline Square msb(Bitboard b) {
-    assert(b);
-    return Square(63 ^ __builtin_clzll(b));
-}
-
-inline int count_bits(Bitboard b) { return __builtin_popcountl(b); }
-
-#elif defined(_MSC_VER) // MSVC
-
-#ifdef _WIN64 // MSVC, WIN64
-#include <intrin.h>
-
-inline Square lsb(Bitboard b) {
-    assert(b);
-    unsigned long idx;
-    _BitScanForward64(&idx, b);
-    return Square(idx);
-}
-
-inline Square msb(Bitboard b) {
-    assert(b);
-    unsigned long idx;
-    _BitScanReverse64(&idx, b);
-    return Square(idx);
-}
-
-inline int count_bits(Bitboard b) { return __popcnt64(b); }
-
-#else // MSVC, WIN32
-
-#error "Will only compile in 64-bit mode"
-
-#endif
-
-#else // Compiler is neither GCC nor MSVC compatible
-
-#error "Compiler not supported."
-
-#endif
+inline int count_bits(Bitboard b) { return std::popcount(b); }
 
 /// pop_lsb() finds and clears the least significant bit in a non-zero bitboard
 
