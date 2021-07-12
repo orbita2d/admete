@@ -56,23 +56,41 @@ constexpr position_board darksquare_corner_distance = { 7, 6, 5, 4, 3, 2, 1, 0,
                                                         1, 2, 3, 4, 5, 6, 7, 6,
                                                         0, 1, 2, 3, 4, 5, 6, 7};
 
-constexpr position_board pb_knight = {  0, 0,  0,  0,  0,  0,  0,  0,
-                                        0, 10, 10, 10, 10, 10, 10, 0,
-                                        0, 10, 20, 20, 20, 20, 10, 0,
-                                        0, 10, 20, 20, 20, 20, 10, 0,
-                                        0, 10, 20, 20, 20, 20, 10, 0,
-                                        0, 10, 20, 20, 20, 20, 10, 0,
-                                        0, 10, 10, 10, 10, 10, 10, 0,
-                                        0, 0,  0,  0,  0,  0,  0,  0};
+constexpr position_board pb_knight_op = {   0, 0,  0,  0,  0,  0,  0,  0,
+                                            0, 10, 10, 10, 10, 10, 10, 0,
+                                            0, 10, 20, 20, 20, 20, 10, 0,
+                                            0, 10, 20, 20, 20, 20, 10, 0,
+                                            0, 10, 20, 20, 20, 20, 10, 0,
+                                            0, 10, 20, 20, 20, 20, 10, 0,
+                                            0, 10, 10, 10, 10, 10, 10, 0,
+                                            0, 0,  0,  0,  0,  0,  0,  0};
 
-constexpr position_board pb_bishop = {   20,  0,  0,  0,  0,  0,  0, 20,
-                                          0, 20,  0,  0,  0,  0, 20,  0,
-                                          0,  0, 20, 10, 10, 20,  0,  0,
-                                          0,  0, 10, 20, 20, 10,  0,  0,
-                                          0,  0, 10, 20, 20, 10,  0,  0,
-                                          0,  0, 20, 10, 10, 20,  0,  0,
-                                          0, 20,  0,  0,  0,  0, 20,  0,
-                                         20,  0,  0,  0,  0,  0,  0, 20};
+constexpr position_board pb_knight_eg = {   0, 0,  0,  0,  0,  0,  0,  0,
+                                            0, 10, 10, 10, 10, 10, 10, 0,
+                                            0, 10, 20, 20, 20, 20, 10, 0,
+                                            0, 10, 20, 20, 20, 20, 10, 0,
+                                            0, 10, 20, 20, 20, 20, 10, 0,
+                                            0, 10, 20, 20, 20, 20, 10, 0,
+                                            0, 10, 10, 10, 10, 10, 10, 0,
+                                            0, 0,  0,  0,  0,  0,  0,  0};
+
+constexpr position_board pb_bishop_op = {   20,  0,  0,  0,  0,  0,  0, 20,
+                                            0, 20,  0,  0,  0,  0, 20,  0,
+                                            0,  0, 20, 10, 10, 20,  0,  0,
+                                            0,  0, 10, 20, 20, 10,  0,  0,
+                                            0,  0, 10, 20, 20, 10,  0,  0,
+                                            0,  0, 20, 10, 10, 20,  0,  0,
+                                            0, 20,  0,  0,  0,  0, 20,  0,
+                                            20,  0,  0,  0,  0,  0,  0, 20};
+
+constexpr position_board pb_bishop_eg = {   20,  0,  0,  0,  0,  0,  0, 20,
+                                            0, 20,  0,  0,  0,  0, 20,  0,
+                                            0,  0, 20, 10, 10, 20,  0,  0,
+                                            0,  0, 10, 20, 20, 10,  0,  0,
+                                            0,  0, 10, 20, 20, 10,  0,  0,
+                                            0,  0, 20, 10, 10, 20,  0,  0,
+                                            0, 20,  0,  0,  0,  0, 20,  0,
+                                            20,  0,  0,  0,  0,  0,  0, 20};
 
 constexpr position_board pb_king_opening = { -20, -20, -20, -20, -20, -20, -20, -20,
                                              -20, -20, -20, -20, -20, -20, -20, -20,
@@ -110,14 +128,23 @@ constexpr position_board pb_pawn_endgame = { 0,  0,  0,  0,  0,  0,  0,  0,
                                              0,  0,  0,  0,  0,  0,  0,  0,
                                              0,  0,  0,  0,  0,  0,  0,  0};
 
-constexpr position_board pb_queen = {   0, 0, 0, 0, 0, 0, 0, 0,
-                                        0, 0, 0, 0, 0, 0, 0, 0,
-                                        0, 0, 0, 0, 0, 0, 0, 0,
-                                        0, 0, 0, 0, 0, 0, 0, 0,
-                                        0, 0, 0, 0, 0, 0, 0, 0,
-                                        0, 0, 0, 0, 0, 0, 0, 0,
-                                        0, 0, 0, 0, 0, 0, 0, 0,
-                                        0, 0, 0, 0, 0, 0, 0, 0};
+constexpr position_board pb_queen_op = {    0, 0, 0, 0, 0, 0, 0, 0,
+                                            0, 0, 0, 0, 0, 0, 0, 0,
+                                            0, 0, 0, 0, 0, 0, 0, 0,
+                                            0, 0, 0, 0, 0, 0, 0, 0,
+                                            0, 0, 0, 0, 0, 0, 0, 0,
+                                            0, 0, 0, 0, 0, 0, 0, 0,
+                                            0, 0, 0, 0, 0, 0, 0, 0,
+                                            0, 0, 0, 0, 0, 0, 0, 0};
+
+constexpr position_board pb_queen_eg = {    0, 0, 0, 0, 0, 0, 0, 0,
+                                            0, 0, 0, 0, 0, 0, 0, 0,
+                                            0, 0, 0, 0, 0, 0, 0, 0,
+                                            0, 0, 0, 0, 0, 0, 0, 0,
+                                            0, 0, 0, 0, 0, 0, 0, 0,
+                                            0, 0, 0, 0, 0, 0, 0, 0,
+                                            0, 0, 0, 0, 0, 0, 0, 0,
+                                            0, 0, 0, 0, 0, 0, 0, 0};
 
 constexpr position_board pb_rook_op = { 0, 0, 0, 0, 0, 0, 0, 0,
                                         0, 0, 0, 0, 0, 0, 0, 0,
@@ -176,7 +203,7 @@ constexpr Score mobility = Score(6, 8);
 constexpr Score bishop_pair = Score(15, 15);
 
 // Bonus for a piece on a weak enemy square.
-constexpr Score piece_weak_square = Score(0, 0);
+constexpr Score piece_weak_square = Score(5, 0);
 
 // Bonus for a knight on an outpost.
 constexpr Score knight_outpost = Score(15, 0);
@@ -206,17 +233,17 @@ static std::array<score_t, 6> material = {{100, 300, 350, 500, 900, 0}};
 namespace Evaluation {
 void init() {
     piece_square_tables[OPENING][BLACK][PAWN] = pb_pawn_opening;
-    piece_square_tables[OPENING][BLACK][KNIGHT] = pb_knight;
-    piece_square_tables[OPENING][BLACK][BISHOP] = pb_bishop;
+    piece_square_tables[OPENING][BLACK][KNIGHT] = pb_knight_op;
+    piece_square_tables[OPENING][BLACK][BISHOP] = pb_bishop_op;
     piece_square_tables[OPENING][BLACK][ROOK] = pb_rook_op;
-    piece_square_tables[OPENING][BLACK][QUEEN] = pb_queen;
+    piece_square_tables[OPENING][BLACK][QUEEN] = pb_queen_op;
     piece_square_tables[OPENING][BLACK][KING] = pb_king_opening;
 
     piece_square_tables[ENDGAME][BLACK][PAWN] = pb_pawn_endgame;
-    piece_square_tables[ENDGAME][BLACK][KNIGHT] = pb_knight;
-    piece_square_tables[ENDGAME][BLACK][BISHOP] = pb_bishop;
+    piece_square_tables[ENDGAME][BLACK][KNIGHT] = pb_knight_eg;
+    piece_square_tables[ENDGAME][BLACK][BISHOP] = pb_bishop_eg;
     piece_square_tables[ENDGAME][BLACK][ROOK] = pb_rook_eg;
-    piece_square_tables[ENDGAME][BLACK][QUEEN] = pb_queen;
+    piece_square_tables[ENDGAME][BLACK][QUEEN] = pb_queen_eg;
     piece_square_tables[ENDGAME][BLACK][KING] = pb_king_endgame;
 
     for (int p = 0; p < N_PIECE; p++) {
@@ -426,7 +453,7 @@ score_t evaluate_white(Board &board) {
     occ = board.pieces(BLACK, KNIGHT) & board.outposts(BLACK);
     score -= knight_outpost * count_bits(occ);
 
-    // Give a penalty for having a piece on a square that cannot be defended by a pawn.
+    // Give a penalty for having a minor piece on a square that cannot be defended by a pawn.
     occ = (board.pieces(WHITE, KNIGHT) | board.pieces(WHITE, BISHOP)) & board.weak_squares(BLACK);
     score += piece_weak_square * count_bits(occ);
     occ = (board.pieces(BLACK, KNIGHT) | board.pieces(BLACK, BISHOP)) & board.weak_squares(WHITE);
