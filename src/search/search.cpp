@@ -73,17 +73,17 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
     // Lookup position in transposition table.
     DenseMove hash_dmove = NULL_DMOVE;
     const zobrist_t hash = board.hash();
-    if (Cache::transposition_table.probe(hash)) {
-        const Cache::TransElement hit = Cache::transposition_table.last_hit();
-        if (hit.depth() >= depth) {
-            const score_t tt_eval = hit.eval(board.ply());
-            if (hit.lower()) {
+    Cache::TransElement tthit;
+    if (Cache::transposition_table.probe(hash, tthit)) {
+        if (tthit.depth() >= depth) {
+            const score_t tt_eval = tthit.eval(board.ply());
+            if (tthit.lower()) {
                 // The saved score is a lower bound for the score of the sub tree
                 if (tt_eval >= beta) {
                     // Fail high
                     return tt_eval;
                 }
-            } else if (hit.upper()) {
+            } else if (tthit.upper()) {
                 // The saved score is an upper bound for the score of the subtree.
                 if (tt_eval <= alpha) {
                     // Fail low
@@ -94,7 +94,7 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
                 return tt_eval;
             }
         }
-        hash_dmove = hit.move();
+        hash_dmove = tthit.move();
     }
 
     // Check if we've passed our time cutoff
@@ -337,9 +337,9 @@ score_t Search::pv_search(Board &board, const depth_t start_depth, const score_t
     // Lookup position in transposition table for hashmove.
     DenseMove hash_dmove = NULL_DMOVE;
     const zobrist_t hash = board.hash();
-    if (Cache::transposition_table.probe(hash)) {
-        const Cache::TransElement hit = Cache::transposition_table.last_hit();
-        hash_dmove = hit.move();
+    Cache::TransElement tthit;
+    if (Cache::transposition_table.probe(hash, tthit)) {
+        hash_dmove = tthit.move();
     }
 
     // Check if we've passed our time cutoff

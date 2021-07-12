@@ -54,8 +54,7 @@ inline size_t tt_max = (hash_default * (1 << 20)) / sizeof(tt_pair);
 class TranspositionTable {
   public:
     TranspositionTable();
-    bool probe(const zobrist_t);
-    TransElement last_hit() const { return _last_hit; };
+    bool probe(const zobrist_t, TransElement &hit);
     void store(const zobrist_t hash, const score_t eval, const Bounds bound, const depth_t depth, const Move move,
                const ply_t ply);
     void replace(const size_t index, const zobrist_t new_hash, const TransElement elem);
@@ -72,7 +71,6 @@ class TranspositionTable {
 
   private:
     tt_map _data;
-    TransElement _last_hit;
     depth_t _min_depth = 0;
     size_t index;
     size_t max_index = 0;

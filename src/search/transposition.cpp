@@ -9,7 +9,7 @@ Cache::TranspositionTable::TranspositionTable() {
     key_array.resize(max_index, 0);
 }
 
-bool Cache::TranspositionTable::probe(const zobrist_t hash) {
+bool Cache::TranspositionTable::probe(const zobrist_t hash, TransElement &hit) {
     assert(_data.size() <= max_index);
     assert(key_array.size() == max_index);
     if (is_enabled() == false) {
@@ -20,7 +20,7 @@ bool Cache::TranspositionTable::probe(const zobrist_t hash) {
         return false;
     } else {
         it->second.set_cache_hit();
-        _last_hit = it->second;
+        hit = it->second;
         return true;
     }
 }
