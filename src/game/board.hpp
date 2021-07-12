@@ -121,7 +121,7 @@ class Board {
     bool can_castle(const Colour c) const { return aux_info->castling_rights & get_rights(c); }
     bool can_castle(const Colour c, const CastlingSide s) const { return aux_info->castling_rights & get_rights(c, s); }
     File en_passent() const { return aux_info->en_passent_target; }
-    int material() const { return _material; }
+    int phase_material() const { return _phase_material; }
     Score get_psqt() const { return psqt; }
     ply_t repetitions(const ply_t start) const;
     ply_t repetitions(const ply_t start, const ply_t query) const;
@@ -152,7 +152,7 @@ class Board {
     std::array<zobrist_t, MAX_PLY> hash_history;
     ply_t root_node_ply;
     Score psqt;
-    int _material;
+    int _phase_material;
 };
 
 inline Move unpack_move(const DenseMove dm, const Board &board) {

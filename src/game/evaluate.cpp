@@ -368,7 +368,7 @@ Score psqt_diff(const Colour moving, const Move &move) {
 
 score_t evaluate_white(const Board &board) {
     // Calculate the evaluation heuristic from white's POV.
-    int material_value = board.material();
+    int material_value = board.phase_material();
     Score score = board.get_psqt();
     // Mobility
     // A bonus is given to every square accessible to every piece, which isn't blocked by one of our pieces.
@@ -693,7 +693,7 @@ score_t Evaluation::eval(const Board &board) {
 score_t Evaluation::eval_psqt(const Board &board) {
     // Return the eval from the point of view of the current player.
     score_t value;
-    const score_t material_value = board.material();
+    const score_t material_value = board.phase_material();
     const Score score = board.get_psqt();
     if (material_value > OPENING_MATERIAL) {
         value = score.opening_score;

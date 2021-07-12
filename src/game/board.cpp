@@ -158,7 +158,7 @@ void Board::initialise() {
             piece_counts[c][p] = count_bits(pieces((Colour)c, p));
         }
     }
-    _material = Evaluation::count_material(*this);
+    _phase_material = Evaluation::count_material(*this);
     psqt = Evaluation::psqt(*this);
     pawn_atk_bb[WHITE] = Bitboards::pawn_attacks(WHITE, pieces(WHITE, PAWN));
     pawn_atk_bb[BLACK] = Bitboards::pawn_attacks(BLACK, pieces(BLACK, PAWN));
@@ -242,7 +242,7 @@ void Board::make_move(Move &move) {
         // Make sure to lookup and record the piece captured
         move.captured_piece = PAWN;
         piece_counts[them][PAWN]--;
-        _material -= Evaluation::piece_material(PAWN);
+        _phase_material -= Evaluation::piece_material(PAWN);
 
     } else if (move.is_capture()) {
         // Make sure to lookup and record the piece captured
@@ -254,7 +254,7 @@ void Board::make_move(Move &move) {
         piece_bb[p] ^= from_to_bb;
         piece_bb[move.captured_piece] ^= to_bb;
         piece_counts[them][move.captured_piece]--;
-        _material -= Evaluation::piece_material(move.captured_piece);
+        _phase_material -= Evaluation::piece_material(move.captured_piece);
 
     } else {
         // Quiet move
@@ -271,8 +271,8 @@ void Board::make_move(Move &move) {
         piece_bb[promoted] ^= to_bb;
         piece_counts[us][PAWN]--;
         piece_counts[us][promoted]++;
-        _material += Evaluation::piece_material(promoted);
-        _material -= Evaluation::piece_material(PAWN);
+        _phase_material += Evaluation::piece_material(promoted);
+        _phase_material -= Evaluation::piece_material(PAWN);
     }
 
     // Check if we've moved our rook to update our castling rights.
@@ -313,7 +313,7 @@ void Board::make_move(Move &move) {
     // Update PSQT value
     psqt += Evaluation::psqt_diff(us, move);
     assert(psqt == Evaluation::psqt(*this));
-    assert(_material == Evaluation::count_material(*this));
+    assert(_phase_material == Evaluation::count_material(*this));
 
     // Precompute the pawn attacks bitboards.
     if ((p == PAWN) | (move.captured_piece == PAWN)) {
@@ -381,7 +381,7 @@ void Board::unmake_move(const Move move) {
 
         // Update piece counts
         piece_counts[them][PAWN]++;
-        _material += Evaluation::piece_material(PAWN);
+        _phase_material += Evaluation::piece_material(PAWN);
 
     } else if (move.is_capture()) {
         assert(move.captured_piece < KING);
@@ -393,7 +393,7 @@ void Board::unmake_move(const Move move) {
         piece_bb[move.captured_piece] ^= to_bb;
         // Update piece counts
         piece_counts[them][move.captured_piece]++;
-        _material += Evaluation::piece_material(move.captured_piece);
+        _phase_material += Evaluation::piece_material(move.captured_piece);
     } else {
         occupied_bb ^= from_to_bb;
         colour_bb[us] ^= from_to_bb;
@@ -410,8 +410,8 @@ void Board::unmake_move(const Move move) {
         piece_bb[PAWN] ^= to_bb;
         piece_counts[us][PAWN]++;
         piece_counts[us][promoted]--;
-        _material -= Evaluation::piece_material(promoted);
-        _material += Evaluation::piece_material(PAWN);
+        _phase_material -= Evaluation::piece_material(promoted);
+        _phase_material += Evaluation::piece_material(PAWN);
     }
 
     if ((p == PAWN) | (cp == PAWN)) {
@@ -421,7 +421,7 @@ void Board::unmake_move(const Move move) {
         weak_sq_bb[BLACK] = Bitboards::middle_ranks & ~Bitboards::forward_atk_span(BLACK, pieces(BLACK, PAWN));
     }
 
-    assert(_material == Evaluation::count_material(*this));
+    assert(_phase_material == Evaluation::count_material(*this));
     psqt -= Evaluation::psqt_diff(us, move);
     assert(psqt == Evaluation::psqt(*this));
 }
