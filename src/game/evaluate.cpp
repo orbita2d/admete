@@ -366,7 +366,7 @@ Score psqt_diff(const Colour moving, const Move &move) {
     return score;
 }
 
-score_t evaluate_white(Board &board) {
+score_t evaluate_white(const Board &board) {
     // Calculate the evaluation heuristic from white's POV.
     int material_value = board.material();
     Score score = board.get_psqt();
@@ -681,7 +681,7 @@ score_t Evaluation::count_material(const Board &board) {
     return material_value;
 }
 
-score_t Evaluation::eval(Board &board) {
+score_t Evaluation::eval(const Board &board) {
     // Return the eval from the point of view of the current player.
     if (board.is_white_move()) {
         return evaluate_white(board);
@@ -690,8 +690,31 @@ score_t Evaluation::eval(Board &board) {
     }
 }
 
-score_t Evaluation::terminal(Board &board) {
-    // The eval for a terminal node.
+score_t Evaluation::eval_psqt(const Board &board) {
+    // Return the eval from the point of view of the current player.
+    score_t value;
+    const score_t material_value = board.material();
+    const Score score = board.get_psqt();
+    if (material_value > OPENING_MATERIAL) {
+        value = score.opening_score;
+    } else if (material_value > ENDGAME_MATERIAL) {
+        // Interpolate linearly between the game phases.
+        value = score.opening_score + (material_value - OPENING_MATERIAL) *
+                                          (score.endgame_score - score.opening_score) /
+                                          (ENDGAME_MATERIAL - OPENING_MATERIAL);
+    } else {
+        value = score.endgame_score;
+    }
+
+    if (board.is_white_move()) {
+        return value;
+    } else {
+        return -value;
+    }
+}
+
+// The eval for a terminal node.
+score_t Evaluation::terminal(const Board &board) {
     if (board.is_check()) {
         // This is checkmate
         return -ply_to_mate_score(board.ply());
@@ -701,8 +724,8 @@ score_t Evaluation::terminal(Board &board) {
     }
 }
 
-score_t Evaluation::evaluate_safe(Board &board) {
-    // Get the true static evaluation for any node, does the check if the node is a terminal node.
+// Get the true static evaluation for any node, does the check if the node is a terminal node.
+score_t Evaluation::evaluate_safe(const Board &board) {
     std::vector<Move> legal_moves = board.get_moves();
     if (legal_moves.empty()) {
         return terminal(board);
@@ -711,9 +734,9 @@ score_t Evaluation::evaluate_safe(Board &board) {
     }
 }
 
+// Returns a relative score for what we should consider a draw.
+// This implements contempt, such that the engine player should try avoid draws.
 score_t Evaluation::drawn_score(const Board &board) {
-    // Returns a relative score for what we should consider a draw.
-    // This implements contempt, such that the engine player should try avoid draws.
     // If we are an even number of nodes from root, the root player is the current player.
     const bool root_player = (board.height() % 2) == 0;
     if (root_player) {

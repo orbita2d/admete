@@ -12,12 +12,13 @@ namespace Evaluation {
 void init();
 void load_tables(std::string filename);
 void print_tables();
-score_t evaluate_white(Board &board);
+score_t evaluate_white(const Board &board);
 Score psqt(const Board &board);
 Score psqt_diff(const Colour moving, const Move &move);
-score_t eval(Board &board);
-score_t evaluate_safe(Board &board);
-score_t terminal(Board &board);
+score_t eval(const Board &board);
+score_t eval_psqt(const Board &board);
+score_t evaluate_safe(const Board &board);
+score_t terminal(const Board &board);
 score_t piece_material(const PieceType p);
 Score piece_value(const PieceType p);
 score_t count_material(const Board &board);
