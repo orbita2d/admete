@@ -239,6 +239,17 @@ class Score {
         endgame_score -= that.endgame_score;
         return *this;
     }
+
+    inline void add(const score_t op, const score_t eg) {
+        opening_score += op;
+        endgame_score += eg;
+    }
+
+    inline void sub(const score_t op, const score_t eg) {
+        opening_score -= op;
+        endgame_score -= eg;
+    }
+
     score_t opening_score = 0;
     score_t endgame_score = 0;
 };

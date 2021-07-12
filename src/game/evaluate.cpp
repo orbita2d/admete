@@ -270,13 +270,13 @@ Score psqt(const Board &board) {
         while (occ) {
             Square sq = pop_lsb(&occ);
             score += piece_values[p];
-            score += Score(piece_square_tables[OPENING][WHITE][p][sq], piece_square_tables[ENDGAME][WHITE][p][sq]);
+            score.add(piece_square_tables[OPENING][WHITE][p][sq], piece_square_tables[ENDGAME][WHITE][p][sq]);
         }
         occ = board.pieces(BLACK, p);
         while (occ) {
             Square sq = pop_lsb(&occ);
             score -= piece_values[p];
-            score -= Score(piece_square_tables[OPENING][BLACK][p][sq], piece_square_tables[ENDGAME][BLACK][p][sq]);
+            score.sub(piece_square_tables[OPENING][BLACK][p][sq], piece_square_tables[ENDGAME][BLACK][p][sq]);
         }
     }
     return score;
@@ -289,15 +289,15 @@ Score psqt_diff(const Colour moving, const Move &move) {
     assert(p < NO_PIECE);
     // Apply psqt
     if (moving == WHITE) {
-        score += Score(piece_square_tables[OPENING][WHITE][p][move.target],
-                       piece_square_tables[ENDGAME][WHITE][p][move.target]);
-        score -= Score(piece_square_tables[OPENING][WHITE][p][move.origin],
-                       piece_square_tables[ENDGAME][WHITE][p][move.origin]);
+        score.add(piece_square_tables[OPENING][WHITE][p][move.target],
+                  piece_square_tables[ENDGAME][WHITE][p][move.target]);
+        score.sub(piece_square_tables[OPENING][WHITE][p][move.origin],
+                  piece_square_tables[ENDGAME][WHITE][p][move.origin]);
     } else {
-        score -= Score(piece_square_tables[OPENING][BLACK][p][move.target],
-                       piece_square_tables[ENDGAME][BLACK][p][move.target]);
-        score += Score(piece_square_tables[OPENING][BLACK][p][move.origin],
-                       piece_square_tables[ENDGAME][BLACK][p][move.origin]);
+        score.sub(piece_square_tables[OPENING][BLACK][p][move.target],
+                  piece_square_tables[ENDGAME][BLACK][p][move.target]);
+        score.add(piece_square_tables[OPENING][BLACK][p][move.origin],
+                  piece_square_tables[ENDGAME][BLACK][p][move.origin]);
     }
 
     // Apply piece value for captures.
@@ -306,24 +306,24 @@ Score psqt_diff(const Colour moving, const Move &move) {
         assert(move.captured_piece == PAWN);
         if (moving == WHITE) {
             score += piece_values[PAWN];
-            score += Score(piece_square_tables[OPENING][BLACK][PAWN][captured_square],
-                           piece_square_tables[ENDGAME][BLACK][PAWN][captured_square]);
+            score.add(piece_square_tables[OPENING][BLACK][PAWN][captured_square],
+                      piece_square_tables[ENDGAME][BLACK][PAWN][captured_square]);
         } else {
             score -= piece_values[PAWN];
-            score -= Score(piece_square_tables[OPENING][WHITE][PAWN][captured_square],
-                           piece_square_tables[ENDGAME][WHITE][PAWN][captured_square]);
+            score.sub(piece_square_tables[OPENING][WHITE][PAWN][captured_square],
+                      piece_square_tables[ENDGAME][WHITE][PAWN][captured_square]);
         }
     } else if (move.is_capture()) {
         assert(move.captured_piece < NO_PIECE);
         const PieceType cp = move.captured_piece;
         if (moving == WHITE) {
             score += piece_values[move.captured_piece];
-            score += Score(piece_square_tables[OPENING][BLACK][cp][move.target],
-                           piece_square_tables[ENDGAME][BLACK][cp][move.target]);
+            score.add(piece_square_tables[OPENING][BLACK][cp][move.target],
+                      piece_square_tables[ENDGAME][BLACK][cp][move.target]);
         } else {
             score -= piece_values[move.captured_piece];
-            score -= Score(piece_square_tables[OPENING][WHITE][cp][move.target],
-                           piece_square_tables[ENDGAME][WHITE][cp][move.target]);
+            score.sub(piece_square_tables[OPENING][WHITE][cp][move.target],
+                      piece_square_tables[ENDGAME][WHITE][cp][move.target]);
         }
     }
 
@@ -336,13 +336,13 @@ Score psqt_diff(const Colour moving, const Move &move) {
         if (moving == WHITE) {
             score += piece_values[promoted];
             score -= piece_values[PAWN];
-            score += Score(piece_square_tables[OPENING][WHITE][promoted][move.target],
-                           piece_square_tables[ENDGAME][WHITE][promoted][move.target]);
+            score.add(piece_square_tables[OPENING][WHITE][promoted][move.target],
+                      piece_square_tables[ENDGAME][WHITE][promoted][move.target]);
         } else {
             score -= piece_values[promoted];
             score += piece_values[PAWN];
-            score -= Score(piece_square_tables[OPENING][BLACK][promoted][move.target],
-                           piece_square_tables[ENDGAME][BLACK][promoted][move.target]);
+            score.sub(piece_square_tables[OPENING][BLACK][promoted][move.target],
+                      piece_square_tables[ENDGAME][BLACK][promoted][move.target]);
         }
     }
 
@@ -352,15 +352,15 @@ Score psqt_diff(const Colour moving, const Move &move) {
         const Square rook_from = RookSquares[moving][side];
         const Square rook_to = RookCastleSquares[moving][side];
         if (moving == WHITE) {
-            score += Score(piece_square_tables[OPENING][WHITE][ROOK][rook_to],
-                           piece_square_tables[ENDGAME][WHITE][ROOK][rook_to]);
-            score -= Score(piece_square_tables[OPENING][WHITE][ROOK][rook_from],
-                           piece_square_tables[ENDGAME][WHITE][ROOK][rook_from]);
+            score.add(piece_square_tables[OPENING][WHITE][ROOK][rook_to],
+                      piece_square_tables[ENDGAME][WHITE][ROOK][rook_to]);
+            score.sub(piece_square_tables[OPENING][WHITE][ROOK][rook_from],
+                      piece_square_tables[ENDGAME][WHITE][ROOK][rook_from]);
         } else {
-            score -= Score(piece_square_tables[OPENING][BLACK][ROOK][rook_to],
-                           piece_square_tables[ENDGAME][BLACK][ROOK][rook_to]);
-            score += Score(piece_square_tables[OPENING][BLACK][ROOK][rook_from],
-                           piece_square_tables[ENDGAME][BLACK][ROOK][rook_from]);
+            score.sub(piece_square_tables[OPENING][BLACK][ROOK][rook_to],
+                      piece_square_tables[ENDGAME][BLACK][ROOK][rook_to]);
+            score.add(piece_square_tables[OPENING][BLACK][ROOK][rook_from],
+                      piece_square_tables[ENDGAME][BLACK][ROOK][rook_from]);
         }
     }
     return score;
