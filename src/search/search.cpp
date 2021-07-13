@@ -215,7 +215,7 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
         // SEE reductions
         // If the SEE for a capture is very bad, we can search to a lower depth as it's unlikely to cause a cut.
         if ((node == ALLNODE) && !move.is_promotion() && move.is_capture() && (search_depth > 2) && !gives_check &&
-            !board.is_check() && move.score < -100) {
+            !board.is_check() && !SEE::see(board, move, -100)) {
             search_depth--;
         }
 
@@ -230,7 +230,7 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
         // At frontier nodes (depth == 1, search_depth == 0), prune moves which have no chance of raising alpha.
         // At pre-frontier nodes (depth == 2), we can prune moves similarly.
         if ((counter > 1) && !move.is_promotion() && move.is_capture() && (depth <= efp_max_depth) && !gives_check &&
-            !board.is_check() && (node_eval + move.score + extended_futility_margins[depth] <= alpha)) {
+            !board.is_check() && !SEE::see(board, move, alpha - node_eval - extended_futility_margins[depth])) {
             continue;
         }
 
@@ -518,12 +518,12 @@ score_t Search::quiesce(Board &board, const score_t alpha_start, const score_t b
     for (Move move : moves) {
         // For a capture, the recorded score is the SEE value.
         // It makes sense to not consider losing captures in qsearch.
-        if (!board.is_check() && move.is_capture() && (move.score < 0)) {
+        if (!board.is_check() && move.is_capture() && !SEE::see(board, move, 0)) {
             continue;
         }
         constexpr score_t see_margin = 100;
         // In qsearch, only consider moves with a decent chance of raising alpha.
-        if (!board.is_check() && move.is_capture() && (stand_pat + move.score <= alpha - see_margin)) {
+        if (!board.is_check() && move.is_capture() && !SEE::see(board, move, alpha - stand_pat - see_margin)) {
             continue;
         }
         board.make_move(move);

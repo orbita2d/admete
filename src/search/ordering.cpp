@@ -122,6 +122,52 @@ score_t see_quiet(Board &board, const Move move) {
     return -see_gain;
 }
 
+bool see(Board &board, const Move move, const int threshold) {
+    assert(move != NULL_MOVE);
+    assert(move.is_capture());
+    Bitboard mask = Bitboards::omega ^ move.origin;
+    int last_atk_material = SEE::material[move.moving_piece];
+
+    // Initial gain is just capturing the piece, this is an upper bound.
+    // Gain is gain if our last moves piece is recaptured.
+    int gain = SEE::material[board.piece_type(move.target)] - threshold;
+    if (move.is_ep_capture()) {
+        gain = SEE::material[PAWN] - threshold;
+        const Square captured_square(move.origin.rank(), move.target.file());
+        mask ^= sq_to_bb(captured_square);
+    }
+
+    if (gain < 0) {
+        return false;
+    }
+    // Gain after our piece being recaptured is a lower bound.
+    if (gain >= last_atk_material) {
+        return true;
+    }
+    Colour side = ~board.who_to_play();
+    const Square target = move.target;
+    Bitboard smallest_atk = get_smallest_attacker(board, target, mask, side);
+    while (smallest_atk) {
+        const Square atksq = lsb(smallest_atk);
+        PieceType p = board.piece_type(atksq);
+        // The gain from a capture is the capture - the other side's gain so far.
+        gain = last_atk_material - gain - 1;
+        last_atk_material = SEE::material[p];
+        if (gain - last_atk_material >= 0) {
+            // Even if our piece is recaptured, we are still winning, early exit.
+            side = ~side;
+            break;
+        }
+        // Remove the smallest attacker
+        mask ^= smallest_atk;
+        // Switch the sides
+        side = ~side;
+        smallest_atk = get_smallest_attacker(board, target, mask, side);
+    }
+    // At the end, if we didn't early exit, side is set to the player who couldn't recap.
+    return side != board.who_to_play();
+}
+
 } // namespace SEE
 
 namespace Ordering {
@@ -150,13 +196,12 @@ void rank_and_sort_moves(Board &board, MoveList &legal_moves, const DenseMove ha
         } else if (move.is_capture()) {
             // Make sure to lookup and record the piece captured
             move.captured_piece = board.piece_type(move.target);
-            move.score = SEE::see_capture(board, move);
             if (board.gives_check(move)) {
                 move.score += 100;
             }
-            if (move.score >= 50) {
+            if (SEE::see(board, move, 50)) {
                 good_captures.push_back(move);
-            } else if (move.score >= -50) {
+            } else if (SEE::see(board, move, -50)) {
                 even_captures.push_back(move);
             } else {
                 bad_captures.push_back(move);
