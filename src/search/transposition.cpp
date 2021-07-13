@@ -69,11 +69,11 @@ void Cache::TranspositionTable::store(const zobrist_t hash, const score_t eval, 
         // We are doing the first fill of the table;
         _data[hash] = elem;
         key_array[index] = hash;
+        index++;
     } else {
-        // Replace oldest value
         replace(index % max_index, hash, elem);
+        index++;
     }
-    index++;
 }
 
 void Cache::TranspositionTable::set_delete() {
