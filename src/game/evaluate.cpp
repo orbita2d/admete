@@ -200,7 +200,7 @@ constexpr Score queen_check = Score(-8, 0);
 constexpr Score mobility = Score(6, 8);
 
 // Bonus for having the bishop pair.
-constexpr Score bishop_pair = Score(15, 15);
+constexpr Score bishop_pair = Score(15, 25);
 
 // Bonus for a piece on a weak enemy square.
 constexpr Score piece_weak_square = Score(5, 0);

@@ -54,11 +54,11 @@ Bitboard get_smallest_attacker(Board &board, const Square origin, const Bitboard
     return Bitboards::null;
 }
 
+// Static exchange evaluation. Looks at the possible gain to be made by trading on square 'target'.
+// Side is the colour of the side to move.
+// PT is the piece type that is on that square (not looked up as we want to evaluate moves statically)
+// Mask is a bitboard mask for pieces to consider in the evaluation.
 score_t see(Board &board, const Square target, Colour side, PieceType pt, Bitboard mask) {
-    // Static exchange evaluation. Looks at the possible gain to be made by trading on square 'target'.
-    // Side is the colour of the side to move.
-    // PT is the piece type that is on that square (not looked up as we want to evaluate moves statically)
-    // Mask is a bitboard mask for pieces to consider in the evaluation.
     Bitboard smallest_atk = get_smallest_attacker(board, target, mask, side);
     // Vector the the relative gain on the square for each iteration of exchanges.
     std::vector<score_t> gain;
