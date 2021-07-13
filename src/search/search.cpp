@@ -492,8 +492,12 @@ score_t Search::quiesce(Board &board, const score_t alpha_start, const score_t b
     }
 
     score_t delta = 900;
+    // If pawns are on seventh we could be promoting, delta is higher.
+    if (board.pieces(board.who_to_play(), PAWN) & Bitboards::rank(relative_rank(board.who_to_play(), RANK7))) {
+        delta += 500;
+    }
     // Delta pruning
-    if (stand_pat < alpha - delta) {
+    if (stand_pat + delta <= alpha) {
         return stand_pat;
     }
 
@@ -519,7 +523,7 @@ score_t Search::quiesce(Board &board, const score_t alpha_start, const score_t b
         }
         constexpr score_t see_margin = 100;
         // In qsearch, only consider moves with a decent chance of raising alpha.
-        if (!board.is_check() && move.is_capture() && (stand_pat + move.score < alpha - see_margin)) {
+        if (!board.is_check() && move.is_capture() && (stand_pat + move.score <= alpha - see_margin)) {
             continue;
         }
         board.make_move(move);
