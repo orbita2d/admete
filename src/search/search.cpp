@@ -191,8 +191,7 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
     }
 
     uint counter = 0;
-    KillerTableRow killer_move = Cache::killer_table.probe(board.ply());
-    Ordering::rank_and_sort_moves(board, legal_moves, hash_dmove, killer_move);
+    Ordering::rank_and_sort_moves(board, legal_moves, hash_dmove);
     for (Move move : legal_moves) {
         counter++;
         const bool gives_check = board.gives_check(move);
@@ -414,10 +413,8 @@ score_t Search::pv_search(Board &board, const depth_t start_depth, const score_t
         }
         is_first_child = false;
     }
-
-    KillerTableRow killer_move = Cache::killer_table.probe(board.ply());
     // Sort the remaining moves, and remove the hash move if it exists
-    Ordering::rank_and_sort_moves(board, legal_moves, hash_dmove, killer_move);
+    Ordering::rank_and_sort_moves(board, legal_moves, hash_dmove);
 
     for (Move move : legal_moves) {
         PrincipleLine temp_line;
@@ -512,7 +509,7 @@ score_t Search::quiesce(Board &board, const score_t alpha_start, const score_t b
     }
 
     // Sort the captures and record SEE.
-    Ordering::rank_and_sort_moves(board, moves, NULL_DMOVE, NULL_KROW);
+    Ordering::rank_and_sort_moves(board, moves, NULL_DMOVE);
 
     for (Move move : moves) {
         // For a capture, the recorded score is the SEE value.
