@@ -211,12 +211,12 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
         // Late move reductions:
         // At an expected All node, the most likely moves to prove us wrong and fail high are
         // one's ranked earliest in move ordering. We can be less careful about proving later moves.
-        if ((node == ALLNODE) && (counter > 4) && !move.is_promotion() && move.is_quiet() && !gives_check &&
+        if ((node == ALLNODE) && (counter >= 2) && !move.is_promotion() && move.is_quiet() && !gives_check &&
             !board.is_check()) {
             search_depth -= reductions_table[0][depth][counter];
         }
 
-        if ((node == ALLNODE) && (counter > 5) && !move.is_promotion() && move.is_capture() && !gives_check &&
+        if ((node == ALLNODE) && (counter >= 3) && !move.is_promotion() && move.is_capture() && !gives_check &&
             !board.is_check()) {
             search_depth -= reductions_table[1][depth][counter];
         }
@@ -237,7 +237,7 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
 
         // Extended futility pruning
         // At frontier nodes (depth == 1, search_depth == 0), prune moves which have no chance of raising alpha.
-        // At pre-frontier nodes (depth == 2), we can prune moves similarly.
+        // At pre-frontier nodes (depth == 2), we can prune moves similarly, but with a much higher threshold.
         if ((counter > 1) && !move.is_promotion() && move.is_capture() && (depth <= efp_max_depth) && !gives_check &&
             !board.is_check() && !SEE::see(board, move, alpha - node_eval - extended_futility_margins[depth])) {
             continue;
