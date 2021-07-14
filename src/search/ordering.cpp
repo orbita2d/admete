@@ -203,7 +203,7 @@ void rank_and_sort_moves(Board &board, MoveList &legal_moves, const DenseMove ha
             // Quiet move.
             move.score = std::min(Cache::history_table.probe(move), 100000u);
             if (move == countermove) {
-                move.score += 20;
+                move.score += 128;
             }
             if (board.gives_check(move)) {
                 move.score += 100000;
