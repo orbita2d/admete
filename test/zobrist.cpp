@@ -1,3 +1,4 @@
+#include "zobrist.hpp"
 #include "board.hpp"
 #include <gtest/gtest.h>
 #include <tuple>
@@ -36,6 +37,47 @@ TEST(Zobrist, MaterialKeyNotEqual) {
     zobrist_t hash1 = Zobrist::material(board);
     board.fen_decode(fen2);
     zobrist_t hash2 = Zobrist::material(board);
+    EXPECT_NE(hash1, hash2);
+  }
+}
+
+TEST(Zobrist, PawnKeyEqual) {
+  Board board = Board();
+  std::pair<std::string, std::string> testcases[] = {
+      {"3k3q/pbpp3P/1p2p3/4Pp2/3P1nPQ/2PB1P2/P1P5/2K4R b - - 2 28",
+       "3k3q/p1pp3P/1p2p3/4Pp2/3P2PQ/2PB1P2/P1P5/2K4R b - - 2 28"},
+      {"3k3q/pbpp3P/1p2p3/4Pp2/3P1nPQ/2PB1P2/P1P5/2K4R b - - 2 28",
+       "3k4/p1pp3P/1p2p3/4Pp2/3P2P1/2P2P2/P1P5/2K5 b - - 2 28"},
+      {"3k3q/pbpp3P/1p2p3/4Pp2/3P1nPQ/2PB1P2/P1P5/2K4R b - - 2 28",
+       "2K5/p1pp3P/1p2p3/4Pp2/3P2P1/2P2Pk1/P1P5/8 b - - 2 28"},
+      {"3k3q/pbpp3P/1p2p3/4Pp2/3P1nPQ/2PB1P2/P1P5/2K4R b - - 2 28",
+       "3k3q/pbpp3P/1p2p3/4Pp2/3P1nPQ/2PB1P2/P1P5/2K4R w - - 2 28"},
+      {"3k3q/pbpp3P/1p2p3/4Pp2/3P1nPQ/2PB1P2/P1P5/2K4R b - - 2 28",
+       "3k3q/pbpp3P/1p2p3/4Pp2/3P1nPQ/2PB1P2/P1P5/2K4R b - - 1 28"},
+      {"3k3q/pbpp3P/1p2p3/4Pp2/3P1nPQ/2PB1P2/P1P5/2K4R b - - 2 28",
+       "3k3q/pbpp3P/1p2p3/4Pp2/3P1nPQ/2PB1P2/P1P5/2K4R b - - 2 1"},
+  };
+  for (const auto &[fen1, fen2] : testcases) {
+    board.fen_decode(fen1);
+    zobrist_t hash1 = Zobrist::pawns(board);
+    board.fen_decode(fen2);
+    zobrist_t hash2 = Zobrist::pawns(board);
+    EXPECT_EQ(hash1, hash2);
+  }
+}
+
+TEST(Zobrist, PawnKeyNotEqual) {
+  Board board = Board();
+  std::pair<std::string, std::string> testcases[] = {
+      {"3k3q/pbpp3P/1p2p3/4Pp2/3P1nPQ/2PB1P2/P1P5/2K4R b - - 2 28",
+       "2K5/p1pp4/1p2p2P/4Pp2/3P2P1/2P2Pk1/P1P5/8 b - - 2 28"},
+      {"2K5/p1pp4/1p2p2P/4Pp2/3P2P1/2P2Pk1/P1P5/8 b - - 2 28",
+       "2K5/2pp4/1p2p2P/4Pp2/3P2P1/2P2Pk1/P1P5/8 b - - 2 28"}};
+  for (const auto &[fen1, fen2] : testcases) {
+    board.fen_decode(fen1);
+    zobrist_t hash1 = Zobrist::pawns(board);
+    board.fen_decode(fen2);
+    zobrist_t hash2 = Zobrist::pawns(board);
     EXPECT_NE(hash1, hash2);
   }
 }

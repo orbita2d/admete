@@ -1,3 +1,4 @@
+#include "zobrist.hpp"
 #include "board.hpp"
 #include "types.hpp"
 #include <random>
@@ -25,6 +26,23 @@ void Zobrist::init() {
     zobrist_table_cr[WHITE][QUEENSIDE] = distribution(generator);
     zobrist_table_cr[BLACK][KINGSIDE] = distribution(generator);
     zobrist_table_cr[BLACK][QUEENSIDE] = distribution(generator);
+}
+
+zobrist_t Zobrist::pawns(const Board &board) {
+    zobrist_t hash = 0;
+
+    Bitboard occ = board.pieces(WHITE, PAWN);
+    while (occ) {
+        Square sq = pop_lsb(&occ);
+        hash ^= zobrist_table[WHITE][PAWN][sq];
+    }
+    occ = board.pieces(BLACK, PAWN);
+    while (occ) {
+        Square sq = pop_lsb(&occ);
+        hash ^= zobrist_table[BLACK][PAWN][sq];
+    }
+
+    return hash;
 }
 
 zobrist_t Zobrist::hash(const Board &board) {

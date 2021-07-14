@@ -7,6 +7,7 @@
 #include <map>
 #include <sstream>
 #include <stdexcept>
+#include <zobrist.hpp>
 
 std::map<char, Piece> fen_decode_map = {
     {'p', Piece(BLACK, PAWN)},   {'n', Piece(BLACK, KNIGHT)}, {'b', Piece(BLACK, BISHOP)}, {'r', Piece(BLACK, ROOK)},

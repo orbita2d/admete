@@ -163,18 +163,3 @@ inline Move unpack_move(const DenseMove dm, const Board &board) {
 bool interposes(const Square origin, const Square target, const Square query);
 bool in_line(const Square, const Square, const Square);
 bool in_line(const Square, const Square);
-
-// zorbist.cpp
-namespace Zobrist {
-void init();
-zobrist_t hash(const Board &board);
-zobrist_t material(const Board &board);
-zobrist_t diff(const Move move, const Colour us, const File last_ep_file, const unsigned castling_rights_change);
-zobrist_t nulldiff(const Colour us, const int last_ep_file);
-
-inline zobrist_t zobrist_table[N_COLOUR][N_PIECE][N_SQUARE];
-inline zobrist_t zobrist_table_cr[N_COLOUR][2];
-inline zobrist_t zobrist_table_move[N_COLOUR];
-inline zobrist_t zobrist_table_ep[8];
-
-} // namespace Zobrist

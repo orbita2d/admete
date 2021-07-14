@@ -6,6 +6,7 @@
 #include "search.hpp"
 #include "transposition.hpp"
 #include "uci.hpp"
+#include "zobrist.hpp"
 #include <iostream>
 
 int main() {
