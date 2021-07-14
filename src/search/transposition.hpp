@@ -102,7 +102,7 @@ class HistoryTable {
     // Table for the history heuristic;
   public:
     HistoryTable() = default;
-    uint probe(const PieceType, const Square);
+    uint probe(const Move);
     void store(const depth_t depth, const Move move);
     bool is_enabled() { return enabled; }
     void enable() { enabled = true; }

@@ -128,11 +128,13 @@ void Cache::reinit() {
     transposition_table = TranspositionTable();
 }
 
-uint Cache::HistoryTable::probe(const PieceType pt, const Square sq) {
-    assert(sq < 64);
-    assert(pt >= PAWN);
-    assert(pt < N_PIECE);
-    return _data[pt][sq];
+uint Cache::HistoryTable::probe(const Move move) {
+    assert(move != NULL_MOVE);
+    assert(move.is_quiet());
+    assert(move.target < 64);
+    assert(move.moving_piece >= PAWN);
+    assert(move.moving_piece < N_PIECE);
+    return _data[move.moving_piece][move.target];
 }
 void Cache::HistoryTable::store(const depth_t depth, const Move move) {
     if (is_enabled() == false) {

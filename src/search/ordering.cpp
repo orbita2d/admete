@@ -174,71 +174,49 @@ namespace Ordering {
 void sort_moves(MoveList &legal_moves) { std::sort(legal_moves.begin(), legal_moves.end(), cmp); }
 void rank_and_sort_moves(Board &board, MoveList &legal_moves, const DenseMove hash_dmove) {
 
-    MoveList quiet_moves, good_captures, even_captures, bad_captures, checks, sorted_moves, killer;
-    size_t n_moves = legal_moves.size();
-
-    sorted_moves.reserve(n_moves);
-    good_captures.reserve(n_moves);
-    killer.reserve(n_krow);
-    even_captures.reserve(n_moves);
-    quiet_moves.reserve(n_moves);
-    bad_captures.reserve(n_moves);
-
     KillerTableRow killer_moves = Cache::killer_table.probe(board.ply());
     DenseMove countermove = Cache::countermove_table.probe(board.last_move());
     for (Move &move : legal_moves) {
         if (move == hash_dmove) {
             // The search handles the hash move itself. Here we just make sure it doesn't end up in the final move
             // list.
+            move.score = 1000000;
         } else if (move == killer_moves) {
-            move.score = 10000;
-            killer.push_back(move);
+            move.score = 200000;
         } else if (move.is_capture()) {
             // Make sure to lookup and record the piece captured
             move.captured_piece = board.piece_type(move.target);
+            move.score = SEE::see_capture(board, move);
             if (board.gives_check(move)) {
-                move.score += 100;
+                move.score += 5000;
             }
             if (SEE::see(board, move, 50)) {
-                good_captures.push_back(move);
+                move.score = 400000;
             } else if (SEE::see(board, move, -50)) {
-                even_captures.push_back(move);
+                move.score = 150000;
             } else {
-                bad_captures.push_back(move);
+                move.score = -400000;
             }
         } else if (move.is_promotion()) {
-            move.score = SEE::material[get_promoted(move)];
-            even_captures.push_back(move);
+            move.score = 100000 + SEE::material[get_promoted(move)];
         } else {
-            move.score = Cache::history_table.probe(move.moving_piece, move.target);
+            // Quiet move.
+            move.score = std::min(Cache::history_table.probe(move), 100000u);
             if (move == countermove) {
                 move.score += 20;
             }
             if (board.gives_check(move)) {
-                move.score += 10000;
+                move.score += 100000;
             }
-            quiet_moves.push_back(move);
         }
     }
 
-    std::sort(good_captures.begin(), good_captures.end(), cmp);
-    std::sort(even_captures.begin(), even_captures.end(), cmp);
-    std::sort(bad_captures.begin(), bad_captures.end(), cmp);
-    std::sort(quiet_moves.begin(), quiet_moves.end(), cmp);
-
+    sort_moves(legal_moves);
     // Move order is:
     // Captures with SEE > 50
     // Killer moves
     // Captures -50 < SEE < 50
     // Quiet moves, sorted by history heuristic
     // Captures with SEE < -50
-
-    legal_moves.clear();
-    legal_moves.reserve(n_moves);
-    legal_moves.insert(legal_moves.end(), good_captures.begin(), good_captures.end());
-    legal_moves.insert(legal_moves.end(), killer.begin(), killer.end());
-    legal_moves.insert(legal_moves.end(), even_captures.begin(), even_captures.end());
-    legal_moves.insert(legal_moves.end(), quiet_moves.begin(), quiet_moves.end());
-    legal_moves.insert(legal_moves.end(), bad_captures.begin(), bad_captures.end());
 }
 } // namespace Ordering

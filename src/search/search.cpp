@@ -193,6 +193,10 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
     uint counter = 0;
     Ordering::rank_and_sort_moves(board, legal_moves, hash_dmove);
     for (Move move : legal_moves) {
+        // We've already dealt with the hashmove.
+        if (move == hash_move) {
+            continue;
+        }
         counter++;
         const bool gives_check = board.gives_check(move);
         if ((node == CUTNODE) && (counter >= 5)) {
@@ -417,6 +421,10 @@ score_t Search::pv_search(Board &board, const depth_t start_depth, const score_t
     Ordering::rank_and_sort_moves(board, legal_moves, hash_dmove);
 
     for (Move move : legal_moves) {
+        // We've already dealt with the hashmove.
+        if (move == hash_move) {
+            continue;
+        }
         PrincipleLine temp_line;
         temp_line.reserve(16);
 
