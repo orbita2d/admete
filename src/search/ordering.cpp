@@ -175,7 +175,6 @@ void sort_moves(MoveList &legal_moves) { std::sort(legal_moves.begin(), legal_mo
 void rank_and_sort_moves(Board &board, MoveList &legal_moves, const DenseMove hash_dmove) {
 
     KillerTableRow killer_moves = Cache::killer_table.probe(board.ply());
-    DenseMove countermove = Cache::countermove_table.probe(board.last_move());
     for (Move &move : legal_moves) {
         if (move == hash_dmove) {
             // The search handles the hash move itself. Here we just make sure it doesn't end up in the final move
@@ -202,9 +201,6 @@ void rank_and_sort_moves(Board &board, MoveList &legal_moves, const DenseMove ha
         } else {
             // Quiet move.
             move.score = std::min(Cache::history_table.probe(move), 100000u);
-            if (move == countermove) {
-                move.score += 128;
-            }
             if (board.gives_check(move)) {
                 move.score += 100000;
             }

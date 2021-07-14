@@ -183,7 +183,6 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
         if (best_score >= beta) {
             Cache::killer_table.store(board.ply(), best_move);
             Cache::history_table.store(depth, best_move);
-            Cache::countermove_table.store(board.last_move(), best_move);
             best_score = std::min(best_score, score_ub);
             Cache::transposition_table.store(hash, best_score, LOWER, depth, best_move, board.ply());
             return best_score;
@@ -267,7 +266,6 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
     }
     Cache::killer_table.store(board.ply(), best_move);
     Cache::history_table.store(depth, best_move);
-    Cache::countermove_table.store(board.last_move(), best_move);
     best_score = std::min(best_score, score_ub);
     const Bounds bound = best_score <= alpha ? UPPER : best_score >= beta ? LOWER : EXACT;
     Cache::transposition_table.store(hash, best_score, bound, depth, best_move, board.ply());
@@ -410,7 +408,6 @@ score_t Search::pv_search(Board &board, const depth_t start_depth, const score_t
             line = pv;
             Cache::killer_table.store(board.ply(), pv.back());
             Cache::history_table.store(depth, pv.back());
-            Cache::countermove_table.store(board.last_move(), pv.back());
             best_score = std::min(best_score, score_ub);
             Cache::transposition_table.store(hash, best_score, LOWER, depth, pv.back(), board.ply());
             return best_score;
@@ -462,7 +459,6 @@ score_t Search::pv_search(Board &board, const depth_t start_depth, const score_t
     if (!pv.empty()) {
         Cache::killer_table.store(board.ply(), pv.back());
         Cache::history_table.store(depth, pv.back());
-        Cache::countermove_table.store(board.last_move(), pv.back());
         best_score = std::min(best_score, score_ub);
         const Bounds bound = best_score <= alpha_start ? UPPER : best_score >= beta ? LOWER : EXACT;
         Cache::transposition_table.store(hash, best_score, bound, depth, pv.back(), board.ply());
