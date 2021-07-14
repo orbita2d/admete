@@ -13,6 +13,7 @@ int main() {
     Zobrist::init();
     Evaluation::init();
     Cache::init();
+    Search::init();
 
     UCI::uci();
 }

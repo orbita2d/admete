@@ -183,7 +183,9 @@ constexpr Piece BLANK_PIECE = Piece(WHITE, NO_PIECE);
 
 std::ostream &operator<<(std::ostream &os, const Piece piece);
 
-typedef int_fast8_t depth_t;
+constexpr int MAX_MOVES = 256;
+
+typedef int_fast16_t depth_t;
 constexpr depth_t MAX_DEPTH = 127;
 
 typedef unsigned int ply_t;

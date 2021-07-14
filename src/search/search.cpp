@@ -7,6 +7,7 @@
 #include <assert.h>
 #include <chrono>
 #include <iostream>
+#include <math.h>
 #include <time.h>
 
 constexpr depth_t null_move_depth_reduction = 2;
@@ -150,8 +151,8 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
     }
 
     // Null move pruning.
-    // We expect (null move observation) the node after a null move to fail high, making it a cut node. If it fails low,
-    // this node will fail high, unless we are in Zugzwang.
+    // We expect (null move observation) the node after a null move to fail high. The score should be a lower bound on
+    // the score for this node.
     if (!board.is_endgame() && allow_null && (depth > null_move_depth_reduction) && !board.is_check()) {
         board.make_nullmove();
         score_t score = -scout_search(board, depth - 1 - null_move_depth_reduction, -alpha - 1, time_cutoff,
@@ -205,14 +206,19 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
         }
         NodeType child = node == CUTNODE ? ALLNODE : CUTNODE;
 
-        int search_depth = depth - 1;
+        depth_t search_depth = depth - 1;
 
         // Late move reductions:
         // At an expected All node, the most likely moves to prove us wrong and fail high are
         // one's ranked earliest in move ordering. We can be less careful about proving later moves.
-        if ((node == ALLNODE) && (counter > 5) && !move.is_promotion() && move.is_quiet() && (search_depth > 2) &&
-            !gives_check && !board.is_check()) {
-            search_depth--;
+        if ((node == ALLNODE) && (counter > 4) && !move.is_promotion() && move.is_quiet() && !gives_check &&
+            !board.is_check()) {
+            search_depth -= reductions_table[0][depth][counter];
+        }
+
+        if ((node == ALLNODE) && (counter > 5) && !move.is_promotion() && move.is_capture() && !gives_check &&
+            !board.is_check()) {
+            search_depth -= reductions_table[1][depth][counter];
         }
 
         // SEE reductions
@@ -241,6 +247,8 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
             !board.is_check() && (node_eval + extended_futility_margins[depth] <= alpha)) {
             continue;
         }
+
+        search_depth = std::clamp(search_depth, 0l, depth - 1);
 
         board.make_move(move);
         options.nodes++;
@@ -666,4 +674,21 @@ score_t Search::search(Board &board, const depth_t max_depth, const int max_mill
 score_t Search::search(Board &board, const depth_t depth, PrincipleLine &line) {
     SearchOptions options = SearchOptions();
     return search(board, depth, POS_INF, line, options);
+}
+
+void Search::init() {
+    // Initialise the reductions table.
+    for (depth_t depth = 0; depth < MAX_DEPTH; depth++) {
+        reductions_table[0][depth][0] = 0;
+        reductions_table[1][depth][0] = 0;
+        for (int move_count = 1; move_count < MAX_MOVES; move_count++) {
+            // Quiet moves
+            reductions_table[0][depth][move_count] =
+                static_cast<depth_t>(std::log(depth) * std::log(move_count) * 0.4 + 1);
+
+            // Captures
+            reductions_table[1][depth][move_count] =
+                static_cast<depth_t>(std::log(depth) * std::log(move_count) * 0.25);
+        }
+    }
 }
