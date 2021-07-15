@@ -8,7 +8,6 @@ typedef uint64_t Bitboard;
 
 inline Bitboard PseudolegalAttacks[N_PIECE][N_SQUARE];
 inline Bitboard PawnAttacks[N_COLOUR][N_SQUARE];
-inline Bitboard PawnSpans[N_COLOUR][N_SQUARE];
 inline Bitboard LineBBs[N_SQUARE][N_SQUARE];
 constexpr Bitboard CastleCheckBBs[N_COLOUR][N_CASTLE] = {{0x60, 0xe}, {0x6000000000000000, 0xe00000000000000}};
 inline Bitboard SquareBBs[N_SQUARE];
@@ -158,8 +157,6 @@ template <PieceType p> inline Bitboard attacks(const Bitboard occ, const Square 
     }
 }
 
-inline Bitboard pawn_attacks(const Colour c, const Square s) { return PawnAttacks[c][s]; }
-
 constexpr Bitboard rank(const Rank r) { return rank_bb[r]; }
 constexpr Bitboard file(const File f) { return file_bb[f]; }
 
@@ -198,8 +195,8 @@ inline Bitboard vertical_fill(Bitboard g) {
     return north_fill(south_fill(g));
 }
 
+// Squares that a pawn could be to not be passed.
 inline Bitboard north_block_span(Bitboard g) {
-    // Squares that a pawn could be to not be passed.
     g = north_fill(g);
     g = shift<Direction::N>(g);
     g |= shift<Direction::W>(g);
@@ -208,7 +205,6 @@ inline Bitboard north_block_span(Bitboard g) {
 }
 
 inline Bitboard south_block_span(Bitboard g) {
-    // Squares that a pawn could be to not be passed.
     g = south_fill(g);
     g = shift<Direction::S>(g);
     g |= shift<Direction::W>(g);
@@ -216,7 +212,8 @@ inline Bitboard south_block_span(Bitboard g) {
     return g;
 }
 
-inline Bitboard forward_span(const Colour c, Bitboard g) {
+template <Colour c> inline Bitboard forward_span(Bitboard g) {
+    assert(c == WHITE || c == BLACK);
     if (c == WHITE) {
         g = north_fill(g);
         return shift<Direction::N>(g);
@@ -225,8 +222,8 @@ inline Bitboard forward_span(const Colour c, Bitboard g) {
         return shift<Direction::S>(g);
     }
 }
-
-inline Bitboard rear_span(const Colour c, Bitboard g) {
+template <Colour c> inline Bitboard rear_span(Bitboard g) {
+    assert(c == WHITE || c == BLACK);
     if (c == WHITE) {
         g = south_fill(g);
         return shift<Direction::S>(g);
@@ -236,19 +233,8 @@ inline Bitboard rear_span(const Colour c, Bitboard g) {
     }
 }
 
-inline Bitboard pawn_push(const Colour c, Bitboard g) {
-    if (c == WHITE) {
-        g = shift<Direction::N>(g);
-        g |= shift<Direction::N>(g & rank_3);
-        return g;
-    } else {
-        g = shift<Direction::S>(g);
-        g |= shift<Direction::S>(g & rank_6);
-        return g;
-    }
-}
-
-inline Bitboard reverse_pawn_push(const Colour c, Bitboard g) {
+template <Colour c> inline Bitboard reverse_pawn_push(Bitboard g) {
+    assert(c == WHITE || c == BLACK);
     if (c == WHITE) {
         g = shift<Direction::S>(g);
         return g;
@@ -258,7 +244,8 @@ inline Bitboard reverse_pawn_push(const Colour c, Bitboard g) {
     }
 }
 
-inline Bitboard reverse_pawn_double_push(const Colour c, Bitboard g) {
+template <Colour c> inline Bitboard reverse_pawn_double_push(Bitboard g) {
+    assert(c == WHITE || c == BLACK);
     if (c == WHITE) {
         g = shift<Direction::S>(g);
         return shift<Direction::S>(g);
@@ -268,7 +255,8 @@ inline Bitboard reverse_pawn_double_push(const Colour c, Bitboard g) {
     }
 }
 
-inline Bitboard forward_block_span(const Colour c, Bitboard g) {
+template <Colour c> inline Bitboard forward_block_span(Bitboard g) {
+    assert(c == WHITE || c == BLACK);
     if (c == WHITE) {
         return north_block_span(g);
     } else {
@@ -276,7 +264,8 @@ inline Bitboard forward_block_span(const Colour c, Bitboard g) {
     }
 }
 
-inline Bitboard rear_block_span(const Colour c, Bitboard g) {
+template <Colour c> inline Bitboard rear_block_span(Bitboard g) {
+    assert(c == WHITE || c == BLACK);
     if (c == WHITE) {
         return south_block_span(g);
     } else {
@@ -284,13 +273,15 @@ inline Bitboard rear_block_span(const Colour c, Bitboard g) {
     }
 }
 
-inline Bitboard forward_atk_span(const Colour c, Bitboard g) {
-    g = forward_span(c, g);
+template <Colour c> inline Bitboard forward_atk_span(Bitboard g) {
+    assert(c == WHITE || c == BLACK);
+    g = forward_span<c>(g);
     return shift<Direction::W>(g) | shift<Direction::E>(g);
 }
 
-inline Bitboard rear_atk_span(const Colour c, Bitboard g) {
-    g = rear_span(c, g);
+template <Colour c> inline Bitboard rear_atk_span(Bitboard g) {
+    assert(c == WHITE || c == BLACK);
+    g = rear_span<c>(g);
     return shift<Direction::W>(g) | shift<Direction::E>(g);
 }
 
@@ -299,7 +290,7 @@ inline Bitboard full_atk_span(Bitboard g) {
     return shift<Direction::W>(f) | shift<Direction::E>(f);
 }
 
-inline Bitboard forward_fill(const Colour c, Bitboard g) {
+template <Colour c> inline Bitboard forward_fill(Bitboard g) {
     if (c == WHITE) {
         return north_fill(g);
     } else {
@@ -307,7 +298,7 @@ inline Bitboard forward_fill(const Colour c, Bitboard g) {
     }
 }
 
-inline Bitboard rear_fill(const Colour c, Bitboard g) {
+template <Colour c> inline Bitboard rear_fill(Bitboard g) {
     if (c == WHITE) {
         return south_fill(g);
     } else {
@@ -315,13 +306,12 @@ inline Bitboard rear_fill(const Colour c, Bitboard g) {
     }
 }
 
-inline Bitboard pawn_attacks(const Colour c, Bitboard g) {
+inline Bitboard pawn_attacks(const Colour c, const Square s) { return PawnAttacks[c][s]; }
+template <Colour c> inline Bitboard pawn_attacks(const Bitboard g) {
     if (c == WHITE) {
-        Bitboard atk = shift<Direction::NW>(g) | shift<Direction::NE>(g);
-        return atk;
+        return shift<Direction::NW>(g) | shift<Direction::NE>(g);
     } else {
-        Bitboard atk = shift<Direction::SW>(g) | shift<Direction::SE>(g);
-        return atk;
+        return shift<Direction::SW>(g) | shift<Direction::SE>(g);
     }
 }
 

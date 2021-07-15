@@ -318,8 +318,8 @@ void Board::make_move(Move &move) {
         update_pawns();
     }
 
-    assert(pawn_controlled(WHITE) == Bitboards::pawn_attacks(WHITE, pieces(WHITE, PAWN)));
-    assert(pawn_controlled(BLACK) == Bitboards::pawn_attacks(BLACK, pieces(BLACK, PAWN)));
+    assert(pawn_controlled(WHITE) == Bitboards::pawn_attacks<WHITE>(pieces(WHITE, PAWN)));
+    assert(pawn_controlled(BLACK) == Bitboards::pawn_attacks<BLACK>(pieces(BLACK, PAWN)));
 
     // Update the zorbist hash
     hash_history[ply_counter] =
@@ -587,12 +587,12 @@ void Board::update_check_squares() {
 }
 
 void Board::update_pawns() {
-    pawn_atk_bb[WHITE] = Bitboards::pawn_attacks(WHITE, pieces(WHITE, PAWN));
-    pawn_atk_bb[BLACK] = Bitboards::pawn_attacks(BLACK, pieces(BLACK, PAWN));
-    weak_sq_bb[WHITE] = Bitboards::middle_ranks & ~Bitboards::forward_atk_span(WHITE, pieces(WHITE, PAWN));
-    weak_sq_bb[BLACK] = Bitboards::middle_ranks & ~Bitboards::forward_atk_span(BLACK, pieces(BLACK, PAWN));
-    passed_pawn_bb[WHITE] = pieces(WHITE, PAWN) & ~Bitboards::forward_block_span(BLACK, pieces(BLACK, PAWN));
-    passed_pawn_bb[BLACK] = pieces(BLACK, PAWN) & ~Bitboards::forward_block_span(WHITE, pieces(WHITE, PAWN));
+    pawn_atk_bb[WHITE] = Bitboards::pawn_attacks<WHITE>(pieces(WHITE, PAWN));
+    pawn_atk_bb[BLACK] = Bitboards::pawn_attacks<BLACK>(pieces(BLACK, PAWN));
+    weak_sq_bb[WHITE] = Bitboards::middle_ranks & ~Bitboards::forward_atk_span<WHITE>(pieces(WHITE, PAWN));
+    weak_sq_bb[BLACK] = Bitboards::middle_ranks & ~Bitboards::forward_atk_span<BLACK>(pieces(BLACK, PAWN));
+    passed_pawn_bb[WHITE] = pieces(WHITE, PAWN) & ~Bitboards::forward_block_span<BLACK>(pieces(BLACK, PAWN));
+    passed_pawn_bb[BLACK] = pieces(BLACK, PAWN) & ~Bitboards::forward_block_span<WHITE>(pieces(WHITE, PAWN));
 }
 
 bool Board::gives_check(const Move move) const {

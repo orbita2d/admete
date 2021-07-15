@@ -259,6 +259,9 @@ inline bool operator==(const Score s1, const Score s2) {
     return s1.opening_score == s2.opening_score && s1.endgame_score == s2.endgame_score;
 }
 
+inline Score operator*(const int a, const Score s) { return Score(a * s.opening_score, a * s.endgame_score); }
+inline Score operator*(const Score s, const int a) { return a * s; }
+
 enum BishopTypes { LIGHTSQUARE, DARKSQUARE, N_BISHOPTYPES };
 
 // Moves

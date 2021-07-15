@@ -179,15 +179,13 @@ constexpr position_board pb_p_pawn = {   0,  0,  0,  0,  0,  0,  0,  0,
                                          0,  0,  0,  0,  0,  0,  0,  0 };
 // clang-format on
 
-inline Score operator*(const int a, const Score s) { return Score(a * s.opening_score, a * s.endgame_score); }
-
-inline Score operator*(const Score s, const int a) { return a * s; }
-
-constexpr Score weak_pawn = Score(-5, -5);        // Pawn not defended by another pawn.
-constexpr Score isolated_pawn = Score(-10, -10);  // Pawn with no supporting pawns on adjacent files
+constexpr Score weak_pawn = Score(-5, -5);        // Penalty for pawn not defended by another pawn.
+constexpr Score isolated_pawn = Score(-10, -10);  // Penalty for pawn with no supporting pawns on adjacent files.
 constexpr Score connected_passed = Score(20, 20); // Bonus for connected passed pawns (per pawn)
+constexpr Score defended_passed = Score(0, 0);    // Bonus for defended passed pawns.
 constexpr Score rook_open_file = Score(10, 5);    // Bonus for rook on open file
 constexpr Score rook_hopen_file = Score(5, 0);    // Bonus for rook on half open file
+constexpr Score doubled_pawns = Score(-0, -0);    // Pawn in front of another pawn. (Applied once, not twice)
 
 constexpr Score castle_hopen_file = Score(-5, 0); // Penalty for castled king near a half open file.
 
@@ -378,6 +376,10 @@ Score eval_pawns(const Board &board) {
     if (GameCache::pawn_cache.probe(hash, hit)) {
         return hit.eval();
     }
+
+    const Bitboard white_pawns = board.pieces(WHITE, PAWN);
+    const Bitboard black_pawns = board.pieces(BLACK, PAWN);
+
     // Add bonus for passed pawns for each side.
     Bitboard occ = board.passed_pawns(WHITE);
     while (occ) {
@@ -398,6 +400,13 @@ Score eval_pawns(const Board &board) {
     occ = board.connected_passed_pawns(BLACK);
     score -= connected_passed * count_bits(occ);
 
+    // Bonus for defended passers.
+    occ = board.passed_pawns(WHITE) && board.pawn_controlled(WHITE);
+    score += defended_passed * count_bits(occ);
+
+    occ = board.passed_pawns(BLACK) && board.pawn_controlled(BLACK);
+    score -= defended_passed * count_bits(occ);
+
     // Penalty for weak pawns.
     occ = board.weak_pawns(WHITE);
     score += weak_pawn * count_bits(occ);
@@ -411,6 +420,13 @@ Score eval_pawns(const Board &board) {
 
     occ = board.isolated_pawns(BLACK);
     score -= isolated_pawn * count_bits(occ);
+
+    // Penalty for doubled pawns
+    occ = Bitboards::forward_span<WHITE>(white_pawns) & white_pawns;
+    score += doubled_pawns * count_bits(occ);
+
+    occ = Bitboards::forward_span<BLACK>(black_pawns) & black_pawns;
+    score -= doubled_pawns * count_bits(occ);
 
     GameCache::pawn_cache.store(hash, score);
     return score;
@@ -532,9 +548,9 @@ score_t evaluate_white(const Board &board) {
 
     // Bonus for a rook behind a passed pawn.
     score += rook_behind_passed *
-             count_bits(board.pieces(WHITE, ROOK) & Bitboards::rear_span(WHITE, board.passed_pawns(WHITE)));
+             count_bits(board.pieces(WHITE, ROOK) & Bitboards::rear_span<WHITE>(board.passed_pawns(WHITE)));
     score -= rook_behind_passed *
-             count_bits(board.pieces(BLACK, ROOK) & Bitboards::rear_span(BLACK, board.passed_pawns(BLACK)));
+             count_bits(board.pieces(BLACK, ROOK) & Bitboards::rear_span<BLACK>(board.passed_pawns(BLACK)));
 
     // King safety
     const Bitboard wk = sq_to_bb(board.find_king(WHITE));
