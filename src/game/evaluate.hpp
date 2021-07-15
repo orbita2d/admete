@@ -5,8 +5,8 @@ score_t evaluate_material(Board &board);
 score_t evaluate_lazy(Board &board, std::vector<Move> &legal_moves);
 score_t piece_material(const PieceType);
 
-typedef std::array<score_t, 64> position_board;
-typedef std::array<position_board, 6> position_board_set;
+// Type for a single piece-square table
+typedef per_square<score_t> psqt_t;
 
 namespace Evaluation {
 void init();

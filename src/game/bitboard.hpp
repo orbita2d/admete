@@ -212,24 +212,20 @@ inline Bitboard south_block_span(Bitboard g) {
     return g;
 }
 
-template <Colour c> inline Bitboard forward_span(Bitboard g) {
+template <Colour c> inline Bitboard forward_span(const Bitboard g) {
     assert(c == WHITE || c == BLACK);
     if (c == WHITE) {
-        g = north_fill(g);
-        return shift<Direction::N>(g);
+        return shift<Direction::N>(north_fill(g));
     } else {
-        g = south_fill(g);
-        return shift<Direction::S>(g);
+        return shift<Direction::S>(south_fill(g));
     }
 }
-template <Colour c> inline Bitboard rear_span(Bitboard g) {
+template <Colour c> inline Bitboard rear_span(const Bitboard g) {
     assert(c == WHITE || c == BLACK);
     if (c == WHITE) {
-        g = south_fill(g);
-        return shift<Direction::S>(g);
+        return shift<Direction::S>(south_fill(g));
     } else {
-        g = north_fill(g);
-        return shift<Direction::N>(g);
+        return shift<Direction::N>(north_fill(g));
     }
 }
 

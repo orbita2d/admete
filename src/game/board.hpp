@@ -18,7 +18,7 @@ struct AuxilliaryInfo {
     std::array<Square, 2> checkers;
     bool is_check = false;
     // Squares where, if a particular piece type was placed, it would give check.
-    Bitboard check_squares[N_PIECE];
+    per_piece<Bitboard> check_squares;
 
     // Pieces belonging to the player to move, that if moved would give discovered check.
     Bitboard blockers;
@@ -142,11 +142,11 @@ class Board {
   private:
     AuxilliaryInfo *aux_info;
     Bitboard occupied_bb;
-    std::array<Bitboard, N_COLOUR> colour_bb;
-    std::array<Bitboard, N_PIECE> piece_bb;
-    std::array<Bitboard, N_COLOUR> pawn_atk_bb;
-    std::array<Bitboard, N_COLOUR> weak_sq_bb;
-    std::array<Bitboard, N_COLOUR> passed_pawn_bb;
+    per_colour<Bitboard> colour_bb;
+    per_piece<Bitboard> piece_bb;
+    per_colour<Bitboard> pawn_atk_bb;
+    per_colour<Bitboard> weak_sq_bb;
+    per_colour<Bitboard> passed_pawn_bb;
     int piece_counts[N_COLOUR][N_PIECE];
     Colour whos_move = WHITE;
     uint fullmove_counter = 1;

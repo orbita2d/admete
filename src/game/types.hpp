@@ -429,3 +429,7 @@ inline bool is_legal(const Move move, const MoveList &legal_moves) {
 }
 
 enum NodeType { PVNODE, ALLNODE, CUTNODE };
+
+template <typename T> using per_colour = std::array<T, N_COLOUR>;
+template <typename T> using per_piece = std::array<T, N_PIECE>;
+template <typename T> using per_square = std::array<T, N_SQUARE>;
