@@ -221,44 +221,44 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
 
         depth_t search_depth = depth - 1;
 
-        // Late move reductions:
-        // At an expected All node, the most likely moves to prove us wrong and fail high are
-        // one's ranked earliest in move ordering. We can be less careful about proving later moves.
-        if ((node == ALLNODE) && (counter >= 2) && !move.is_promotion() && move.is_quiet() && !gives_check &&
-            !board.is_check()) {
-            search_depth -= reductions_table[0][depth][counter];
-        }
+        // Skip pruning for checks, promotions, or evasions.
+        if (!gives_check && !board.is_check() && !move.is_promotion()) {
 
-        if ((node == ALLNODE) && (counter >= 3) && !move.is_promotion() && move.is_capture() && !gives_check &&
-            !board.is_check()) {
-            search_depth -= reductions_table[1][depth][counter];
-        }
+            // Late move reductions:
+            // At an expected All node, the most likely moves to prove us wrong and fail high are
+            // one's ranked earliest in move ordering. We can be less careful about proving later moves.
+            if ((node == ALLNODE) && (counter >= 2) && move.is_quiet()) {
+                search_depth -= reductions_table[0][depth][counter];
+            }
 
-        // SEE reductions
-        // If the SEE for a capture is very bad, we can search to a lower depth as it's unlikely to cause a cut.
-        if ((node == ALLNODE) && !move.is_promotion() && move.is_capture() && (search_depth > 2) && !gives_check &&
-            !board.is_check() && !SEE::see(board, move, -100)) {
-            search_depth--;
-        }
+            if ((node == ALLNODE) && (counter >= 3) && move.is_capture()) {
+                search_depth -= reductions_table[1][depth][counter];
+            }
 
-        // History pruning
-        // On a quiet move, the score is a history score. If this is low, it's less likely to cause a beta cutoff.
-        if ((node == ALLNODE) && (counter > 3) && !move.is_promotion() && move.is_quiet() && (search_depth < 3) &&
-            !gives_check && !board.is_check() && move.score < 15) {
-            continue;
-        }
+            // SEE reductions
+            // If the SEE for a capture is very bad, we can search to a lower depth as it's unlikely to cause a cut.
+            if ((node == ALLNODE) && move.is_capture() && !SEE::see(board, move, -100)) {
+                search_depth--;
+            }
 
-        // Extended futility pruning
-        // At frontier nodes (depth == 1, search_depth == 0), prune moves which have no chance of raising alpha.
-        // At pre-frontier nodes (depth == 2), we can prune moves similarly, but with a much higher threshold.
-        if ((counter > 1) && !move.is_promotion() && move.is_capture() && (depth <= efp_max_depth) && !gives_check &&
-            !board.is_check() && !SEE::see(board, move, alpha - node_eval - extended_futility_margins[depth])) {
-            continue;
-        }
+            // History pruning
+            // On a quiet move, the score is a history score. If this is low, it's less likely to cause a beta cutoff.
+            if ((node == ALLNODE) && (counter > 3) && move.is_quiet() && (search_depth < 3) && move.score < 15) {
+                continue;
+            }
 
-        if ((counter > 1) && !move.is_promotion() && move.is_quiet() && (depth <= efp_max_depth) && !gives_check &&
-            !board.is_check() && (node_eval + extended_futility_margins[depth] <= alpha)) {
-            continue;
+            // Extended futility pruning
+            // At frontier nodes (depth == 1, search_depth == 0), prune moves which have no chance of raising alpha.
+            // At pre-frontier nodes (depth == 2), we can prune moves similarly, but with a much higher threshold.
+            if ((counter > 1) && move.is_capture() && (depth <= efp_max_depth) &&
+                !SEE::see(board, move, alpha - node_eval - extended_futility_margins[depth])) {
+                continue;
+            }
+
+            if ((counter > 1) && move.is_quiet() && (depth <= efp_max_depth) &&
+                (node_eval + extended_futility_margins[depth] <= alpha)) {
+                continue;
+            }
         }
 
         search_depth = std::clamp(search_depth, 0l, depth - 1);
