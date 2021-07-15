@@ -573,6 +573,8 @@ template <GenType gen> void generate_moves(const Board &board, MoveList &moves) 
     // Generate all legal non-evasion moves
     if constexpr (gen == CAPTURES) {
         gen_moves<CAPTURES>(board, moves);
+    } else if constexpr (gen == QUIET) {
+        gen_moves<QUIET>(board, moves);
     } else if constexpr (gen == LEGAL) {
         gen_moves<CAPTURES>(board, moves);
         gen_moves<QUIET>(board, moves);
@@ -595,44 +597,6 @@ template <> void generate_moves<EVASIONS>(const Board &board, MoveList &moves) {
     return;
 }
 
-MoveList Board::get_moves() const {
-    MoveList moves;
-    moves.reserve(MAX_MOVES);
-    if (is_check()) {
-        generate_moves<EVASIONS>(*this, moves);
-    } else {
-        generate_moves<LEGAL>(*this, moves);
-    }
-    return moves;
-}
-
-MoveList Board::get_quiessence_moves() const {
-    MoveList moves;
-    moves.reserve(MAX_MOVES);
-    if (is_check()) {
-        generate_moves<EVASIONS>(*this, moves);
-    } else {
-        // For later, currently unfortunately increases branching factor too much to be useful.
-        // gen_moves<QUIETCHECKS>(*this, moves);
-        generate_moves<CAPTURES>(*this, moves);
-    }
-    return moves;
-}
-
-MoveList Board::get_capture_moves() const {
-    MoveList moves;
-    moves.reserve(MAX_MOVES);
-    generate_moves<CAPTURES>(*this, moves);
-    return moves;
-}
-
-MoveList Board::get_evasion_moves() const {
-    MoveList moves;
-    moves.reserve(MAX_MOVES);
-    generate_moves<EVASIONS>(*this, moves);
-    return moves;
-}
-
 void Board::get_moves(MoveList &moves) const {
     if (is_check()) {
         generate_moves<EVASIONS>(*this, moves);
@@ -641,9 +605,12 @@ void Board::get_moves(MoveList &moves) const {
     }
 }
 
-void Board::get_capture_moves(MoveList &moves) const { generate_moves<CAPTURES>(*this, moves); }
-
-void Board::get_evasion_moves(MoveList &moves) const { generate_moves<EVASIONS>(*this, moves); }
+MoveList Board::get_moves() const {
+    MoveList moves;
+    moves.reserve(MAX_MOVES);
+    get_moves(moves);
+    return moves;
+}
 
 void Board::get_quiessence_moves(MoveList &moves) const {
     if (is_check()) {
@@ -653,4 +620,27 @@ void Board::get_quiessence_moves(MoveList &moves) const {
         // gen_moves<QUIETCHECKS>(*this, moves);
         generate_moves<CAPTURES>(*this, moves);
     }
+}
+
+MoveList Board::get_quiessence_moves() const {
+    MoveList moves;
+    moves.reserve(MAX_MOVES);
+    get_quiessence_moves(moves);
+    return moves;
+}
+
+void Board::get_capture_moves(MoveList &moves) const { generate_moves<CAPTURES>(*this, moves); }
+MoveList Board::get_capture_moves() const {
+    MoveList moves;
+    moves.reserve(MAX_MOVES);
+    get_capture_moves(moves);
+    return moves;
+}
+
+void Board::get_evasion_moves(MoveList &moves) const { generate_moves<EVASIONS>(*this, moves); }
+MoveList Board::get_evasion_moves() const {
+    MoveList moves;
+    moves.reserve(MAX_MOVES);
+    get_evasion_moves(moves);
+    return moves;
 }
