@@ -44,7 +44,7 @@ struct TransElement {
 
 typedef std::pair<zobrist_t, TransElement> tt_pair;
 typedef std::unordered_map<zobrist_t, TransElement> tt_map;
-// Limit transposition table to 64MB
+
 constexpr unsigned hash_default = 64u;
 constexpr unsigned hash_min = 1u;
 constexpr unsigned hash_max = 512u;
@@ -57,25 +57,16 @@ class TranspositionTable {
     bool probe(const zobrist_t, TransElement &hit);
     void store(const zobrist_t hash, const score_t eval, const Bounds bound, const depth_t depth, const Move move,
                const ply_t ply);
-    void replace(const size_t index, const zobrist_t new_hash, const TransElement elem);
-    void clear() {
-        _data.clear();
-        index = 0ul;
-    }
-    depth_t min_depth() { return _min_depth; }
-    void min_depth(depth_t d) { _min_depth = d; }
+    void clear() { _data.clear(); }
     bool is_enabled() { return enabled; }
     void enable() { enabled = true; }
     void disable() { enabled = false; }
     void set_delete();
 
   private:
-    tt_map _data;
-    depth_t _min_depth = 0;
-    size_t index;
-    size_t max_index = 0;
+    std::vector<tt_pair> _data;
+    size_t max_index;
     bool enabled = true;
-    std::vector<zobrist_t> key_array;
 };
 
 inline TranspositionTable transposition_table;

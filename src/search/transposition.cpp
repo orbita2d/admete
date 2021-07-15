@@ -2,36 +2,27 @@
 #include <algorithm>
 #include <array>
 #include <assert.h>
+#include <bit>
 
 Cache::TranspositionTable::TranspositionTable() {
-    max_index = Cache::tt_max;
-    index = 0;
-    key_array.resize(max_index, 0);
+    // Limit our index to a power of two.
+    max_index = std::bit_floor(Cache::tt_max);
+    _data.resize(max_index);
 }
 
 bool Cache::TranspositionTable::probe(const zobrist_t hash, TransElement &hit) {
     assert(_data.size() <= max_index);
-    assert(key_array.size() == max_index);
     if (is_enabled() == false) {
         return false;
     }
-    tt_map::iterator it = _data.find(hash);
-    if (it == _data.end()) {
-        return false;
-    } else {
-        it->second.set_cache_hit();
-        hit = it->second;
+    zobrist_t index = hash % max_index;
+    tt_pair hit_pair = _data.at(index);
+    if (hit_pair.first == hash) {
+        hit = hit_pair.second;
         return true;
+    } else {
+        return false;
     }
-}
-
-void Cache::TranspositionTable::replace(const size_t index, const zobrist_t new_hash, const TransElement elem) {
-    assert(index < key_array.size());
-    const zobrist_t old_hash = key_array[index];
-    key_array[index] = new_hash;
-    _data.erase(old_hash);
-    _data[new_hash] = elem;
-    assert(_data.size() <= max_index);
 }
 
 score_t Cache::eval_to_tt(const score_t eval, const ply_t ply) {
@@ -59,21 +50,13 @@ score_t Cache::eval_from_tt(const score_t eval, const ply_t ply) {
 void Cache::TranspositionTable::store(const zobrist_t hash, const score_t eval, const Bounds bound, const depth_t depth,
                                       const Move move, const ply_t ply) {
     assert(_data.size() <= max_index);
-    assert(key_array.size() == max_index);
 
     if (is_enabled() == false) {
         return;
     }
     const TransElement elem = TransElement(eval_to_tt(eval, ply), bound, depth, move);
-    if (index < max_index) {
-        // We are doing the first fill of the table;
-        _data[hash] = elem;
-        key_array[index] = hash;
-        index++;
-    } else {
-        replace(index % max_index, hash, elem);
-        index++;
-    }
+    zobrist_t index = hash % max_index;
+    _data.at(index) = tt_pair(hash, elem);
 }
 
 void Cache::TranspositionTable::set_delete() {
