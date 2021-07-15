@@ -375,9 +375,9 @@ Score eval_pawns(const Board &board) {
     zobrist_t hash = Zobrist::pawns(board);
     Score score;
     GameCache::PawnCacheElem hit;
-    // if (GameCache::pawn_cache.probe(hash, hit)) {
-    //    return hit.eval();
-    //}
+    if (GameCache::pawn_cache.probe(hash, hit)) {
+        return hit.eval();
+    }
     // Add bonus for passed pawns for each side.
     Bitboard occ = board.passed_pawns(WHITE);
     while (occ) {
@@ -412,7 +412,7 @@ Score eval_pawns(const Board &board) {
     occ = board.isolated_pawns(BLACK);
     score -= isolated_pawn * count_bits(occ);
 
-    // GameCache::pawn_cache.store(hash, score);
+    GameCache::pawn_cache.store(hash, score);
     return score;
 }
 
