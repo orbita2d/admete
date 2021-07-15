@@ -1,10 +1,13 @@
 #include "evaluate.hpp"
 #include "board.hpp"
+#include "cache.hpp"
 #include "printing.hpp"
+#include "zobrist.hpp"
 #include <array>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <unordered_map>
 
 // Want some consideration of positional play
 
@@ -231,6 +234,7 @@ static std::array<Score, 6> piece_values = {
 static std::array<score_t, 6> material = {{100, 300, 350, 500, 900, 0}};
 
 namespace Evaluation {
+
 void init() {
     piece_square_tables[OPENING][BLACK][PAWN] = pb_pawn_opening;
     piece_square_tables[OPENING][BLACK][KNIGHT] = pb_knight_op;
@@ -366,8 +370,53 @@ Score psqt_diff(const Colour moving, const Move &move) {
     return score;
 }
 
+// Pawn structure bonuses.
+Score eval_pawns(const Board &board) {
+    zobrist_t hash = Zobrist::pawns(board);
+    Score score;
+    GameCache::PawnCacheElem hit;
+    // if (GameCache::pawn_cache.probe(hash, hit)) {
+    //    return hit.eval();
+    //}
+    // Add bonus for passed pawns for each side.
+    Bitboard occ = board.passed_pawns(WHITE);
+    while (occ) {
+        Square sq = pop_lsb(&occ);
+        score += passed_mult * pb_passed[WHITE][sq];
+    }
+
+    occ = board.passed_pawns(BLACK);
+    while (occ) {
+        Square sq = pop_lsb(&occ);
+        score -= passed_mult * pb_passed[BLACK][sq];
+    }
+
+    // Bonus for connected passers.
+    occ = board.connected_passed_pawns(WHITE);
+    score += connected_passed * count_bits(occ);
+
+    occ = board.connected_passed_pawns(BLACK);
+    score -= connected_passed * count_bits(occ);
+
+    // Penalty for weak pawns.
+    occ = board.weak_pawns(WHITE);
+    score += weak_pawn * count_bits(occ);
+
+    occ = board.weak_pawns(BLACK);
+    score -= weak_pawn * count_bits(occ);
+
+    // Penalty for isolated pawns.
+    occ = board.isolated_pawns(WHITE);
+    score += isolated_pawn * count_bits(occ);
+
+    occ = board.isolated_pawns(BLACK);
+    score -= isolated_pawn * count_bits(occ);
+
+    // GameCache::pawn_cache.store(hash, score);
+    return score;
+}
+
 score_t evaluate_white(const Board &board) {
-    // Calculate the evaluation heuristic from white's POV.
     int material_value = board.phase_material();
     Score score = board.get_psqt();
     // Mobility
@@ -460,40 +509,7 @@ score_t evaluate_white(const Board &board) {
     score -= piece_weak_square * count_bits(occ);
 
     // Pawn structure bonuses:
-
-    // Add bonus for passed pawns for each side.
-    occ = board.passed_pawns(WHITE);
-    while (occ) {
-        Square sq = pop_lsb(&occ);
-        score += passed_mult * pb_passed[WHITE][sq];
-    }
-
-    occ = board.passed_pawns(BLACK);
-    while (occ) {
-        Square sq = pop_lsb(&occ);
-        score -= passed_mult * pb_passed[BLACK][sq];
-    }
-
-    // Bonus for connected passers.
-    occ = board.connected_passed_pawns(WHITE);
-    score += connected_passed * count_bits(occ);
-
-    occ = board.connected_passed_pawns(BLACK);
-    score -= connected_passed * count_bits(occ);
-
-    // Penalty for weak pawns.
-    occ = board.weak_pawns(WHITE);
-    score += weak_pawn * count_bits(occ);
-
-    occ = board.weak_pawns(BLACK);
-    score -= weak_pawn * count_bits(occ);
-
-    // Penalty for isolated pawns.
-    occ = board.isolated_pawns(WHITE);
-    score += isolated_pawn * count_bits(occ);
-
-    occ = board.isolated_pawns(BLACK);
-    score -= isolated_pawn * count_bits(occ);
+    score += eval_pawns(board);
 
     // Rooks
     const Bitboard open_files = board.open_files();

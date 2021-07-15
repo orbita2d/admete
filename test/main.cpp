@@ -1,5 +1,6 @@
 #include "bitboard.hpp"
 #include "board.hpp"
+#include "cache.hpp"
 #include "evaluate.hpp"
 #include "search.hpp"
 #include "transposition.hpp"
@@ -9,6 +10,7 @@
 int main(int argc, char **argv) {
   ::Bitboards::init();
   ::Cache::init();
+  ::GameCache::init();
   ::Evaluation::init();
   ::Search::init();
   ::testing::InitGoogleTest(&argc, argv);

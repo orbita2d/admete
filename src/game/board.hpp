@@ -59,8 +59,13 @@ class Board {
     bool is_terminal() const { return !get_moves().empty(); }
 
     bool is_attacked(const Square square, const Colour us) const;
+
+    // Find the checkers and pinned pieces in a position.
     void update_checkers();
+    // Find the check sqaures and blocker pieces (discovered checks) in a position.
     void update_check_squares();
+    // Calculate the extra pawn structure information used in eval.
+    void update_pawns();
     bool gives_check(const Move move) const;
     Bitboard check_squares(const PieceType p) const { return aux_info->check_squares[p]; };
     Bitboard blockers() const { return aux_info->blockers; };
@@ -84,9 +89,7 @@ class Board {
     }
     Bitboard pinned() const { return aux_info->pinned; }
     Bitboard pawn_controlled(const Colour c) const { return pawn_atk_bb[c]; }
-    Bitboard passed_pawns(const Colour c) const {
-        return pieces(c, PAWN) & ~Bitboards::forward_block_span(~c, pieces(~c, PAWN));
-    };
+    Bitboard passed_pawns(const Colour c) const { return passed_pawn_bb[c]; };
     Bitboard connected_passed_pawns(const Colour c) const {
         return passed_pawns(c) & Bitboards::full_atk_span(passed_pawns(c));
     }
@@ -143,6 +146,7 @@ class Board {
     std::array<Bitboard, N_PIECE> piece_bb;
     std::array<Bitboard, N_COLOUR> pawn_atk_bb;
     std::array<Bitboard, N_COLOUR> weak_sq_bb;
+    std::array<Bitboard, N_COLOUR> passed_pawn_bb;
     int piece_counts[N_COLOUR][N_PIECE];
     Colour whos_move = WHITE;
     uint fullmove_counter = 1;

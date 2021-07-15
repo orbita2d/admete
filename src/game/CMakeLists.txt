@@ -4,7 +4,8 @@ add_library(game_library types.hpp
             movegen.cpp movegen.hpp
             bitboard.cpp bitboard.hpp
             evaluate.cpp evaluate.hpp
-            zobrist.cpp)
+            zobrist.cpp zobrist.hpp
+            cache.cpp cache.hpp)
 
 set_property(TARGET game_library PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
 

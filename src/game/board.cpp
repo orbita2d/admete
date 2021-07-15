@@ -161,10 +161,7 @@ void Board::initialise() {
     }
     _phase_material = Evaluation::count_material(*this);
     psqt = Evaluation::psqt(*this);
-    pawn_atk_bb[WHITE] = Bitboards::pawn_attacks(WHITE, pieces(WHITE, PAWN));
-    pawn_atk_bb[BLACK] = Bitboards::pawn_attacks(BLACK, pieces(BLACK, PAWN));
-    weak_sq_bb[WHITE] = Bitboards::middle_ranks & ~Bitboards::forward_atk_span(WHITE, pieces(WHITE, PAWN));
-    weak_sq_bb[BLACK] = Bitboards::middle_ranks & ~Bitboards::forward_atk_span(BLACK, pieces(BLACK, PAWN));
+    update_pawns();
     set_root();
 }
 
@@ -318,10 +315,7 @@ void Board::make_move(Move &move) {
 
     // Precompute the pawn attacks bitboards.
     if ((p == PAWN) | (move.captured_piece == PAWN)) {
-        pawn_atk_bb[WHITE] = Bitboards::pawn_attacks(WHITE, pieces(WHITE, PAWN));
-        pawn_atk_bb[BLACK] = Bitboards::pawn_attacks(BLACK, pieces(BLACK, PAWN));
-        weak_sq_bb[WHITE] = Bitboards::middle_ranks & ~Bitboards::forward_atk_span(WHITE, pieces(WHITE, PAWN));
-        weak_sq_bb[BLACK] = Bitboards::middle_ranks & ~Bitboards::forward_atk_span(BLACK, pieces(BLACK, PAWN));
+        update_pawns();
     }
 
     assert(pawn_controlled(WHITE) == Bitboards::pawn_attacks(WHITE, pieces(WHITE, PAWN)));
@@ -416,10 +410,7 @@ void Board::unmake_move(const Move move) {
     }
 
     if ((p == PAWN) | (cp == PAWN)) {
-        pawn_atk_bb[WHITE] = Bitboards::pawn_attacks(WHITE, pieces(WHITE, PAWN));
-        pawn_atk_bb[BLACK] = Bitboards::pawn_attacks(BLACK, pieces(BLACK, PAWN));
-        weak_sq_bb[WHITE] = Bitboards::middle_ranks & ~Bitboards::forward_atk_span(WHITE, pieces(WHITE, PAWN));
-        weak_sq_bb[BLACK] = Bitboards::middle_ranks & ~Bitboards::forward_atk_span(BLACK, pieces(BLACK, PAWN));
+        update_pawns();
     }
 
     assert(_phase_material == Evaluation::count_material(*this));
@@ -591,6 +582,15 @@ void Board::update_check_squares() {
         blk |= pinned;
     }
     aux_info->blockers = blk;
+}
+
+void Board::update_pawns() {
+    pawn_atk_bb[WHITE] = Bitboards::pawn_attacks(WHITE, pieces(WHITE, PAWN));
+    pawn_atk_bb[BLACK] = Bitboards::pawn_attacks(BLACK, pieces(BLACK, PAWN));
+    weak_sq_bb[WHITE] = Bitboards::middle_ranks & ~Bitboards::forward_atk_span(WHITE, pieces(WHITE, PAWN));
+    weak_sq_bb[BLACK] = Bitboards::middle_ranks & ~Bitboards::forward_atk_span(BLACK, pieces(BLACK, PAWN));
+    passed_pawn_bb[WHITE] = pieces(WHITE, PAWN) & ~Bitboards::forward_block_span(BLACK, pieces(BLACK, PAWN));
+    passed_pawn_bb[BLACK] = pieces(BLACK, PAWN) & ~Bitboards::forward_block_span(WHITE, pieces(WHITE, PAWN));
 }
 
 bool Board::gives_check(const Move move) const {
