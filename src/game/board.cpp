@@ -162,6 +162,7 @@ void Board::initialise() {
     _phase_material = Evaluation::count_material(*this);
     psqt = Evaluation::psqt(*this);
     update_pawns();
+    // update_attacks();
     set_root();
 }
 
@@ -318,6 +319,8 @@ void Board::make_move(Move &move) {
         update_pawns();
     }
 
+    // update_attacks();
+
     assert(pawn_controlled(WHITE) == Bitboards::pawn_attacks<WHITE>(pieces(WHITE, PAWN)));
     assert(pawn_controlled(BLACK) == Bitboards::pawn_attacks<BLACK>(pieces(BLACK, PAWN)));
 
@@ -441,6 +444,7 @@ void Board::make_nullmove() {
     // Update the various data structures that are computed for the position
     update_checkers();
     update_check_squares();
+    // update_attacks();
 
     // Update the zorbist hash
     hash_history[ply_counter] = hash_history[ply_counter - 1] ^ Zobrist::nulldiff(us, last_ep_file);
@@ -484,9 +488,9 @@ bool Board::try_uci_move(const std::string move_sting) {
     }
 }
 
+// Checks a square is attacked, ignoring pins.
+// That is, if moving the king there would result in check.
 bool Board::is_attacked(const Square origin, const Colour us) const {
-    // Checks a square is attacked, ignoring pins.
-    // That is, if moving the king there would result in check.
     // First off, if the square is attacked by a knight, it's definitely in check.
     const Colour them = ~us;
 
@@ -534,18 +538,23 @@ void Board::update_checkers() {
 
     const Bitboard occ = pieces();
 
+    const Bitboard ratk = rook_attacks(occ, origin);
+    const Bitboard rxray = rook_attacks(occ ^ (occ & ratk), origin);
+    const Bitboard batk = bishop_attacks(occ, origin);
+    const Bitboard bxray = bishop_attacks(occ ^ (occ & batk), origin);
+
     Bitboard atk = Bitboards::pseudo_attacks(KNIGHT, origin) & pieces(them, KNIGHT);
     atk |= Bitboards::pawn_attacks(us, origin) & pieces(them, PAWN);
-    atk |= rook_attacks(occ, origin) & (pieces(them, ROOK, QUEEN));
-    atk |= bishop_attacks(occ, origin) & (pieces(them, BISHOP, QUEEN));
+    atk |= ratk & (pieces(them, ROOK, QUEEN));
+    atk |= batk & (pieces(them, BISHOP, QUEEN));
     while (atk) {
         aux_info->checkers[aux_info->number_checkers] = pop_lsb(&atk);
         aux_info->number_checkers++;
     }
 
     aux_info->pinned = 0;
-    Bitboard pinner = rook_xrays(occ, origin) & pieces(them, ROOK, QUEEN);
-    pinner |= bishop_xrays(occ, origin) & pieces(them, BISHOP, QUEEN);
+    Bitboard pinner = rxray & pieces(them, ROOK, QUEEN);
+    pinner |= bxray & pieces(them, BISHOP, QUEEN);
     while (pinner) {
         Square sq = pop_lsb(&pinner);
         Bitboard pinned = (Bitboards::between(origin, sq) & pieces(us));
@@ -564,18 +573,23 @@ void Board::update_check_squares() {
 
     const Bitboard occ = pieces();
 
+    const Bitboard ratk = rook_attacks(occ, origin);
+    const Bitboard rxray = rook_attacks(occ ^ (occ & ratk), origin);
+    const Bitboard batk = bishop_attacks(occ, origin);
+    const Bitboard bxray = bishop_attacks(occ ^ (occ & batk), origin);
+
     // Sqaures for direct checks
     aux_info->check_squares[PAWN] = Bitboards::pawn_attacks(them, origin);
     aux_info->check_squares[KNIGHT] = Bitboards::pseudo_attacks(KNIGHT, origin);
-    aux_info->check_squares[BISHOP] = bishop_attacks(occ, origin);
-    aux_info->check_squares[ROOK] = rook_attacks(occ, origin);
-    aux_info->check_squares[QUEEN] = aux_info->check_squares[BISHOP] | aux_info->check_squares[ROOK];
+    aux_info->check_squares[BISHOP] = batk;
+    aux_info->check_squares[ROOK] = ratk;
+    aux_info->check_squares[QUEEN] = batk | ratk;
     aux_info->check_squares[KING] = 0;
 
     // Blockers
     Bitboard blk = 0;
-    Bitboard pinner = rook_xrays(occ, origin) & pieces(us, ROOK, QUEEN);
-    pinner |= bishop_xrays(occ, origin) & pieces(us, BISHOP, QUEEN);
+    Bitboard pinner = rxray & pieces(us, ROOK, QUEEN);
+    pinner |= bxray & pieces(us, BISHOP, QUEEN);
     while (pinner) {
         Square sq = pop_lsb(&pinner);
         Bitboard pinned = (Bitboards::between(origin, sq) & pieces(us));
@@ -767,3 +781,22 @@ void Board::flip() {
 }
 
 zobrist_t Board::material_key() const { return Zobrist::material(*this); }
+
+void Board::update_attacks() {
+    const Colour us = who_to_play();
+    const Colour them = ~us;
+    aux_info->attacked = pawn_controlled(them);
+    const Bitboard occ = pieces() ^ pieces(us, KING);
+    for (PieceType p = KNIGHT; p < KING; p++) {
+        Bitboard bb = pieces(them, p);
+        while (bb) {
+            const Square sq = pop_lsb(&bb);
+            aux_info->attacked |= Bitboards::attacks(p, occ, sq);
+        }
+    }
+    aux_info->attacked |= Bitboards::attacks<KING>(occ, find_king(them));
+    for (int i = 0; i < N_SQUARE; i++) {
+        Square sq(i);
+        assert(bool(aux_info->attacked & sq_to_bb(sq)) == is_attacked(sq, us));
+    }
+}

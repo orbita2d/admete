@@ -9,7 +9,6 @@ typedef uint64_t Bitboard;
 inline Bitboard PseudolegalAttacks[N_PIECE][N_SQUARE];
 inline Bitboard PawnAttacks[N_COLOUR][N_SQUARE];
 inline Bitboard LineBBs[N_SQUARE][N_SQUARE];
-constexpr Bitboard CastleCheckBBs[N_COLOUR][N_CASTLE] = {{0x60, 0xe}, {0x6000000000000000, 0xe00000000000000}};
 inline Bitboard SquareBBs[N_SQUARE];
 
 inline Bitboard sq_to_bb(const int s) {
@@ -93,6 +92,11 @@ constexpr Bitboard castle_pawn2[N_COLOUR][N_CASTLE] = {{0xe000, 0x700}, {0x00e00
 // Bitboard for king safetly pawns on 3rd rank
 constexpr Bitboard castle_pawn3[N_COLOUR][N_CASTLE] = {{0xe00000, 0x70000}, {0x0000e00000000000, 0x000070000000000}};
 
+// Bitboards for squares that cannot be occupied for caslting to be legal.
+constexpr Bitboard castle_blocks_bb[N_COLOUR][N_CASTLE] = {{0x60, 0xe}, {0x6000000000000000, 0xe00000000000000}};
+// Bitboards for squares that cannot be attacked for caslting to be legal.
+constexpr Bitboard castle_checks_bb[N_COLOUR][N_CASTLE] = {{0x70, 0xc}, {0x7000000000000000, 0xc00000000000000}};
+
 constexpr Bitboard dark_squares = 0xAA55AA55AA55AA55;
 constexpr Bitboard light_squares = 0x55AA55AA55AA55AA;
 constexpr Bitboard bishop_squares[N_BISHOPTYPES] = {light_squares, dark_squares};
@@ -174,7 +178,8 @@ inline Bitboard between(const Square s1, const Square s2) {
     }
 }
 
-constexpr Bitboard castle(const Colour c, const CastlingSide cs) { return CastleCheckBBs[c][cs]; }
+constexpr Bitboard castle_blocks(const Colour c, const CastlingSide cs) { return castle_blocks_bb[c][cs]; }
+constexpr Bitboard castle_checks(const Colour c, const CastlingSide cs) { return castle_checks_bb[c][cs]; }
 
 inline Bitboard north_fill(Bitboard g) {
     g |= g << 0x08;

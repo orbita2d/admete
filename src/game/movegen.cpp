@@ -402,7 +402,7 @@ template <Colour us, CastlingSide side> void gen_castle_moves(const Board &board
     // You can't castle through check, or while in check
     if (board.can_castle(us, QUEENSIDE) && (side == QUEENSIDE)) {
         // Check for overlap of squares that need to be free, and occupied bb.
-        if (!(Bitboards::castle(us, QUEENSIDE) & board.pieces())) {
+        if (!(Bitboards::castle_blocks(us, QUEENSIDE) & board.pieces())) {
             if (!board.is_attacked(Square(back_rank(us), FILED), us) &
                 !board.is_attacked(Square(back_rank(us), FILEC), us)) {
                 move = Move(KING, Square(back_rank(us), FILEE), Square(back_rank(us), FILEC));
@@ -412,7 +412,7 @@ template <Colour us, CastlingSide side> void gen_castle_moves(const Board &board
         }
     }
     if (board.can_castle(us, KINGSIDE) && (side == KINGSIDE)) {
-        if (!(Bitboards::castle(us, KINGSIDE) & board.pieces())) {
+        if (!(Bitboards::castle_blocks(us, KINGSIDE) & board.pieces())) {
             if (!board.is_attacked(Square(back_rank(us), FILEF), us) &
                 !board.is_attacked(Square(back_rank(us), FILEG), us)) {
                 move = Move(KING, Square(back_rank(us), FILEE), Square(back_rank(us), FILEG));

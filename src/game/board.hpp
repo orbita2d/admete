@@ -26,6 +26,8 @@ struct AuxilliaryInfo {
     per_piece<Bitboard> check_squares;
     // Pieces belonging to the player to move, that if moved would give discovered check.
     Bitboard blockers;
+    // Squares that the *other* player is attacking, ignoring pins.
+    Bitboard attacked;
     // Move that brought us to this position.
     Move last_move = NULL_MOVE;
 };
@@ -69,6 +71,8 @@ class Board {
     void update_checkers();
     // Find the check sqaures and blocker pieces (discovered checks) in a position.
     void update_check_squares();
+    // Find the squares that are being attacked.
+    void update_attacks();
     // Calculate the extra pawn structure information used in eval.
     void update_pawns();
     // Returns true if a given move will give check.
@@ -77,6 +81,10 @@ class Board {
     Bitboard check_squares(const PieceType p) const { return aux_info->check_squares[p]; };
     // Returns the bitboard of blockers.
     Bitboard blockers() const { return aux_info->blockers; };
+    // Returns the bitboard of pieces pinned to king.
+    Bitboard pinned() const { return aux_info->pinned; }
+    // Returns the bitboard of pieces pinned to king.
+    Bitboard attacked() const { return aux_info->attacked; }
 
     // Returns the location of the i'th checker.
     Square checkers(int i) const {
@@ -99,7 +107,6 @@ class Board {
     Bitboard pieces(const Colour c, const PieceType p1, const PieceType p2) const {
         return colour_bb[c] & (piece_bb[p1] | piece_bb[p2]);
     }
-    Bitboard pinned() const { return aux_info->pinned; }
     Bitboard pawn_controlled(const Colour c) const { return pawn_atk_bb[c]; }
     Bitboard passed_pawns(const Colour c) const { return passed_pawn_bb[c]; };
     Bitboard connected_passed_pawns(const Colour c) const {
