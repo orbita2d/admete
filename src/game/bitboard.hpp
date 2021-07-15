@@ -281,12 +281,12 @@ template <Colour c> inline Bitboard rear_atk_span(Bitboard g) {
     return shift<Direction::W>(g) | shift<Direction::E>(g);
 }
 
-inline Bitboard full_atk_span(Bitboard g) {
+inline Bitboard full_atk_span(const Bitboard g) {
     Bitboard f = vertical_fill(g);
     return shift<Direction::W>(f) | shift<Direction::E>(f);
 }
 
-template <Colour c> inline Bitboard forward_fill(Bitboard g) {
+template <Colour c> inline Bitboard forward_fill(const Bitboard g) {
     if (c == WHITE) {
         return north_fill(g);
     } else {
@@ -294,7 +294,7 @@ template <Colour c> inline Bitboard forward_fill(Bitboard g) {
     }
 }
 
-template <Colour c> inline Bitboard rear_fill(Bitboard g) {
+template <Colour c> inline Bitboard rear_fill(const Bitboard g) {
     if (c == WHITE) {
         return south_fill(g);
     } else {
@@ -303,6 +303,7 @@ template <Colour c> inline Bitboard rear_fill(Bitboard g) {
 }
 
 inline Bitboard pawn_attacks(const Colour c, const Square s) { return PawnAttacks[c][s]; }
+
 template <Colour c> inline Bitboard pawn_attacks(const Bitboard g) {
     if (c == WHITE) {
         return shift<Direction::NW>(g) | shift<Direction::NE>(g);
@@ -327,11 +328,11 @@ inline Bitboard flip_vertical(const Bitboard g) {
 
 /// lsb() and msb() return the least/most significant bit in a non-zero bitboard
 
-inline Square lsb(Bitboard b) { return Square(std::countr_zero(b)); }
+inline Square lsb(const Bitboard b) { return Square(std::countr_zero(b)); }
 
-inline Square msb(Bitboard b) { return Square(std::countl_zero(b)); }
+inline Square msb(const Bitboard b) { return Square(std::countl_zero(b)); }
 
-inline int count_bits(Bitboard b) { return std::popcount(b); }
+inline int count_bits(const Bitboard b) { return std::popcount(b); }
 
 /// pop_lsb() finds and clears the least significant bit in a non-zero bitboard
 
@@ -343,4 +344,4 @@ inline Square pop_lsb(Bitboard *b) {
 
 /// frontmost_sq() returns the most advanced square for the given color,
 /// requires a non-zero bitboard.
-inline Square frontmost_sq(Colour c, Bitboard b) { return c == WHITE ? msb(b) : lsb(b); }
+inline Square frontmost_sq(const Colour c, const Bitboard b) { return c == WHITE ? msb(b) : lsb(b); }
