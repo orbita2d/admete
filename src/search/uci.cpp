@@ -72,7 +72,7 @@ void set_option(std::istringstream &is, Search::SearchOptions &options) {
             std::cerr << "Hash min = " << Cache::hash_min << " MiB" << std::endl;
             return;
         }
-        Cache::tt_max = (value * (1 << 20)) / sizeof(Cache::tt_pair);
+        Cache::tt_max = (value * (1 << 20)) / sizeof(Cache::TransElement);
         Cache::reinit();
     } else if (option == "SyzygyPath") {
         // Set the path to a file of input paramters

@@ -7,6 +7,7 @@
 Cache::TranspositionTable::TranspositionTable() {
     // Limit our index to a power of two.
     max_index = std::bit_floor(Cache::tt_max);
+    bitmask = max_index - 1;
     _data.resize(max_index);
 }
 
@@ -15,10 +16,9 @@ bool Cache::TranspositionTable::probe(const zobrist_t hash, TransElement &hit) {
     if (is_enabled() == false) {
         return false;
     }
-    zobrist_t index = hash % max_index;
-    tt_pair hit_pair = _data.at(index);
-    if (hit_pair.first == hash) {
-        hit = hit_pair.second;
+    const zobrist_t index = hash & bitmask;
+    hit = _data.at(index);
+    if (hit.hash() == hash) {
         return true;
     } else {
         return false;
@@ -54,15 +54,31 @@ void Cache::TranspositionTable::store(const zobrist_t hash, const score_t eval, 
     if (is_enabled() == false) {
         return;
     }
-    const TransElement elem = TransElement(eval_to_tt(eval, ply), bound, depth, move);
-    zobrist_t index = hash % max_index;
-    _data.at(index) = tt_pair(hash, elem);
+    const TransElement elem = TransElement(hash, eval_to_tt(eval, ply), bound, depth, move);
+    const zobrist_t index = hash & bitmask;
+    const TransElement oldelem = _data.at(index);
+
+    if (oldelem.is_delete()) {
+        // Always replace if the old value is due to be replaced.
+        _data.at(index) = elem;
+    }
+    if (elem.hash() == oldelem.hash()) {
+        // If the entries refer to the same position, we want to only replace if the new entry is better, i.e. it's
+        // exact and wasn't or it's a higher depth.
+        if ((elem.exact() == oldelem.exact()) && (elem.depth() >= oldelem.depth())) {
+            _data.at(index) = elem;
+        } else if (elem.exact() && !oldelem.exact()) {
+            _data.at(index) = elem;
+        }
+    } else {
+        _data.at(index) = elem;
+    }
 }
 
 void Cache::TranspositionTable::set_delete() {
-    for (tt_pair t : _data) {
+    for (TransElement t : _data) {
         // Iterates through the entire data structure
-        t.second.set_delete();
+        t.set_delete();
     }
 }
 

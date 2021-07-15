@@ -15,11 +15,11 @@ constexpr tt_flags_t bound_mask = 0x03;
 
 score_t eval_to_tt(const score_t eval, const ply_t ply);
 score_t eval_from_tt(const score_t eval, const ply_t ply);
-// 6 bytes
+// 16 (14) bytes
 struct TransElement {
     TransElement() = default;
-    TransElement(score_t eval, Bounds bound, depth_t d, Move m)
-        : score(eval), _depth(d),
+    TransElement(zobrist_t h, score_t eval, Bounds bound, depth_t d, Move m)
+        : _hash(h), score(eval), _depth(d),
           info((bound == Bounds::UPPER) ? TransState::UPPER
                                         : (bound == Bounds::LOWER) ? TransState::LOWER : TransState::EXACT),
           hash_move(pack_move(m)){};
@@ -34,22 +34,23 @@ struct TransElement {
     tt_flags_t flags() { return info; }
     depth_t depth() const { return _depth; }
     DenseMove move() const { return hash_move; }
+    zobrist_t hash() const { return _hash; }
 
   private:
+    zobrist_t _hash;
     int16_t score = 0;
     uint8_t _depth = 0;
     tt_flags_t info = EXACT;
     DenseMove hash_move = NULL_DMOVE;
 };
 
-typedef std::pair<zobrist_t, TransElement> tt_pair;
 typedef std::unordered_map<zobrist_t, TransElement> tt_map;
 
 constexpr unsigned hash_default = 64u;
 constexpr unsigned hash_min = 1u;
 constexpr unsigned hash_max = 512u;
 
-inline size_t tt_max = (hash_default * (1 << 20)) / sizeof(tt_pair);
+inline size_t tt_max = (hash_default * (1 << 20)) / sizeof(TransElement);
 
 class TranspositionTable {
   public:
@@ -64,8 +65,9 @@ class TranspositionTable {
     void set_delete();
 
   private:
-    std::vector<tt_pair> _data;
+    std::vector<TransElement> _data;
     size_t max_index;
+    zobrist_t bitmask;
     bool enabled = true;
 };
 
