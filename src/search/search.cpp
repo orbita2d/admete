@@ -164,6 +164,19 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
         }
     }
 
+    // Probcut.
+    // We expect a search at a lower depth to give us a close score to the real score. If it would beat beta by some
+    // margin, then we can probably cut safely.
+    if (depth >= 6 && beta < TBWIN_MIN && beta > -TBWIN_MIN) {
+        // Beta-cut
+        score_t probcut_threshold = beta + 300;
+        score_t score =
+            scout_search(board, depth - 3, probcut_threshold - 1, time_cutoff, allow_cutoff, allow_null, node, options);
+        if (score >= probcut_threshold) {
+            return score;
+        }
+    }
+
     Move best_move = NULL_MOVE;
     Move hash_move = unpack_move(hash_dmove, legal_moves);
 
@@ -190,8 +203,8 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
         }
     }
 
-    uint counter = 0;
     Ordering::rank_and_sort_moves(board, legal_moves, hash_dmove);
+    uint counter = 0;
     for (Move move : legal_moves) {
         // We've already dealt with the hashmove.
         if (move == hash_move) {
