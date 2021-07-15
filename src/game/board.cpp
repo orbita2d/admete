@@ -331,6 +331,7 @@ void Board::make_move(Move &move) {
 }
 
 void Board::unmake_move(const Move move) {
+    assert(move == last_move());
     // Iterate counters
     if (whos_move == Colour::WHITE) {
         fullmove_counter--;
@@ -449,6 +450,7 @@ void Board::make_nullmove() {
 }
 
 void Board::unmake_nullmove() {
+    assert(last_move() == NULL_MOVE);
     // Iterate counters
     if (whos_move == Colour::WHITE) {
         fullmove_counter--;

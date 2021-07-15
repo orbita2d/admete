@@ -11,7 +11,7 @@ zobrist_t material(const Board &board);
 // Compute the change in zobrist hash (bitwise) caused by a move.
 zobrist_t diff(const Move move, const Colour us, const File last_ep_file, const unsigned castling_rights_change);
 // Compute the change in zobrist hash (bitwise) caused by a null move.
-zobrist_t nulldiff(const Colour us, const int last_ep_file);
+zobrist_t nulldiff(const Colour us, const File last_ep_file);
 
 inline zobrist_t zobrist_table[N_COLOUR][N_PIECE][N_SQUARE];
 inline zobrist_t zobrist_table_cr[N_COLOUR][2];

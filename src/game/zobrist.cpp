@@ -154,11 +154,11 @@ zobrist_t Zobrist::diff(const Move move, const Colour us, const File last_ep_fil
     return hash;
 }
 
-zobrist_t Zobrist::nulldiff(const Colour us, const int last_ep_file) {
+zobrist_t Zobrist::nulldiff(const Colour us, const File last_ep_file) {
     zobrist_t hash = 0;
     Colour them = ~us;
 
-    if (last_ep_file >= 0) {
+    if (last_ep_file != NO_FILE) {
         hash ^= zobrist_table_ep[last_ep_file];
     }
 
