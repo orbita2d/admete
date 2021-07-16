@@ -75,6 +75,13 @@ TEST(Perft, ep_weirdness) {
   std::pair<std::string, unsigned long> testcases[] = {
       {"k6b/8/8/4Pp2/8/8/1K6/8 w - f6 0 1", 9},
       {"k6b/8/8/4Pp2/6K1/8/8/8 w - f6 0 1", 9},
+      {"8/8/4r3/4P1q1/pP2Q1pk/P4p2/5P1P/4R2K b - b3 0 60", 27},
+      {"8/5k2/8/2Pp4/8/8/2K5/8 w - d6 0 1", 10},
+      {"2r5/5k2/8/2Pp4/8/8/2K5/8 w - d6 0 1", 9},
+      {"8/5k2/8/r1Pp1K2/8/8/8/8 w - d6 0 1", 5},
+      {"2r5/5k2/8/2Pp1K2/8/8/8/8 w - d6 0 1", 6},
+      {"8/5k2/8/2Pp1KBr/8/8/8/8 w - d6 0 1", 5},
+      {"8/5k2/8/K1Pp2Br/8/8/8/8 w - d6 0 1", 16},
   };
   Board board = Board();
   for (const auto &[fen, nodes] : testcases) {

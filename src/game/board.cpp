@@ -638,16 +638,14 @@ bool Board::gives_check(const Move move) const {
         // rank.
         if (move.origin.rank() == ks.rank()) {
             Bitboard mask = Bitboards::line(ks, move.origin);
-            // Look for a rook in the rank
-            Bitboard occ = pieces();
-            // Rook attacks from the king
-            Bitboard atk = rook_attacks(occ, ks);
-            // Rook xrays from the king
-            atk = rook_attacks(occ ^ (occ & atk), ks);
-            // Rook double xrays from the king
-            atk = rook_attacks(occ ^ (occ & atk), ks);
-            atk &= mask;
-            if (atk & pieces(who_to_play(), ROOK, QUEEN)) {
+            // Sqaure of th pawn being captured.
+            const Square cap_square = Square(relative_rank(who_to_play(), RANK5), en_passent());
+            // Remove both pawns that will be removed from bitboard.
+            Bitboard occ = pieces() ^ sq_to_bb(move.origin) ^ sq_to_bb(cap_square);
+            // Cast a ray from the king, with the pawns removed.
+            Bitboard r_atk = rook_attacks(occ, ks);
+            r_atk &= mask;
+            if (r_atk & pieces(who_to_play(), ROOK, QUEEN)) {
                 return true;
             }
         }
