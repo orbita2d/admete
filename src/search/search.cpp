@@ -282,11 +282,11 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
         }
         if (best_score >= beta) {
             // beta-cutoff
+            Cache::killer_table.store(board.ply(), best_move);
+            Cache::history_table.store(depth, best_move);
             break;
         }
     }
-    Cache::killer_table.store(board.ply(), best_move);
-    Cache::history_table.store(depth, best_move);
     best_score = std::min(best_score, score_ub);
     const Bounds bound = best_score <= alpha ? UPPER : best_score >= beta ? LOWER : EXACT;
     Cache::transposition_table.store(hash, best_score, bound, depth, best_move, board.ply());
@@ -472,14 +472,14 @@ score_t Search::pv_search(Board &board, const depth_t start_depth, const score_t
         }
         alpha = std::max(alpha, score);
         if (alpha >= beta) {
+            Cache::killer_table.store(board.ply(), pv.back());
+            Cache::history_table.store(depth, move);
             break; // beta-cutoff
         }
         is_first_child = false;
     }
     line = pv;
     if (!pv.empty()) {
-        Cache::killer_table.store(board.ply(), pv.back());
-        Cache::history_table.store(depth, pv.back());
         best_score = std::min(best_score, score_ub);
         const Bounds bound = best_score <= alpha_start ? UPPER : best_score >= beta ? LOWER : EXACT;
         Cache::transposition_table.store(hash, best_score, bound, depth, pv.back(), board.ply());
