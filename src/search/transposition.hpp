@@ -48,7 +48,7 @@ typedef std::unordered_map<zobrist_t, TransElement> tt_map;
 
 constexpr unsigned hash_default = 64u;
 constexpr unsigned hash_min = 1u;
-constexpr unsigned hash_max = 512u;
+constexpr unsigned hash_max = 8192u;
 
 inline size_t tt_max = (hash_default * (1 << 20)) / sizeof(TransElement);
 

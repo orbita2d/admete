@@ -67,11 +67,10 @@ void set_option(std::istringstream &is, Search::SearchOptions &options) {
         }
         if (value > Cache::hash_max) {
             std::cerr << "Hash max = " << Cache::hash_max << " MiB" << std::endl;
-            return;
         } else if (value < Cache::hash_min) {
             std::cerr << "Hash min = " << Cache::hash_min << " MiB" << std::endl;
-            return;
         }
+        value = std::clamp(value, Cache::hash_min, Cache::hash_max);
         Cache::tt_max = (value * (1 << 20)) / sizeof(Cache::TransElement);
         Cache::reinit();
     } else if (option == "SyzygyPath") {
