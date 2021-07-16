@@ -15,11 +15,11 @@ constexpr tt_flags_t bound_mask = 0x03;
 
 score_t eval_to_tt(const score_t eval, const ply_t ply);
 score_t eval_from_tt(const score_t eval, const ply_t ply);
-// 6 bytes
+// 16 (14) bytes
 struct TransElement {
     TransElement() = default;
-    TransElement(score_t eval, Bounds bound, depth_t d, Move m, ply_t ply)
-        : score(eval_to_tt(eval, ply)), _depth(d),
+    TransElement(zobrist_t h, score_t eval, Bounds bound, depth_t d, Move m)
+        : _hash(h), score(eval), _depth(d),
           info((bound == Bounds::UPPER) ? TransState::UPPER
                                         : (bound == Bounds::LOWER) ? TransState::LOWER : TransState::EXACT),
           hash_move(pack_move(m)){};
@@ -34,50 +34,41 @@ struct TransElement {
     tt_flags_t flags() { return info; }
     depth_t depth() const { return _depth; }
     DenseMove move() const { return hash_move; }
+    zobrist_t hash() const { return _hash; }
 
   private:
-    score_t score = 0;
-    depth_t _depth = 0;
+    zobrist_t _hash;
+    int16_t score = 0;
+    uint8_t _depth = 0;
     tt_flags_t info = EXACT;
     DenseMove hash_move = NULL_DMOVE;
 };
 
-typedef std::pair<zobrist_t, TransElement> tt_pair;
 typedef std::unordered_map<zobrist_t, TransElement> tt_map;
-// Limit transposition table to 64MB
+
 constexpr unsigned hash_default = 64u;
 constexpr unsigned hash_min = 1u;
-constexpr unsigned hash_max = 512u;
+constexpr unsigned hash_max = 8192u;
 
-inline size_t tt_max = (hash_default * (1 << 20)) / sizeof(tt_pair);
+inline size_t tt_max = (hash_default * (1 << 20)) / sizeof(TransElement);
 
 class TranspositionTable {
   public:
     TranspositionTable();
-    bool probe(const zobrist_t);
-    TransElement last_hit() const { return _last_hit; };
+    bool probe(const zobrist_t, TransElement &hit);
     void store(const zobrist_t hash, const score_t eval, const Bounds bound, const depth_t depth, const Move move,
                const ply_t ply);
-    void replace(const size_t index, const zobrist_t new_hash, const TransElement elem);
-    void clear() {
-        _data.clear();
-        index = 0ul;
-    }
-    depth_t min_depth() { return _min_depth; }
-    void min_depth(depth_t d) { _min_depth = d; }
+    void clear() { _data.clear(); }
     bool is_enabled() { return enabled; }
     void enable() { enabled = true; }
     void disable() { enabled = false; }
     void set_delete();
 
   private:
-    tt_map _data;
-    TransElement _last_hit;
-    depth_t _min_depth = 0;
-    size_t index;
-    size_t max_index = 0;
+    std::vector<TransElement> _data;
+    size_t max_index;
+    zobrist_t bitmask;
     bool enabled = true;
-    std::vector<zobrist_t> key_array;
 };
 
 inline TranspositionTable transposition_table;
@@ -104,7 +95,7 @@ class HistoryTable {
     // Table for the history heuristic;
   public:
     HistoryTable() = default;
-    uint probe(const PieceType, const Square);
+    uint probe(const Move);
     void store(const depth_t depth, const Move move);
     bool is_enabled() { return enabled; }
     void enable() { enabled = true; }

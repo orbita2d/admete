@@ -5,40 +5,28 @@ score_t evaluate_material(Board &board);
 score_t evaluate_lazy(Board &board, std::vector<Move> &legal_moves);
 score_t piece_material(const PieceType);
 
-typedef std::array<score_t, 64> position_board;
-typedef std::array<position_board, 6> position_board_set;
-
-class Score {
-  public:
-    constexpr Score(score_t o, score_t e) : opening_score(o), endgame_score(e) {}
-    inline Score operator+(Score that) {
-        return Score(opening_score + that.opening_score, endgame_score + that.endgame_score);
-    }
-    inline Score operator-(Score that) {
-        return Score(opening_score - that.opening_score, endgame_score - that.endgame_score);
-    }
-    inline Score &operator+=(Score that) {
-        opening_score += that.opening_score;
-        endgame_score += that.endgame_score;
-        return *this;
-    }
-    inline Score &operator-=(Score that) {
-        opening_score -= that.opening_score;
-        endgame_score -= that.endgame_score;
-        return *this;
-    }
-    score_t opening_score;
-    score_t endgame_score;
-};
+// Type for a single piece-square table
+typedef per_square<score_t> psqt_t;
 
 namespace Evaluation {
 void init();
 void load_tables(std::string filename);
 void print_tables();
-score_t evaluate_white(Board &board);
-score_t eval(Board &board);
-score_t evaluate_safe(Board &board);
-score_t terminal(Board &board);
+
+// Calculate the evaluation heuristic from the player's POV
+score_t eval(const Board &board);
+
+// Calculate the evaluation heuristic from white's POV.
+score_t evaluate_white(const Board &board);
+
+// Calculate the pawn structure evaluation from white's POV.
+Score eval_pawns(const Board &board);
+
+Score psqt(const Board &board);
+Score psqt_diff(const Colour moving, const Move &move);
+score_t eval_psqt(const Board &board);
+score_t evaluate_safe(const Board &board);
+score_t terminal(const Board &board);
 score_t piece_material(const PieceType p);
 Score piece_value(const PieceType p);
 score_t count_material(const Board &board);

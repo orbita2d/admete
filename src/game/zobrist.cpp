@@ -1,3 +1,4 @@
+#include "zobrist.hpp"
 #include "board.hpp"
 #include "types.hpp"
 #include <random>
@@ -25,6 +26,23 @@ void Zobrist::init() {
     zobrist_table_cr[WHITE][QUEENSIDE] = distribution(generator);
     zobrist_table_cr[BLACK][KINGSIDE] = distribution(generator);
     zobrist_table_cr[BLACK][QUEENSIDE] = distribution(generator);
+}
+
+zobrist_t Zobrist::pawns(const Board &board) {
+    zobrist_t hash = 0;
+
+    Bitboard occ = board.pieces(WHITE, PAWN);
+    while (occ) {
+        Square sq = pop_lsb(&occ);
+        hash ^= zobrist_table[WHITE][PAWN][sq];
+    }
+    occ = board.pieces(BLACK, PAWN);
+    while (occ) {
+        Square sq = pop_lsb(&occ);
+        hash ^= zobrist_table[BLACK][PAWN][sq];
+    }
+
+    return hash;
 }
 
 zobrist_t Zobrist::hash(const Board &board) {
@@ -59,8 +77,8 @@ zobrist_t Zobrist::hash(const Board &board) {
     }
     // en-passent
 
-    if (board.en_passent()) {
-        hash ^= zobrist_table_ep[board.en_passent().file_index()];
+    if (board.en_passent() != NO_FILE) {
+        hash ^= zobrist_table_ep[board.en_passent()];
     }
 
     return hash;
@@ -83,41 +101,49 @@ zobrist_t Zobrist::material(const Board &board) {
     return hash;
 }
 
-zobrist_t Zobrist::diff(const Move move, const Colour us, const int last_ep_file,
-                        const std::array<std::array<bool, N_COLOUR>, N_CASTLE> castling_rights_change) {
+zobrist_t Zobrist::diff(const Move move, const Colour us, const File last_ep_file,
+                        const unsigned castling_rights_change) {
     zobrist_t hash = 0;
     Colour them = ~us;
     hash ^= zobrist_table[us][move.moving_piece][move.origin];
     hash ^= zobrist_table[us][move.moving_piece][move.target];
 
-    if (last_ep_file >= 0) {
+    if (last_ep_file != NO_FILE) {
         hash ^= zobrist_table_ep[last_ep_file];
     }
     if (move.is_double_push()) {
         hash ^= zobrist_table_ep[move.origin.file_index()];
     }
 
-    for (int i = 0; i < N_COLOUR; i++) {
-        for (int j = 0; j < N_CASTLE; j++) {
-            if (castling_rights_change[i][j]) {
-                hash ^= zobrist_table_cr[i][j];
-            }
-        }
+    if (castling_rights_change & WHITE_KINGSIDE) {
+        hash ^= zobrist_table_cr[WHITE][KINGSIDE];
     }
+    if (castling_rights_change & WHITE_QUEENSIDE) {
+        hash ^= zobrist_table_cr[WHITE][QUEENSIDE];
+    }
+    if (castling_rights_change & BLACK_KINGSIDE) {
+        hash ^= zobrist_table_cr[BLACK][KINGSIDE];
+    }
+    if (castling_rights_change & BLACK_QUEENSIDE) {
+        hash ^= zobrist_table_cr[BLACK][QUEENSIDE];
+    }
+
     if (move.is_ep_capture()) {
         // En-passent is weird.
-        const Square captured_square = move.origin.rank() | move.target.file();
+        const Square captured_square(move.origin.rank(), move.target.file());
         // Remove their pawn from the ep-square
         hash ^= zobrist_table[them][PAWN][captured_square];
     } else if (move.is_capture()) {
         hash ^= zobrist_table[them][move.captured_piece][move.target];
-    } else if (move.is_king_castle()) {
-        hash ^= zobrist_table[us][ROOK][RookSquares[us][KINGSIDE]];
-        hash ^= zobrist_table[us][ROOK][move.origin + Direction::E];
-    } else if (move.is_queen_castle()) {
-        hash ^= zobrist_table[us][ROOK][RookSquares[us][QUEENSIDE]];
-        hash ^= zobrist_table[us][ROOK][move.origin + Direction::W];
     }
+    if (move.is_castle()) {
+        const CastlingSide side = move.get_castleside();
+        const Square rook_from = RookSquares[us][side];
+        const Square rook_to = RookCastleSquares[us][side];
+        hash ^= zobrist_table[us][ROOK][rook_from];
+        hash ^= zobrist_table[us][ROOK][rook_to];
+    }
+
     if (move.is_promotion()) {
         hash ^= zobrist_table[us][PAWN][move.target];
         hash ^= zobrist_table[us][get_promoted(move)][move.target];
@@ -128,11 +154,11 @@ zobrist_t Zobrist::diff(const Move move, const Colour us, const int last_ep_file
     return hash;
 }
 
-zobrist_t Zobrist::nulldiff(const Colour us, const int last_ep_file) {
+zobrist_t Zobrist::nulldiff(const Colour us, const File last_ep_file) {
     zobrist_t hash = 0;
     Colour them = ~us;
 
-    if (last_ep_file >= 0) {
+    if (last_ep_file != NO_FILE) {
         hash ^= zobrist_table_ep[last_ep_file];
     }
 

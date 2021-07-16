@@ -16,11 +16,11 @@ TEST(Operations, RelativeFills) {
 
   for (const auto &test : testcases) {
     EXPECT_EQ(Bitboards::north_fill(test),
-              Bitboards::forward_fill(WHITE, test));
+              Bitboards::forward_fill<WHITE>(test));
     EXPECT_EQ(Bitboards::south_fill(test),
-              Bitboards::forward_fill(BLACK, test));
-    EXPECT_EQ(Bitboards::south_fill(test), Bitboards::rear_fill(WHITE, test));
-    EXPECT_EQ(Bitboards::north_fill(test), Bitboards::rear_fill(BLACK, test));
+              Bitboards::forward_fill<BLACK>(test));
+    EXPECT_EQ(Bitboards::south_fill(test), Bitboards::rear_fill<WHITE>(test));
+    EXPECT_EQ(Bitboards::north_fill(test), Bitboards::rear_fill<BLACK>(test));
   }
 }
 

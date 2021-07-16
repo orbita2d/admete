@@ -6,24 +6,28 @@
 #include <string>
 #include <vector>
 
+// Information that is game history dependent, that would otherwise need to be encoded in a move.
 struct AuxilliaryInfo {
-    // Information that is game history dependent, that would otherwise need to be encoded in a move.
-    // Access like castling_rights[WHITE][KINGSIDE]
-    std::array<std::array<bool, N_COLOUR>, N_CASTLE> castling_rights;
+    // Holds the castling rights data, with bit flags set from CastlingRights enum.
+    unsigned castling_rights;
+    // Half-moves since last pawn move or capture.
     ply_t halfmove_clock = 0;
-    Square en_passent_target;
+    // En-passent file, set to NO_FILE if ep is illegal.
+    File en_passent_target;
+    // Pieces pinned to the king for the side to move.
     Bitboard pinned;
+    // Number of checkers in the current position.
     uint number_checkers;
-    // Locations of the (up to 2) checkers
+    // Locations of the (up to 2) checkers.
     std::array<Square, 2> checkers;
+    // If we are currently in check. Same as number_chekers > 0;
     bool is_check = false;
     // Squares where, if a particular piece type was placed, it would give check.
-    Bitboard check_squares[N_PIECE];
-
+    per_piece<Bitboard> check_squares;
     // Pieces belonging to the player to move, that if moved would give discovered check.
     Bitboard blockers;
-    int material;
-
+    // Squares that the *other* player is attacking, ignoring pins.
+    Bitboard attacked;
     // Move that brought us to this position.
     Move last_move = NULL_MOVE;
 };
@@ -60,14 +64,34 @@ class Board {
     bool is_terminal() const { return !get_moves().empty(); }
 
     bool is_attacked(const Square square, const Colour us) const;
-    void update_checkers();
-    void update_check_squares();
-    bool gives_check(const Move move) const;
-    Bitboard check_squares(const PieceType p) const { return aux_info->check_squares[p]; };
-    Bitboard blockers() const { return aux_info->blockers; };
 
-    std::array<Square, 2> checkers() const { return aux_info->checkers; }
-    Square checkers(int i) const { return aux_info->checkers[i]; }
+    // Find the locations of the kings.
+    void search_kings();
+    // Find the checkers and pinned pieces in a position.
+    void update_checkers();
+    // Find the check sqaures and blocker pieces (discovered checks) in a position.
+    void update_check_squares();
+    // Find the squares that are being attacked.
+    void update_attacks();
+    // Calculate the extra pawn structure information used in eval.
+    void update_pawns();
+    // Returns true if a given move will give check.
+    bool gives_check(const Move move) const;
+    // Returns the squares where p would give check.
+    Bitboard check_squares(const PieceType p) const { return aux_info->check_squares[p]; };
+    // Returns the bitboard of blockers.
+    Bitboard blockers() const { return aux_info->blockers; };
+    // Returns the bitboard of pieces pinned to king.
+    Bitboard pinned() const { return aux_info->pinned; }
+    // Returns the bitboard of pieces pinned to king.
+    Bitboard attacked() const { return aux_info->attacked; }
+
+    // Returns the location of the i'th checker.
+    Square checkers(int i) const {
+        assert(i >= 0);
+        assert(i < 2);
+        return aux_info->checkers[i];
+    }
     int number_checkers() const { return aux_info->number_checkers; }
     bool is_check() const { return aux_info->is_check; };
 
@@ -83,11 +107,8 @@ class Board {
     Bitboard pieces(const Colour c, const PieceType p1, const PieceType p2) const {
         return colour_bb[c] & (piece_bb[p1] | piece_bb[p2]);
     }
-    Bitboard pinned() const { return aux_info->pinned; }
     Bitboard pawn_controlled(const Colour c) const { return pawn_atk_bb[c]; }
-    Bitboard passed_pawns(const Colour c) const {
-        return pieces(c, PAWN) & ~Bitboards::forward_block_span(~c, pieces(~c, PAWN));
-    };
+    Bitboard passed_pawns(const Colour c) const { return passed_pawn_bb[c]; };
     Bitboard connected_passed_pawns(const Colour c) const {
         return passed_pawns(c) & Bitboards::full_atk_span(passed_pawns(c));
     }
@@ -97,10 +118,9 @@ class Board {
     Bitboard isolated_pawns(const Colour c) const {
         return pieces(c, PAWN) & ~Bitboards::full_atk_span(pieces(c, PAWN));
     }
-    Bitboard weak_squares(const Colour c) const {
-        // Squares that can never be defended by a pawn
-        return weak_sq_bb[c];
-    }
+    // Squares that can never be defended by c's pawn.
+    Bitboard weak_squares(const Colour c) const { return weak_sq_bb[c]; }
+    // Squares that can never be defended by their pawn, that are controlled by our pawns.
     Bitboard outposts(const Colour c) const { return pawn_controlled(c) & weak_squares(~c); }
 
     void make_move(Move &move);
@@ -112,39 +132,57 @@ class Board {
     Move fetch_move(const std::string move_sting);
     bool try_uci_move(const std::string move_sting);
 
+    // Get the square the king is on.
     Square find_king(const Colour us) const;
-    void search_kings();
-    bool is_pinned(const Square origin) const;
-    void build_occupied_bb();
+    // Who's turn is it.
     Colour who_to_play() const { return whos_move; }
+    // Returns true if it's black's turn.
     bool is_black_move() const { return whos_move == BLACK; }
+    // Returns true if it's white's turn.
     bool is_white_move() const { return whos_move == WHITE; }
-    bool can_castle(const Colour c) const {
-        return aux_info->castling_rights[c][KINGSIDE] | aux_info->castling_rights[c][QUEENSIDE];
-    }
-    bool can_castle(const Colour c, const CastlingSide s) const { return aux_info->castling_rights[c][s]; }
-    Square en_passent() const { return aux_info->en_passent_target; }
-    int material() const { return aux_info->material; }
+    // True if colour c can castle at all.
+    bool can_castle(const Colour c) const { return aux_info->castling_rights & get_rights(c); }
+    // True if colour c can castle on side s.
+    bool can_castle(const Colour c, const CastlingSide s) const { return aux_info->castling_rights & get_rights(c, s); }
+    // Returns en_passent file.
+    File en_passent() const { return aux_info->en_passent_target; }
+    // How much material in total on the board, used to determine game phase.
+    int phase_material() const { return _phase_material; }
+    // Returns the PSQT score, which is incrementally updated.
+    Score get_psqt() const { return psqt; }
+    // How many times has the current position occured since ply 'start'.
     ply_t repetitions(const ply_t start) const;
+    // How many times has the position at ply 'query' occured since ply 'start'.
     ply_t repetitions(const ply_t start, const ply_t query) const;
+    // Returns true if draw by repetition, rule of 50 or insufficent material.
     bool is_draw() const;
+    // What is our ply since the startpos.
     ply_t ply() const { return ply_counter; }
+    // How many ply we are from the root node.
     ply_t height() const { return ply_counter - root_node_ply; }
+    // Set the current node as the root node.
     void set_root() { root_node_ply = ply_counter; }
+    // Returns the ply of the root node.
     ply_t get_root() const { return root_node_ply; }
+    // True if the current node is the root node.
     bool is_root() const { return ply_counter == root_node_ply; }
+    // True if the amount of material on the board is below the endgame threshold.
     bool is_endgame() const;
+    // How many ply since the last pawn move or capture.
     ply_t halfmove_clock() const { return aux_info->halfmove_clock; }
+    // Reverse the board, turns white into black and visa-versa.
     void flip();
+    // Returns the move that got us to this node.
     Move last_move() const { return aux_info->last_move; }
 
   private:
     AuxilliaryInfo *aux_info;
     Bitboard occupied_bb;
-    std::array<Bitboard, N_COLOUR> colour_bb;
-    std::array<Bitboard, N_PIECE> piece_bb;
-    std::array<Bitboard, N_COLOUR> pawn_atk_bb;
-    std::array<Bitboard, N_COLOUR> weak_sq_bb;
+    per_colour<Bitboard> colour_bb;
+    per_piece<Bitboard> piece_bb;
+    per_colour<Bitboard> pawn_atk_bb;
+    per_colour<Bitboard> weak_sq_bb;
+    per_colour<Bitboard> passed_pawn_bb;
     int piece_counts[N_COLOUR][N_PIECE];
     Colour whos_move = WHITE;
     uint fullmove_counter = 1;
@@ -153,6 +191,8 @@ class Board {
     std::array<AuxilliaryInfo, MAX_PLY> aux_history;
     std::array<zobrist_t, MAX_PLY> hash_history;
     ply_t root_node_ply;
+    Score psqt;
+    int _phase_material;
 };
 
 inline Move unpack_move(const DenseMove dm, const Board &board) {
@@ -160,47 +200,6 @@ inline Move unpack_move(const DenseMove dm, const Board &board) {
     return Move(p, dm.origin(), dm.target(), dm.type());
 }
 
-constexpr Direction forwards(const Colour us) {
-    if (us == WHITE) {
-        return Direction::N;
-    } else {
-        return Direction::S;
-    }
-}
-
-constexpr Square back_rank(const Colour us) {
-    if (us == WHITE) {
-        return Squares::Rank1;
-    } else {
-        return Squares::Rank8;
-    }
-}
-
 bool interposes(const Square origin, const Square target, const Square query);
 bool in_line(const Square, const Square, const Square);
 bool in_line(const Square, const Square);
-
-constexpr Square relative_rank(const Colour c, const Square sq) {
-    // Square from black's perspective perspective;
-    if (c == Colour::WHITE) {
-        return sq;
-    } else {
-        return Square(56 - sq.rank()) | sq.file();
-    }
-}
-
-// zorbist.cpp
-namespace Zobrist {
-void init();
-zobrist_t hash(const Board &board);
-zobrist_t material(const Board &board);
-zobrist_t diff(const Move move, const Colour us, const int last_ep_file,
-               const std::array<std::array<bool, N_COLOUR>, N_CASTLE> castling_rights_change);
-zobrist_t nulldiff(const Colour us, const int last_ep_file);
-
-inline zobrist_t zobrist_table[N_COLOUR][N_PIECE][N_SQUARE];
-inline zobrist_t zobrist_table_cr[N_COLOUR][2];
-inline zobrist_t zobrist_table_move[N_COLOUR];
-inline zobrist_t zobrist_table_ep[8];
-
-} // namespace Zobrist

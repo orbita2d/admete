@@ -6,7 +6,6 @@ add_library(search_library
     ordering.cpp ordering.hpp
     tablebase.cpp tablebase.hpp)
 
-add_subdirectory(fathom)
 target_link_libraries(search_library game_library fathom)
 
 
@@ -14,7 +13,7 @@ find_package(Threads)
 target_link_libraries(search_library ${CMAKE_THREAD_LIBS_INIT})
 
 set_property(TARGET search_library PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
-set_property(TARGET search_library PROPERTY CXX_STANDARD 17)
+set_property(TARGET search_library PROPERTY CXX_STANDARD 20)
 target_include_directories(search_library PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
 )

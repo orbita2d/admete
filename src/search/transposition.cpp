@@ -2,36 +2,27 @@
 #include <algorithm>
 #include <array>
 #include <assert.h>
+#include <bit>
 
 Cache::TranspositionTable::TranspositionTable() {
-    max_index = Cache::tt_max;
-    index = 0;
-    key_array.resize(max_index, 0);
+    // Limit our index to a power of two.
+    max_index = std::bit_floor(Cache::tt_max);
+    bitmask = max_index - 1;
+    _data.resize(max_index);
 }
 
-bool Cache::TranspositionTable::probe(const zobrist_t hash) {
+bool Cache::TranspositionTable::probe(const zobrist_t hash, TransElement &hit) {
     assert(_data.size() <= max_index);
-    assert(key_array.size() == max_index);
     if (is_enabled() == false) {
         return false;
     }
-    tt_map::iterator it = _data.find(hash);
-    if (it == _data.end()) {
-        return false;
-    } else {
-        it->second.set_cache_hit();
-        _last_hit = it->second;
+    const zobrist_t index = hash & bitmask;
+    hit = _data.at(index);
+    if (hit.hash() == hash) {
         return true;
+    } else {
+        return false;
     }
-}
-
-void Cache::TranspositionTable::replace(const size_t index, const zobrist_t new_hash, const TransElement elem) {
-    assert(index < key_array.size());
-    const zobrist_t old_hash = key_array[index];
-    key_array[index] = new_hash;
-    _data.erase(old_hash);
-    _data[new_hash] = elem;
-    assert(_data.size() <= max_index);
 }
 
 score_t Cache::eval_to_tt(const score_t eval, const ply_t ply) {
@@ -59,27 +50,35 @@ score_t Cache::eval_from_tt(const score_t eval, const ply_t ply) {
 void Cache::TranspositionTable::store(const zobrist_t hash, const score_t eval, const Bounds bound, const depth_t depth,
                                       const Move move, const ply_t ply) {
     assert(_data.size() <= max_index);
-    assert(key_array.size() == max_index);
 
     if (is_enabled() == false) {
         return;
     }
-    const TransElement elem = TransElement(eval, bound, depth, move, ply);
-    if (index < max_index) {
-        // We are doing the first fill of the table;
-        _data[hash] = elem;
-        key_array[index] = hash;
-    } else {
-        // Replace oldest value
-        replace(index % max_index, hash, elem);
+    const TransElement elem = TransElement(hash, eval_to_tt(eval, ply), bound, depth, move);
+    const zobrist_t index = hash & bitmask;
+    const TransElement oldelem = _data.at(index);
+
+    if (oldelem.is_delete()) {
+        // Always replace if the old value is due to be replaced.
+        _data.at(index) = elem;
     }
-    index++;
+    if (elem.hash() == oldelem.hash()) {
+        // If the entries refer to the same position, we want to only replace if the new entry is better, i.e. it's
+        // exact and wasn't or it's a higher depth.
+        if ((elem.exact() == oldelem.exact()) && (elem.depth() >= oldelem.depth())) {
+            _data.at(index) = elem;
+        } else if (elem.exact() && !oldelem.exact()) {
+            _data.at(index) = elem;
+        }
+    } else {
+        _data.at(index) = elem;
+    }
 }
 
 void Cache::TranspositionTable::set_delete() {
-    for (tt_pair t : _data) {
+    for (TransElement t : _data) {
         // Iterates through the entire data structure
-        t.second.set_delete();
+        t.set_delete();
     }
 }
 
@@ -128,11 +127,13 @@ void Cache::reinit() {
     transposition_table = TranspositionTable();
 }
 
-uint Cache::HistoryTable::probe(const PieceType pt, const Square sq) {
-    assert(sq < 64);
-    assert(pt >= PAWN);
-    assert(pt < N_PIECE);
-    return _data[pt][sq];
+uint Cache::HistoryTable::probe(const Move move) {
+    assert(move != NULL_MOVE);
+    assert(move.is_quiet());
+    assert(move.target < 64);
+    assert(move.moving_piece >= PAWN);
+    assert(move.moving_piece < N_PIECE);
+    return _data[move.moving_piece][move.target];
 }
 void Cache::HistoryTable::store(const depth_t depth, const Move move) {
     if (is_enabled() == false) {

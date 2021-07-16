@@ -44,4 +44,6 @@ unsigned long perft(depth_t depth, Board &board, SearchOptions &options);
 unsigned long perft_bulk(depth_t depth, Board &board);
 void perft_divide(depth_t depth, Board &board);
 
+void init();
+inline std::array<std::array<std::array<depth_t, MAX_MOVES>, MAX_DEPTH>, 2> reductions_table;
 } // namespace Search

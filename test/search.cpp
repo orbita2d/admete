@@ -18,7 +18,7 @@ TEST(Search, MateInTwo) {
       {"1rb4r/pkPp3p/1b1P3n/1Q6/N3Pp2/8/P1P3PP/7K w - - 1 0", MATING_SCORE - 3},
   };
   Board board = Board();
-  constexpr depth_t depth = 4;
+  constexpr depth_t depth = 8;
   PrincipleLine line;
   line.reserve(depth);
 
@@ -43,7 +43,7 @@ TEST(Search, MateInThree) {
        MATING_SCORE - 5},
   };
   Board board = Board();
-  constexpr depth_t depth = 6;
+  constexpr depth_t depth = 10;
   PrincipleLine line;
   line.reserve(depth);
 
@@ -61,7 +61,7 @@ TEST(Search, MateInFour) {
        MATING_SCORE - 7},
   };
   Board board = Board();
-  constexpr depth_t depth = 8;
+  constexpr depth_t depth = 10;
   PrincipleLine line;
   line.reserve(depth);
 
@@ -80,7 +80,7 @@ TEST(Search, 50MoveRule) {
       {"r3k2K/3r4/6N1/8/p7/8/8/8 b q - 99 1", MATING_SCORE - 7},
   };
 
-  constexpr depth_t depth = 8;
+  constexpr depth_t depth = 10;
   PrincipleLine line;
   line.reserve(depth);
 
@@ -95,10 +95,9 @@ TEST(Search, InsufficientMaterial) {
   std::string fens[] = {
       "8/2k5/8/8/8/4K3/8/8 w - - 0 1",   "8/5k2/8/2K5/8/8/8/8 b - - 0 1",
       "7K/8/8/8/8/8/8/k7 w - - 0 1",     "7K/8/8/8/8/8/2n5/k7 w - - 0 1",
-      "7K/8/8/8/8/8/2n5/k7 b - - 0 1",   "7K/8/8/8/8/8/2N5/k7 w - - 0 1",
-      "7K/8/8/8/8/8/2N5/k7 b - - 0 1",   "7K/8/2B5/8/8/8/8/k7 w - - 0 1",
-      "7K/8/2B5/8/8/8/8/k7 b - - 0 1",   "7K/8/2B5/8/5b2/8/8/k7 w - - 0 1",
-      "7K/8/2B5/8/5b2/8/8/k7 b - - 0 1",
+      "7K/8/8/8/8/8/2n5/k7 b - - 0 1",   "7K/8/8/8/8/8/2N5/k7 b - - 0 1",
+      "7K/8/2B5/8/8/8/8/k7 w - - 0 1",   "7K/8/2B5/8/8/8/8/k7 b - - 0 1",
+      "7K/8/2B5/8/5b2/8/8/k7 w - - 0 1", "7K/8/2B5/8/5b2/8/8/k7 b - - 0 1",
   };
 
   constexpr depth_t depth = 10;

@@ -1,14 +1,41 @@
 #pragma once
 #include <array>
+#include <assert.h>
 #include <inttypes.h>
 #include <string>
 #include <vector>
-#include <assert.h>
 
 typedef unsigned int uint;
 typedef uint64_t zobrist_t;
 
-enum Direction : int {
+// Colours
+
+enum Colour : int { WHITE, BLACK, N_COLOUR };
+
+constexpr Colour operator~(Colour c) {
+    return Colour(c ^ Colour::BLACK); // Toggle color
+}
+
+enum Rank { RANK1, RANK2, RANK3, RANK4, RANK5, RANK6, RANK7, RANK8 };
+enum File { FILEA, FILEB, FILEC, FILED, FILEE, FILEF, FILEG, FILEH, N_FILES, NO_FILE };
+
+constexpr Rank relative_rank(const Colour c, const Rank r) {
+    if (c == WHITE) {
+        return r;
+    } else {
+        return (Rank)(7 - r);
+    }
+}
+
+constexpr Rank back_rank(const Colour us) {
+    if (us == WHITE) {
+        return RANK1;
+    } else {
+        return RANK8;
+    }
+}
+
+enum Direction {
     N = 8,
     E = 1,
     S = -8,
@@ -24,32 +51,50 @@ enum Direction : int {
     SSE = -15,
     SSW = -17,
     WSW = -10,
-    WNW = 6
+    WNW = 6,
+    SS = -16,
+    EE = 2,
+    NN = 16,
+    WW = -2,
 };
+
+constexpr Direction forwards(const Colour us) {
+    if (us == WHITE) {
+        return Direction::N;
+    } else {
+        return Direction::S;
+    }
+}
+
+constexpr Direction backwards(const Colour us) {
+    if (us == WHITE) {
+        return Direction::S;
+    } else {
+        return Direction::N;
+    }
+}
 
 constexpr int N_SQUARE = 64;
 class Square {
   public:
     typedef unsigned int square_t;
     constexpr Square(const square_t val) : value(val){};
-    constexpr Square(const square_t rank, const square_t file) { value = 8 * rank + file; };
+    constexpr Square(const Rank rank, const File file) { value = 8 * rank + file; };
     Square(const std::string rf);
     Square() = default;
 
     bool operator==(const Square that) const { return value == that.value; }
     bool operator!=(const Square that) const { return value != that.value; }
 
-    constexpr Square operator-(const Square that) const { return Square(value - that.value); };
-    constexpr Square operator|(const Square that) const { return Square(value | that.value); };
-
     constexpr square_t get_value() const { return value; }
 
     constexpr square_t rank_index() const { return value / 8; }
     constexpr square_t file_index() const { return value % 8; }
 
-    constexpr Square file() const { return value & 0x07; }
-
-    constexpr Square rank() const { return value & 0x38; }
+    constexpr File file() const { return File(value % 8); }
+    constexpr Rank rank() const { return Rank(value / 8); }
+    // constexpr File file() const { return File(value & 0x07); }
+    // constexpr Rank rank() const { return Rank((value & 0x38) >> 3); }
 
     constexpr square_t diagonal() const { return rank_index() + file_index(); }
     constexpr square_t anti_diagonal() const { return rank_index() - file_index() + 7; }
@@ -78,47 +123,41 @@ class Square {
 };
 std::ostream &operator<<(std::ostream &os, const Square square);
 
-namespace Squares {
-static constexpr Square Rank1 = 0 * 8;
-static constexpr Square Rank2 = 1 * 8;
-static constexpr Square Rank3 = 2 * 8;
-static constexpr Square Rank4 = 3 * 8;
-static constexpr Square Rank5 = 4 * 8;
-static constexpr Square Rank6 = 5 * 8;
-static constexpr Square Rank7 = 6 * 8;
-static constexpr Square Rank8 = 7 * 8;
+enum CastlingSide { KINGSIDE, QUEENSIDE, N_CASTLE };
+enum CastlingRights { NO_RIGHTS = 0, WHITE_KINGSIDE = 1, WHITE_QUEENSIDE = 2, BLACK_KINGSIDE = 4, BLACK_QUEENSIDE = 8 };
 
-static constexpr Square FileA = 0;
-static constexpr Square FileB = 1;
-static constexpr Square FileC = 2;
-static constexpr Square FileD = 3;
-static constexpr Square FileE = 4;
-static constexpr Square FileF = 5;
-static constexpr Square FileG = 6;
-static constexpr Square FileH = 7;
+constexpr CastlingRights get_rights(const Colour c, const CastlingSide side) {
+    if (c == WHITE) {
+        if (side == KINGSIDE) {
+            return WHITE_KINGSIDE;
+        } else {
+            return WHITE_QUEENSIDE;
+        }
+    } else {
+        if (side == KINGSIDE) {
+            return BLACK_KINGSIDE;
+        } else {
+            return BLACK_QUEENSIDE;
+        }
+    }
+}
 
-} // namespace Squares
-
-constexpr int N_CASTLE = 2;
-enum CastlingSide { KINGSIDE, QUEENSIDE };
+constexpr unsigned get_rights(const Colour c) {
+    if (c == WHITE) {
+        return WHITE_KINGSIDE | WHITE_QUEENSIDE;
+    } else {
+        return BLACK_KINGSIDE | BLACK_QUEENSIDE;
+    }
+}
 
 // Squares the rooks sit on (for castling).
 constexpr std::array<std::array<Square, 2>, 2> RookSquares = {
-    {{Squares::FileH | Squares::Rank1, Squares::FileA | Squares::Rank1},
-     {Squares::FileH | Squares::Rank8, Squares::FileA | Squares::Rank8}}};
+    {{Square(RANK1, FILEH), Square(RANK1, FILEA)}, {Square(RANK8, FILEH), Square(RANK8, FILEA)}}};
 
 // Squares the rooks move to when castling.
 constexpr std::array<std::array<Square, 2>, 2> RookCastleSquares = {
-    {{Squares::FileF | Squares::Rank1, Squares::FileD | Squares::Rank1},
-     {Squares::FileF | Squares::Rank8, Squares::FileD | Squares::Rank8}}};
+    {{Square(RANK1, FILEF), Square(RANK1, FILED)}, {Square(RANK8, FILEF), Square(RANK8, FILED)}}};
 
-// Colours
-
-enum Colour : int { WHITE, BLACK, N_COLOUR };
-
-constexpr Colour operator~(Colour c) {
-    return Colour(c ^ Colour::BLACK); // Toggle color
-}
 // Pieces
 
 enum PieceType { PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING, N_PIECE, NO_PIECE };
@@ -144,18 +183,20 @@ constexpr Piece BLANK_PIECE = Piece(WHITE, NO_PIECE);
 
 std::ostream &operator<<(std::ostream &os, const Piece piece);
 
-typedef uint8_t depth_t;
+constexpr int MAX_MOVES = 256;
+
+typedef int_fast16_t depth_t;
 constexpr depth_t MAX_DEPTH = 127;
 
 typedef unsigned int ply_t;
 constexpr ply_t MAX_PLY = 512;
-typedef int16_t score_t;
+typedef int_fast16_t score_t;
 
 constexpr score_t MAX_SCORE = 32767;
 constexpr score_t MIN_SCORE = -MAX_SCORE;
 
 // Space for mating scores [MIN_MATE_SCORE, MATING_SCORE]
-constexpr score_t MATING_SCORE = 32766;
+constexpr score_t MATING_SCORE = MAX_SCORE - 1;
 constexpr score_t MIN_MATE_SCORE = MATING_SCORE - MAX_PLY;
 
 // Space for Tablebase wins [TBWIN_MIN, TBWIN]
@@ -166,12 +207,60 @@ enum Bounds { LOWER, UPPER, EXACT };
 
 inline bool is_mating(const score_t score) { return (score >= MIN_MATE_SCORE) && (score <= MATING_SCORE); }
 
-inline ply_t mate_score_to_ply(const score_t score) { assert(score < MATING_SCORE); return MATING_SCORE - score; }
+inline ply_t mate_score_to_ply(const score_t score) {
+    assert(score < MATING_SCORE);
+    return MATING_SCORE - score;
+}
 
-inline score_t ply_to_mate_score(const ply_t ply) { assert(ply < MAX_PLY); return MATING_SCORE - ply; }
+inline score_t ply_to_mate_score(const ply_t ply) {
+    assert(ply < MAX_PLY);
+    return MATING_SCORE - ply;
+}
 
 constexpr int NEG_INF = -1000000000;
 constexpr int POS_INF = +1000000000;
+
+// Class for a score object with opening and endgame scores.
+class Score {
+  public:
+    Score() = default;
+    constexpr Score(score_t o, score_t e) : opening_score(o), endgame_score(e) {}
+    inline Score operator+(Score that) {
+        return Score(opening_score + that.opening_score, endgame_score + that.endgame_score);
+    }
+    inline Score operator-(Score that) {
+        return Score(opening_score - that.opening_score, endgame_score - that.endgame_score);
+    }
+    inline Score &operator+=(Score that) {
+        opening_score += that.opening_score;
+        endgame_score += that.endgame_score;
+        return *this;
+    }
+    inline Score &operator-=(Score that) {
+        opening_score -= that.opening_score;
+        endgame_score -= that.endgame_score;
+        return *this;
+    }
+
+    inline void add(const score_t op, const score_t eg) {
+        opening_score += op;
+        endgame_score += eg;
+    }
+
+    inline void sub(const score_t op, const score_t eg) {
+        opening_score -= op;
+        endgame_score -= eg;
+    }
+
+    score_t opening_score = 0;
+    score_t endgame_score = 0;
+};
+inline bool operator==(const Score s1, const Score s2) {
+    return s1.opening_score == s2.opening_score && s1.endgame_score == s2.endgame_score;
+}
+
+inline Score operator*(const int a, const Score s) { return Score(a * s.opening_score, a * s.endgame_score); }
+inline Score operator*(const Score s, const int a) { return a * s; }
 
 enum BishopTypes { LIGHTSQUARE, DARKSQUARE, N_BISHOPTYPES };
 
@@ -253,6 +342,11 @@ struct Move {
     constexpr bool is_double_push() const { return type == DOUBLE_PUSH; }
     constexpr bool is_king_castle() const { return type == KING_CASTLE; }
     constexpr bool is_queen_castle() const { return type == QUEEN_CASTLE; }
+    constexpr bool is_castle() const { return is_king_castle() || is_queen_castle(); };
+    constexpr CastlingSide get_castleside() const {
+        assert(is_castle());
+        return is_king_castle() ? KINGSIDE : QUEENSIDE;
+    }
     constexpr bool is_knight_promotion() const { return (type & ~CAPTURE) == (PROMOTION); }
     constexpr bool is_bishop_promotion() const { return (type & ~CAPTURE) == (PROMOTION | SPECIAL2); }
     constexpr bool is_rook_promotion() const { return (type & ~CAPTURE) == (PROMOTION | SPECIAL1); }
@@ -335,3 +429,7 @@ inline bool is_legal(const Move move, const MoveList &legal_moves) {
 }
 
 enum NodeType { PVNODE, ALLNODE, CUTNODE };
+
+template <typename T> using per_colour = std::array<T, N_COLOUR>;
+template <typename T> using per_piece = std::array<T, N_PIECE>;
+template <typename T> using per_square = std::array<T, N_SQUARE>;

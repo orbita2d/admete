@@ -72,16 +72,16 @@ std::string Board::fen_encode() const {
     ss << (whos_move == Colour::WHITE ? "w" : "b");
     ss << " ";
 
-    if (aux_info->castling_rights[WHITE][KINGSIDE]) {
+    if (aux_info->castling_rights & WHITE_KINGSIDE) {
         ss << "K";
     }
-    if (aux_info->castling_rights[WHITE][QUEENSIDE]) {
+    if (aux_info->castling_rights & WHITE_QUEENSIDE) {
         ss << "Q";
     }
-    if (aux_info->castling_rights[BLACK][KINGSIDE]) {
+    if (aux_info->castling_rights & BLACK_KINGSIDE) {
         ss << "k";
     }
-    if (aux_info->castling_rights[BLACK][QUEENSIDE]) {
+    if (aux_info->castling_rights & BLACK_QUEENSIDE) {
         ss << "q";
     }
 
@@ -90,10 +90,11 @@ std::string Board::fen_encode() const {
     }
     ss << " ";
     // En passent
-    if (aux_info->en_passent_target == Square(0)) {
+    if (aux_info->en_passent_target == NO_FILE) {
         ss << "-";
     } else {
-        ss << aux_info->en_passent_target.pretty();
+        Square ep_target = Square(relative_rank(who_to_play(), RANK6), en_passent());
+        ss << ep_target.pretty();
     }
 
     ss << " " << aux_info->halfmove_clock << " " << fullmove_counter;
@@ -101,12 +102,15 @@ std::string Board::fen_encode() const {
 }
 
 void Board::pretty() const {
+    Square ep_target = 0;
+    if (en_passent() != NO_FILE) {
+        ep_target = Square(relative_rank(who_to_play(), RANK6), en_passent());
+    }
     for (uint rank = 8; rank > 0; rank--) {
         for (uint file = 0; file < 8; file++) {
             Square::square_t idx = 8 * (rank - 1) + file;
             Square sq = Square(idx);
-            if ((sq == aux_info->en_passent_target) & (aux_info->en_passent_target.get_value() != 0) &
-                pieces(sq).is_blank()) {
+            if (sq == ep_target && en_passent() != NO_FILE) {
                 std::cout << "!";
             } else {
                 std::cout << pieces(sq).pretty();
@@ -121,19 +125,19 @@ void Board::pretty() const {
         }
         if (rank == 7) {
             std::cout << "  ";
-            if (aux_info->castling_rights[BLACK][KINGSIDE]) {
+            if (aux_info->castling_rights & BLACK_KINGSIDE) {
                 std::cout << 'k';
             }
-            if (aux_info->castling_rights[BLACK][QUEENSIDE]) {
+            if (aux_info->castling_rights & BLACK_QUEENSIDE) {
                 std::cout << 'q';
             }
         }
         if (rank == 2) {
             std::cout << "  ";
-            if (aux_info->castling_rights[WHITE][KINGSIDE]) {
+            if (aux_info->castling_rights & WHITE_KINGSIDE) {
                 std::cout << 'K';
             }
-            if (aux_info->castling_rights[WHITE][QUEENSIDE]) {
+            if (aux_info->castling_rights & WHITE_QUEENSIDE) {
                 std::cout << 'Q';
             }
         }

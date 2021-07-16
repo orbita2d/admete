@@ -1,15 +1,21 @@
 #include "bitboard.hpp"
 #include "board.hpp"
+#include "cache.hpp"
 #include "evaluate.hpp"
+#include "search.hpp"
 #include "transposition.hpp"
+#include "zobrist.hpp"
 #include <gtest/gtest.h>
 
 int main(int argc, char **argv) {
-  ::Zobrist::init();
   ::Bitboards::init();
-  ::Evaluation::init();
   ::Cache::init();
+  ::GameCache::init();
+  ::Evaluation::init();
+  ::Search::init();
   ::testing::InitGoogleTest(&argc, argv);
+  ::Zobrist::init();
+
   int ret = RUN_ALL_TESTS();
   return ret;
 }

@@ -54,11 +54,11 @@ Bitboard get_smallest_attacker(Board &board, const Square origin, const Bitboard
     return Bitboards::null;
 }
 
+// Static exchange evaluation. Looks at the possible gain to be made by trading on square 'target'.
+// Side is the colour of the side to move.
+// PT is the piece type that is on that square (not looked up as we want to evaluate moves statically)
+// Mask is a bitboard mask for pieces to consider in the evaluation.
 score_t see(Board &board, const Square target, Colour side, PieceType pt, Bitboard mask) {
-    // Static exchange evaluation. Looks at the possible gain to be made by trading on square 'target'.
-    // Side is the colour of the side to move.
-    // PT is the piece type that is on that square (not looked up as we want to evaluate moves statically)
-    // Mask is a bitboard mask for pieces to consider in the evaluation.
     Bitboard smallest_atk = get_smallest_attacker(board, target, mask, side);
     // Vector the the relative gain on the square for each iteration of exchanges.
     std::vector<score_t> gain;
@@ -104,7 +104,7 @@ score_t see_capture(Board &board, const Move move) {
     Bitboard mask = Bitboards::omega ^ move.origin;
     score_t cap_gain;
     if (move.is_ep_capture()) {
-        const Square captured_square = move.origin.rank() | move.target.file();
+        const Square captured_square(move.origin.rank(), move.target.file());
         mask ^= sq_to_bb(captured_square);
         cap_gain = SEE::material[PAWN];
     } else {
@@ -122,75 +122,97 @@ score_t see_quiet(Board &board, const Move move) {
     return -see_gain;
 }
 
+bool see(Board &board, const Move move, const int threshold) {
+    assert(move != NULL_MOVE);
+    assert(move.is_capture());
+    Bitboard mask = Bitboards::omega ^ move.origin;
+    int last_atk_material = SEE::material[move.moving_piece];
+
+    // Initial gain is just capturing the piece, this is an upper bound.
+    // Gain is gain if our last moves piece is recaptured.
+    int gain = SEE::material[board.piece_type(move.target)] - threshold;
+    if (move.is_ep_capture()) {
+        gain = SEE::material[PAWN] - threshold;
+        const Square captured_square(move.origin.rank(), move.target.file());
+        mask ^= sq_to_bb(captured_square);
+    }
+
+    if (gain < 0) {
+        return false;
+    }
+    // Gain after our piece being recaptured is a lower bound.
+    if (gain >= last_atk_material) {
+        return true;
+    }
+    Colour side = ~board.who_to_play();
+    const Square target = move.target;
+    Bitboard smallest_atk = get_smallest_attacker(board, target, mask, side);
+    while (smallest_atk) {
+        const Square atksq = lsb(smallest_atk);
+        PieceType p = board.piece_type(atksq);
+        // The gain from a capture is the capture - the other side's gain so far.
+        gain = last_atk_material - gain - 1;
+        last_atk_material = SEE::material[p];
+        if (gain - last_atk_material >= 0) {
+            // Even if our piece is recaptured, we are still winning, early exit.
+            side = ~side;
+            break;
+        }
+        // Remove the smallest attacker
+        mask ^= smallest_atk;
+        // Switch the sides
+        side = ~side;
+        smallest_atk = get_smallest_attacker(board, target, mask, side);
+    }
+    // At the end, if we didn't early exit, side is set to the player who couldn't recap.
+    return side != board.who_to_play();
+}
+
 } // namespace SEE
 
 namespace Ordering {
 void sort_moves(MoveList &legal_moves) { std::sort(legal_moves.begin(), legal_moves.end(), cmp); }
-void rank_and_sort_moves(Board &board, MoveList &legal_moves, const DenseMove hash_dmove,
-                         const KillerTableRow killer_moves) {
+void rank_and_sort_moves(Board &board, MoveList &legal_moves, const DenseMove hash_dmove) {
 
-    MoveList quiet_moves, good_captures, even_captures, bad_captures, checks, sorted_moves, killer;
-    size_t n_moves = legal_moves.size();
-
-    sorted_moves.reserve(n_moves);
-    good_captures.reserve(n_moves);
-    killer.reserve(n_krow);
-    even_captures.reserve(n_moves);
-    quiet_moves.reserve(n_moves);
-    bad_captures.reserve(n_moves);
-
-    DenseMove countermove = Cache::countermove_table.probe(board.last_move());
+    KillerTableRow killer_moves = Cache::killer_table.probe(board.ply());
     for (Move &move : legal_moves) {
         if (move == hash_dmove) {
             // The search handles the hash move itself. Here we just make sure it doesn't end up in the final move
             // list.
+            move.score = 1000000;
         } else if (move == killer_moves) {
-            move.score = 10000;
-            killer.push_back(move);
+            move.score = 200000;
         } else if (move.is_capture()) {
             // Make sure to lookup and record the piece captured
             move.captured_piece = board.piece_type(move.target);
             move.score = SEE::see_capture(board, move);
             if (board.gives_check(move)) {
-                move.score += 100;
+                move.score += 5000;
             }
-            if (move.score >= 50) {
-                good_captures.push_back(move);
-            } else if (move.score >= -50) {
-                even_captures.push_back(move);
+            if (SEE::see(board, move, 50)) {
+                move.score = 400000;
+            } else if (SEE::see(board, move, -50)) {
+                move.score = 150000;
             } else {
-                bad_captures.push_back(move);
+                move.score = -400000;
             }
+        } else if (move.is_promotion()) {
+            move.score = 100000 + SEE::material[get_promoted(move)];
         } else {
-            move.score = Cache::history_table.probe(move.moving_piece, move.target);
-            if (move == countermove) {
-                move.score += 20;
-            }
+            // Quiet move.
+            move.score = std::min(Cache::history_table.probe(move), 100000u);
             if (board.gives_check(move)) {
-                move.score += 10000;
+                move.score += 100000;
             }
-            quiet_moves.push_back(move);
         }
     }
 
-    std::sort(good_captures.begin(), good_captures.end(), cmp);
-    std::sort(even_captures.begin(), even_captures.end(), cmp);
-    std::sort(bad_captures.begin(), bad_captures.end(), cmp);
-    std::sort(quiet_moves.begin(), quiet_moves.end(), cmp);
-
+    sort_moves(legal_moves);
     // Move order is:
     // Captures with SEE > 50
     // Killer moves
     // Captures -50 < SEE < 50
     // Quiet moves, sorted by history heuristic
     // Captures with SEE < -50
-
-    legal_moves.clear();
-    legal_moves.reserve(n_moves);
-    legal_moves.insert(legal_moves.end(), good_captures.begin(), good_captures.end());
-    legal_moves.insert(legal_moves.end(), killer.begin(), killer.end());
-    legal_moves.insert(legal_moves.end(), even_captures.begin(), even_captures.end());
-    legal_moves.insert(legal_moves.end(), quiet_moves.begin(), quiet_moves.end());
-    legal_moves.insert(legal_moves.end(), bad_captures.begin(), bad_captures.end());
 }
 } // namespace Ordering

@@ -13,7 +13,7 @@
 #include <thread>
 
 #define ENGINE_NAME "admete"
-#define ENGINE_VERS "1.2"
+#define ENGINE_VERS "1.3.0"
 #define ENGINE_AUTH "orbita"
 
 typedef std::chrono::high_resolution_clock my_clock;
@@ -67,12 +67,11 @@ void set_option(std::istringstream &is, Search::SearchOptions &options) {
         }
         if (value > Cache::hash_max) {
             std::cerr << "Hash max = " << Cache::hash_max << " MiB" << std::endl;
-            return;
         } else if (value < Cache::hash_min) {
             std::cerr << "Hash min = " << Cache::hash_min << " MiB" << std::endl;
-            return;
         }
-        Cache::tt_max = (value * (1 << 20)) / sizeof(Cache::tt_pair);
+        value = std::clamp(value, Cache::hash_min, Cache::hash_max);
+        Cache::tt_max = (value * (1 << 20)) / sizeof(Cache::TransElement);
         Cache::reinit();
     } else if (option == "SyzygyPath") {
         // Set the path to a file of input paramters
@@ -88,9 +87,9 @@ void set_option(std::istringstream &is, Search::SearchOptions &options) {
             options.tbenable = true;
             const bool success = Tablebase::init(value);
             if (success) {
-                std::cerr << "successful" << std::endl;
+                std::cerr << "Load Syzygy EGTB successful." << std::endl;
             } else {
-                std::cerr << "unsuccessful" << std::endl;
+                std::cerr << "Load Syzygy EGTB unsuccessful." << std::endl;
             }
         } else {
             return;

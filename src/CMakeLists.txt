@@ -8,7 +8,7 @@ add_subdirectory(game)
 add_subdirectory(search)
 
 set_property(TARGET admete PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
-set_property(TARGET admete PROPERTY CXX_STANDARD 17)
+set_property(TARGET admete PROPERTY CXX_STANDARD 20)
 
 
 if ( CMAKE_COMPILER_IS_GNUCXX )

@@ -8,8 +8,9 @@ bool init(const std ::string filename) { return tb_init(filename.c_str()); }
 bool probe_root(Board &board, MoveList &moves) {
     unsigned castling_rights = board.can_castle(WHITE) | board.can_castle(BLACK);
     unsigned ep_sq = 0;
-    if (!(board.en_passent() == Square(0))) {
-        ep_sq = board.en_passent().get_value();
+    if (board.en_passent() != NO_FILE) {
+        Square ep_target = Square(relative_rank(board.who_to_play(), RANK6), board.en_passent());
+        ep_sq = ep_target.get_value();
     }
     unsigned results[256];
     unsigned tbresult =
@@ -79,8 +80,9 @@ bool probe_wdl(Board &board, score_t &result, Bounds &bounds) {
     }
 
     unsigned ep_sq = 0;
-    if (!(board.en_passent() == Square(0))) {
-        ep_sq = board.en_passent().get_value();
+    if (board.en_passent() != NO_FILE) {
+        Square ep_target = Square(relative_rank(board.who_to_play(), RANK6), board.en_passent());
+        ep_sq = ep_target.get_value();
     }
     unsigned tbresult = tb_probe_wdl(board.pieces(WHITE), board.pieces(BLACK), board.pieces(KING), board.pieces(QUEEN),
                                      board.pieces(ROOK), board.pieces(BISHOP), board.pieces(KNIGHT), board.pieces(PAWN),
