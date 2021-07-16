@@ -261,7 +261,7 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
             }
         }
 
-        search_depth = std::clamp(search_depth, 0l, depth - 1);
+        search_depth = std::clamp(search_depth, (depth_t)0, (depth_t)(depth - 1));
 
         board.make_move(move);
         options.nodes++;
