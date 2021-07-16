@@ -41,13 +41,12 @@ template <Colour us> void gen_pawn_ep(const Board &board, const Square origin, M
     // This can open a rank. if the king is on that rank it could be a problem.
     if (ks.rank() == origin.rank()) {
         Bitboard mask = Bitboards::line(ks, origin);
-        Bitboard occ = board.pieces();
-        // Rook attacks from the king
+        // Sqaure of th pawn being captured.
+        const Square cap_square = Square(relative_rank(us, RANK5), board.en_passent());
+        // Remove both pawns that will be removed from bitboard.
+        Bitboard occ = board.pieces() ^ sq_to_bb(origin) ^ sq_to_bb(cap_square);
+        // Cast a ray from the king, with the pawns removed.
         Bitboard r_atk = rook_attacks(occ, ks);
-        // Rook xrays from the king
-        r_atk = rook_attacks(occ ^ (occ & r_atk), ks);
-        // Rook double xrays from the king
-        r_atk = rook_attacks(occ ^ (occ & r_atk), ks);
         r_atk &= mask;
         if (!(r_atk & board.pieces(~us, ROOK, QUEEN))) {
             Move move(PAWN, origin, target);
@@ -71,13 +70,12 @@ template <Colour us> void gen_pawn_ep(const Board &board, const Square origin, M
     // This can open a rank. if the king is on that rank it could be a problem.
     if (ks.rank() == origin.rank()) {
         Bitboard mask = Bitboards::line(ks, origin);
-        Bitboard occ = board.pieces();
-        // Rook attacks from the king
+        // Sqaure of th pawn being captured.
+        const Square cap_square = Square(relative_rank(us, RANK5), board.en_passent());
+        // Remove both pawns that will be removed from bitboard.
+        Bitboard occ = board.pieces() ^ sq_to_bb(origin) ^ sq_to_bb(cap_square);
+        // Cast a ray from the king, with the pawns removed.
         Bitboard r_atk = rook_attacks(occ, ks);
-        // Rook xrays from the king
-        r_atk = rook_attacks(occ ^ (occ & r_atk), ks);
-        // Rook double xrays from the king
-        r_atk = rook_attacks(occ ^ (occ & r_atk), ks);
         r_atk &= mask;
         if (!(r_atk & board.pieces(~us, ROOK, QUEEN))) {
             Move move(PAWN, origin, target);
