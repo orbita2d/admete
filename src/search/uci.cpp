@@ -13,7 +13,7 @@
 #include <thread>
 
 #define ENGINE_NAME "admete"
-#define ENGINE_VERS "1.3pre"
+#define ENGINE_VERS "1.3.0"
 #define ENGINE_AUTH "orbita"
 
 typedef std::chrono::high_resolution_clock my_clock;
