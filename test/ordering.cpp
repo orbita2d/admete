@@ -72,8 +72,7 @@ TEST(Ordering, SeeCapture) {
       {"2q1k3/8/8/2P5/1P6/8/8/4K3 b - - 0 1", "c8c5",
        SEE::material[PAWN] - SEE::material[QUEEN]},
       {"2q1k3/2r5/8/2N5/1B6/8/8/4K3 b - - 0 1", "c7c5",
-       SEE::material[KNIGHT] + SEE::material[BISHOP] -
-           Evaluation::piece_phase_material(ROOK)},
+       SEE::material[KNIGHT] + SEE::material[BISHOP] - SEE::material[ROOK]},
       {"2q1k3/8/3p4/2N5/1B6/8/8/4K3 b - - 0 1", "d6c5", SEE::material[KNIGHT]},
       {"4k3/8/8/8/4Pp2/8/8/4K3 b - e3 0 1", "f4e3", SEE::material[PAWN]},
       {"8/6k1/8/3Pp3/8/8/1K6/8 w - e6 0 1", "d5e6", SEE::material[PAWN]},
@@ -120,8 +119,7 @@ TEST(Ordering, NewSEE) {
       {"2q1k3/8/8/2P5/1P6/8/8/4K3 b - - 0 1", "c8c5",
        SEE::material[PAWN] - SEE::material[QUEEN]},
       {"2q1k3/2r5/8/2N5/1B6/8/8/4K3 b - - 0 1", "c7c5",
-       SEE::material[KNIGHT] + SEE::material[BISHOP] -
-           Evaluation::piece_phase_material(ROOK)},
+       SEE::material[KNIGHT] + SEE::material[BISHOP] - SEE::material[ROOK]},
       {"2q1k3/8/3p4/2N5/1B6/8/8/4K3 b - - 0 1", "d6c5", SEE::material[KNIGHT]},
       {"4k3/8/8/8/4Pp2/8/8/4K3 b - e3 0 1", "f4e3", SEE::material[PAWN]},
       {"8/6k1/8/3Pp3/8/8/1K6/8 w - e6 0 1", "d5e6", SEE::material[PAWN]},
