@@ -241,7 +241,7 @@ void Board::make_move(Move &move) {
         // Make sure to lookup and record the piece captured
         move.captured_piece = PAWN;
         piece_counts[them][PAWN]--;
-        _phase_material -= Evaluation::piece_material(PAWN);
+        _phase_material -= Evaluation::piece_phase_material(PAWN);
 
     } else if (move.is_capture()) {
         // Make sure to lookup and record the piece captured
@@ -253,7 +253,7 @@ void Board::make_move(Move &move) {
         piece_bb[p] ^= from_to_bb;
         piece_bb[move.captured_piece] ^= to_bb;
         piece_counts[them][move.captured_piece]--;
-        _phase_material -= Evaluation::piece_material(move.captured_piece);
+        _phase_material -= Evaluation::piece_phase_material(move.captured_piece);
 
     } else {
         // Quiet move
@@ -270,8 +270,8 @@ void Board::make_move(Move &move) {
         piece_bb[promoted] ^= to_bb;
         piece_counts[us][PAWN]--;
         piece_counts[us][promoted]++;
-        _phase_material += Evaluation::piece_material(promoted);
-        _phase_material -= Evaluation::piece_material(PAWN);
+        _phase_material += Evaluation::piece_phase_material(promoted);
+        _phase_material -= Evaluation::piece_phase_material(PAWN);
     }
 
     // Check if we've moved our rook to update our castling rights.
@@ -380,7 +380,7 @@ void Board::unmake_move(const Move move) {
 
         // Update piece counts
         piece_counts[them][PAWN]++;
-        _phase_material += Evaluation::piece_material(PAWN);
+        _phase_material += Evaluation::piece_phase_material(PAWN);
 
     } else if (move.is_capture()) {
         assert(move.captured_piece < KING);
@@ -392,7 +392,7 @@ void Board::unmake_move(const Move move) {
         piece_bb[move.captured_piece] ^= to_bb;
         // Update piece counts
         piece_counts[them][move.captured_piece]++;
-        _phase_material += Evaluation::piece_material(move.captured_piece);
+        _phase_material += Evaluation::piece_phase_material(move.captured_piece);
     } else {
         occupied_bb ^= from_to_bb;
         colour_bb[us] ^= from_to_bb;
@@ -409,8 +409,8 @@ void Board::unmake_move(const Move move) {
         piece_bb[PAWN] ^= to_bb;
         piece_counts[us][PAWN]++;
         piece_counts[us][promoted]--;
-        _phase_material -= Evaluation::piece_material(promoted);
-        _phase_material += Evaluation::piece_material(PAWN);
+        _phase_material -= Evaluation::piece_phase_material(promoted);
+        _phase_material += Evaluation::piece_phase_material(PAWN);
     }
 
     if ((p == PAWN) | (cp == PAWN)) {

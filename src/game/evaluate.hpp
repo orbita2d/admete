@@ -27,7 +27,7 @@ Score psqt_diff(const Colour moving, const Move &move);
 score_t eval_psqt(const Board &board);
 score_t evaluate_safe(const Board &board);
 score_t terminal(const Board &board);
-score_t piece_material(const PieceType p);
+score_t piece_phase_material(const PieceType p);
 Score piece_value(const PieceType p);
 score_t count_material(const Board &board);
 score_t drawn_score(const Board &board);
