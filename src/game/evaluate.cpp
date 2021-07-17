@@ -95,34 +95,34 @@ constexpr psqt_t pb_bishop_eg = {   20,  0,  0,  0,  0,  0,  0, 20,
                                     0, 20,  0,  0,  0,  0, 20,  0,
                                     20,  0,  0,  0,  0,  0,  0, 20};
 
-constexpr psqt_t pb_king_opening = {    -20, -20, -20, -20, -20, -20, -20, -20,
-                                        -20, -20, -20, -20, -20, -20, -20, -20,
-                                        -20, -20, -20, -20, -20, -20, -20, -20,
-                                        -20, -20, -20, -20, -20, -20, -20, -20,
-                                        -20, -20, -20, -20, -20, -20, -20, -20,
-                                        -20, -20, -20, -20, -20, -20, -20, -20,
-                                        -10, -20, -20, -20, -20, -20, -20, -20,
-                                         20,  20,  10,  0,   0,   10,  20,  20};
+constexpr psqt_t pb_king_op = { -20, -20, -20, -20, -20, -20, -20, -20,
+                                -20, -20, -20, -20, -20, -20, -20, -20,
+                                -20, -20, -20, -20, -20, -20, -20, -20,
+                                -20, -20, -20, -20, -20, -20, -20, -20,
+                                -20, -20, -20, -20, -20, -20, -20, -20,
+                                -20, -20, -20, -20, -20, -20, -20, -20,
+                                -10, -20, -20, -20, -20, -20, -20, -20,
+                                 20,  20,  10,  0,   0,   10,  20,  20};
 
-constexpr psqt_t pb_king_endgame = { 0, 0,  0,  0,  0,  0,  0,  0,
-                                    0, 10, 10, 10, 10, 10, 10, 0,
-                                    0, 10, 20, 20, 20, 20, 10, 0,
-                                    0, 10, 20, 20, 20, 20, 10, 0,
-                                    0, 10, 20, 20, 20, 20, 10, 0,
-                                    0, 10, 20, 20, 20, 20, 10, 0,
-                                    0, 10, 10, 10, 10, 10, 10, 0,
-                                    0, 0,  0,  0,  0,  0,  0,  0};
+constexpr psqt_t pb_king_eg = { 0, 0,  0,  0,  0,  0,  0,  0,
+                                0, 10, 10, 10, 10, 10, 10, 0,
+                                0, 10, 20, 20, 20, 20, 10, 0,
+                                0, 10, 20, 20, 20, 20, 10, 0,
+                                0, 10, 20, 20, 20, 20, 10, 0,
+                                0, 10, 20, 20, 20, 20, 10, 0,
+                                0, 10, 10, 10, 10, 10, 10, 0,
+                                0, 0,  0,  0,  0,  0,  0,  0};
 
-constexpr psqt_t pb_pawn_opening = { 0,  0,  0,  0,  0,  0,  0,  0,
-                                    0,  0,  0,  0,  0,  0,  0,  0,
-                                    5,  5, 10, 10, 10, 10,  5,  5,
-                                    0,  5, 10, 15, 15, 10,  5,  0,
-                                    0,  0, 15, 30, 30, 15,  0,  0,
-                                    0,  0,  0,  0,  0,  0,  0,  0,
-                                    0,  0,  0,  0,  0,  0,  0,  0,
-                                    0,  0,  0,  0,  0,  0,  0,  0};
+constexpr psqt_t pb_pawn_op = { 0,  0,  0,  0,  0,  0,  0,  0,
+                                0,  0,  0,  0,  0,  0,  0,  0,
+                                5,  5, 10, 10, 10, 10,  5,  5,
+                                0,  5, 10, 15, 15, 10,  5,  0,
+                                0,  0, 15, 30, 30, 15,  0,  0,
+                                0,  0,  0,  0,  0,  0,  0,  0,
+                                0,  0,  0,  0,  0,  0,  0,  0,
+                                0,  0,  0,  0,  0,  0,  0,  0};
 
-constexpr psqt_t pb_pawn_endgame = { 0,  0,  0,  0,  0,  0,  0,  0,
+constexpr psqt_t pb_pawn_eg = { 0,  0,  0,  0,  0,  0,  0,  0,
                                     20, 20, 20, 20, 20, 20, 20, 20,
                                     15, 15, 15, 15, 15, 15, 15, 15,
                                     10, 10, 10, 10, 10, 10, 10, 10,
@@ -171,12 +171,12 @@ constexpr psqt_t pb_rook_eg = { 0, 0, 0, 0, 0, 0, 0, 0,
 // PSqT for passed pawns.
 constexpr psqt_t pb_p_pawn = {   0,  0,  0,  0,  0,  0,  0,  0,
                                 10, 10, 10, 10, 10, 10, 10, 10,
-                                5,  5,  5,  5,  5,  5,  5,  5,
-                                4,  4,  4,  4,  4,  4,  4,  4,
-                                3,  3,  3,  3,  3,  3,  3,  3,
-                                2,  2,  2,  2,  2,  2,  2,  2,
-                                1,  1,  1,  1,  1,  1,  1,  1,
-                                0,  0,  0,  0,  0,  0,  0,  0 };
+                                 5,  5,  5,  5,  5,  5,  5,  5,
+                                 4,  4,  4,  4,  4,  4,  4,  4,
+                                 3,  3,  3,  3,  3,  3,  3,  3,
+                                 2,  2,  2,  2,  2,  2,  2,  2,
+                                 1,  1,  1,  1,  1,  1,  1,  1,
+                                 0,  0,  0,  0,  0,  0,  0,  0 };
 // clang-format on
 
 constexpr Score weak_pawn = Score(-5, -5);        // Penalty for pawn not defended by another pawn.
@@ -254,19 +254,19 @@ static per_piece<score_t> phase_material = {{
 namespace Evaluation {
 
 void init() {
-    piece_square_tables[OPENING][BLACK][PAWN] = pb_pawn_opening;
+    piece_square_tables[OPENING][BLACK][PAWN] = pb_pawn_op;
     piece_square_tables[OPENING][BLACK][KNIGHT] = pb_knight_op;
     piece_square_tables[OPENING][BLACK][BISHOP] = pb_bishop_op;
     piece_square_tables[OPENING][BLACK][ROOK] = pb_rook_op;
     piece_square_tables[OPENING][BLACK][QUEEN] = pb_queen_op;
-    piece_square_tables[OPENING][BLACK][KING] = pb_king_opening;
+    piece_square_tables[OPENING][BLACK][KING] = pb_king_op;
 
-    piece_square_tables[ENDGAME][BLACK][PAWN] = pb_pawn_endgame;
+    piece_square_tables[ENDGAME][BLACK][PAWN] = pb_pawn_eg;
     piece_square_tables[ENDGAME][BLACK][KNIGHT] = pb_knight_eg;
     piece_square_tables[ENDGAME][BLACK][BISHOP] = pb_bishop_eg;
     piece_square_tables[ENDGAME][BLACK][ROOK] = pb_rook_eg;
     piece_square_tables[ENDGAME][BLACK][QUEEN] = pb_queen_eg;
-    piece_square_tables[ENDGAME][BLACK][KING] = pb_king_endgame;
+    piece_square_tables[ENDGAME][BLACK][KING] = pb_king_eg;
 
     for (int p = 0; p < N_PIECE; p++) {
         piece_square_tables[OPENING][WHITE][p] = reverse_board(piece_square_tables[OPENING][BLACK][p]);
