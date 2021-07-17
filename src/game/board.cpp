@@ -567,7 +567,7 @@ void Board::update_check_squares() {
     // Looks at what piece placements would put the enemy king in check. For instance, what squares a bishop could be on
     // and give check. Also looks at what pieces are blocking checks, such that if they moved they could cause a
     // discovered check.
-    const Colour us = whos_move;
+    const Colour us = who_to_play();
     const Colour them = ~us;
     const Square origin = find_king(them);
 
@@ -623,14 +623,29 @@ bool Board::gives_check(const Move move) const {
     }
 
     if (move.is_promotion()) {
-        if (check_squares(get_promoted(move)) & move.target) {
+        const PieceType promoted = get_promoted(move);
+        if (check_squares(promoted) & move.target) {
             return true;
+        } else {
+            // The promoted piece has to xray the pawn it promoted from.
+            Bitboard occ = pieces() ^ sq_to_bb(move.origin);
+            Bitboard atk = Bitboards::attacks(promoted, occ, ks);
+            if (atk & sq_to_bb(move.target)) {
+                return true;
+            }
         }
     } else if (move.is_castle()) {
         const CastlingSide side = move.get_castleside();
         // The only piece that could give check here is the rook.
         if (check_squares(ROOK) & sq_to_bb(RookCastleSquares[who_to_play()][side])) {
             return true;
+        } else {
+            // The rook could xray the king which also moved.
+            Bitboard occ = pieces() ^ sq_to_bb(move.origin) ^ sq_to_bb(move.target);
+            Bitboard atk = Bitboards::attacks<ROOK>(occ, ks);
+            if (atk & sq_to_bb(RookCastleSquares[who_to_play()][side])) {
+                return true;
+            }
         }
     } else if (move.is_ep_capture()) {
         // If the en passent reveals a file, this will be handled by the blocker
