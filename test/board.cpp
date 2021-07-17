@@ -110,7 +110,8 @@ TEST(Board, LastMove) {
 
 TEST(Board, GivesCheck) {
   Board board = Board();
-  std::tuple<std::string, std::string> testcases[] = {
+  // Positions where there is a check.
+  std::tuple<std::string, std::string> testcases_true[] = {
       {"8/8/8/8/8/8/8/R3K2k w Q - 0 1", "e1c1"}, // Castling
       {"8/8/8/8/8/8/8/k3K2R w K - 0 1", "e1g1"},
       {"K3k2r/8/8/8/8/8/8/8 b k - 0 1", "e8g8"},
@@ -138,10 +139,20 @@ TEST(Board, GivesCheck) {
       {"2n5/kP3RK1/8/2p5/8/8/8/8 w - c6 0 1",
        "b7c8q"} // Promotion discovered check.
   };
-  for (const auto &[fen, movestring] : testcases) {
+  for (const auto &[fen, movestring] : testcases_true) {
     board.fen_decode(fen);
     Move move = board.fetch_move(movestring);
     EXPECT_NE(move, NULL_MOVE);
     EXPECT_TRUE(board.gives_check(move));
+  }
+
+  // Positions where there isn't a check.
+  std::tuple<std::string, std::string> testcases_false[] = {
+      {"8/8/8/1Pp1Rpk1/8/8/2K5/8 w - c6 0 1", "b5c6"}};
+  for (const auto &[fen, movestring] : testcases_false) {
+    board.fen_decode(fen);
+    Move move = board.fetch_move(movestring);
+    EXPECT_NE(move, NULL_MOVE);
+    EXPECT_FALSE(board.gives_check(move));
   }
 }
