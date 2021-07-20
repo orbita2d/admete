@@ -453,7 +453,6 @@ Score eval_pawns(const Board &board) {
 }
 
 score_t evaluate_white(const Board &board) {
-    int material_value = board.phase_material();
     Score score = board.get_psqt();
     // Mobility
     // A bonus is given to every square accessible to every piece, which isn't blocked by one of our pieces.
@@ -620,19 +619,7 @@ score_t evaluate_white(const Board &board) {
           \
             -----
     */
-    score_t value;
-    if (material_value > OPENING_MATERIAL) {
-        // Just use opening tables
-        value = score.opening_score;
-    } else if (material_value > ENDGAME_MATERIAL) {
-        // Interpolate linearly between the game phases.
-        value = score.opening_score + (material_value - OPENING_MATERIAL) *
-                                          (score.endgame_score - score.opening_score) /
-                                          (ENDGAME_MATERIAL - OPENING_MATERIAL);
-    } else {
-        // Just use endgame tables
-        value = score.endgame_score;
-    }
+    score_t value = score.interpolate(board.phase_material());
     return value;
 }
 
@@ -744,19 +731,9 @@ score_t Evaluation::eval(const Board &board) {
 
 score_t Evaluation::eval_psqt(const Board &board) {
     // Return the eval from the point of view of the current player.
-    score_t value;
     const score_t material_value = board.phase_material();
     const Score score = board.get_psqt();
-    if (material_value > OPENING_MATERIAL) {
-        value = score.opening_score;
-    } else if (material_value > ENDGAME_MATERIAL) {
-        // Interpolate linearly between the game phases.
-        value = score.opening_score + (material_value - OPENING_MATERIAL) *
-                                          (score.endgame_score - score.opening_score) /
-                                          (ENDGAME_MATERIAL - OPENING_MATERIAL);
-    } else {
-        value = score.endgame_score;
-    }
+    score_t value = score.interpolate(material_value);
 
     if (board.is_white_move()) {
         return value;

@@ -776,7 +776,7 @@ ply_t Board::repetitions(const ply_t start, const ply_t query) const {
     return n;
 }
 
-bool Board::is_endgame() const { return Evaluation::count_material(*this) < Evaluation::ENDGAME_MATERIAL; }
+bool Board::is_endgame() const { return phase_material() < ENDGAME_MATERIAL; }
 
 void Board::flip() {
     whos_move = ~whos_move;

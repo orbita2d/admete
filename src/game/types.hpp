@@ -220,6 +220,10 @@ inline score_t ply_to_mate_score(const ply_t ply) {
 constexpr int NEG_INF = -1000000000;
 constexpr int POS_INF = +1000000000;
 
+// Material total for determining phase.
+constexpr score_t OPENING_MATERIAL = 6000;
+constexpr score_t ENDGAME_MATERIAL = 2000;
+
 // Class for a score object with opening and endgame scores.
 class Score {
   public:
@@ -250,6 +254,18 @@ class Score {
     inline void sub(const score_t op, const score_t eg) {
         opening_score -= op;
         endgame_score -= eg;
+    }
+
+    inline score_t interpolate(const score_t phase_material) const {
+        if (phase_material > OPENING_MATERIAL) {
+            return opening_score;
+        } else if (phase_material > ENDGAME_MATERIAL) {
+            // Interpolate linearly between the game phases.
+            return opening_score + ((phase_material - OPENING_MATERIAL) * (endgame_score - opening_score)) /
+                                       (ENDGAME_MATERIAL - OPENING_MATERIAL);
+        } else {
+            return endgame_score;
+        }
     }
 
     score_t opening_score = 0;
