@@ -147,7 +147,7 @@ class Board {
     // Returns en_passent file.
     File en_passent() const { return aux_info->en_passent_target; }
     // How much material in total on the board, used to determine game phase.
-    int phase_material() const { return _phase_material; }
+    score_t phase_material() const { return _phase_material; }
     // Returns the PSQT score, which is incrementally updated.
     Score get_psqt() const { return psqt; }
     // How many times has the current position occured since ply 'start'.
@@ -192,7 +192,7 @@ class Board {
     std::array<zobrist_t, MAX_PLY> hash_history;
     ply_t root_node_ply;
     Score psqt;
-    int _phase_material;
+    score_t _phase_material;
 };
 
 inline Move unpack_move(const DenseMove dm, const Board &board) {

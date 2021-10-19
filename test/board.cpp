@@ -107,3 +107,52 @@ TEST(Board, LastMove) {
     EXPECT_EQ(board.last_move(), NULL_MOVE);
   }
 }
+
+TEST(Board, GivesCheck) {
+  Board board = Board();
+  // Positions where there is a check.
+  std::tuple<std::string, std::string> testcases_true[] = {
+      {"8/8/8/8/8/8/8/R3K2k w Q - 0 1", "e1c1"}, // Castling
+      {"8/8/8/8/8/8/8/k3K2R w K - 0 1", "e1g1"},
+      {"K3k2r/8/8/8/8/8/8/8 b k - 0 1", "e8g8"},
+      {"K3k2r/8/8/8/8/8/8/8 b k - 0 1", "e8e7"}, // Discovered chack
+      {"8/8/8/8/8/8/8/k3K2R w K - 0 1", "e1f2"},
+      {"8/8/8/8/8/8/8/k3K2R w K - 0 1", "e1e2"},
+      {"8/4k3/8/8/4B3/8/8/4RK2 w - - 0 1", "e4h1"},
+      {"8/4k3/8/8/8/4N3/8/4RK2 w - - 0 1", "e3f5"},  // Double check.
+      {"6k1/6p1/8/8/8/8/8/R5K1 w - - 0 1", "a1a8"},  // Direct check with rook
+      {"6k1/6p1/8/5N2/8/8/8/6K1 w - - 0 1", "f5e7"}, // Direct check with knight
+      {"8/8/8/RPp3k1/8/8/2K5/8 w - c6 0 1",
+       "b5c6"}, // Weird en-passent check on rank
+      {"1R6/8/8/1Pp5/8/8/1k4K1/8 w - c6 0 1",
+       "b5c6"}, // En-passent check on file.
+      {"8/3k4/8/1Pp5/8/8/6K1/8 w - c6 0 1",
+       "b5c6"}, // En-passent check with pawn.
+      {"2n5/1P3RK1/k7/2p5/8/8/8/8 w - c6 0 1",
+       "b7c8q"}, // Weird promotion check
+      {"2n5/1P3RK1/k7/2p5/8/8/8/8 w - c6 0 1",
+       "b7c8b"}, // Weird underpromotion check
+      {"2n5/kP4K1/8/2p5/8/8/8/8 w - c6 0 1",
+       "b7c8n"}, // Normal promotion check with knight
+      {"1kn5/1P4K1/8/2p5/8/8/8/8 w - c6 0 1",
+       "b7c8q"}, // Normal promotion check with queen
+      {"2n5/kP3RK1/8/2p5/8/8/8/8 w - c6 0 1",
+       "b7c8q"} // Promotion discovered check.
+  };
+  for (const auto &[fen, movestring] : testcases_true) {
+    board.fen_decode(fen);
+    Move move = board.fetch_move(movestring);
+    EXPECT_NE(move, NULL_MOVE);
+    EXPECT_TRUE(board.gives_check(move));
+  }
+
+  // Positions where there isn't a check.
+  std::tuple<std::string, std::string> testcases_false[] = {
+      {"8/8/8/1Pp1Rpk1/8/8/2K5/8 w - c6 0 1", "b5c6"}};
+  for (const auto &[fen, movestring] : testcases_false) {
+    board.fen_decode(fen);
+    Move move = board.fetch_move(movestring);
+    EXPECT_NE(move, NULL_MOVE);
+    EXPECT_FALSE(board.gives_check(move));
+  }
+}

@@ -241,7 +241,7 @@ void Board::make_move(Move &move) {
         // Make sure to lookup and record the piece captured
         move.captured_piece = PAWN;
         piece_counts[them][PAWN]--;
-        _phase_material -= Evaluation::piece_material(PAWN);
+        _phase_material -= Evaluation::piece_phase_material(PAWN);
 
     } else if (move.is_capture()) {
         // Make sure to lookup and record the piece captured
@@ -253,7 +253,7 @@ void Board::make_move(Move &move) {
         piece_bb[p] ^= from_to_bb;
         piece_bb[move.captured_piece] ^= to_bb;
         piece_counts[them][move.captured_piece]--;
-        _phase_material -= Evaluation::piece_material(move.captured_piece);
+        _phase_material -= Evaluation::piece_phase_material(move.captured_piece);
 
     } else {
         // Quiet move
@@ -270,8 +270,8 @@ void Board::make_move(Move &move) {
         piece_bb[promoted] ^= to_bb;
         piece_counts[us][PAWN]--;
         piece_counts[us][promoted]++;
-        _phase_material += Evaluation::piece_material(promoted);
-        _phase_material -= Evaluation::piece_material(PAWN);
+        _phase_material += Evaluation::piece_phase_material(promoted);
+        _phase_material -= Evaluation::piece_phase_material(PAWN);
     }
 
     // Check if we've moved our rook to update our castling rights.
@@ -380,7 +380,7 @@ void Board::unmake_move(const Move move) {
 
         // Update piece counts
         piece_counts[them][PAWN]++;
-        _phase_material += Evaluation::piece_material(PAWN);
+        _phase_material += Evaluation::piece_phase_material(PAWN);
 
     } else if (move.is_capture()) {
         assert(move.captured_piece < KING);
@@ -392,7 +392,7 @@ void Board::unmake_move(const Move move) {
         piece_bb[move.captured_piece] ^= to_bb;
         // Update piece counts
         piece_counts[them][move.captured_piece]++;
-        _phase_material += Evaluation::piece_material(move.captured_piece);
+        _phase_material += Evaluation::piece_phase_material(move.captured_piece);
     } else {
         occupied_bb ^= from_to_bb;
         colour_bb[us] ^= from_to_bb;
@@ -409,8 +409,8 @@ void Board::unmake_move(const Move move) {
         piece_bb[PAWN] ^= to_bb;
         piece_counts[us][PAWN]++;
         piece_counts[us][promoted]--;
-        _phase_material -= Evaluation::piece_material(promoted);
-        _phase_material += Evaluation::piece_material(PAWN);
+        _phase_material -= Evaluation::piece_phase_material(promoted);
+        _phase_material += Evaluation::piece_phase_material(PAWN);
     }
 
     if ((p == PAWN) | (cp == PAWN)) {
@@ -567,7 +567,7 @@ void Board::update_check_squares() {
     // Looks at what piece placements would put the enemy king in check. For instance, what squares a bishop could be on
     // and give check. Also looks at what pieces are blocking checks, such that if they moved they could cause a
     // discovered check.
-    const Colour us = whos_move;
+    const Colour us = who_to_play();
     const Colour them = ~us;
     const Square origin = find_king(them);
 
@@ -623,14 +623,29 @@ bool Board::gives_check(const Move move) const {
     }
 
     if (move.is_promotion()) {
-        if (check_squares(get_promoted(move)) & move.target) {
+        const PieceType promoted = get_promoted(move);
+        if (check_squares(promoted) & move.target) {
             return true;
+        } else {
+            // The promoted piece has to xray the pawn it promoted from.
+            Bitboard occ = pieces() ^ sq_to_bb(move.origin);
+            Bitboard atk = Bitboards::attacks(promoted, occ, ks);
+            if (atk & sq_to_bb(move.target)) {
+                return true;
+            }
         }
     } else if (move.is_castle()) {
         const CastlingSide side = move.get_castleside();
         // The only piece that could give check here is the rook.
         if (check_squares(ROOK) & sq_to_bb(RookCastleSquares[who_to_play()][side])) {
             return true;
+        } else {
+            // The rook could xray the king which also moved.
+            Bitboard occ = pieces() ^ sq_to_bb(move.origin) ^ sq_to_bb(move.target);
+            Bitboard atk = Bitboards::attacks<ROOK>(occ, ks);
+            if (atk & sq_to_bb(RookCastleSquares[who_to_play()][side])) {
+                return true;
+            }
         }
     } else if (move.is_ep_capture()) {
         // If the en passent reveals a file, this will be handled by the blocker
@@ -761,7 +776,7 @@ ply_t Board::repetitions(const ply_t start, const ply_t query) const {
     return n;
 }
 
-bool Board::is_endgame() const { return Evaluation::count_material(*this) < Evaluation::ENDGAME_MATERIAL; }
+bool Board::is_endgame() const { return phase_material() < ENDGAME_MATERIAL; }
 
 void Board::flip() {
     whos_move = ~whos_move;

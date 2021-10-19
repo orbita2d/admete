@@ -578,16 +578,19 @@ score_t Search::search(Board &board, const depth_t max_depth, const int max_mill
     // Initialise variables for time control.
     my_clock::time_point time_origin, time_now, time_cutoff;
     std::chrono::duration<double, std::milli> time_span, time_span_last, t_est;
+    // Time passed after which we should not start a new search.
+    int soft_cutoff = max_millis * .9;
     // Time at start of search.
     time_origin = my_clock::now();
     // Time when the search should be stopped
     time_cutoff = time_origin + std::chrono::milliseconds(max_millis);
     // Estimate effective branching factor empirically
     double branching_factor = 2.5;
-
     bool allow_cutoff = false;
     options.tbhits = 0;
     options.nodes = 0;
+
+    Move last_best_move = NULL_MOVE;
     // Iterative deepening
     for (depth_t depth = 2; depth <= max_depth; depth++) {
         PrincipleLine temp_line;
@@ -661,8 +664,14 @@ score_t Search::search(Board &board, const depth_t max_depth, const int max_mill
         // Estimate the next time span.
         t_est = branching_factor * time_span;
 
+        // In simple positions, reduce our thinking time.
+        if (principle.back() == last_best_move) {
+            soft_cutoff -= soft_cutoff / 10;
+        } else {
+            last_best_move = principle.back();
+        }
         // Check if our estimate of the next depth will take us over our time limit.
-        if (t_est.count() > .9 * (max_millis)) {
+        if (t_est.count() > soft_cutoff) {
             break;
         }
 

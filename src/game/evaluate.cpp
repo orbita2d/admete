@@ -95,41 +95,41 @@ constexpr psqt_t pb_bishop_eg = {   20,  0,  0,  0,  0,  0,  0, 20,
                                     0, 20,  0,  0,  0,  0, 20,  0,
                                     20,  0,  0,  0,  0,  0,  0, 20};
 
-constexpr psqt_t pb_king_opening = {    -20, -20, -20, -20, -20, -20, -20, -20,
-                                        -20, -20, -20, -20, -20, -20, -20, -20,
-                                        -20, -20, -20, -20, -20, -20, -20, -20,
-                                        -20, -20, -20, -20, -20, -20, -20, -20,
-                                        -20, -20, -20, -20, -20, -20, -20, -20,
-                                        -20, -20, -20, -20, -20, -20, -20, -20,
-                                        -10, -20, -20, -20, -20, -20, -20, -20,
-                                         20,  20,  10,  0,   0,   10,  20,  20};
+constexpr psqt_t pb_king_op = { -20, -20, -20, -20, -20, -20, -20, -20,
+                                -20, -20, -20, -20, -20, -20, -20, -20,
+                                -20, -20, -20, -20, -20, -20, -20, -20,
+                                -20, -20, -20, -20, -20, -20, -20, -20,
+                                -20, -20, -20, -20, -20, -20, -20, -20,
+                                -20, -20, -20, -20, -20, -20, -20, -20,
+                                -10, -20, -20, -20, -20, -20, -20, -20,
+                                 20,  20,  10,  0,   0,   10,  20,  20};
 
-constexpr psqt_t pb_king_endgame = { 0, 0,  0,  0,  0,  0,  0,  0,
-                                    0, 10, 10, 10, 10, 10, 10, 0,
-                                    0, 10, 20, 20, 20, 20, 10, 0,
-                                    0, 10, 20, 20, 20, 20, 10, 0,
-                                    0, 10, 20, 20, 20, 20, 10, 0,
-                                    0, 10, 20, 20, 20, 20, 10, 0,
-                                    0, 10, 10, 10, 10, 10, 10, 0,
-                                    0, 0,  0,  0,  0,  0,  0,  0};
+constexpr psqt_t pb_king_eg = { 0, 0,  0,  0,  0,  0,  0,  0,
+                                0, 10, 10, 10, 10, 10, 10, 0,
+                                0, 10, 20, 20, 20, 20, 10, 0,
+                                0, 10, 20, 20, 20, 20, 10, 0,
+                                0, 10, 20, 20, 20, 20, 10, 0,
+                                0, 10, 20, 20, 20, 20, 10, 0,
+                                0, 10, 10, 10, 10, 10, 10, 0,
+                                0, 0,  0,  0,  0,  0,  0,  0};
 
-constexpr psqt_t pb_pawn_opening = { 0,  0,  0,  0,  0,  0,  0,  0,
-                                    0,  0,  0,  0,  0,  0,  0,  0,
-                                    5,  5, 10, 10, 10, 10,  5,  5,
-                                    0,  5, 10, 15, 15, 10,  5,  0,
-                                    0,  0, 15, 30, 30, 15,  0,  0,
-                                    0,  0,  0,  0,  0,  0,  0,  0,
-                                    0,  0,  0,  0,  0,  0,  0,  0,
-                                    0,  0,  0,  0,  0,  0,  0,  0};
+constexpr psqt_t pb_pawn_op = { 0,  0,  0,  0,  0,  0,  0,  0,
+                                0,  0,  0,  0,  0,  0,  0,  0,
+                                5,  5, 10, 10, 10, 10,  5,  5,
+                                0,  5, 10, 15, 15, 10,  5,  0,
+                                0,  0, 15, 30, 30, 15,  0,  0,
+                                0,  0,  0,  0,  0,  0,  0,  0,
+                                0,  0,  0,  0,  0,  0,  0,  0,
+                                0,  0,  0,  0,  0,  0,  0,  0};
 
-constexpr psqt_t pb_pawn_endgame = { 0,  0,  0,  0,  0,  0,  0,  0,
-                                    20, 20, 20, 20, 20, 20, 20, 20,
-                                    15, 15, 15, 15, 15, 15, 15, 15,
-                                    10, 10, 10, 10, 10, 10, 10, 10,
-                                    10, 10, 10, 10, 10, 10, 10, 10,
-                                    0,  0,  0,  0,  0,  0,  0,  0,
-                                    0,  0,  0,  0,  0,  0,  0,  0,
-                                    0,  0,  0,  0,  0,  0,  0,  0};
+constexpr psqt_t pb_pawn_eg = { 0,  0,  0,  0,  0,  0,  0,  0,
+                                20, 20, 20, 20, 20, 20, 20, 20,
+                                15, 15, 15, 15, 15, 15, 15, 15,
+                                10, 10, 10, 10, 10, 10, 10, 10,
+                                10, 10, 10, 10, 10, 10, 10, 10,
+                                0,  0,  0,  0,  0,  0,  0,  0,
+                                0,  0,  0,  0,  0,  0,  0,  0,
+                                0,  0,  0,  0,  0,  0,  0,  0};
 
 constexpr psqt_t pb_queen_op = {    0, 0, 0, 0, 0, 0, 0, 0,
                                     0, 0, 0, 0, 0, 0, 0, 0,
@@ -171,12 +171,12 @@ constexpr psqt_t pb_rook_eg = { 0, 0, 0, 0, 0, 0, 0, 0,
 // PSqT for passed pawns.
 constexpr psqt_t pb_p_pawn = {   0,  0,  0,  0,  0,  0,  0,  0,
                                 10, 10, 10, 10, 10, 10, 10, 10,
-                                5,  5,  5,  5,  5,  5,  5,  5,
-                                4,  4,  4,  4,  4,  4,  4,  4,
-                                3,  3,  3,  3,  3,  3,  3,  3,
-                                2,  2,  2,  2,  2,  2,  2,  2,
-                                1,  1,  1,  1,  1,  1,  1,  1,
-                                0,  0,  0,  0,  0,  0,  0,  0 };
+                                 5,  5,  5,  5,  5,  5,  5,  5,
+                                 4,  4,  4,  4,  4,  4,  4,  4,
+                                 3,  3,  3,  3,  3,  3,  3,  3,
+                                 2,  2,  2,  2,  2,  2,  2,  2,
+                                 1,  1,  1,  1,  1,  1,  1,  1,
+                                 0,  0,  0,  0,  0,  0,  0,  0 };
 // clang-format on
 
 constexpr Score weak_pawn = Score(-5, -5);        // Penalty for pawn not defended by another pawn.
@@ -198,7 +198,14 @@ constexpr Score castle_pawns3 = Score(4, 0);
 constexpr Score queen_check = Score(-8, 0);
 
 // Bonus for every square accessible (that isn't protected by a pawn) to every piece.
-constexpr Score mobility = Score(6, 8);
+constexpr per_piece<Score> mobility = {{
+    Score(0, 0), // Pawn, not included
+    Score(6, 8), // Knight
+    Score(6, 8), // Bishop
+    Score(6, 8), // Rook
+    Score(6, 8), // Queen
+    Score(0, 0), // King, not included
+}};
 
 // Bonus for having the bishop pair.
 constexpr Score bishop_pair = Score(15, 25);
@@ -225,28 +232,41 @@ static std::array<per_colour<per_piece<psqt_t>>, N_GAMEPHASE> piece_square_table
 static per_colour<psqt_t> pb_passed;
 
 // Piece values here for evaluation heuristic.
-static per_piece<Score> piece_values = {
-    {Score(100, 100), Score(300, 300), Score(330, 350), Score(500, 500), Score(900, 900), Score(0, 0)}};
+static per_piece<Score> piece_values = {{
+    Score(100, 100), // Pawn
+    Score(300, 300), // Knight
+    Score(330, 350), // Bishop
+    Score(500, 500), // Rook
+    Score(900, 900), // Queen
+    Score(0, 0),     // King
+}};
 
 // Material here is for determining the game phase.
-static std::array<score_t, 6> material = {{100, 300, 350, 500, 900, 0}};
+static per_piece<score_t> phase_material = {{
+    100, // Pawn
+    300, // Knight
+    350, // Bishop
+    500, // Rook
+    900, // Queen,
+    0    // King
+}};
 
 namespace Evaluation {
 
 void init() {
-    piece_square_tables[OPENING][BLACK][PAWN] = pb_pawn_opening;
+    piece_square_tables[OPENING][BLACK][PAWN] = pb_pawn_op;
     piece_square_tables[OPENING][BLACK][KNIGHT] = pb_knight_op;
     piece_square_tables[OPENING][BLACK][BISHOP] = pb_bishop_op;
     piece_square_tables[OPENING][BLACK][ROOK] = pb_rook_op;
     piece_square_tables[OPENING][BLACK][QUEEN] = pb_queen_op;
-    piece_square_tables[OPENING][BLACK][KING] = pb_king_opening;
+    piece_square_tables[OPENING][BLACK][KING] = pb_king_op;
 
-    piece_square_tables[ENDGAME][BLACK][PAWN] = pb_pawn_endgame;
+    piece_square_tables[ENDGAME][BLACK][PAWN] = pb_pawn_eg;
     piece_square_tables[ENDGAME][BLACK][KNIGHT] = pb_knight_eg;
     piece_square_tables[ENDGAME][BLACK][BISHOP] = pb_bishop_eg;
     piece_square_tables[ENDGAME][BLACK][ROOK] = pb_rook_eg;
     piece_square_tables[ENDGAME][BLACK][QUEEN] = pb_queen_eg;
-    piece_square_tables[ENDGAME][BLACK][KING] = pb_king_endgame;
+    piece_square_tables[ENDGAME][BLACK][KING] = pb_king_eg;
 
     for (int p = 0; p < N_PIECE; p++) {
         piece_square_tables[OPENING][WHITE][p] = reverse_board(piece_square_tables[OPENING][BLACK][p]);
@@ -257,9 +277,9 @@ void init() {
     pb_passed[WHITE] = reverse_board(pb_passed[BLACK]);
 }
 
-score_t piece_material(const PieceType p) {
+score_t piece_phase_material(const PieceType p) {
     assert(p != NO_PIECE);
-    return p == NO_PIECE ? 0 : material[p];
+    return phase_material[p];
 }
 Score piece_value(const PieceType p) { return piece_values[p]; }
 
@@ -433,7 +453,6 @@ Score eval_pawns(const Board &board) {
 }
 
 score_t evaluate_white(const Board &board) {
-    int material_value = board.phase_material();
     Score score = board.get_psqt();
     // Mobility
     // A bonus is given to every square accessible to every piece, which isn't blocked by one of our pieces.
@@ -444,7 +463,7 @@ score_t evaluate_white(const Board &board) {
             Bitboard mob = Bitboards::attacks(p, board.pieces(), sq);
             mob &= ~board.pawn_controlled(BLACK);
             mob &= ~board.pieces(WHITE);
-            score += mobility * count_bits(mob);
+            score += mobility[p] * count_bits(mob);
         }
         occ = board.pieces(BLACK, p);
         while (occ) {
@@ -452,7 +471,7 @@ score_t evaluate_white(const Board &board) {
             Bitboard mob = Bitboards::attacks(p, board.pieces(), sq);
             mob &= ~board.pawn_controlled(WHITE);
             mob &= ~board.pieces(BLACK);
-            score -= mobility * count_bits(mob);
+            score -= mobility[p] * count_bits(mob);
         }
     }
 
@@ -589,7 +608,7 @@ score_t evaluate_white(const Board &board) {
     occ &= ~board.pawn_controlled(BLACK);
     score -= queen_check * count_bits(occ);
 
-    // We consider 3 game phases. Opening, where material > OPENING_MATERIAL. Endgame, where material <
+    // We consider 3 game phases. Opening, where phase_material > OPENING_MATERIAL. Endgame, where phase_material <
     // ENDGAME_MATERIAL. And a midgame in between. Evalutation is linearly interpolated in the midgame:
     /*
     op  |mid| eg
@@ -600,19 +619,7 @@ score_t evaluate_white(const Board &board) {
           \
             -----
     */
-    score_t value;
-    if (material_value > OPENING_MATERIAL) {
-        // Just use opening tables
-        value = score.opening_score;
-    } else if (material_value > ENDGAME_MATERIAL) {
-        // Interpolate linearly between the game phases.
-        value = score.opening_score + (material_value - OPENING_MATERIAL) *
-                                          (score.endgame_score - score.opening_score) /
-                                          (ENDGAME_MATERIAL - OPENING_MATERIAL);
-    } else {
-        // Just use endgame tables
-        value = score.endgame_score;
-    }
+    score_t value = score.interpolate(board.phase_material());
     return value;
 }
 
@@ -631,12 +638,12 @@ void print_table(const psqt_t table) {
 void Evaluation::print_tables() {
     std::cout << "MATERIAL" << std::endl;
     for (int i = 0; i < 6; i++) {
-        std::cout << std::setfill(' ') << std::setw(4) << material[i] << " ";
+        std::cout << std::setfill(' ') << std::setw(4) << phase_material[i] << " ";
     }
     std::cout << std::endl;
     std::cout << "VALUES" << std::endl;
     for (int i = 0; i < 6; i++) {
-        std::cout << std::setfill(' ') << std::setw(4) << material[i] << " ";
+        std::cout << std::setfill(' ') << std::setw(4) << phase_material[i] << " ";
     }
     std::cout << std::endl;
     std::cout << "OPENING" << std::endl;
@@ -708,7 +715,7 @@ void Evaluation::load_tables(std::string filename) {
 score_t Evaluation::count_material(const Board &board) {
     score_t material_value = 0;
     for (PieceType p = PAWN; p < N_PIECE; p++) {
-        material_value += material[p] * (board.count_pieces(WHITE, p) + board.count_pieces(BLACK, p));
+        material_value += phase_material[p] * (board.count_pieces(WHITE, p) + board.count_pieces(BLACK, p));
     }
     return material_value;
 }
@@ -724,19 +731,9 @@ score_t Evaluation::eval(const Board &board) {
 
 score_t Evaluation::eval_psqt(const Board &board) {
     // Return the eval from the point of view of the current player.
-    score_t value;
     const score_t material_value = board.phase_material();
     const Score score = board.get_psqt();
-    if (material_value > OPENING_MATERIAL) {
-        value = score.opening_score;
-    } else if (material_value > ENDGAME_MATERIAL) {
-        // Interpolate linearly between the game phases.
-        value = score.opening_score + (material_value - OPENING_MATERIAL) *
-                                          (score.endgame_score - score.opening_score) /
-                                          (ENDGAME_MATERIAL - OPENING_MATERIAL);
-    } else {
-        value = score.endgame_score;
-    }
+    score_t value = score.interpolate(material_value);
 
     if (board.is_white_move()) {
         return value;
