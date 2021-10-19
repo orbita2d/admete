@@ -1,6 +1,7 @@
-# admete
 [![Tests - Linux](https://github.com/orbita2d/admete/actions/workflows/cmake-linux.yaml/badge.svg?branch=master)](https://github.com/orbita2d/admete/actions/workflows/cmake-linux.yaml)
 [![Tests - Windows](https://github.com/orbita2d/admete/actions/workflows/cmake-windows.yaml/badge.svg?branch=master)](https://github.com/orbita2d/admete/actions/workflows/cmake-windows.yaml)
+
+# admete
 
 αδμετε is a UCI chess engine written in c++.
 
