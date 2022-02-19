@@ -16,8 +16,6 @@
 #define ENGINE_VERS "1.3.1"
 #define ENGINE_AUTH "orbita"
 
-typedef std::chrono::high_resolution_clock my_clock;
-
 namespace UCI {
 void init_uci() {
     std::cout << "id name " << ENGINE_NAME << " " << ENGINE_VERS << std::endl;
@@ -321,7 +319,7 @@ void go(Board &board, std::istringstream &is, Search::SearchOptions &options) {
         cutoff_time = POS_INF;
     } else if (movestogo == 0) {
         // Sudden death time control, try fit sd_N_move moves in the rest of the game
-        constexpr int sd_n_move = 14;
+        constexpr int sd_n_move = 12;
         cutoff_time = our_time / sd_n_move + our_inc;
     } else {
         // Classical type time control. Try fit however many moves till the next time control plus one in the game.

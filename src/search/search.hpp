@@ -6,7 +6,7 @@
 
 typedef std::vector<Move> PrincipleLine;
 
-typedef std::chrono::high_resolution_clock my_clock;
+typedef std::chrono::steady_clock my_clock;
 
 namespace Search {
 
@@ -27,14 +27,20 @@ struct SearchOptions {
     ply_t mate_depth = 0;           // Mate in N distance to look for UCI go mate N commands.
     bool tbenable = false;          // Set true if the tablebase is enabled.
     unsigned long tbhits = 0;
+    my_clock::time_point origin_time; // Time At start of search.
     bool is_running() const { return running_flag.load(); }
     bool stop() const { return stop_flag.load(); }
     void set_stop() { stop_flag.store(true); }
+    void set_origin() { origin_time = my_clock::now(); }
+    unsigned get_millis() {
+        return 1 + std::chrono::duration_cast<std::chrono::milliseconds>(my_clock::now() - origin_time).count();
+    }
+    // bool passed_time() { return (get_millis() > hard_cutoff); }
 };
-score_t scout_search(Board &board, depth_t depth, const score_t alpha, my_clock::time_point time_cutoff,
+score_t scout_search(Board &board, depth_t depth, const score_t alpha, unsigned int time_cutoff,
                      const bool allow_cutoff, const bool allow_null, NodeType node, SearchOptions &options);
 score_t pv_search(Board &board, depth_t depth, const score_t alpha, const score_t beta, PrincipleLine &line,
-                  my_clock::time_point time_cutoff, const bool allow_cutoff, SearchOptions &options);
+                  unsigned int time_cutoff, const bool allow_cutoff, SearchOptions &options);
 score_t quiesce(Board &board, score_t alpha, const score_t beta, SearchOptions &options);
 score_t search(Board &board, const depth_t depth, const int max_millis, PrincipleLine &line, SearchOptions &options);
 score_t search(Board &board, const depth_t depth, PrincipleLine &line);
