@@ -21,7 +21,7 @@ constexpr depth_t rfp_max_depth = sizeof(reverse_futility_margins) / sizeof(scor
 constexpr score_t aspration_windows[] = {30, 80, 200, 500};
 constexpr size_t n_aw = sizeof(aspration_windows) / sizeof(score_t);
 
-score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, my_clock::time_point time_cutoff,
+score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, unsigned int time_cutoff,
                              const bool allow_cutoff, const bool allow_null, NodeType node, SearchOptions &options) {
     /* Perform a null window 'scout' search on a subtree.
      * All nodes examined with this tree are not PV nodes (unless proven otherwise, when they should be re-searched)
@@ -100,8 +100,7 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
 
     // Check if we've passed our time cutoff
     if (allow_cutoff && (options.nodes % 1000 == 0)) {
-        my_clock::time_point time_now = my_clock::now();
-        if (time_now > time_cutoff) {
+        if (options.get_millis() > time_cutoff) {
             options.set_stop();
             return MAX_SCORE;
         }
@@ -294,7 +293,7 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, m
 }
 
 score_t Search::pv_search(Board &board, const depth_t start_depth, const score_t alpha_start, const score_t beta,
-                          PrincipleLine &line, my_clock::time_point time_cutoff, const bool allow_cutoff,
+                          PrincipleLine &line, unsigned int time_cutoff, const bool allow_cutoff,
                           SearchOptions &options) {
     // Perform an alpha-beta pruning tree search.
     // The use of this function implies that the node is a PV-node.
@@ -366,8 +365,7 @@ score_t Search::pv_search(Board &board, const depth_t start_depth, const score_t
 
     // Check if we've passed our time cutoff
     if (allow_cutoff && (options.nodes % 1000 == 0)) {
-        my_clock::time_point time_now = my_clock::now();
-        if (time_now > time_cutoff) {
+        if (options.get_millis() > time_cutoff) {
             options.set_stop();
             return MAX_SCORE;
         }
@@ -563,8 +561,8 @@ score_t Search::quiesce(Board &board, const score_t alpha_start, const score_t b
     return alpha;
 }
 
-score_t Search::search(Board &board, const depth_t max_depth, const int max_millis, PrincipleLine &line,
-                       SearchOptions &options) {
+score_t Search::search(Board &board, const depth_t max_depth, int soft_cutoff, const int hard_cutoff,
+                       PrincipleLine &line, SearchOptions &options) {
     // Initialise the transposition table.
     Cache::transposition_table.set_delete();
     Cache::history_table.clear();
@@ -576,14 +574,9 @@ score_t Search::search(Board &board, const depth_t max_depth, const int max_mill
     score_t score = 0;
 
     // Initialise variables for time control.
-    my_clock::time_point time_origin, time_now, time_cutoff;
-    std::chrono::duration<double, std::milli> time_span, time_span_last, t_est;
-    // Time passed after which we should not start a new search.
-    int soft_cutoff = max_millis * .9;
-    // Time at start of search.
-    time_origin = my_clock::now();
-    // Time when the search should be stopped
-    time_cutoff = time_origin + std::chrono::milliseconds(max_millis);
+    options.set_origin();
+    // Reference time vs search start
+    int millis_now, millis_last, millis_next;
     // Estimate effective branching factor empirically
     double branching_factor = 2.5;
     bool allow_cutoff = false;
@@ -603,7 +596,7 @@ score_t Search::search(Board &board, const depth_t max_depth, const int max_mill
         score_t beta = score + aspration_windows[0];
         for (size_t aw = 0; aw <= n_aw; aw++) {
             temp_line.clear();
-            new_score = pv_search(board, depth, alpha, beta, temp_line, time_cutoff, allow_cutoff, options);
+            new_score = pv_search(board, depth, alpha, beta, temp_line, hard_cutoff, allow_cutoff, options);
 
             // Exit search if we've been asked to stop.
             if (options.stop()) {
@@ -653,16 +646,14 @@ score_t Search::search(Board &board, const depth_t max_depth, const int max_mill
         principle = temp_line;
 
         // Calculate the time spent so far.
-        time_now = my_clock::now();
-        time_span = time_now - time_origin;
-        unsigned long nps = int(1000 * (options.nodes / time_span.count()));
+        millis_now = 1 + options.get_millis();
+        unsigned long nps = int(1000 * (options.nodes / millis_now));
 
         // Send the info for the search to uci
-        UCI::uci_info(depth, score, options.nodes, options.tbhits, nps, principle, (int)time_span.count(),
-                      board.get_root());
+        UCI::uci_info(depth, score, options.nodes, options.tbhits, nps, principle, millis_now, board.get_root());
 
         // Estimate the next time span.
-        t_est = branching_factor * time_span;
+        millis_next = branching_factor * millis_now;
 
         // In simple positions, reduce our thinking time.
         if (principle.back() == last_best_move) {
@@ -671,13 +662,18 @@ score_t Search::search(Board &board, const depth_t max_depth, const int max_mill
             last_best_move = principle.back();
         }
         // Check if our estimate of the next depth will take us over our time limit.
-        if (t_est.count() > soft_cutoff) {
+        if (millis_next > hard_cutoff) {
+            break;
+        }
+        // Check if we've passed our soft cutoff.
+        if (millis_now > soft_cutoff) {
             break;
         }
 
         // Calculate the last effective branching factor
         if (depth >= 5) {
-            branching_factor = time_span.count() / time_span_last.count();
+            constexpr double weight = .5;
+            branching_factor = (1 - weight) * branching_factor + weight * (millis_now / millis_last);
         }
 
         // Break if reached mate in N depth.
@@ -687,7 +683,7 @@ score_t Search::search(Board &board, const depth_t max_depth, const int max_mill
             }
         }
 
-        time_span_last = time_span;
+        millis_last = millis_now;
     }
     line = principle;
     return score;
@@ -695,7 +691,7 @@ score_t Search::search(Board &board, const depth_t max_depth, const int max_mill
 
 score_t Search::search(Board &board, const depth_t depth, PrincipleLine &line) {
     SearchOptions options = SearchOptions();
-    return search(board, depth, POS_INF, line, options);
+    return search(board, depth, POS_INF, POS_INF, line, options);
 }
 
 void Search::init() {

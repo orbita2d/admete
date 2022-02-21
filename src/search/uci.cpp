@@ -13,10 +13,8 @@
 #include <thread>
 
 #define ENGINE_NAME "admete"
-#define ENGINE_VERS "1.3.1"
+#define ENGINE_VERS "1.4.0"
 #define ENGINE_AUTH "orbita"
-
-typedef std::chrono::high_resolution_clock my_clock;
 
 namespace UCI {
 void init_uci() {
@@ -223,13 +221,14 @@ void bestmove(Board &board, const Move move) {
     }
 }
 
-void do_search(Board *board, depth_t max_depth, const int max_millis, Search::SearchOptions *options) {
+void do_search(Board *board, depth_t max_depth, const int soft_cutoff, const int hard_cutoff,
+               Search::SearchOptions *options) {
     PrincipleLine line;
     line.reserve(max_depth);
     options->running_flag.store(true);
     options->stop_flag = false;
     options->nodes = 0;
-    int score = Search::search(*board, max_depth, max_millis, line, *options);
+    int score = Search::search(*board, max_depth, soft_cutoff, hard_cutoff, line, *options);
     options->eval = score;
     Move first_move = line.back();
     bestmove(*board, first_move);
@@ -315,20 +314,26 @@ void go(Board &board, std::istringstream &is, Search::SearchOptions &options) {
     }
     const int our_time = board.is_white_move() ? wtime : btime;
     const int our_inc = board.is_white_move() ? winc : binc;
-    int cutoff_time; // How much time to spend on this move.
+    int soft_cutoff; // How much time to spend on this move.
+    int hard_cutoff;
     if (our_time == POS_INF) {
         // Infinite analysis
-        cutoff_time = POS_INF;
+        soft_cutoff = POS_INF;
+        hard_cutoff = POS_INF;
     } else if (movestogo == 0) {
         // Sudden death time control, try fit sd_N_move moves in the rest of the game
-        constexpr int sd_n_move = 14;
-        cutoff_time = our_time / sd_n_move + our_inc;
+        constexpr int sd_n_move = 20;
+        soft_cutoff = (our_time / sd_n_move + our_inc);
+        hard_cutoff = soft_cutoff * 3;
     } else {
         // Classical type time control. Try fit however many moves till the next time control plus one in the game.
-        cutoff_time = our_time / (movestogo + 1) + our_inc;
+        soft_cutoff = (our_time / (.5 * movestogo + 1) + our_inc);
+        hard_cutoff = soft_cutoff * 2.5;
     }
-    cutoff_time = std::min(move_time, cutoff_time);
-    options.running_thread = std::thread(&do_search, &board, (depth_t)max_depth, cutoff_time, &options);
+    // Time passed after which we kill the search, (to keep up with movetime resitriction, to not lose on time, to not
+    // waste time if bf explodes).
+    hard_cutoff = std::min(std::min(move_time, (int)(our_time * 0.8)), hard_cutoff);
+    options.running_thread = std::thread(&do_search, &board, (depth_t)max_depth, soft_cutoff, hard_cutoff, &options);
 }
 
 void do_perft(Board *board, const depth_t depth, Search::SearchOptions *options) {
