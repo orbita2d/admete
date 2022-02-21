@@ -561,8 +561,8 @@ score_t Search::quiesce(Board &board, const score_t alpha_start, const score_t b
     return alpha;
 }
 
-score_t Search::search(Board &board, const depth_t max_depth, const int hard_cutoff, PrincipleLine &line,
-                       SearchOptions &options) {
+score_t Search::search(Board &board, const depth_t max_depth, int soft_cutoff, const int hard_cutoff,
+                       PrincipleLine &line, SearchOptions &options) {
     // Initialise the transposition table.
     Cache::transposition_table.set_delete();
     Cache::history_table.clear();
@@ -574,16 +574,9 @@ score_t Search::search(Board &board, const depth_t max_depth, const int hard_cut
     score_t score = 0;
 
     // Initialise variables for time control.
-    my_clock::time_point time_origin, time_now, time_cutoff;
     options.set_origin();
     // Reference time vs search start
     int millis_now, millis_last, millis_next;
-    // Time passed after which we should not start a new search.
-    int soft_cutoff = hard_cutoff * .4;
-    // Time at start of search.
-    time_origin = my_clock::now();
-    // Time when the search should be stopped
-    time_cutoff = time_origin + std::chrono::milliseconds(hard_cutoff);
     // Estimate effective branching factor empirically
     double branching_factor = 2.5;
     bool allow_cutoff = false;
@@ -653,9 +646,7 @@ score_t Search::search(Board &board, const depth_t max_depth, const int hard_cut
         principle = temp_line;
 
         // Calculate the time spent so far.
-        time_now = my_clock::now();
-        my_clock::duration duration = time_now - time_origin;
-        millis_now = 1 + std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
+        millis_now = 1 + options.get_millis();
         unsigned long nps = int(1000 * (options.nodes / millis_now));
 
         // Send the info for the search to uci
@@ -681,7 +672,8 @@ score_t Search::search(Board &board, const depth_t max_depth, const int hard_cut
 
         // Calculate the last effective branching factor
         if (depth >= 5) {
-            branching_factor = millis_now / millis_last;
+            constexpr double weight = .5;
+            branching_factor = (1 - weight) * branching_factor + weight * (millis_now / millis_last);
         }
 
         // Break if reached mate in N depth.
@@ -699,7 +691,7 @@ score_t Search::search(Board &board, const depth_t max_depth, const int hard_cut
 
 score_t Search::search(Board &board, const depth_t depth, PrincipleLine &line) {
     SearchOptions options = SearchOptions();
-    return search(board, depth, POS_INF, line, options);
+    return search(board, depth, POS_INF, POS_INF, line, options);
 }
 
 void Search::init() {

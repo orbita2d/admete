@@ -42,7 +42,8 @@ score_t scout_search(Board &board, depth_t depth, const score_t alpha, unsigned 
 score_t pv_search(Board &board, depth_t depth, const score_t alpha, const score_t beta, PrincipleLine &line,
                   unsigned int time_cutoff, const bool allow_cutoff, SearchOptions &options);
 score_t quiesce(Board &board, score_t alpha, const score_t beta, SearchOptions &options);
-score_t search(Board &board, const depth_t depth, const int max_millis, PrincipleLine &line, SearchOptions &options);
+score_t search(Board &board, const depth_t depth, int soft_cutoff, const int hard_cutoff, PrincipleLine &line,
+               SearchOptions &options);
 score_t search(Board &board, const depth_t depth, PrincipleLine &line);
 
 unsigned long perft(depth_t depth, Board &board);
