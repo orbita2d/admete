@@ -444,6 +444,7 @@ inline bool is_legal(const Move move, const MoveList &legal_moves) {
     return false;
 }
 
+enum GamePhase { OPENING, ENDGAME, N_GAMEPHASE };
 enum NodeType { PVNODE, ALLNODE, CUTNODE };
 
 template <typename T> using per_colour = std::array<T, N_COLOUR>;

@@ -11,7 +11,9 @@ typedef per_square<score_t> psqt_t;
 namespace Evaluation {
 void init();
 void load_tables(std::string filename);
+void save_tables(std::string filename);
 void print_tables();
+inline std::array<per_colour<per_piece<psqt_t>>, N_GAMEPHASE> piece_square_tables;
 
 // Calculate the evaluation heuristic from the player's POV
 score_t eval(const Board &board);
@@ -32,4 +34,5 @@ Score piece_value(const PieceType p);
 score_t count_material(const Board &board);
 score_t drawn_score(const Board &board);
 constexpr score_t contempt = -10;
+psqt_t reverse_board(psqt_t in);
 } // namespace Evaluation

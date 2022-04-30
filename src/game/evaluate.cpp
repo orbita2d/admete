@@ -9,18 +9,6 @@
 #include <iostream>
 #include <unordered_map>
 
-// Want some consideration of positional play
-
-enum GamePhase { OPENING, ENDGAME, N_GAMEPHASE };
-
-psqt_t reverse_board(psqt_t in) {
-    psqt_t pb;
-    for (int s = 0; s < 64; s++) {
-        pb[s] = in[56 ^ s];
-    }
-    return pb;
-}
-
 // clang-format off
 
 constexpr psqt_t center_dist = {3, 3, 3, 3, 3, 3, 3, 3,
@@ -228,7 +216,6 @@ constexpr Score rook_behind_passed = Score(5, 20);
 // Multiplier for special psqt to push enemy king into corner same colour as our only bishop.
 constexpr Score bishop_corner_multiplier = Score(0, 8);
 
-static std::array<per_colour<per_piece<psqt_t>>, N_GAMEPHASE> piece_square_tables;
 static per_colour<psqt_t> pb_passed;
 
 // Piece values here for evaluation heuristic.
@@ -275,6 +262,14 @@ void init() {
 
     pb_passed[BLACK] = pb_p_pawn;
     pb_passed[WHITE] = reverse_board(pb_passed[BLACK]);
+}
+
+psqt_t reverse_board(psqt_t in) {
+    psqt_t pb;
+    for (int s = 0; s < 64; s++) {
+        pb[s] = in[56 ^ s];
+    }
+    return pb;
 }
 
 score_t piece_phase_material(const PieceType p) {
@@ -670,14 +665,7 @@ void Evaluation::load_tables(std::string filename) {
         return;
     }
     // Opening tables.
-    for (int sq = 8; sq < 48; sq++) {
-        // Pawn Table
-        int value;
-        file >> value;
-        piece_square_tables[OPENING][BLACK][PAWN][sq] = value;
-    }
-    file >> std::ws;
-    for (int p = KNIGHT; p < N_PIECE; p++) {
+    for (int p = PAWN; p < N_PIECE; p++) {
         for (int sq = 0; sq < 64; sq++) {
             // Other Tables
             int value;
@@ -688,14 +676,7 @@ void Evaluation::load_tables(std::string filename) {
     }
 
     // Endgame tables.
-    for (int sq = 8; sq < 48; sq++) {
-        // Pawn Table
-        int value;
-        file >> value;
-        piece_square_tables[OPENING][BLACK][PAWN][sq] = value;
-    }
-    file >> std::ws;
-    for (int p = KNIGHT; p < N_PIECE; p++) {
+    for (int p = PAWN; p < N_PIECE; p++) {
         for (int sq = 0; sq < 64; sq++) {
             // Other Tables
             int value;
@@ -710,6 +691,31 @@ void Evaluation::load_tables(std::string filename) {
         piece_square_tables[OPENING][WHITE][p] = reverse_board(piece_square_tables[OPENING][BLACK][p]);
         piece_square_tables[ENDGAME][WHITE][p] = reverse_board(piece_square_tables[ENDGAME][BLACK][p]);
     }
+}
+
+void Evaluation::save_tables(std::string filename) {
+
+    std::fstream file;
+    file.open(filename, std::ios::out);
+    // Opening tables.
+    for (int p = PAWN; p < N_PIECE; p++) {
+        for (int sq = 0; sq < 64; sq++) {
+            file << piece_square_tables[OPENING][BLACK][p][sq];
+            file << " ";
+        }
+        file << std::endl;
+    }
+
+    // Endgame tables.
+    for (int p = PAWN; p < N_PIECE; p++) {
+        for (int sq = 0; sq < 64; sq++) {
+            // Other Tables
+            file << piece_square_tables[ENDGAME][BLACK][p][sq];
+            file << " ";
+        }
+        file << std::endl;
+    }
+    file.close();
 }
 
 score_t Evaluation::count_material(const Board &board) {
