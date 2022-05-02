@@ -10,13 +10,15 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <mutex>
 #include <random>
 #include <sstream>
+#include <thread>
 
 namespace fs = std::filesystem;
 
 typedef std::pair<std::string, score_t> evalposition;
-constexpr size_t blocksize = 1024;
+constexpr size_t blocksize = 4096;
 typedef std::array<evalposition, blocksize> evalblock;
 template <typename T> T SquareNumber(T n) { return n * n; }
 
@@ -42,19 +44,21 @@ double error_on_block(evalblock &block) {
   return error / blocksize;
 }
 
-void train_on_block(evalblock &block) {
+void train_on_block_kernel(const evalblock *block, const size_t start,
+                           const size_t stride, std::mutex *m) {
   // Initialise a board model.
   Board board = Board();
-  constexpr double step = 1E-4;
+  constexpr double step = 5E-5;
   std::random_device r;
   std::default_random_engine generator(r());
   std::uniform_real_distribution<double> distribution(0.0, 1.0);
 
-  for (size_t i = 0; i < blocksize; i++) {
-    board.fen_decode(block[i].first);
+  for (size_t i = start; i < blocksize; i += stride) {
+    board.fen_decode(block->operator[](i).first);
+    m->lock();
     Score eval = board.get_psqt();
     score_t score = eval.interpolate(board.phase_material());
-    score_t truth = block[i].second;
+    score_t truth = block->operator[](i).second;
     const double error = win_probability(score) - win_probability(truth);
     // error > 0 means white is less likely to win than we think
     double phase_ratio = 0;
@@ -67,7 +71,7 @@ void train_on_block(evalblock &block) {
     // Iteration probability in monte-carlo
     const double probability = step * SquareNumber(error);
     const score_t iterant = sgn(error);
-    for (PieceType p = KNIGHT; p < KING; p++) {
+    for (PieceType p = PAWN; p < KING; p++) {
       // We want to keep the bitboards symmetrical.
       Bitboard occ = board.pieces(WHITE, p);
       while (occ) {
@@ -77,7 +81,7 @@ void train_on_block(evalblock &block) {
           Evaluation::piece_square_tables[OPENING][BLACK][p][56 ^ (int)sq] -=
               iterant;
         }
-        if (distribution(generator) < probability) {
+        if (distribution(generator) < phase_ratio * probability) {
           Evaluation::piece_square_tables[ENDGAME][WHITE][p][sq] -= iterant;
           Evaluation::piece_square_tables[ENDGAME][BLACK][p][56 ^ (int)sq] -=
               iterant;
@@ -92,7 +96,7 @@ void train_on_block(evalblock &block) {
               iterant;
           Evaluation::piece_square_tables[OPENING][BLACK][p][sq] += iterant;
         }
-        if (distribution(generator) < probability) {
+        if (distribution(generator) < phase_ratio * probability) {
           Evaluation::piece_square_tables[ENDGAME][WHITE][p][56 ^ (int)sq] +=
               iterant;
           Evaluation::piece_square_tables[ENDGAME][BLACK][p][sq] += iterant;
@@ -100,17 +104,21 @@ void train_on_block(evalblock &block) {
       }
     }
 
-    const score_t after =
-        Evaluation::psqt(board).interpolate(board.phase_material());
-    const double error_before = SquareNumber(error);
-    const double error_after =
-        SquareNumber(win_probability(after) - win_probability(truth));
-    if (after != score && error_after > error_before) {
-      std::cout << "truth: " << truth << std::endl;
-      std::cout << "before: " << score << " : " << error_before << std::endl;
-      std::cout << "after: " << after << " : " << error_after << std::endl;
-      std::cout << std::endl;
-    }
+    m->unlock();
+  }
+}
+
+void train_on_block(evalblock &block) {
+  constexpr size_t n_thread = 1;
+  std::vector<std::thread> threads;
+  std::mutex mutex;
+  for (size_t i = 0; i < n_thread; i++) {
+    threads.push_back(
+        std::thread(&train_on_block_kernel, &block, i, n_thread, &mutex));
+  }
+
+  for (size_t i = 0; i < n_thread; i++) {
+    threads.at(i).join();
   }
 }
 
@@ -139,7 +147,11 @@ double error_on_file(std::string path) {
     }
   }
   error /= blocks;
-  std::cout << "error: " << error << std::endl;
+  std::cout << error << std::endl;
+
+  std::fstream out;
+  out.open("error.txt", std::ios_base::app);
+  out << error << std::endl;
   return error;
 }
 
@@ -184,15 +196,17 @@ int main(int argc, char *argv[]) {
 
   const std::string error_file = static_cast<std::string>(argv[1]);
   const std::string input_file = static_cast<std::string>(argv[2]);
-  std::cout << "Using as evaluation data: " << error_file << std::endl;
 
   error_on_file(error_file);
-  for (int i = 2; i < argc; i++) {
-    read_file(static_cast<std::string>(argv[i]));
-    if (i % 200 == 0) {
-      error_on_file(error_file);
+  size_t count = 0;
+  while (true) {
+    for (int i = 2; i < argc; i++) {
+      read_file(static_cast<std::string>(argv[i]));
+      count++;
+      if (count % 1000 == 0) {
+        Evaluation::save_tables(tables_path);
+        error_on_file(error_file);
+      }
     }
   }
-  Evaluation::save_tables(tables_path);
-  error_on_file(error_file);
 }
