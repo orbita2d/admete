@@ -179,6 +179,16 @@ std::ostream &operator<<(std::ostream &os, const Move move) {
     return os;
 }
 
+std::ostream &operator<<(std::ostream &os, const Colour c) {
+    os << (c ? "WHITE" : "BLACK");
+    return os;
+}
+
+std::ostream &operator<<(std::ostream &os, const GamePhase g) {
+    os << (g == OPENING ? "Opening" : "Endgame");
+    return os;
+}
+
 std::string print_score(const score_t score) {
     // Returns a human readable form of the score, rounding to nearest 10 cp.
     assert(score > -MATING_SCORE && score < MATING_SCORE);
