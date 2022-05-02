@@ -38,8 +38,7 @@ void error_on_block_kernel(evalblock *block, const size_t start,
   Board board = Board();
   for (size_t i = start; i < blocksize; i += stride) {
     board.fen_decode(block->at(i).first);
-    Score eval = board.get_psqt();
-    score_t score = eval.interpolate(board.phase_material());
+    score_t score = Evaluation::evaluate_white(board);
     score_t truth = block->at(i).second;
     results->at(i) =
         SquareNumber(win_probability(score) - win_probability(truth));
@@ -123,25 +122,27 @@ void train_iteration(std::vector<std::string> dataset) {
   std::uniform_int_distribution square_dist(0, 63);
 
   PieceType p = (PieceType)piece_dist(generator);
-  Colour c = (Colour)colour_dist(generator);
   Square sq = square_dist(generator);
   GamePhase gp = (GamePhase)gp_dist(generator);
-  std::cout << c << std::endl;
-  std::cout << Printing::piece_name(p) << std::endl;
-  std::cout << sq << std::endl;
+  std::cout << Printing::piece_name(p) << " ";
+  std::cout << sq << " ";
   std::cout << gp << std::endl;
 
-  score_t *working = &Evaluation::piece_square_tables[gp][c][p][sq];
+  score_t *working = &Evaluation::piece_square_tables[gp][WHITE][p][sq];
+  score_t *pair = &Evaluation::piece_square_tables[gp][BLACK][p][(int)sq ^ 56];
   const score_t starting_value = *working;
 
   // Check the local conditions projected onto this parameter.
   constexpr score_t step_value = 2;
   const double initial = error_on_dataset(dataset);
   (*working) = starting_value - step_value;
+  (*pair) = (*working);
   const double p_less = error_on_dataset(dataset);
   (*working) = starting_value + step_value;
+  (*pair) = (*working);
   const double p_more = error_on_dataset(dataset);
   (*working) = starting_value;
+  (*pair) = (*working);
 
   score_t step;
   double p_next;
@@ -166,13 +167,16 @@ void train_iteration(std::vector<std::string> dataset) {
   }
   // Loop through while the error is still decreasing (local min search)
   (*working) += step;
+  (*pair) = (*working);
   while (p_next < p_now) {
     p_now = p_next;
     (*working) += step;
+    (*pair) = (*working);
     p_next = error_on_dataset(dataset);
   }
   // Undo the last step
   (*working) -= step;
+  (*pair) = (*working);
   std::cout << "Final: " << (*working) << " - " << std::sqrt(p_now)
             << std::endl;
 }
