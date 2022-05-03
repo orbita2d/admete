@@ -6,6 +6,7 @@
 #include "printing.hpp"
 #include "zobrist.hpp"
 #include <array>
+#include <chrono>
 #include <cmath>
 #include <filesystem>
 #include <fstream>
@@ -18,6 +19,7 @@
 
 namespace fs = std::filesystem;
 
+typedef std::chrono::steady_clock my_clock;
 typedef std::pair<std::string, score_t> evalposition;
 constexpr size_t blocksize = 4096;
 typedef std::array<evalposition, blocksize> evalblock;
@@ -46,7 +48,7 @@ void error_on_block_kernel(evalblock *block, const size_t start,
 }
 
 double error_on_block(evalblock &block) {
-  constexpr size_t n_thread = 12;
+  constexpr size_t n_thread = 4;
   std::vector<std::thread> threads;
   result_block results;
 
@@ -102,14 +104,36 @@ double error_on_file(std::string path) {
   return error;
 }
 
-double error_on_dataset(std::vector<std::string> files) {
-  double error = 0;
-  size_t count = 0;
-  for (std::string file : files) {
-    error += error_on_file(file);
-    count++;
+void error_on_dataset_kernel(std::vector<std::string> *files,
+                             const size_t start, const size_t stride,
+                             std::vector<double> *results) {
+  for (size_t i = start; i < files->size(); i += stride) {
+    results->at(i) = error_on_file(files->at(i));
   }
-  return error / count;
+}
+
+double error_on_dataset(std::vector<std::string> files) {
+  constexpr size_t n_thread = 8;
+  std::vector<std::thread> threads;
+  const size_t n_files = files.size();
+  std::vector<double> results(n_files, 0.);
+
+  for (size_t i = 0; i < n_thread; i++) {
+    threads.push_back(
+        std::thread(&error_on_dataset_kernel, &files, i, n_thread, &results));
+  }
+
+  for (size_t i = 0; i < n_thread; i++) {
+    threads.at(i).join();
+  }
+
+  double error = 0;
+  for (size_t i = 0; i < n_files; i++) {
+    error += results[i];
+  }
+  error /= n_files;
+
+  return error;
 }
 
 void train_iteration(std::vector<std::string> dataset) {
@@ -203,6 +227,13 @@ int main(int argc, char *argv[]) {
   }
   std::cout << "evaluation file: " << std::sqrt(error_on_file(error_file))
             << std::endl;
+  my_clock::time_point origin_time = my_clock::now();
+  const double start_error = error_on_dataset(dataset);
+  const int iteration_time = std::chrono::duration_cast<std::chrono::seconds>(
+                                 my_clock::now() - origin_time)
+                                 .count();
+  std::cout << "dataset        : " << std::sqrt(start_error) << " ";
+  std::cout << "( in " << iteration_time << "s )" << std::endl;
 
   while (true) {
     train_iteration(dataset);
