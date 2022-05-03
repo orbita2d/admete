@@ -10,6 +10,7 @@
 #include <cmath>
 #include <filesystem>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <mutex>
 #include <random>
@@ -150,7 +151,7 @@ void train_iteration(std::vector<std::string> dataset) {
   GamePhase gp = (GamePhase)gp_dist(generator);
   std::cout << Printing::piece_name(p) << " ";
   std::cout << sq << " ";
-  std::cout << gp << std::endl;
+  std::cout << gp << " - ";
 
   score_t *working = &Evaluation::piece_square_tables[gp][WHITE][p][sq];
   score_t *pair = &Evaluation::piece_square_tables[gp][BLACK][p][(int)sq ^ 56];
@@ -201,8 +202,8 @@ void train_iteration(std::vector<std::string> dataset) {
   // Undo the last step
   (*working) -= step;
   (*pair) = (*working);
-  std::cout << "Final: " << (*working) << " - " << std::sqrt(p_now)
-            << std::endl;
+  std::cout << (*working) << " - ";
+  std::cout << std::setprecision(5) << std::sqrt(p_now) << std::endl;
 }
 
 int main(int argc, char *argv[]) {
@@ -229,16 +230,17 @@ int main(int argc, char *argv[]) {
             << std::endl;
   my_clock::time_point origin_time = my_clock::now();
   const double start_error = error_on_dataset(dataset);
-  const int iteration_time = std::chrono::duration_cast<std::chrono::seconds>(
-                                 my_clock::now() - origin_time)
-                                 .count();
+  const int iteration_time =
+      std::chrono::duration_cast<std::chrono::milliseconds>(my_clock::now() -
+                                                            origin_time)
+          .count();
   std::cout << "dataset        : " << std::sqrt(start_error) << " ";
-  std::cout << "( in " << iteration_time << "s )" << std::endl;
+  std::cout << "( in " << std::setprecision(2) << iteration_time / 1000.
+            << "s )" << std::endl;
 
   while (true) {
     train_iteration(dataset);
     Evaluation::save_tables(tables_path);
-    std::cout << std::sqrt(error_on_file(error_file)) << std::endl;
     std::fstream out;
     out.open("error.txt", std::ios_base::app);
     out << std::sqrt(error_on_file(error_file)) << std::endl;
