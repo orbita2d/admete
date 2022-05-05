@@ -1,7 +1,8 @@
 add_executable(train main.cpp)
 
 target_link_libraries(train 
-PRIVATE game_library)
+PRIVATE game_library
+PRIVATE search_library)
 
 set_property(TARGET train PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
 set_property(TARGET train PROPERTY CXX_STANDARD 20)

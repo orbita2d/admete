@@ -4,6 +4,7 @@
 #include "evaluate.hpp"
 #include "movegen.hpp"
 #include "printing.hpp"
+#include "search.hpp"
 #include "zobrist.hpp"
 #include <array>
 #include <chrono>
@@ -38,9 +39,11 @@ void error_on_dataset_kernel(Dataset *dataset, const size_t start,
                              const size_t stride,
                              std::vector<double> *results) {
   Board board;
+  Search::SearchOptions options;
   for (size_t i = start; i < dataset->size(); i += stride) {
     board.unpack(dataset->at(i).first);
-    score_t score = Evaluation::evaluate_white(board);
+    score_t score = Search::quiesce(board, NEG_INF, POS_INF, options);
+    score *= board.is_white_move() ? 1 : -1;
     score_t truth = dataset->at(i).second;
     results->at(i) =
         SquareNumber(win_probability(score) - win_probability(truth));
@@ -94,18 +97,14 @@ void fill_dataset(std::vector<std::string> &files, Dataset &dataset) {
   }
 }
 
-void train_iteration(Dataset dataset) {
+void train_iteration(Dataset &dataset, const size_t idx) {
   // Pick a random parameter to tune
-  std::random_device r;
-  std::default_random_engine generator(r());
-  std::uniform_int_distribution piece_dist((unsigned)PAWN, (unsigned)KING);
-  std::uniform_int_distribution colour_dist((unsigned)WHITE, (unsigned)BLACK);
-  std::uniform_int_distribution gp_dist((unsigned)OPENING, (unsigned)ENDGAME);
-  std::uniform_int_distribution square_dist(0, 63);
+  const size_t n_parameters = (unsigned)N_PIECE * (unsigned)N_GAMEPHASE * 64u;
+  const size_t i = idx % n_parameters;
+  const Square sq = i % 64;
+  const GamePhase gp = (GamePhase)((i / 64) % N_GAMEPHASE);
+  const PieceType p = (PieceType)(i / (64 * N_GAMEPHASE));
 
-  PieceType p = (PieceType)piece_dist(generator);
-  Square sq = square_dist(generator);
-  GamePhase gp = (GamePhase)gp_dist(generator);
   std::cout << Printing::piece_name(p) << " ";
   std::cout << sq << " ";
   std::cout << gp << " - ";
@@ -129,6 +128,11 @@ void train_iteration(Dataset dataset) {
   score_t step;
   double p_next;
   double p_now = initial;
+  const double dp = p_more - p_less;
+  if (std::abs(dp) < 1E-6) {
+    std::cout << "flat" << std::endl;
+    return;
+  }
   // Characterise local conditions.
   if ((initial > p_less) & (initial > p_more)) {
     // Maximum
@@ -138,7 +142,7 @@ void train_iteration(Dataset dataset) {
     // Minimum
     std::cout << "min" << std::endl;
     return;
-  } else if (p_less < p_more) {
+  } else if (dp > 0) {
     // Positive gradient
     step = -step_value;
     p_next = p_less;
@@ -160,7 +164,8 @@ void train_iteration(Dataset dataset) {
   (*working) -= step;
   (*pair) = (*working);
   std::cout << (*working) << " - ";
-  std::cout << std::setprecision(5) << std::sqrt(p_now) << std::endl;
+  std::cout << std::fixed << std::setprecision(5) << std::sqrt(p_now)
+            << std::endl;
 }
 
 int main(int argc, char *argv[]) {
@@ -193,12 +198,15 @@ int main(int argc, char *argv[]) {
       std::chrono::duration_cast<std::chrono::milliseconds>(my_clock::now() -
                                                             origin_time)
           .count();
-  std::cout << "dataset        : " << std::sqrt(start_error) << " ";
+  std::cout << "dataset        : " << std::fixed << std::setprecision(5)
+            << std::sqrt(start_error) << " ";
   std::cout << "( in " << std::setprecision(2) << iteration_time / 1000.
             << "s )" << std::endl;
 
+  size_t i = 0;
   while (true) {
-    train_iteration(dataset);
+    train_iteration(dataset, i);
     Evaluation::save_tables(tables_path);
+    i++;
   }
 }

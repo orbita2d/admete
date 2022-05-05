@@ -7,9 +7,9 @@
 #include <vector>
 
 struct DenseBoard {
-    Bitboard occupied_bb;
     per_colour<Bitboard> colour_bb;
     per_piece<Bitboard> piece_bb;
+    Colour whos_move;
 };
 
 // Information that is game history dependent, that would otherwise need to be encoded in a move.
@@ -47,17 +47,18 @@ class Board {
 
     DenseBoard pack() const {
         DenseBoard db;
-        db.occupied_bb = occupied_bb;
         db.colour_bb = colour_bb;
         db.piece_bb = piece_bb;
+        db.whos_move = whos_move;
         return db;
     };
 
     void unpack(const DenseBoard &db) {
         aux_info = &(*aux_history.begin());
-        occupied_bb = db.occupied_bb;
+        occupied_bb = db.colour_bb[WHITE] | db.colour_bb[BLACK];
         colour_bb = db.colour_bb;
         piece_bb = db.piece_bb;
+        whos_move = db.whos_move;
         initialise();
     }
 
