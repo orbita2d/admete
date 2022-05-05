@@ -25,6 +25,7 @@ typedef std::chrono::steady_clock my_clock;
 typedef std::pair<DenseBoard, score_t> Position;
 typedef std::vector<Position> Dataset;
 typedef std::vector<double> result_block;
+typedef std::vector<score_t *> ParameterArray;
 template <typename T> T SquareNumber(T n) { return n * n; }
 
 template <typename T> int sgn(T val) { return (T(0) < val) - (val < T(0)); }
@@ -97,39 +98,42 @@ void fill_dataset(std::vector<std::string> &files, Dataset &dataset) {
   }
 }
 
-void train_iteration(Dataset &dataset, const size_t idx) {
+void fill_parameters(ParameterArray &parameters) {
+  parameters.clear();
+  for (PieceType p = PAWN; p < N_PIECE; p++) {
+    for (int sq = 0; sq < N_SQUARE; sq++) {
+      parameters.push_back(&Evaluation::piece_square_tables[OPENING][p][sq]);
+      parameters.push_back(&Evaluation::piece_square_tables[ENDGAME][p][sq]);
+    }
+  }
+  for (int sq = 0; sq < N_SQUARE; sq++) {
+    parameters.push_back(&Evaluation::pb_passed[sq].opening_score);
+    parameters.push_back(&Evaluation::pb_passed[sq].endgame_score);
+  }
+}
+
+void train_iteration(Dataset &dataset, const ParameterArray &parameters,
+                     const size_t idx) {
   // Pick a random parameter to tune
-  const size_t n_parameters = (unsigned)N_PIECE * (unsigned)N_GAMEPHASE * 64u;
-  const size_t i = idx % n_parameters;
-  const Square sq = i % 64;
-  const GamePhase gp = (GamePhase)((i / 64) % N_GAMEPHASE);
-  const PieceType p = (PieceType)(i / (64 * N_GAMEPHASE));
+  const size_t n_parameters = parameters.size();
 
-  std::cout << Printing::piece_name(p) << " ";
-  std::cout << sq << " ";
-  std::cout << gp << " - ";
-
-  score_t *working = &Evaluation::piece_square_tables[gp][WHITE][p][sq];
-  score_t *pair = &Evaluation::piece_square_tables[gp][BLACK][p][(int)sq ^ 56];
+  score_t *working = parameters[idx % n_parameters];
   const score_t starting_value = *working;
 
   // Check the local conditions projected onto this parameter.
   constexpr score_t step_value = 2;
   const double initial = error_on_dataset(dataset);
   (*working) = starting_value - step_value;
-  (*pair) = (*working);
   const double p_less = error_on_dataset(dataset);
   (*working) = starting_value + step_value;
-  (*pair) = (*working);
   const double p_more = error_on_dataset(dataset);
   (*working) = starting_value;
-  (*pair) = (*working);
 
   score_t step;
   double p_next;
   double p_now = initial;
   const double dp = p_more - p_less;
-  if (std::abs(dp) < 1E-6) {
+  if (std::abs(dp) < 1E-8) {
     std::cout << "flat" << std::endl;
     return;
   }
@@ -153,16 +157,13 @@ void train_iteration(Dataset &dataset, const size_t idx) {
   }
   // Loop through while the error is still decreasing (local min search)
   (*working) += step;
-  (*pair) = (*working);
   while (p_next < p_now) {
     p_now = p_next;
     (*working) += step;
-    (*pair) = (*working);
     p_next = error_on_dataset(dataset);
   }
   // Undo the last step
   (*working) -= step;
-  (*pair) = (*working);
   std::cout << (*working) << " - ";
   std::cout << std::fixed << std::setprecision(5) << std::sqrt(p_now)
             << std::endl;
@@ -203,9 +204,11 @@ int main(int argc, char *argv[]) {
   std::cout << "( in " << std::setprecision(2) << iteration_time / 1000.
             << "s )" << std::endl;
 
+  ParameterArray parameters;
+  fill_parameters(parameters);
   size_t i = 0;
   while (true) {
-    train_iteration(dataset, i);
+    train_iteration(dataset, parameters, i);
     Evaluation::save_tables(tables_path);
     i++;
   }

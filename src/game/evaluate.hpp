@@ -13,7 +13,8 @@ void init();
 void load_tables(std::string filename);
 void save_tables(std::string filename);
 void print_tables();
-inline std::array<per_colour<per_piece<psqt_t>>, N_GAMEPHASE> piece_square_tables;
+inline std::array<per_piece<psqt_t>, N_GAMEPHASE> piece_square_tables;
+inline per_square<Score> pb_passed;
 
 // Calculate the evaluation heuristic from the player's POV
 score_t eval(const Board &board);

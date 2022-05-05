@@ -157,14 +157,15 @@ constexpr psqt_t pb_rook_eg = { 0, 0, 0, 0, 0, 0, 0, 0,
 
 
 // PSqT for passed pawns.
-constexpr psqt_t pb_p_pawn = {   0,  0,  0,  0,  0,  0,  0,  0,
-                                10, 10, 10, 10, 10, 10, 10, 10,
-                                 5,  5,  5,  5,  5,  5,  5,  5,
-                                 4,  4,  4,  4,  4,  4,  4,  4,
-                                 3,  3,  3,  3,  3,  3,  3,  3,
-                                 2,  2,  2,  2,  2,  2,  2,  2,
-                                 1,  1,  1,  1,  1,  1,  1,  1,
-                                 0,  0,  0,  0,  0,  0,  0,  0 };
+constexpr per_square<Score> pb_p_pawn = {   
+    Score(0, 0),  Score(0, 0),  Score(0, 0),  Score(0, 0),  Score(0, 0),  Score(0, 0),  Score(0, 0),  Score(0, 0),
+    Score(10, 10), Score(10, 10), Score(10, 10), Score(10, 10), Score(10, 10), Score(10, 10), Score(10, 10), Score(10, 10),
+    Score(5, 5),  Score(5, 5),  Score(5, 5),  Score(5, 5),  Score(5, 5),  Score(5, 5),  Score(5, 5),  Score(5, 5),
+    Score(4, 4),  Score(4, 4),  Score(4, 4),  Score(4, 4),  Score(4, 4),  Score(4, 4),  Score(4, 4),  Score(4, 4),
+    Score(3, 3),  Score(3, 3),  Score(3, 3),  Score(3, 3),  Score(3, 3),  Score(3, 3),  Score(3, 3),  Score(3, 3),
+    Score(2, 2),  Score(2, 2),  Score(2, 2),  Score(2, 2),  Score(2, 2),  Score(2, 2),  Score(2, 2),  Score(2, 2),
+    Score(1, 1),  Score(1, 1),  Score(1, 1),  Score(1, 1),  Score(1, 1),  Score(1, 1),  Score(1, 1),  Score(1, 1),
+    Score(0, 0),  Score(0, 0),  Score(0, 0),  Score(0, 0),  Score(0, 0),  Score(0, 0),  Score(0, 0),  Score(0, 0) };
 // clang-format on
 
 constexpr Score weak_pawn = Score(-5, -5);        // Penalty for pawn not defended by another pawn.
@@ -216,8 +217,6 @@ constexpr Score rook_behind_passed = Score(5, 20);
 // Multiplier for special psqt to push enemy king into corner same colour as our only bishop.
 constexpr Score bishop_corner_multiplier = Score(0, 8);
 
-static per_colour<psqt_t> pb_passed;
-
 // Piece values here for evaluation heuristic.
 static per_piece<Score> piece_values = {{
     Score(100, 100), // Pawn
@@ -241,27 +240,21 @@ static per_piece<score_t> phase_material = {{
 namespace Evaluation {
 
 void init() {
-    piece_square_tables[OPENING][BLACK][PAWN] = pb_pawn_op;
-    piece_square_tables[OPENING][BLACK][KNIGHT] = pb_knight_op;
-    piece_square_tables[OPENING][BLACK][BISHOP] = pb_bishop_op;
-    piece_square_tables[OPENING][BLACK][ROOK] = pb_rook_op;
-    piece_square_tables[OPENING][BLACK][QUEEN] = pb_queen_op;
-    piece_square_tables[OPENING][BLACK][KING] = pb_king_op;
+    piece_square_tables[OPENING][PAWN] = pb_pawn_op;
+    piece_square_tables[OPENING][KNIGHT] = pb_knight_op;
+    piece_square_tables[OPENING][BISHOP] = pb_bishop_op;
+    piece_square_tables[OPENING][ROOK] = pb_rook_op;
+    piece_square_tables[OPENING][QUEEN] = pb_queen_op;
+    piece_square_tables[OPENING][KING] = pb_king_op;
 
-    piece_square_tables[ENDGAME][BLACK][PAWN] = pb_pawn_eg;
-    piece_square_tables[ENDGAME][BLACK][KNIGHT] = pb_knight_eg;
-    piece_square_tables[ENDGAME][BLACK][BISHOP] = pb_bishop_eg;
-    piece_square_tables[ENDGAME][BLACK][ROOK] = pb_rook_eg;
-    piece_square_tables[ENDGAME][BLACK][QUEEN] = pb_queen_eg;
-    piece_square_tables[ENDGAME][BLACK][KING] = pb_king_eg;
+    piece_square_tables[ENDGAME][PAWN] = pb_pawn_eg;
+    piece_square_tables[ENDGAME][KNIGHT] = pb_knight_eg;
+    piece_square_tables[ENDGAME][BISHOP] = pb_bishop_eg;
+    piece_square_tables[ENDGAME][ROOK] = pb_rook_eg;
+    piece_square_tables[ENDGAME][QUEEN] = pb_queen_eg;
+    piece_square_tables[ENDGAME][KING] = pb_king_eg;
 
-    for (int p = 0; p < N_PIECE; p++) {
-        piece_square_tables[OPENING][WHITE][p] = reverse_board(piece_square_tables[OPENING][BLACK][p]);
-        piece_square_tables[ENDGAME][WHITE][p] = reverse_board(piece_square_tables[ENDGAME][BLACK][p]);
-    }
-
-    pb_passed[BLACK] = pb_p_pawn;
-    pb_passed[WHITE] = reverse_board(pb_passed[BLACK]);
+    pb_passed = pb_p_pawn;
 }
 
 psqt_t reverse_board(psqt_t in) {
@@ -287,13 +280,13 @@ Score psqt(const Board &board) {
         while (occ) {
             Square sq = pop_lsb(&occ);
             score += piece_values[p];
-            score.add(piece_square_tables[OPENING][WHITE][p][sq], piece_square_tables[ENDGAME][WHITE][p][sq]);
+            score.add(piece_square_tables[OPENING][p][sq.reverse()], piece_square_tables[ENDGAME][p][sq.reverse()]);
         }
         occ = board.pieces(BLACK, p);
         while (occ) {
             Square sq = pop_lsb(&occ);
             score -= piece_values[p];
-            score.sub(piece_square_tables[OPENING][BLACK][p][sq], piece_square_tables[ENDGAME][BLACK][p][sq]);
+            score.sub(piece_square_tables[OPENING][p][sq], piece_square_tables[ENDGAME][p][sq]);
         }
     }
     return score;
@@ -306,15 +299,13 @@ Score psqt_diff(const Colour moving, const Move &move) {
     assert(p < NO_PIECE);
     // Apply psqt
     if (moving == WHITE) {
-        score.add(piece_square_tables[OPENING][WHITE][p][move.target],
-                  piece_square_tables[ENDGAME][WHITE][p][move.target]);
-        score.sub(piece_square_tables[OPENING][WHITE][p][move.origin],
-                  piece_square_tables[ENDGAME][WHITE][p][move.origin]);
+        score.add(piece_square_tables[OPENING][p][move.target.reverse()],
+                  piece_square_tables[ENDGAME][p][move.target.reverse()]);
+        score.sub(piece_square_tables[OPENING][p][move.origin.reverse()],
+                  piece_square_tables[ENDGAME][p][move.origin.reverse()]);
     } else {
-        score.sub(piece_square_tables[OPENING][BLACK][p][move.target],
-                  piece_square_tables[ENDGAME][BLACK][p][move.target]);
-        score.add(piece_square_tables[OPENING][BLACK][p][move.origin],
-                  piece_square_tables[ENDGAME][BLACK][p][move.origin]);
+        score.sub(piece_square_tables[OPENING][p][move.target], piece_square_tables[ENDGAME][p][move.target]);
+        score.add(piece_square_tables[OPENING][p][move.origin], piece_square_tables[ENDGAME][p][move.origin]);
     }
 
     // Apply piece value for captures.
@@ -323,24 +314,23 @@ Score psqt_diff(const Colour moving, const Move &move) {
         assert(move.captured_piece == PAWN);
         if (moving == WHITE) {
             score += piece_values[PAWN];
-            score.add(piece_square_tables[OPENING][BLACK][PAWN][captured_square],
-                      piece_square_tables[ENDGAME][BLACK][PAWN][captured_square]);
+            score.add(piece_square_tables[OPENING][PAWN][captured_square],
+                      piece_square_tables[ENDGAME][PAWN][captured_square]);
         } else {
             score -= piece_values[PAWN];
-            score.sub(piece_square_tables[OPENING][WHITE][PAWN][captured_square],
-                      piece_square_tables[ENDGAME][WHITE][PAWN][captured_square]);
+            score.sub(piece_square_tables[OPENING][PAWN][captured_square.reverse()],
+                      piece_square_tables[ENDGAME][PAWN][captured_square.reverse()]);
         }
     } else if (move.is_capture()) {
         assert(move.captured_piece < NO_PIECE);
         const PieceType cp = move.captured_piece;
         if (moving == WHITE) {
             score += piece_values[move.captured_piece];
-            score.add(piece_square_tables[OPENING][BLACK][cp][move.target],
-                      piece_square_tables[ENDGAME][BLACK][cp][move.target]);
+            score.add(piece_square_tables[OPENING][cp][move.target], piece_square_tables[ENDGAME][cp][move.target]);
         } else {
             score -= piece_values[move.captured_piece];
-            score.sub(piece_square_tables[OPENING][WHITE][cp][move.target],
-                      piece_square_tables[ENDGAME][WHITE][cp][move.target]);
+            score.sub(piece_square_tables[OPENING][cp][move.target.reverse()],
+                      piece_square_tables[ENDGAME][cp][move.target.reverse()]);
         }
     }
 
@@ -353,13 +343,13 @@ Score psqt_diff(const Colour moving, const Move &move) {
         if (moving == WHITE) {
             score += piece_values[promoted];
             score -= piece_values[PAWN];
-            score.add(piece_square_tables[OPENING][WHITE][promoted][move.target],
-                      piece_square_tables[ENDGAME][WHITE][promoted][move.target]);
+            score.add(piece_square_tables[OPENING][promoted][move.target.reverse()],
+                      piece_square_tables[ENDGAME][promoted][move.target.reverse()]);
         } else {
             score -= piece_values[promoted];
             score += piece_values[PAWN];
-            score.sub(piece_square_tables[OPENING][BLACK][promoted][move.target],
-                      piece_square_tables[ENDGAME][BLACK][promoted][move.target]);
+            score.sub(piece_square_tables[OPENING][promoted][move.target],
+                      piece_square_tables[ENDGAME][promoted][move.target]);
         }
     }
 
@@ -369,15 +359,13 @@ Score psqt_diff(const Colour moving, const Move &move) {
         const Square rook_from = RookSquares[moving][side];
         const Square rook_to = RookCastleSquares[moving][side];
         if (moving == WHITE) {
-            score.add(piece_square_tables[OPENING][WHITE][ROOK][rook_to],
-                      piece_square_tables[ENDGAME][WHITE][ROOK][rook_to]);
-            score.sub(piece_square_tables[OPENING][WHITE][ROOK][rook_from],
-                      piece_square_tables[ENDGAME][WHITE][ROOK][rook_from]);
+            score.add(piece_square_tables[OPENING][ROOK][rook_to.reverse()],
+                      piece_square_tables[ENDGAME][ROOK][rook_to.reverse()]);
+            score.sub(piece_square_tables[OPENING][ROOK][rook_from.reverse()],
+                      piece_square_tables[ENDGAME][ROOK][rook_from.reverse()]);
         } else {
-            score.sub(piece_square_tables[OPENING][BLACK][ROOK][rook_to],
-                      piece_square_tables[ENDGAME][BLACK][ROOK][rook_to]);
-            score.add(piece_square_tables[OPENING][BLACK][ROOK][rook_from],
-                      piece_square_tables[ENDGAME][BLACK][ROOK][rook_from]);
+            score.sub(piece_square_tables[OPENING][ROOK][rook_to], piece_square_tables[ENDGAME][ROOK][rook_to]);
+            score.add(piece_square_tables[OPENING][ROOK][rook_from], piece_square_tables[ENDGAME][ROOK][rook_from]);
         }
     }
     return score;
@@ -399,13 +387,13 @@ Score eval_pawns(const Board &board) {
     Bitboard occ = board.passed_pawns(WHITE);
     while (occ) {
         Square sq = pop_lsb(&occ);
-        score += passed_mult * pb_passed[WHITE][sq];
+        score += pb_passed[sq.reverse()];
     }
 
     occ = board.passed_pawns(BLACK);
     while (occ) {
         Square sq = pop_lsb(&occ);
-        score -= passed_mult * pb_passed[BLACK][sq];
+        score -= pb_passed[sq];
     }
 
     // Bonus for connected passers.
@@ -622,7 +610,25 @@ score_t evaluate_white(const Board &board) {
 
 void print_table(const psqt_t table) {
     for (int i = 0; i < 64; i++) {
-        std::cout << std::setfill(' ') << std::setw(4) << table[56 ^ i] << " ";
+        std::cout << std::setfill(' ') << std::setw(4) << table[i] << " ";
+        if (i % 8 == 7) {
+            std::cout << std::endl;
+        }
+    }
+    std::cout << std::endl;
+}
+
+void print_table(const per_square<Score> table) {
+    for (int i = 0; i < 64; i++) {
+        std::cout << std::setfill(' ') << std::setw(4) << table[i].opening_score << " ";
+        if (i % 8 == 7) {
+            std::cout << std::endl;
+        }
+    }
+    std::cout << std::endl;
+
+    for (int i = 0; i < 64; i++) {
+        std::cout << std::setfill(' ') << std::setw(4) << table[i].endgame_score << " ";
         if (i % 8 == 7) {
             std::cout << std::endl;
         }
@@ -644,16 +650,16 @@ void Evaluation::print_tables() {
     std::cout << "OPENING" << std::endl;
     for (PieceType p = PAWN; p < N_PIECE; p++) {
         std::cout << Printing::piece_name(p) << std::endl;
-        print_table(piece_square_tables[OPENING][WHITE][p]);
+        print_table(piece_square_tables[OPENING][p]);
     }
     std::cout << "ENDGAME" << std::endl;
     for (PieceType p = PAWN; p < N_PIECE; p++) {
         std::cout << Printing::piece_name(p) << std::endl;
-        print_table(piece_square_tables[ENDGAME][WHITE][p]);
+        print_table(piece_square_tables[ENDGAME][p]);
     }
 
     std::cout << "PASSED PAWN" << std::endl;
-    print_table(pb_passed[WHITE]);
+    print_table(pb_passed);
 }
 
 void Evaluation::load_tables(std::string filename) {
@@ -670,7 +676,7 @@ void Evaluation::load_tables(std::string filename) {
             // Other Tables
             int value;
             file >> value;
-            piece_square_tables[OPENING][BLACK][p][sq] = value;
+            piece_square_tables[OPENING][p][sq] = value;
         }
         file >> std::ws;
     }
@@ -681,16 +687,18 @@ void Evaluation::load_tables(std::string filename) {
             // Other Tables
             int value;
             file >> value;
-            piece_square_tables[ENDGAME][BLACK][p][sq] = value;
+            piece_square_tables[ENDGAME][p][sq] = value;
         }
         file >> std::ws;
     }
-    file.close();
 
-    for (PieceType p = PAWN; p < N_PIECE; p++) {
-        piece_square_tables[OPENING][WHITE][p] = reverse_board(piece_square_tables[OPENING][BLACK][p]);
-        piece_square_tables[ENDGAME][WHITE][p] = reverse_board(piece_square_tables[ENDGAME][BLACK][p]);
+    // Passed Pawn Tables
+    for (int sq = 0; sq < 64; sq++) {
+        file >> pb_passed[sq].opening_score;
+        file >> pb_passed[sq].endgame_score;
     }
+    file >> std::ws;
+    file.close();
 }
 
 void Evaluation::save_tables(std::string filename) {
@@ -700,7 +708,7 @@ void Evaluation::save_tables(std::string filename) {
     // Opening tables.
     for (int p = PAWN; p < N_PIECE; p++) {
         for (int sq = 0; sq < 64; sq++) {
-            file << piece_square_tables[OPENING][BLACK][p][sq];
+            file << piece_square_tables[OPENING][p][sq];
             file << " ";
         }
         file << std::endl;
@@ -710,11 +718,23 @@ void Evaluation::save_tables(std::string filename) {
     for (int p = PAWN; p < N_PIECE; p++) {
         for (int sq = 0; sq < 64; sq++) {
             // Other Tables
-            file << piece_square_tables[ENDGAME][BLACK][p][sq];
+            file << piece_square_tables[ENDGAME][p][sq];
             file << " ";
         }
         file << std::endl;
     }
+    for (int sq = 0; sq < 64; sq++) {
+        // Passed pawn tables
+        file << pb_passed[sq].opening_score;
+        file << " ";
+        file << pb_passed[sq].endgame_score;
+        file << " ";
+    }
+    for (int sq = 0; sq < 64; sq++) {
+        // Passed pawn tables
+        file << " ";
+    }
+    file << std::endl;
     file.close();
 }
 

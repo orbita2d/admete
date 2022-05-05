@@ -118,6 +118,7 @@ class Square {
     }
 
     std::string pretty() const;
+    const Square reverse() const { return Square(value ^ 56); }
 
   private:
     square_t value = 0;
