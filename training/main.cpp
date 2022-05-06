@@ -30,7 +30,7 @@ template <typename T> T SquareNumber(T n) { return n * n; }
 
 template <typename T> int sgn(T val) { return (T(0) < val) - (val < T(0)); }
 
-constexpr double win_probability(const score_t eval) {
+double win_probability(const score_t eval) {
     constexpr double beta = 500;
     const double eta = std::exp(eval / beta);
     return eta / (eta + 1 / eta);
