@@ -13,7 +13,7 @@
 #include <thread>
 
 #define ENGINE_NAME "admete"
-#define ENGINE_VERS "1.4.0"
+#define ENGINE_VERS "1.4.1"
 #define ENGINE_AUTH "orbita"
 
 namespace UCI {
