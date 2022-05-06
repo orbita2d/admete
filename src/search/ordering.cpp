@@ -185,16 +185,17 @@ void rank_and_sort_moves(Board &board, MoveList &legal_moves, const DenseMove ha
         } else if (move.is_capture()) {
             // Make sure to lookup and record the piece captured
             move.captured_piece = board.piece_type(move.target);
-            move.score = SEE::see_capture(board, move);
+            const score_t see_score = SEE::see_capture(board, move);
+            move.score = see_score;
             if (board.gives_check(move)) {
                 move.score += 5000;
             }
-            if (SEE::see(board, move, 50)) {
-                move.score = 400000;
-            } else if (SEE::see(board, move, -50)) {
-                move.score = 150000;
+            if (see_score > 50) {
+                move.score += 400000;
+            } else if (see_score > -50) {
+                move.score += 150000;
             } else {
-                move.score = -400000;
+                move.score += -400000;
             }
         } else if (move.is_promotion()) {
             move.score = 100000 + SEE::material[get_promoted(move)];

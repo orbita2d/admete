@@ -18,6 +18,7 @@ constexpr Colour operator~(Colour c) {
 
 enum Rank { RANK1, RANK2, RANK3, RANK4, RANK5, RANK6, RANK7, RANK8 };
 enum File { FILEA, FILEB, FILEC, FILED, FILEE, FILEF, FILEG, FILEH, N_FILES, NO_FILE };
+enum GamePhase { OPENING, ENDGAME, N_GAMEPHASE };
 
 constexpr Rank relative_rank(const Colour c, const Rank r) {
     if (c == WHITE) {
@@ -117,11 +118,14 @@ class Square {
     }
 
     std::string pretty() const;
+    const Square reverse() const { return Square(value ^ 56); }
 
   private:
     square_t value = 0;
 };
 std::ostream &operator<<(std::ostream &os, const Square square);
+std::ostream &operator<<(std::ostream &os, const Colour c);
+std::ostream &operator<<(std::ostream &os, const GamePhase g);
 
 enum CastlingSide { KINGSIDE, QUEENSIDE, N_CASTLE };
 enum CastlingRights { NO_RIGHTS = 0, WHITE_KINGSIDE = 1, WHITE_QUEENSIDE = 2, BLACK_KINGSIDE = 4, BLACK_QUEENSIDE = 8 };
