@@ -168,55 +168,6 @@ constexpr per_square<Score> pb_p_pawn = {
     Score(0, 0),  Score(0, 0),  Score(0, 0),  Score(0, 0),  Score(0, 0),  Score(0, 0),  Score(0, 0),  Score(0, 0) };
 // clang-format on
 
-constexpr Score weak_pawn = Score(-5, -5);        // Penalty for pawn not defended by another pawn.
-constexpr Score isolated_pawn = Score(-10, -10);  // Penalty for pawn with no supporting pawns on adjacent files.
-constexpr Score connected_passed = Score(20, 20); // Bonus for connected passed pawns (per pawn)
-constexpr Score defended_passed = Score(0, 0);    // Bonus for defended passed pawns.
-constexpr Score rook_open_file = Score(10, 5);    // Bonus for rook on open file
-constexpr Score rook_hopen_file = Score(5, 0);    // Bonus for rook on half open file
-constexpr Score doubled_pawns = Score(-5, -0);    // Pawn in front of another pawn. (Applied once, not twice)
-
-constexpr Score castle_hopen_file = Score(-5, 0); // Penalty for castled king near a half open file.
-
-// Bonus given the pawns on the 2nd and 3rd ranks in front of a castled king. This promotes castling and penalises
-// pushing pawns in front of the king.
-constexpr Score castle_pawns2 = Score(6, 0);
-constexpr Score castle_pawns3 = Score(4, 0);
-
-// Penealty for squares where a queen would check the king if only pawns were on the board.
-constexpr Score queen_check = Score(-8, 0);
-
-// Bonus for every square accessible (that isn't protected by a pawn) to every piece.
-constexpr per_piece<Score> mobility = {{
-    Score(0, 0), // Pawn, not included
-    Score(6, 8), // Knight
-    Score(6, 8), // Bishop
-    Score(6, 8), // Rook
-    Score(6, 8), // Queen
-    Score(0, 0), // King, not included
-}};
-
-// Bonus for having the bishop pair.
-constexpr Score bishop_pair = Score(15, 25);
-
-// Bonus for a piece on a weak enemy square.
-constexpr Score piece_weak_square = Score(5, 0);
-
-// Bonus for a knight on an outpost.
-constexpr Score knight_outpost = Score(15, 0);
-
-// Bonus for an outpost (occupied or otherwise).
-constexpr Score outpost = Score(5, 0);
-
-// Bonus given to passed pawns, multiplied by PSqT below.
-constexpr Score passed_mult = Score(10, 15);
-
-// Bonus for rook behind a passed pawn.
-constexpr Score rook_behind_passed = Score(5, 20);
-
-// Multiplier for special psqt to push enemy king into corner same colour as our only bishop.
-constexpr Score bishop_corner_multiplier = Score(0, 8);
-
 // Piece values here for evaluation heuristic.
 static per_piece<Score> piece_values = {{
     Score(100, 100), // Pawn
