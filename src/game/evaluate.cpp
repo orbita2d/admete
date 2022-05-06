@@ -681,10 +681,6 @@ void Evaluation::save_tables(std::string filename) {
         file << pb_passed[sq].endgame_score;
         file << " ";
     }
-    for (int sq = 0; sq < 64; sq++) {
-        // Passed pawn tables
-        file << " ";
-    }
     file << std::endl;
     file.close();
 }
