@@ -97,10 +97,15 @@ void fill_dataset(std::vector<std::string> &files, Dataset &dataset) {
 void fill_parameters(ParameterArray &parameters) {
     parameters.clear();
 
+    for (int p = KNIGHT; p < KING; p++) {
+        parameters.push_back(&Evaluation::mobility[p].opening_score);
+        parameters.push_back(&Evaluation::mobility[p].endgame_score);
+    }
+
     for (PieceType p = PAWN; p < N_PIECE; p++) {
         for (int sq = 0; sq < N_SQUARE; sq++) {
-            parameters.push_back(&Evaluation::piece_square_tables[OPENING][p][sq]);
-            parameters.push_back(&Evaluation::piece_square_tables[ENDGAME][p][sq]);
+            parameters.push_back(&Evaluation::piece_square_tables[p][sq].opening_score);
+            parameters.push_back(&Evaluation::piece_square_tables[p][sq].endgame_score);
         }
     }
     for (int sq = 0; sq < N_SQUARE; sq++) {
@@ -168,6 +173,8 @@ int main(int argc, char *argv[]) {
     Bitboards::init();
     Evaluation::init();
     Zobrist::init();
+    GameCache::init();
+    GameCache::pawn_cache.disable();
     if (argc < 3) {
         std::cerr << "Need input file" << std::endl;
         return 1;

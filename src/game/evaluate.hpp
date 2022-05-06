@@ -6,14 +6,14 @@ score_t evaluate_lazy(Board &board, std::vector<Move> &legal_moves);
 score_t piece_material(const PieceType);
 
 // Type for a single piece-square table
-typedef per_square<score_t> psqt_t;
+typedef per_square<Score> psqt_t;
 
 namespace Evaluation {
 void init();
 void load_tables(std::string filename);
 void save_tables(std::string filename);
 void print_tables();
-inline std::array<per_piece<psqt_t>, N_GAMEPHASE> piece_square_tables;
+inline per_piece<psqt_t> piece_square_tables;
 inline per_square<Score> pb_passed;
 
 // Calculate the evaluation heuristic from the player's POV
