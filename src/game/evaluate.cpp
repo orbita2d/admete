@@ -55,17 +55,6 @@ constexpr per_square<score_t> darksquare_corner_distance = {
     0, 1, 2, 3, 4, 5, 6, 7
     };
 
-
-// PSqT for passed pawns.
-constexpr per_square<Score> pb_p_pawn = {   
-    Score(0, 0),  Score(0, 0),  Score(0, 0),  Score(0, 0),  Score(0, 0),  Score(0, 0),  Score(0, 0),  Score(0, 0),
-    Score(10, 10), Score(10, 10), Score(10, 10), Score(10, 10), Score(10, 10), Score(10, 10), Score(10, 10), Score(10, 10),
-    Score(5, 5),  Score(5, 5),  Score(5, 5),  Score(5, 5),  Score(5, 5),  Score(5, 5),  Score(5, 5),  Score(5, 5),
-    Score(4, 4),  Score(4, 4),  Score(4, 4),  Score(4, 4),  Score(4, 4),  Score(4, 4),  Score(4, 4),  Score(4, 4),
-    Score(3, 3),  Score(3, 3),  Score(3, 3),  Score(3, 3),  Score(3, 3),  Score(3, 3),  Score(3, 3),  Score(3, 3),
-    Score(2, 2),  Score(2, 2),  Score(2, 2),  Score(2, 2),  Score(2, 2),  Score(2, 2),  Score(2, 2),  Score(2, 2),
-    Score(1, 1),  Score(1, 1),  Score(1, 1),  Score(1, 1),  Score(1, 1),  Score(1, 1),  Score(1, 1),  Score(1, 1),
-    Score(0, 0),  Score(0, 0),  Score(0, 0),  Score(0, 0),  Score(0, 0),  Score(0, 0),  Score(0, 0),  Score(0, 0) };
 // clang-format on
 
 // Piece values here for evaluation heuristic.
@@ -92,8 +81,8 @@ namespace Evaluation {
 
 void init() {
     piece_square_tables[PAWN] = {
-        Score(6, 8),     Score(30, 108), Score(-28, 64),  Score(26, 34),    Score(22, -4),   Score(16, -4),
-        Score(0, 14),    Score(8, -2),   Score(-2, 160),  Score(-22, 148),  Score(-18, 150), Score(6, 128),
+        Score(0, 0),     Score(0, 0),    Score(0, 0),     Score(0, 0),      Score(0, 0),     Score(0, 0),
+        Score(0, 0),     Score(0, 0),    Score(-2, 160),  Score(-22, 148),  Score(-18, 150), Score(6, 128),
         Score(-26, 100), Score(2, 128),  Score(-42, 124), Score(-150, 138), Score(-17, 63),  Score(-1, 73),
         Score(34, 65),   Score(58, 37),  Score(74, 55),   Score(86, 39),    Score(63, 63),   Score(3, 61),
         Score(-28, 46),  Score(-7, 44),  Score(-12, 32),  Score(9, 24),     Score(29, 24),   Score(16, 30),
@@ -101,8 +90,8 @@ void init() {
         Score(12, 28),   Score(-7, 26),  Score(-16, 30),  Score(-38, 20),   Score(-40, 30),  Score(-30, 32),
         Score(-24, 24),  Score(-8, 28),  Score(0, 36),    Score(-20, 32),   Score(-6, 26),   Score(-26, 18),
         Score(-30, 32),  Score(-18, 36), Score(-18, 28),  Score(-16, 18),   Score(-10, 58),  Score(-4, 42),
-        Score(6, 32),    Score(-26, 22), Score(-2, 0),    Score(-6, -2),    Score(-2, 4),    Score(-12, -8),
-        Score(-6, -2),   Score(4, 4),    Score(2, 12),    Score(2, -2),
+        Score(6, 32),    Score(-26, 22), Score(0, 0),     Score(0, 0),      Score(0, 0),     Score(0, 0),
+        Score(0, 0),     Score(0, 0),    Score(0, 0),     Score(0, 0),
     };
     piece_square_tables[KNIGHT] = {
         Score(-114, -30), Score(-34, 16),  Score(-4, 62),  Score(-10, 24), Score(42, 56),  Score(-118, 64),
@@ -181,6 +170,27 @@ void init() {
         Score(-56, -3), Score(-8, 11),   Score(0, 0),     Score(0, 0),     Score(0, 0),     Score(0, 0),
         Score(0, 0),    Score(0, 0),     Score(0, 0),     Score(0, 0),
     };
+
+    // Initialise training parameters list (Maybe we should seperate this out as not normally used)
+    for (int p = KNIGHT; p < KING; p++) {
+        std::string label = "Mobility " + Printing::piece_name((PieceType)p);
+        training_parameters.push_back(labled_parameter(&mobility[p], label));
+    }
+
+    for (int sq = 8; sq < 56; sq++) {
+        std::string label = "PSQT PAWN " + Square(sq).pretty();
+        training_parameters.push_back(labled_parameter(&piece_square_tables[PAWN][sq], label));
+    }
+    for (PieceType p = KNIGHT; p < N_PIECE; p++) {
+        for (int sq = 0; sq < N_SQUARE; sq++) {
+            std::string label = "PSQT " + Printing::piece_name((PieceType)p) + " " + Square(sq).pretty();
+            training_parameters.push_back(labled_parameter(&piece_square_tables[p][sq], label));
+        }
+    }
+    for (int sq = 0; sq < N_SQUARE; sq++) {
+        std::string label = "PASSED";
+        training_parameters.push_back(labled_parameter(&pb_passed[sq], label));
+    }
 }
 
 psqt_t reverse_board(psqt_t in) {
@@ -565,70 +575,28 @@ void Evaluation::print_tables() {
 }
 
 void Evaluation::load_tables(std::string filename) {
-    /*
+
     std::fstream file;
     file.open(filename, std::ios::in);
     if (!file) {
         std::cout << "No such file: " << filename << std::endl;
         return;
     }
-    // Opening tables.
-    for (int p = PAWN; p < N_PIECE; p++) {
-        for (int sq = 0; sq < 64; sq++) {
-            // Other Tables
-            int value;
-            file >> value;
-            piece_square_tables[OPENING][p][sq] = value;
-        }
+
+    for (labled_parameter &S : training_parameters) {
+        file >> S.first->opening_score;
+        file >> S.first->endgame_score;
         file >> std::ws;
     }
-
-    // Endgame tables.
-    for (int p = PAWN; p < N_PIECE; p++) {
-        for (int sq = 0; sq < 64; sq++) {
-            // Other Tables
-            int value;
-            file >> value;
-            piece_square_tables[ENDGAME][p][sq] = value;
-        }
-        file >> std::ws;
-    }
-
-    // Passed Pawn Tables
-    for (int sq = 0; sq < 64; sq++) {
-        file >> pb_passed[sq].opening_score;
-        file >> pb_passed[sq].endgame_score;
-    }
-
-    file >> std::ws;
     file.close();
-    */
 }
 
 void Evaluation::save_tables(std::string filename) {
 
     std::fstream file;
     file.open(filename, std::ios::out);
-    // PSQT tables.
-    for (int p = PAWN; p < N_PIECE; p++) {
-        for (int sq = 0; sq < 64; sq++) {
-            file << piece_square_tables[p][sq].opening_score << " ";
-            file << piece_square_tables[p][sq].endgame_score << " ";
-        }
-        file << std::endl;
-    }
-
-    for (int sq = 0; sq < 64; sq++) {
-        // Passed pawn tables
-        file << pb_passed[sq].opening_score << " ";
-        file << pb_passed[sq].endgame_score << " ";
-    }
-    file << std::endl;
-
-    for (int p = KNIGHT; p < KING; p++) {
-        file << mobility[p].opening_score << " ";
-        file << mobility[p].endgame_score << " ";
-        file << std::endl;
+    for (const labled_parameter &S : training_parameters) {
+        file << *S.first << std::endl;
     }
     file.close();
 }

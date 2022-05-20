@@ -189,6 +189,11 @@ std::ostream &operator<<(std::ostream &os, const GamePhase g) {
     return os;
 }
 
+std::ostream &operator<<(std::ostream &os, const Score &S) {
+    os << S.opening_score << " " << S.endgame_score << " ";
+    return os;
+}
+
 std::string print_score(const score_t score) {
     // Returns a human readable form of the score, rounding to nearest 10 cp.
     assert(score > -MATING_SCORE && score < MATING_SCORE);

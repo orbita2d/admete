@@ -281,6 +281,7 @@ inline bool operator==(const Score s1, const Score s2) {
 
 inline Score operator*(const int a, const Score s) { return Score(a * s.opening_score, a * s.endgame_score); }
 inline Score operator*(const Score s, const int a) { return a * s; }
+std::ostream &operator<<(std::ostream &os, const Score &g);
 
 enum BishopTypes { LIGHTSQUARE, DARKSQUARE, N_BISHOPTYPES };
 

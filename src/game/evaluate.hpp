@@ -83,4 +83,7 @@ inline Score rook_behind_passed = Score(5, 20);
 // Multiplier for special psqt to push enemy king into corner same colour as our only bishop.
 inline Score bishop_corner_multiplier = Score(0, 8);
 
+// Vector of pointers to training parameters
+typedef std::pair<Score *, std::string> labled_parameter;
+inline std::vector<labled_parameter> training_parameters;
 } // namespace Evaluation

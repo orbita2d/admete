@@ -16,6 +16,7 @@
 #include <mutex>
 #include <random>
 #include <sstream>
+#include <string>
 #include <thread>
 #include <vector>
 
@@ -25,7 +26,8 @@ typedef std::chrono::steady_clock my_clock;
 typedef std::pair<DenseBoard, score_t> Position;
 typedef std::vector<Position> Dataset;
 typedef std::vector<double> result_block;
-typedef std::vector<score_t *> ParameterArray;
+typedef std::pair<score_t *, std::string> Parameter;
+typedef std::vector<Parameter> ParameterArray;
 template <typename T> T SquareNumber(T n) { return n * n; }
 
 template <typename T> int sgn(T val) { return (T(0) < val) - (val < T(0)); }
@@ -96,21 +98,9 @@ void fill_dataset(std::vector<std::string> &files, Dataset &dataset) {
 
 void fill_parameters(ParameterArray &parameters) {
     parameters.clear();
-
-    for (int p = KNIGHT; p < KING; p++) {
-        parameters.push_back(&Evaluation::mobility[p].opening_score);
-        parameters.push_back(&Evaluation::mobility[p].endgame_score);
-    }
-
-    for (PieceType p = PAWN; p < N_PIECE; p++) {
-        for (int sq = 0; sq < N_SQUARE; sq++) {
-            parameters.push_back(&Evaluation::piece_square_tables[p][sq].opening_score);
-            parameters.push_back(&Evaluation::piece_square_tables[p][sq].endgame_score);
-        }
-    }
-    for (int sq = 0; sq < N_SQUARE; sq++) {
-        parameters.push_back(&Evaluation::pb_passed[sq].opening_score);
-        parameters.push_back(&Evaluation::pb_passed[sq].endgame_score);
+    for (Evaluation::labled_parameter &p : Evaluation::training_parameters) {
+        parameters.push_back(Parameter(&p.first->opening_score, p.second + " Op"));
+        parameters.push_back(Parameter(&p.first->endgame_score, p.second + " En"));
     }
 }
 
@@ -118,7 +108,9 @@ void train_iteration(Dataset &dataset, const ParameterArray &parameters, const s
     // Pick a random parameter to tune
     const size_t n_parameters = parameters.size();
 
-    score_t *working = parameters[idx % n_parameters];
+    score_t *working = parameters[idx % n_parameters].first;
+    std::string label = parameters[idx % n_parameters].second;
+    std::cout << label << " ";
     const score_t starting_value = *working;
 
     // Check the local conditions projected onto this parameter.
