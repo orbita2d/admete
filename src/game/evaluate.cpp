@@ -57,16 +57,6 @@ constexpr per_square<score_t> darksquare_corner_distance = {
 
 // clang-format on
 
-// Piece values here for evaluation heuristic.
-static per_piece<Score> piece_values = {{
-    Score(100, 100), // Pawn
-    Score(300, 300), // Knight
-    Score(330, 350), // Bishop
-    Score(500, 500), // Rook
-    Score(900, 900), // Queen
-    Score(0, 0),     // King
-}};
-
 // Material here is for determining the game phase.
 static per_piece<score_t> phase_material = {{
     100, // Pawn
@@ -172,23 +162,29 @@ void init() {
     };
 
     // Initialise training parameters list (Maybe we should seperate this out as not normally used)
+
+    for (PieceType p = KNIGHT; p < KING; p++) {
+        std::string label = "Material " + Printing::piece_name((PieceType)p);
+        training_parameters.push_back(labled_parameter(&piece_values[p], label));
+    }
+
     for (int p = KNIGHT; p < KING; p++) {
         std::string label = "Mobility " + Printing::piece_name((PieceType)p);
         training_parameters.push_back(labled_parameter(&mobility[p], label));
     }
 
     for (int sq = 8; sq < 56; sq++) {
-        std::string label = "PSQT PAWN " + Square(sq).pretty();
+        std::string label = "PSQT PAWN " + Square(sq ^ 56).pretty();
         training_parameters.push_back(labled_parameter(&piece_square_tables[PAWN][sq], label));
     }
     for (PieceType p = KNIGHT; p < N_PIECE; p++) {
         for (int sq = 0; sq < N_SQUARE; sq++) {
-            std::string label = "PSQT " + Printing::piece_name((PieceType)p) + " " + Square(sq).pretty();
+            std::string label = "PSQT " + Printing::piece_name((PieceType)p) + " " + Square(sq ^ 56).pretty();
             training_parameters.push_back(labled_parameter(&piece_square_tables[p][sq], label));
         }
     }
     for (int sq = 0; sq < N_SQUARE; sq++) {
-        std::string label = "PASSED";
+        std::string label = "PASSED " + Square(sq ^ 56).pretty();
         training_parameters.push_back(labled_parameter(&pb_passed[sq], label));
     }
 }

@@ -78,7 +78,7 @@ void fill_dataset(std::vector<std::string> &files, Dataset &dataset) {
         std::fstream file;
         file.open(path, std::ios::in);
         std::string line;
-        std::cout << path << std::endl;
+        // std::cout << path << std::endl;
         while (std::getline(file, line)) {
             std::string token;
             std::istringstream is(line);
@@ -112,6 +112,7 @@ void train_iteration(Dataset &dataset, const ParameterArray &parameters, const s
     std::string label = parameters[idx % n_parameters].second;
     std::cout << label << " ";
     const score_t starting_value = *working;
+    std::cout << starting_value << " -> ";
 
     // Check the local conditions projected onto this parameter.
     constexpr score_t step_value = 2;
@@ -125,8 +126,9 @@ void train_iteration(Dataset &dataset, const ParameterArray &parameters, const s
     score_t step;
     double p_next;
     double p_now = initial;
-    const double dp = p_more - p_less;
-    if (std::abs(dp) < 1E-8) {
+    double dp = p_more - p_less;
+    constexpr double epsilon = 2E-8 * step_value;
+    if (std::abs(dp) < 3 * epsilon) {
         std::cout << "flat" << std::endl;
         return;
     }
@@ -150,15 +152,16 @@ void train_iteration(Dataset &dataset, const ParameterArray &parameters, const s
     }
     // Loop through while the error is still decreasing (local min search)
     (*working) += step;
-    while (p_next < p_now) {
+    while (dp < -epsilon) {
         p_now = p_next;
         (*working) += step;
         p_next = error_on_dataset(dataset);
+        dp = p_next - p_now;
     }
     // Undo the last step
     (*working) -= step;
     std::cout << (*working) << " - ";
-    std::cout << std::fixed << std::setprecision(5) << std::sqrt(p_now) << std::endl;
+    std::cout << std::fixed << std::setprecision(6) << std::sqrt(p_now) << std::endl;
 }
 
 int main(int argc, char *argv[]) {
