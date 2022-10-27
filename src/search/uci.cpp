@@ -5,6 +5,7 @@
 #include "search.hpp"
 #include "tablebase.hpp"
 #include "transposition.hpp"
+#include <algorithm>
 #include <chrono>
 #include <iomanip>
 #include <iostream>
@@ -510,6 +511,8 @@ void uci() {
             show_tests(board);
         } else if (token == "tables") {
             Evaluation::print_tables();
+        } else if (token == "savetables") {
+            Evaluation::save_tables("out.txt");
         } else {
             std::cerr << "Unknown command: " << token << std::endl;
         }

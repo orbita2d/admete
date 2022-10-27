@@ -29,6 +29,17 @@ std::string piece_name(const PieceType p) {
         return "X";
     }
 }
+
+std::string side_name(const CastlingSide p) {
+    switch (p) {
+    case KINGSIDE:
+        return "Kingside";
+    case QUEENSIDE:
+        return "Queenside";
+    default:
+        return "X";
+    }
+}
 } // namespace Printing
 
 std::map<char, Square::square_t> file_decode_map = {

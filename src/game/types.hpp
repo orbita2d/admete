@@ -127,7 +127,9 @@ std::ostream &operator<<(std::ostream &os, const Square square);
 std::ostream &operator<<(std::ostream &os, const Colour c);
 std::ostream &operator<<(std::ostream &os, const GamePhase g);
 
-enum CastlingSide { KINGSIDE, QUEENSIDE, N_CASTLE };
+enum CastlingSide { KINGSIDE, QUEENSIDE, N_SIDE };
+inline CastlingSide operator++(CastlingSide &p, int) { return p = CastlingSide(int(p) + 1); };
+inline CastlingSide operator--(CastlingSide &p, int) { return p = CastlingSide(int(p) - 1); };
 enum CastlingRights { NO_RIGHTS = 0, WHITE_KINGSIDE = 1, WHITE_QUEENSIDE = 2, BLACK_KINGSIDE = 4, BLACK_QUEENSIDE = 8 };
 
 constexpr CastlingRights get_rights(const Colour c, const CastlingSide side) {
@@ -454,3 +456,4 @@ enum NodeType { PVNODE, ALLNODE, CUTNODE };
 template <typename T> using per_colour = std::array<T, N_COLOUR>;
 template <typename T> using per_piece = std::array<T, N_PIECE>;
 template <typename T> using per_square = std::array<T, N_SQUARE>;
+template <typename T> using per_side = std::array<T, N_SIDE>;

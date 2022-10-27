@@ -161,36 +161,57 @@ void init() {
         Score(0, 0),    Score(0, 0),     Score(0, 0),     Score(0, 0),
     };
 
+    for (CastlingSide s = KINGSIDE; s < N_SIDE; s++) {
+        for (CastlingSide t = KINGSIDE; t < N_SIDE; t++) {
+            for (PieceType p = PAWN; p < N_PIECE; p++) {
+                for (int sq = 0; sq < N_SQUARE; sq++) {
+                    side_piece_square_tables[s][t][p][sq] = Score(1, 1);
+                }
+            }
+        }
+    }
+
     // Initialise training parameters list (Maybe we should seperate this out as not normally used)
 
     for (PieceType p = KNIGHT; p < KING; p++) {
         std::string label = "Material " + Printing::piece_name((PieceType)p);
-        training_parameters.push_back(labled_parameter(&piece_values[p], label));
+        // training_parameters.push_back(labled_parameter(&piece_values[p], label));
     }
 
     for (int p = KNIGHT; p < KING; p++) {
         std::string label = "Mobility " + Printing::piece_name((PieceType)p);
-        training_parameters.push_back(labled_parameter(&mobility[p], label));
+        // training_parameters.push_back(labled_parameter(&mobility[p], label));
     }
 
     for (int sq = 8; sq < 56; sq++) {
         std::string label = "PSQT PAWN " + Square(sq ^ 56).pretty();
-        training_parameters.push_back(labled_parameter(&piece_square_tables[PAWN][sq], label));
+        // training_parameters.push_back(labled_parameter(&piece_square_tables[PAWN][sq], label));
     }
     for (PieceType p = KNIGHT; p < N_PIECE; p++) {
         for (int sq = 0; sq < N_SQUARE; sq++) {
             std::string label = "PSQT " + Printing::piece_name((PieceType)p) + " " + Square(sq ^ 56).pretty();
-            training_parameters.push_back(labled_parameter(&piece_square_tables[p][sq], label));
+            // training_parameters.push_back(labled_parameter(&piece_square_tables[p][sq], label));
         }
     }
     for (int sq = 0; sq < N_SQUARE; sq++) {
         std::string label = "PASSED " + Square(sq ^ 56).pretty();
-        training_parameters.push_back(labled_parameter(&pb_passed[sq], label));
+        // training_parameters.push_back(labled_parameter(&pb_passed[sq], label));
+    }
+    for (CastlingSide s = KINGSIDE; s < N_SIDE; s++) {
+        for (CastlingSide t = KINGSIDE; t < N_SIDE; t++) {
+            for (PieceType p = PAWN; p < N_PIECE; p++) {
+                for (int sq = 0; sq < N_SQUARE; sq++) {
+                    std::string label = Printing::side_name(s) + " " + Printing::side_name(t) + " " +
+                                        Printing::piece_name(p) + " " + Square(sq ^ 56).pretty();
+                    training_parameters.push_back(labled_parameter(&side_piece_square_tables[s][t][p][sq], label));
+                }
+            }
+        }
     }
 }
 
-psqt_t reverse_board(psqt_t in) {
-    psqt_t pb;
+sqt_t reverse_board(sqt_t in) {
+    sqt_t pb;
     for (int s = 0; s < 64; s++) {
         pb[s] = in[56 ^ s];
     }
@@ -204,6 +225,7 @@ score_t piece_phase_material(const PieceType p) {
 Score piece_value(const PieceType p) { return piece_values[p]; }
 
 Score psqt(const Board &board) {
+    // Calculate PSQT values for default PSQT, for both colours.
     Score score = Score(0, 0);
 
     // Piece Square Tables and Material
@@ -219,6 +241,29 @@ Score psqt(const Board &board) {
             Square sq = pop_lsb(&occ);
             score -= piece_values[p];
             score -= piece_square_tables[p][sq];
+        }
+    }
+    return score;
+}
+
+Score psqt(const Board &board, const psqt_t psqt, const Colour c) {
+    Score score = Score(0, 0);
+    // Piece Square Tables and Material
+    if (c == WHITE) {
+        for (PieceType p = PAWN; p < N_PIECE; p++) {
+            Bitboard occ = board.pieces(WHITE, p);
+            while (occ) {
+                Square sq = pop_lsb(&occ);
+                score += psqt[p][sq.reverse()];
+            }
+        }
+    } else {
+        for (PieceType p = PAWN; p < N_PIECE; p++) {
+            Bitboard occ = board.pieces(BLACK, p);
+            while (occ) {
+                Square sq = pop_lsb(&occ);
+                score -= psqt[p][sq];
+            }
         }
     }
     return score;
@@ -360,6 +405,17 @@ Score eval_pawns(const Board &board) {
 
 score_t evaluate_white(const Board &board) {
     Score score = board.get_psqt();
+    // Sided castling sides
+    const Bitboard wk = sq_to_bb(board.find_king(WHITE));
+    const Bitboard bk = sq_to_bb(board.find_king(BLACK));
+    for (CastlingSide s = KINGSIDE; s < N_SIDE; s++) {
+        for (CastlingSide t = KINGSIDE; t < N_SIDE; t++) {
+            if ((wk & Bitboards::castle_king[WHITE][s]) && (bk & Bitboards::castle_king[BLACK][t])) {
+                score += psqt(board, side_piece_square_tables[s][t], WHITE);
+                score += psqt(board, side_piece_square_tables[t][s], BLACK);
+            }
+        }
+    }
     // Mobility
     // A bonus is given to every square accessible to every piece, which isn't blocked by one of our pieces.
     for (PieceType p = KNIGHT; p < KING; p++) {
@@ -478,8 +534,6 @@ score_t evaluate_white(const Board &board) {
              count_bits(board.pieces(BLACK, ROOK) & Bitboards::rear_span<BLACK>(board.passed_pawns(BLACK)));
 
     // King safety
-    const Bitboard wk = sq_to_bb(board.find_king(WHITE));
-    const Bitboard bk = sq_to_bb(board.find_king(BLACK));
 
     if (wk & Bitboards::castle_king[WHITE][KINGSIDE]) {
         score += castle_pawns2 * count_bits(Bitboards::castle_pawn2[WHITE][KINGSIDE] & board.pieces(WHITE, PAWN));
@@ -531,7 +585,7 @@ score_t evaluate_white(const Board &board) {
 
 } // namespace Evaluation
 
-void print_table(const psqt_t table) {
+void print_table(const sqt_t table) {
     for (int i = 0; i < 64; i++) {
         std::cout << std::setfill(' ') << std::setw(4) << table[i].opening_score << " ";
         if (i % 8 == 7) {

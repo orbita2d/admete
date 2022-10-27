@@ -86,22 +86,22 @@ constexpr Bitboard middle_ranks = rank_3 | rank_4 | rank_5 | rank_6;
 constexpr Bitboard null = 0x0000000000000000;
 constexpr Bitboard omega = 0xffffffffffffffff;
 // Bitboard for squares where king is castled
-constexpr Bitboard castle_king[N_COLOUR][N_CASTLE] = {{0xe0, 0x7}, {0xe000000000000000, 0x700000000000000}};
+constexpr Bitboard castle_king[N_COLOUR][N_SIDE] = {{0xe0e0e0, 0x070707}, {0xe0e0e00000000000, 0x707070000000000}};
 // Bitboard for king safetly pawns on 2nd rank
-constexpr Bitboard castle_pawn2[N_COLOUR][N_CASTLE] = {{0xe000, 0x700}, {0x00e0000000000000, 0x007000000000000}};
+constexpr Bitboard castle_pawn2[N_COLOUR][N_SIDE] = {{0xe000, 0x700}, {0x00e0000000000000, 0x007000000000000}};
 // Bitboard for king safetly pawns on 3rd rank
-constexpr Bitboard castle_pawn3[N_COLOUR][N_CASTLE] = {{0xe00000, 0x70000}, {0x0000e00000000000, 0x000070000000000}};
+constexpr Bitboard castle_pawn3[N_COLOUR][N_SIDE] = {{0xe00000, 0x70000}, {0x0000e00000000000, 0x000070000000000}};
 
 // Bitboards for squares that cannot be occupied for caslting to be legal.
-constexpr Bitboard castle_blocks_bb[N_COLOUR][N_CASTLE] = {{0x60, 0xe}, {0x6000000000000000, 0xe00000000000000}};
+constexpr Bitboard castle_blocks_bb[N_COLOUR][N_SIDE] = {{0x60, 0xe}, {0x6000000000000000, 0xe00000000000000}};
 // Bitboards for squares that cannot be attacked for caslting to be legal.
-constexpr Bitboard castle_checks_bb[N_COLOUR][N_CASTLE] = {{0x70, 0xc}, {0x7000000000000000, 0xc00000000000000}};
+constexpr Bitboard castle_checks_bb[N_COLOUR][N_SIDE] = {{0x70, 0xc}, {0x7000000000000000, 0xc00000000000000}};
 
 constexpr Bitboard dark_squares = 0xAA55AA55AA55AA55;
 constexpr Bitboard light_squares = 0x55AA55AA55AA55AA;
 constexpr Bitboard bishop_squares[N_BISHOPTYPES] = {light_squares, dark_squares};
 
-constexpr Bitboard rook_from_to[N_COLOUR][N_CASTLE] = {{0xa0, 0x09}, {0xa000000000000000, 0x900000000000000}};
+constexpr Bitboard rook_from_to[N_COLOUR][N_SIDE] = {{0xa0, 0x09}, {0xa000000000000000, 0x900000000000000}};
 
 template <Direction dir> constexpr Bitboard shift(const Bitboard bb) {
     // Bitboards are stored big-endian but who can remember that, so this hides the implementation a little
