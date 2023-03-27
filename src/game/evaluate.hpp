@@ -99,4 +99,6 @@ inline Score bishop_corner_multiplier = Score(0, 8);
 // Vector of pointers to training parameters
 typedef std::pair<Score *, std::string> labled_parameter;
 inline std::vector<labled_parameter> training_parameters;
+// Set up constants
+void constants();
 } // namespace Evaluation

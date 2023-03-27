@@ -236,7 +236,7 @@ void train_iteration(Dataset &dataset, const ParameterArray &parameters, const d
     for (unsigned int i = 0; i < n_parameters; i++) {
         score_t *working = parameters[i].first;
         double g = training_rate * grad[i];
-        g = std::min(10., std::abs(g)) * sgn(g); // Clamp to max change of 10
+        g = std::min(3., std::abs(g)) * sgn(g); // Clamp to max change of 3
         const int g_int = int(g);
         const double g_fract = g - int(g);
         *working -= g_int;
@@ -285,20 +285,20 @@ int main(int argc, char *argv[]) {
         files.push_back(static_cast<std::string>(argv[i]));
     }
     Dataset dataset;
-    std::cout << "Filling . . ." << std::endl;
-    fill_dataset(files, dataset);
-    std::cout << "Done" << std::endl;
-    my_clock::time_point origin_time = my_clock::now();
-    const double start_error = error_on_dataset(dataset);
-    const int iteration_time =
-        std::chrono::duration_cast<std::chrono::milliseconds>(my_clock::now() - origin_time).count();
-    std::cout << "dataset        : " << std::fixed << std::setprecision(5) << 100 * std::sqrt(start_error) << " ";
-    std::cout << "( in " << std::setprecision(2) << iteration_time / 1000. << "s )" << std::endl;
 
     ParameterArray parameters;
+    fill_parameters(parameters);
 
     while (true) {
-        fill_parameters(parameters);
+        std::cout << "Filling . . ." << std::endl;
+        fill_dataset(files, dataset);
+        std::cout << "Done" << std::endl;
+        my_clock::time_point origin_time = my_clock::now();
+        const double start_error = error_on_dataset(dataset);
+        const int iteration_time =
+            std::chrono::duration_cast<std::chrono::milliseconds>(my_clock::now() - origin_time).count();
+        std::cout << "dataset        : " << std::fixed << std::setprecision(5) << 100 * std::sqrt(start_error) << " ";
+        std::cout << "( in " << std::setprecision(2) << iteration_time / 1000. << "s )" << std::endl;
         for (int i = 0; i < 32; i++) {
             Dataset subset = build_subset(dataset, 0.15);
             train_iteration(subset, parameters, 5e6, 0.25);

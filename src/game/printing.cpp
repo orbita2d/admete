@@ -12,19 +12,19 @@ namespace Printing {
 std::string piece_name(const PieceType p) {
     switch (p) {
     case PAWN:
-        return "Pawn";
+        return "PAWN";
     case KNIGHT:
-        return "Knight";
+        return "KNIGHT";
     case BISHOP:
-        return "Bishop";
+        return "BISHOP";
     case ROOK:
-        return "Rook";
+        return "ROOK";
     case QUEEN:
-        return "Queen";
+        return "QUEEN";
     case KING:
-        return "King";
+        return "KING";
     case NO_PIECE:
-        return "No Piece";
+        return "NO_PIECE";
     default:
         return "X";
     }
@@ -33,9 +33,9 @@ std::string piece_name(const PieceType p) {
 std::string side_name(const CastlingSide p) {
     switch (p) {
     case KINGSIDE:
-        return "Kingside";
+        return "KINGSIDE";
     case QUEENSIDE:
-        return "Queenside";
+        return "QUEENSIDE";
     default:
         return "X";
     }
@@ -201,7 +201,7 @@ std::ostream &operator<<(std::ostream &os, const GamePhase g) {
 }
 
 std::ostream &operator<<(std::ostream &os, const Score &S) {
-    os << S.opening_score << " " << S.endgame_score << " ";
+    os << S.opening_score << " " << S.endgame_score;
     return os;
 }
 

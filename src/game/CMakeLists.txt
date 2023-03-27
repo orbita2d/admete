@@ -3,7 +3,7 @@ add_library(game_library types.hpp
             printing.cpp printing.hpp
             movegen.cpp movegen.hpp
             bitboard.cpp bitboard.hpp
-            evaluate.cpp evaluate.hpp
+            evaluate.cpp evaluate.hpp constants.cpp
             zobrist.cpp zobrist.hpp
             cache.cpp cache.hpp)
 
