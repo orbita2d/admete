@@ -196,7 +196,7 @@ void fill_parameters(ParameterArray &parameters) {
 void train_iteration(Dataset &dataset, const ParameterArray &parameters) {
     const size_t n_parameters = parameters.size();
     std::vector<double> grad(n_parameters, 0.0);
-    std::vector<double> initial(n_parameters, 0.0);
+    std::vector<score_t> initial(n_parameters, 0);
     const int display_blocks = 16;
     int display = 0;
 
@@ -209,7 +209,6 @@ void train_iteration(Dataset &dataset, const ParameterArray &parameters) {
         std::string label = parameters[i].second;
         // std::cout << label << " ";
         const score_t starting_value = *working;
-        initial[i] = starting_value;
 
         // Check the local conditions projected onto this parameter.
         constexpr score_t step_value = 1;
@@ -221,6 +220,7 @@ void train_iteration(Dataset &dataset, const ParameterArray &parameters) {
         double dp = p_more - p_less;
         const double g = dp / step_value;
         // std::cout << std::fixed << std::setprecision(2) << training_rate * g << std::endl;
+        initial[i] = starting_value;
         grad[i] = g;
         max_grad = std::max(std::abs(g), max_grad);
         if (((i * display_blocks) / n_parameters) > display) {
@@ -265,6 +265,7 @@ Dataset build_subset(const Dataset &dataset, const double probability) {
     std::uniform_real_distribution<> dis(0., 1.);
 
     Dataset subset;
+    subset.reserve(probability * dataset.size());
 
     for (size_t i = 0; i < dataset.size(); i++) {
         if (dis(gen) < probability) {
