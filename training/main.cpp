@@ -230,8 +230,8 @@ void train_iteration(Dataset &dataset, const ParameterArray &parameters) {
     }
     std::cout << "Computed grad" << std::endl;
 
-    // Set smallstep to step s.t. largest change in value is 1. (We are working with ints!)
-    const double smallstep = 1. / max_grad;
+    // Set smallstep to step s.t. largest change in value is 2. (We are working with ints!)
+    const double smallstep = 2. / max_grad;
     double step = 0.0;
 
     double last = 1e10;
