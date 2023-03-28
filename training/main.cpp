@@ -228,11 +228,10 @@ void train_iteration(Dataset &dataset, const ParameterArray &parameters) {
             // std::cout << display << " / " << display_blocks << std::endl;
         }
     }
-    std::cout << "Computed grad" << std::endl;
 
     // Set smallstep to step s.t. largest change in value is 1. (We are working with ints!)
     const double smallstep = 1. / max_grad;
-    double step = 0.0;
+    double step = 0.2 / max_grad;
 
     double last = 1e10;
     double next = error_on_dataset(dataset);
@@ -248,10 +247,8 @@ void train_iteration(Dataset &dataset, const ParameterArray &parameters) {
         }
         last = next;
         next = error_on_dataset(dataset);
-        std::cout << " - " << std::fixed << std::setprecision(5) << 100 * std::sqrt(last) << std::endl;
     };
 
-    std::cout << "-x-" << std::fixed << std::setprecision(5) << 100 * std::sqrt(next) << std::endl;
     // Undo the last step
     step -= smallstep;
     for (unsigned int i = 0; i < n_parameters; i++) {
