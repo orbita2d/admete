@@ -312,7 +312,7 @@ int main(int argc, char *argv[]) {
         std::cout << "dataset        : " << std::fixed << std::setprecision(5) << 100 * std::sqrt(start_error) << " ";
         std::cout << "( in " << std::setprecision(2) << iteration_time / 1000. << "s )" << std::endl;
         for (int i = 0; i < 32; i++) {
-            Dataset subset = build_subset(dataset, 0.15);
+            Dataset subset = build_subset(dataset, 0.25);
             train_iteration(subset, parameters);
             Evaluation::save_tables(tables_path);
             std::cout << std::fixed << std::setprecision(5) << 100 * std::sqrt(error_on_dataset(dataset)) << std::endl;
