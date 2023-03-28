@@ -92,8 +92,8 @@ class Square {
     constexpr square_t rank_index() const { return value / 8; }
     constexpr square_t file_index() const { return value % 8; }
 
-    constexpr File file() const { return File(value % 8); }
-    constexpr Rank rank() const { return Rank(value / 8); }
+    constexpr File file() const { return File(this->file_index()); }
+    constexpr Rank rank() const { return Rank(this->rank_index()); }
     // constexpr File file() const { return File(value & 0x07); }
     // constexpr Rank rank() const { return Rank((value & 0x38) >> 3); }
 
