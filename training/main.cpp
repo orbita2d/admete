@@ -162,6 +162,7 @@ Position quiesce(Board &board, const score_t alpha_start, const score_t beta) {
 }
 
 void fill_dataset(std::vector<std::string> &files, Dataset &dataset) {
+    dataset.clear();
     for (std::string path : files) {
         std::fstream file;
         file.open(path, std::ios::in);
