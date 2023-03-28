@@ -200,10 +200,6 @@ void train_iteration(Dataset &dataset, const ParameterArray &parameters) {
     const int display_blocks = 16;
     int display = 0;
 
-    std::random_device rd;  // Will be used to obtain a seed for the random number engine
-    std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
-    std::uniform_real_distribution<> dis(0., 1.);
-
     double max_grad = 0.0;
     // Calculate GRAD of loss function ERROR_ON_DATASET
     for (unsigned int i = 0; i < n_parameters; i++) {
