@@ -251,6 +251,7 @@ void train_iteration(Dataset &dataset, const ParameterArray &parameters) {
         std::cout << " - " << std::fixed << std::setprecision(5) << 100 * std::sqrt(last) << std::endl;
     };
 
+    std::cout << "-x-" << std::fixed << std::setprecision(5) << 100 * std::sqrt(next) << std::endl;
     // Undo the last step
     step -= smallstep;
     for (unsigned int i = 0; i < n_parameters; i++) {
