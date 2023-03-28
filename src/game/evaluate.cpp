@@ -308,13 +308,13 @@ score_t evaluate_white(const Board &board) {
     // Sided castling sides
     const Bitboard wk = sq_to_bb(board.find_king(WHITE));
     const Bitboard bk = sq_to_bb(board.find_king(BLACK));
-    for (CastlingSide s = KINGSIDE; s < N_SIDE; s++) {
-        for (CastlingSide t = KINGSIDE; t < N_SIDE; t++) {
-            if ((wk & Bitboards::castle_king[WHITE][s]) && (bk & Bitboards::castle_king[BLACK][t])) {
-                score += psqt(board, side_piece_square_tables[s][t], WHITE);
-                score += psqt(board, side_piece_square_tables[t][s], BLACK);
-            }
-        }
+    {
+        const unsigned s = board.find_king(WHITE).file_index() / 4;
+        const unsigned t = board.find_king(BLACK).file_index() / 4;
+        assert(s < 2);
+        assert(t < 2);
+        score += psqt(board, side_piece_square_tables[s][t], WHITE);
+        score += psqt(board, side_piece_square_tables[t][s], BLACK);
     }
     // Mobility
     // A bonus is given to every square accessible to every piece, which isn't blocked by one of our pieces.
