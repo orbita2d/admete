@@ -193,10 +193,10 @@ void fill_parameters(ParameterArray &parameters) {
     }
 }
 
-void train_iteration(Dataset &dataset, const ParameterArray &parameters, const double training_rate,
-                     const double proportion) {
+void train_iteration(Dataset &dataset, const ParameterArray &parameters) {
     const size_t n_parameters = parameters.size();
     std::vector<double> grad(n_parameters, 0.0);
+    std::vector<double> initial(n_parameters, 0.0);
     const int display_blocks = 16;
     int display = 0;
 
@@ -204,17 +204,16 @@ void train_iteration(Dataset &dataset, const ParameterArray &parameters, const d
     std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
     std::uniform_real_distribution<> dis(0., 1.);
 
+    double max_grad = 0.0;
     // Calculate GRAD of loss function ERROR_ON_DATASET
     for (unsigned int i = 0; i < n_parameters; i++) {
         // Only minimise over a subspace to reduce iteration time.
-        if (dis(gen) > proportion) {
-            continue;
-        }
 
         score_t *working = parameters[i].first;
         std::string label = parameters[i].second;
         // std::cout << label << " ";
         const score_t starting_value = *working;
+        initial[i] = starting_value;
 
         // Check the local conditions projected onto this parameter.
         constexpr score_t step_value = 1;
@@ -227,24 +226,37 @@ void train_iteration(Dataset &dataset, const ParameterArray &parameters, const d
         const double g = dp / step_value;
         // std::cout << std::fixed << std::setprecision(2) << training_rate * g << std::endl;
         grad[i] = g;
+        max_grad = std::max(std::abs(g), max_grad);
         if (((i * display_blocks) / n_parameters) > display) {
             display = ((i * display_blocks) / n_parameters);
             // std::cout << display << " / " << display_blocks << std::endl;
         }
     }
-    // Increment the paramters by our gradient
-    // T_n+1 = T_n - GRAD H (T_n)
-    for (unsigned int i = 0; i < n_parameters; i++) {
-        score_t *working = parameters[i].first;
-        double g = training_rate * grad[i];
-        g = std::min(3., std::abs(g)) * sgn(g); // Clamp to max change of 3
-        const int g_int = int(g);
-        const double g_fract = g - int(g);
-        *working -= g_int;
-        // Include 'stocastic 'steps for fractional values of the step
-        if (dis(gen) < std::abs(g_fract)) {
-            *working -= sgn(g_fract);
+    // Set smallstep to step s.t. largest change in value is 1. (We are working with ints!)
+    const double smallstep = 1. / max_grad;
+    double step = smallstep;
+
+    double last = error_on_dataset(dataset);
+    double next = 0.0;
+    do {
+        // Increment the paramters by our gradient
+        // T_n+1 = T_n - GRAD H (T_n)
+
+        for (unsigned int i = 0; i < n_parameters; i++) {
+            double g = step * grad[i];
+            *parameters[i].first = initial[i] - int(g);
         }
+        last = next;
+        next = error_on_dataset(dataset);
+        step += smallstep;
+        std::cout << " - " << std::fixed << std::setprecision(5) << 100 * std::sqrt(last) << std::endl;
+    } while (next < last);
+
+    // Undo the last step
+    step -= smallstep;
+    for (unsigned int i = 0; i < n_parameters; i++) {
+        double g = step * grad[i];
+        *parameters[i].first = initial[i] - int(g);
     }
 }
 
@@ -302,7 +314,7 @@ int main(int argc, char *argv[]) {
         std::cout << "( in " << std::setprecision(2) << iteration_time / 1000. << "s )" << std::endl;
         for (int i = 0; i < 32; i++) {
             Dataset subset = build_subset(dataset, 0.15);
-            train_iteration(subset, parameters, 5e6, 0.25);
+            train_iteration(subset, parameters);
             Evaluation::save_tables(tables_path);
             std::cout << std::fixed << std::setprecision(5) << 100 * std::sqrt(error_on_dataset(dataset)) << std::endl;
         }
