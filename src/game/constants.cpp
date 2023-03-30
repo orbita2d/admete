@@ -1100,7 +1100,7 @@ void Evaluation::constants() {
     side_piece_square_tables[QUEENSIDE][QUEENSIDE][PAWN][46] = Score(17, 1);
     side_piece_square_tables[QUEENSIDE][QUEENSIDE][PAWN][47] = Score(13, -3);
     side_piece_square_tables[QUEENSIDE][QUEENSIDE][PAWN][48] = Score(8, -2);
-    side_piece_square_tables[QUEENSIDE][QUEENSIDE][PAWN][49] = Score(9, -2);
+    side_piece_square_tables[QUEENSIDE][QUEENSIDE][PAWN][49] = Score(8, -2);
     side_piece_square_tables[QUEENSIDE][QUEENSIDE][PAWN][50] = Score(10, -4);
     side_piece_square_tables[QUEENSIDE][QUEENSIDE][PAWN][51] = Score(10, 6);
     side_piece_square_tables[QUEENSIDE][QUEENSIDE][PAWN][52] = Score(13, 4);
@@ -1160,7 +1160,7 @@ void Evaluation::constants() {
     side_piece_square_tables[QUEENSIDE][QUEENSIDE][KNIGHT][42] = Score(23, 0);
     side_piece_square_tables[QUEENSIDE][QUEENSIDE][KNIGHT][43] = Score(9, 2);
     side_piece_square_tables[QUEENSIDE][QUEENSIDE][KNIGHT][44] = Score(9, 3);
-    side_piece_square_tables[QUEENSIDE][QUEENSIDE][KNIGHT][45] = Score(22, 4);
+    side_piece_square_tables[QUEENSIDE][QUEENSIDE][KNIGHT][45] = Score(23, 4);
     side_piece_square_tables[QUEENSIDE][QUEENSIDE][KNIGHT][46] = Score(23, 3);
     side_piece_square_tables[QUEENSIDE][QUEENSIDE][KNIGHT][47] = Score(15, -10);
     side_piece_square_tables[QUEENSIDE][QUEENSIDE][KNIGHT][48] = Score(5, 7);

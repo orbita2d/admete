@@ -82,11 +82,7 @@ void init() {
         // training_parameters.push_back(labled_parameter(&mobility[p], label));
     }
 
-    for (int sq = 8; sq < 56; sq++) {
-        std::string label = "piece_square_tables[PAWN][" + std::to_string(sq) + "]";
-        // training_parameters.push_back(labled_parameter(&piece_square_tables[PAWN][sq], label));
-    }
-    for (PieceType p = KNIGHT; p < N_PIECE; p++) {
+    for (PieceType p = PAWN; p < N_PIECE; p++) {
         for (int sq = 0; sq < N_SQUARE; sq++) {
             std::string label = "piece_square_tables[" + Printing::piece_name(p) + "][" + std::to_string(sq) + "]";
             // training_parameters.push_back(labled_parameter(&piece_square_tables[p][sq], label));
