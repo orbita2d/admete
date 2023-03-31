@@ -159,8 +159,18 @@ void Board::initialise() {
             piece_counts[c][p] = count_bits(pieces((Colour)c, p));
         }
     }
-    _phase_material = Evaluation::count_material(*this);
-    psqt = Evaluation::psqt(*this);
+    _phase_material = Evaluation::count_phase_material(*this);
+    _material = Evaluation::material(*this);
+    _psqt[WHITE] = Evaluation::psqt(*this, Evaluation::PSQT, WHITE);
+    _psqt[BLACK] = Evaluation::psqt(*this, Evaluation::PSQT, BLACK);
+    _spsqt[0][0][WHITE] = Evaluation::psqt(*this, Evaluation::SPSQT[0][0], WHITE);
+    _spsqt[0][1][WHITE] = Evaluation::psqt(*this, Evaluation::SPSQT[0][1], WHITE);
+    _spsqt[1][0][WHITE] = Evaluation::psqt(*this, Evaluation::SPSQT[1][0], WHITE);
+    _spsqt[1][1][WHITE] = Evaluation::psqt(*this, Evaluation::SPSQT[1][1], WHITE);
+    _spsqt[0][0][BLACK] = Evaluation::psqt(*this, Evaluation::SPSQT[0][0], BLACK);
+    _spsqt[0][1][BLACK] = Evaluation::psqt(*this, Evaluation::SPSQT[0][1], BLACK);
+    _spsqt[1][0][BLACK] = Evaluation::psqt(*this, Evaluation::SPSQT[1][0], BLACK);
+    _spsqt[1][1][BLACK] = Evaluation::psqt(*this, Evaluation::SPSQT[1][1], BLACK);
     update_pawns();
     // update_attacks();
     set_root();
@@ -310,10 +320,27 @@ void Board::make_move(Move &move) {
     update_check_squares();
 
     // Update PSQT value
-    psqt += Evaluation::psqt_diff(us, Evaluation::PSQT, move);
-    psqt += Evaluation::material_diff(us, move);
-    assert(psqt == Evaluation::psqt(*this));
-    assert(_phase_material == Evaluation::count_material(*this));
+    {
+        per_colour<Score> diff = Evaluation::psqt_diff(us, Evaluation::PSQT, move);
+        _psqt[WHITE] += diff[WHITE];
+        _psqt[BLACK] += diff[BLACK];
+        assert(_psqt[WHITE] == Evaluation::psqt(*this, Evaluation::PSQT, WHITE));
+        assert(_psqt[BLACK] == Evaluation::psqt(*this, Evaluation::PSQT, BLACK));
+    }
+    {
+        for (unsigned i = 0; i < 2; i++) {
+            for (unsigned j = 0; j < 2; j++) {
+                per_colour<Score> diff = Evaluation::psqt_diff(us, Evaluation::SPSQT[i][j], move);
+                _spsqt[i][j][WHITE] += diff[WHITE];
+                _spsqt[i][j][BLACK] += diff[BLACK];
+                assert(_spsqt[i][j][WHITE] == Evaluation::psqt(*this, Evaluation::SPSQT[i][j], WHITE));
+                assert(_spsqt[i][j][BLACK] == Evaluation::psqt(*this, Evaluation::SPSQT[i][j], BLACK));
+            }
+        }
+    }
+    _material += Evaluation::material_diff(us, move);
+    assert(_material == Evaluation::material(*this));
+    assert(_phase_material == Evaluation::count_phase_material(*this));
 
     // Precompute the pawn attacks bitboards.
     if ((p == PAWN) | (move.captured_piece == PAWN)) {
@@ -418,10 +445,28 @@ void Board::unmake_move(const Move move) {
         update_pawns();
     }
 
-    assert(_phase_material == Evaluation::count_material(*this));
-    psqt -= Evaluation::psqt_diff(us, Evaluation::PSQT, move);
-    psqt -= Evaluation::material_diff(us, move);
-    assert(psqt == Evaluation::psqt(*this));
+    // Update PSQT value
+    {
+        per_colour<Score> diff = Evaluation::psqt_diff(us, Evaluation::PSQT, move);
+        _psqt[WHITE] -= diff[WHITE];
+        _psqt[BLACK] -= diff[BLACK];
+        assert(_psqt[WHITE] == Evaluation::psqt(*this, Evaluation::PSQT, WHITE));
+        assert(_psqt[BLACK] == Evaluation::psqt(*this, Evaluation::PSQT, BLACK));
+    }
+    {
+        for (unsigned i = 0; i < 2; i++) {
+            for (unsigned j = 0; j < 2; j++) {
+                per_colour<Score> diff = Evaluation::psqt_diff(us, Evaluation::SPSQT[i][j], move);
+                _spsqt[i][j][WHITE] -= diff[WHITE];
+                _spsqt[i][j][BLACK] -= diff[BLACK];
+                assert(_spsqt[i][j][WHITE] == Evaluation::psqt(*this, Evaluation::SPSQT[i][j], WHITE));
+                assert(_spsqt[i][j][BLACK] == Evaluation::psqt(*this, Evaluation::SPSQT[i][j], BLACK));
+            }
+        }
+    }
+    _material -= Evaluation::material_diff(us, move);
+    assert(_material == Evaluation::material(*this));
+    assert(_phase_material == Evaluation::count_phase_material(*this));
 }
 
 void Board::make_nullmove() {

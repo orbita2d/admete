@@ -96,10 +96,9 @@ void init() {
         for (CastlingSide t = KINGSIDE; t < N_SIDE; t++) {
             for (PieceType p = PAWN; p < KING; p++) {
                 for (int sq = 0; sq < N_SQUARE; sq++) {
-                    std::string label = "side_piece_square_tables[" + Printing::side_name(s) + "][" +
-                                        Printing::side_name(t) + "][" + Printing::piece_name(p) + "][" +
-                                        std::to_string(sq) + "]";
-                    training_parameters.push_back(labled_parameter(&side_piece_square_tables[s][t][p][sq], label));
+                    std::string label = "SPSQT[" + Printing::side_name(s) + "][" + Printing::side_name(t) + "][" +
+                                        Printing::piece_name(p) + "][" + std::to_string(sq) + "]";
+                    training_parameters.push_back(labled_parameter(&SPSQT[s][t][p][sq], label));
                 }
             }
         }
@@ -158,25 +157,31 @@ Score psqt(const Board &board, const psqt_t psqt, const Colour c) {
             Bitboard occ = board.pieces(BLACK, p);
             while (occ) {
                 Square sq = pop_lsb(&occ);
-                score -= psqt[p][sq];
+                score += psqt[p][sq];
             }
         }
     }
     return score;
 }
 
-Score psqt_diff(const Colour moving, const psqt_t psqt, const Move &move) {
-    Score score = Score(0, 0);
+per_colour<Score> psqt_diff(const Colour moving, const psqt_t psqt, const Move &move) {
     assert(move != NULL_MOVE);
+
+    per_colour<Score> scores;
+    scores[WHITE] = Score(0, 0);
+    scores[BLACK] = Score(0, 0);
+
+    const Colour them = ~moving;
+
     const PieceType p = move.moving_piece;
     assert(p < NO_PIECE);
     // Apply psqt
     if (moving == WHITE) {
-        score += psqt[p][move.target.reverse()];
-        score -= psqt[p][move.origin.reverse()];
+        scores[moving] += psqt[p][move.target.reverse()];
+        scores[moving] -= psqt[p][move.origin.reverse()];
     } else {
-        score -= psqt[p][move.target];
-        score += psqt[p][move.origin];
+        scores[moving] += psqt[p][move.target];
+        scores[moving] -= psqt[p][move.origin];
     }
 
     // Apply piece value for captures.
@@ -184,17 +189,17 @@ Score psqt_diff(const Colour moving, const psqt_t psqt, const Move &move) {
         const Square captured_square(move.origin.rank(), move.target.file());
         assert(move.captured_piece == PAWN);
         if (moving == WHITE) {
-            score += psqt[PAWN][captured_square];
+            scores[them] -= psqt[PAWN][captured_square];
         } else {
-            score -= psqt[PAWN][captured_square.reverse()];
+            scores[them] -= psqt[PAWN][captured_square.reverse()];
         }
     } else if (move.is_capture()) {
         assert(move.captured_piece < NO_PIECE);
         const PieceType cp = move.captured_piece;
         if (moving == WHITE) {
-            score += psqt[cp][move.target];
+            scores[them] -= psqt[cp][move.target];
         } else {
-            score -= psqt[cp][move.target.reverse()];
+            scores[them] -= psqt[cp][move.target.reverse()];
         }
     }
 
@@ -205,9 +210,9 @@ Score psqt_diff(const Colour moving, const psqt_t psqt, const Move &move) {
         // We've already dealt with moving the pawn to the 8th rank, where the score is zero. Just add the score from
         // the promoted piece.
         if (moving == WHITE) {
-            score += psqt[promoted][move.target.reverse()];
+            scores[moving] += psqt[promoted][move.target.reverse()];
         } else {
-            score -= psqt[promoted][move.target];
+            scores[moving] += psqt[promoted][move.target];
         }
     }
 
@@ -217,12 +222,20 @@ Score psqt_diff(const Colour moving, const psqt_t psqt, const Move &move) {
         const Square rook_from = RookSquares[moving][side];
         const Square rook_to = RookCastleSquares[moving][side];
         if (moving == WHITE) {
-            score += psqt[ROOK][rook_to.reverse()];
-            score -= psqt[ROOK][rook_from.reverse()];
+            scores[moving] += psqt[ROOK][rook_to.reverse()];
+            scores[moving] -= psqt[ROOK][rook_from.reverse()];
         } else {
-            score -= psqt[ROOK][rook_to];
-            score += psqt[ROOK][rook_from];
+            scores[moving] += psqt[ROOK][rook_to];
+            scores[moving] -= psqt[ROOK][rook_from];
         }
+    }
+    return scores;
+}
+
+Score material(const Board &board) {
+    Score score = Score(0, 0);
+    for (PieceType p = PAWN; p < N_PIECE; p++) {
+        score += piece_value(p) * (board.count_pieces(WHITE, p) - board.count_pieces(BLACK, p));
     }
     return score;
 }
@@ -331,26 +344,29 @@ Score eval_pawns(const Board &board) {
 }
 
 score_t evaluate_white(const Board &board) {
-    Score score = board.get_psqt();
+    Score score = board.psqt();
+
     // Sided castling sides
     const Bitboard wk = sq_to_bb(board.find_king(WHITE));
     const Bitboard bk = sq_to_bb(board.find_king(BLACK));
+
     {
         constexpr unsigned cols = 2;
         constexpr unsigned width = 8 / (cols - 1);
         const unsigned s = board.find_king(WHITE).file_index() % width;
         const unsigned t = board.find_king(BLACK).file_index() % width;
 
-        score += (s * t * psqt(board, side_piece_square_tables[0][0], WHITE)) / 64;
-        score += ((width - s - 1) * t * psqt(board, side_piece_square_tables[1][0], WHITE)) / 64;
-        score += (s * (width - t - 1) * psqt(board, side_piece_square_tables[0][1], WHITE)) / 64;
-        score += ((width - s - 1) * (width - t - 1) * psqt(board, side_piece_square_tables[1][1], WHITE)) / 64;
+        score += (s * t * board.spsqt(KINGSIDE, KINGSIDE, WHITE)) / 64;
+        score += ((width - s - 1) * t * board.spsqt(QUEENSIDE, KINGSIDE, WHITE)) / 64;
+        score += (s * (width - t - 1) * board.spsqt(KINGSIDE, QUEENSIDE, WHITE)) / 64;
+        score += ((width - s - 1) * (width - t - 1) * board.spsqt(QUEENSIDE, QUEENSIDE, WHITE)) / 64;
 
-        score += (s * t * psqt(board, side_piece_square_tables[0][0], BLACK)) / 64;
-        score += ((width - s - 1) * t * psqt(board, side_piece_square_tables[0][1], BLACK)) / 64;
-        score += (s * (width - t - 1) * psqt(board, side_piece_square_tables[1][0], BLACK)) / 64;
-        score += ((width - s - 1) * (width - t - 1) * psqt(board, side_piece_square_tables[1][1], BLACK)) / 64;
+        score -= (s * t * board.spsqt(KINGSIDE, KINGSIDE, BLACK)) / 64;
+        score -= ((width - s - 1) * t * board.spsqt(KINGSIDE, QUEENSIDE, BLACK)) / 64;
+        score -= (s * (width - t - 1) * board.spsqt(QUEENSIDE, KINGSIDE, BLACK)) / 64;
+        score -= ((width - s - 1) * (width - t - 1) * board.spsqt(QUEENSIDE, QUEENSIDE, BLACK)) / 64;
     }
+
     // Mobility
     // A bonus is given to every square accessible to every piece, which isn't blocked by one of our pieces.
     for (PieceType p = KNIGHT; p < KING; p++) {
@@ -589,7 +605,7 @@ void Evaluation::save_tables(std::string filename) {
     file.close();
 }
 
-score_t Evaluation::count_material(const Board &board) {
+score_t Evaluation::count_phase_material(const Board &board) {
     score_t material_value = 0;
     for (PieceType p = PAWN; p < N_PIECE; p++) {
         material_value += phase_material[p] * (board.count_pieces(WHITE, p) + board.count_pieces(BLACK, p));
@@ -609,7 +625,7 @@ score_t Evaluation::eval(const Board &board) {
 score_t Evaluation::eval_psqt(const Board &board) {
     // Return the eval from the point of view of the current player.
     const score_t material_value = board.phase_material();
-    const Score score = board.get_psqt();
+    const Score score = board.psqt();
     score_t value = score.interpolate(material_value);
 
     if (board.is_white_move()) {

@@ -235,10 +235,10 @@ class Score {
   public:
     Score() = default;
     constexpr Score(score_t o, score_t e) : opening_score(o), endgame_score(e) {}
-    inline Score operator+(Score that) {
+    inline Score operator+(const Score that) const {
         return Score(opening_score + that.opening_score, endgame_score + that.endgame_score);
     }
-    inline Score operator-(Score that) {
+    inline Score operator-(const Score that) const {
         return Score(opening_score - that.opening_score, endgame_score - that.endgame_score);
     }
     inline Score &operator+=(Score that) {
