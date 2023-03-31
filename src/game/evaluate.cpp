@@ -165,7 +165,7 @@ Score psqt(const Board &board, const psqt_t psqt, const Colour c) {
     return score;
 }
 
-Score psqt_diff(const Colour moving, const Colour colour, const psqt_t psqt, const Move &move) {
+Score psqt_diff(const Colour moving, const psqt_t psqt, const Move &move) {
     Score score = Score(0, 0);
     assert(move != NULL_MOVE);
     const PieceType p = move.moving_piece;
