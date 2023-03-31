@@ -28,8 +28,9 @@ score_t evaluate_white(const Board &board);
 Score eval_pawns(const Board &board);
 
 Score psqt(const Board &board);
-Score psqt(const Board &board, const psqt_t psqt, const Colour c);
-per_colour<Score> psqt_diff(const Colour moving, const psqt_t psqt, const Move &move);
+Score psqt(const Board &board, const psqt_t &psqt, const Colour c);
+Score psqt_diff(const Colour us, const psqt_t &psqt, const Move &move);
+Score psqt_them_diff(const Colour us, const psqt_t &psqt, const Move &move);
 Score material(const Board &board);
 Score material_diff(const Colour moving, const Move &move);
 score_t eval_psqt(const Board &board);

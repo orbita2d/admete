@@ -238,6 +238,7 @@ class Score {
     inline Score operator+(const Score that) const {
         return Score(opening_score + that.opening_score, endgame_score + that.endgame_score);
     }
+    inline Score operator-() const { return Score(-opening_score, -endgame_score); }
     inline Score operator-(const Score that) const {
         return Score(opening_score - that.opening_score, endgame_score - that.endgame_score);
     }
