@@ -217,6 +217,7 @@ class Board {
     std::array<zobrist_t, MAX_PLY> hash_history;
     ply_t root_node_ply;
     Score psqt;
+    per_side<per_side<Score>> psqt_side;
     score_t _phase_material;
 };
 

@@ -305,12 +305,20 @@ score_t evaluate_white(const Board &board) {
     const Bitboard wk = sq_to_bb(board.find_king(WHITE));
     const Bitboard bk = sq_to_bb(board.find_king(BLACK));
     {
-        const unsigned s = board.find_king(WHITE).file_index() / 4;
-        const unsigned t = board.find_king(BLACK).file_index() / 4;
-        assert(s < 2);
-        assert(t < 2);
-        score += psqt(board, side_piece_square_tables[s][t], WHITE);
-        score += psqt(board, side_piece_square_tables[t][s], BLACK);
+        constexpr unsigned cols = 2;
+        constexpr unsigned width = 8 / (cols - 1);
+        const unsigned s = board.find_king(WHITE).file_index() % width;
+        const unsigned t = board.find_king(BLACK).file_index() % width;
+
+        score += (s * t * psqt(board, side_piece_square_tables[0][0], WHITE)) / 8;
+        score += ((width - s - 1) * t * psqt(board, side_piece_square_tables[1][0], WHITE)) / 8;
+        score += (s * (width - t - 1) * psqt(board, side_piece_square_tables[0][1], WHITE)) / 8;
+        score += ((width - s - 1) * (width - t - 1) * psqt(board, side_piece_square_tables[1][1], WHITE)) / 8;
+
+        score += (s * t * psqt(board, side_piece_square_tables[0][0], BLACK)) / 8;
+        score += ((width - s - 1) * t * psqt(board, side_piece_square_tables[0][1], BLACK)) / 8;
+        score += (s * (width - t - 1) * psqt(board, side_piece_square_tables[1][0], BLACK)) / 8;
+        score += ((width - s - 1) * (width - t - 1) * psqt(board, side_piece_square_tables[1][1], BLACK)) / 8;
     }
     // Mobility
     // A bonus is given to every square accessible to every piece, which isn't blocked by one of our pieces.
