@@ -14,7 +14,7 @@ void init();
 void load_tables(std::string filename);
 void save_tables(std::string filename);
 void print_tables();
-inline psqt_t piece_square_tables;
+inline psqt_t PSQT;
 inline per_side<per_side<psqt_t>> side_piece_square_tables;
 inline sqt_t pb_passed;
 
@@ -29,7 +29,8 @@ Score eval_pawns(const Board &board);
 
 Score psqt(const Board &board);
 Score psqt(const Board &board, const psqt_t psqt, const Colour c);
-Score psqt_diff(const Colour moving, const Move &move);
+Score psqt_diff(const Colour moving, const psqt_t psqt, const Move &move);
+Score material_diff(const Colour moving, const Move &move);
 score_t eval_psqt(const Board &board);
 score_t evaluate_safe(const Board &board);
 score_t terminal(const Board &board);

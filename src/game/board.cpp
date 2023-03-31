@@ -310,7 +310,8 @@ void Board::make_move(Move &move) {
     update_check_squares();
 
     // Update PSQT value
-    psqt += Evaluation::psqt_diff(us, move);
+    psqt += Evaluation::psqt_diff(us, Evaluation::PSQT, move);
+    psqt += Evaluation::material_diff(us, move);
     assert(psqt == Evaluation::psqt(*this));
     assert(_phase_material == Evaluation::count_material(*this));
 
@@ -418,7 +419,8 @@ void Board::unmake_move(const Move move) {
     }
 
     assert(_phase_material == Evaluation::count_material(*this));
-    psqt -= Evaluation::psqt_diff(us, move);
+    psqt -= Evaluation::psqt_diff(us, Evaluation::PSQT, move);
+    psqt -= Evaluation::material_diff(us, move);
     assert(psqt == Evaluation::psqt(*this));
 }
 

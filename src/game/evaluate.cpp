@@ -84,8 +84,8 @@ void init() {
 
     for (PieceType p = PAWN; p < N_PIECE; p++) {
         for (int sq = 0; sq < N_SQUARE; sq++) {
-            std::string label = "piece_square_tables[" + Printing::piece_name(p) + "][" + std::to_string(sq) + "]";
-            // training_parameters.push_back(labled_parameter(&piece_square_tables[p][sq], label));
+            std::string label = "PSQT[" + Printing::piece_name(p) + "][" + std::to_string(sq) + "]";
+            // training_parameters.push_back(labled_parameter(&PSQT[p][sq], label));
         }
     }
     for (int sq = 0; sq < N_SQUARE; sq++) {
@@ -130,13 +130,13 @@ Score psqt(const Board &board) {
         while (occ) {
             Square sq = pop_lsb(&occ);
             score += piece_values[p];
-            score += piece_square_tables[p][sq.reverse()];
+            score += PSQT[p][sq.reverse()];
         }
         occ = board.pieces(BLACK, p);
         while (occ) {
             Square sq = pop_lsb(&occ);
             score -= piece_values[p];
-            score -= piece_square_tables[p][sq];
+            score -= PSQT[p][sq];
         }
     }
     return score;
@@ -165,18 +165,18 @@ Score psqt(const Board &board, const psqt_t psqt, const Colour c) {
     return score;
 }
 
-Score psqt_diff(const Colour moving, const Move &move) {
+Score psqt_diff(const Colour moving, const Colour colour, const psqt_t psqt, const Move &move) {
     Score score = Score(0, 0);
     assert(move != NULL_MOVE);
     const PieceType p = move.moving_piece;
     assert(p < NO_PIECE);
     // Apply psqt
     if (moving == WHITE) {
-        score += piece_square_tables[p][move.target.reverse()];
-        score -= piece_square_tables[p][move.origin.reverse()];
+        score += psqt[p][move.target.reverse()];
+        score -= psqt[p][move.origin.reverse()];
     } else {
-        score -= piece_square_tables[p][move.target];
-        score += piece_square_tables[p][move.origin];
+        score -= psqt[p][move.target];
+        score += psqt[p][move.origin];
     }
 
     // Apply piece value for captures.
@@ -184,21 +184,68 @@ Score psqt_diff(const Colour moving, const Move &move) {
         const Square captured_square(move.origin.rank(), move.target.file());
         assert(move.captured_piece == PAWN);
         if (moving == WHITE) {
-            score += piece_values[PAWN];
-            score += piece_square_tables[PAWN][captured_square];
+            score += psqt[PAWN][captured_square];
         } else {
-            score -= piece_values[PAWN];
-            score -= piece_square_tables[PAWN][captured_square.reverse()];
+            score -= psqt[PAWN][captured_square.reverse()];
         }
     } else if (move.is_capture()) {
         assert(move.captured_piece < NO_PIECE);
         const PieceType cp = move.captured_piece;
         if (moving == WHITE) {
+            score += psqt[cp][move.target];
+        } else {
+            score -= psqt[cp][move.target.reverse()];
+        }
+    }
+
+    // Promotions
+    if (move.is_promotion()) {
+        const PieceType promoted = get_promoted(move);
+        assert(promoted < NO_PIECE);
+        // We've already dealt with moving the pawn to the 8th rank, where the score is zero. Just add the score from
+        // the promoted piece.
+        if (moving == WHITE) {
+            score += psqt[promoted][move.target.reverse()];
+        } else {
+            score -= psqt[promoted][move.target];
+        }
+    }
+
+    // Castling needs the rook to be moved.
+    if (move.is_castle()) {
+        const CastlingSide side = move.get_castleside();
+        const Square rook_from = RookSquares[moving][side];
+        const Square rook_to = RookCastleSquares[moving][side];
+        if (moving == WHITE) {
+            score += psqt[ROOK][rook_to.reverse()];
+            score -= psqt[ROOK][rook_from.reverse()];
+        } else {
+            score -= psqt[ROOK][rook_to];
+            score += psqt[ROOK][rook_from];
+        }
+    }
+    return score;
+}
+
+Score material_diff(const Colour moving, const Move &move) {
+    Score score = Score(0, 0);
+    assert(move != NULL_MOVE);
+
+    // Apply piece value for captures.
+    if (move.is_ep_capture()) {
+        const Square captured_square(move.origin.rank(), move.target.file());
+        assert(move.captured_piece == PAWN);
+        if (moving == WHITE) {
+            score += piece_values[PAWN];
+        } else {
+            score -= piece_values[PAWN];
+        }
+    } else if (move.is_capture()) {
+        assert(move.captured_piece < NO_PIECE);
+        if (moving == WHITE) {
             score += piece_values[move.captured_piece];
-            score += piece_square_tables[cp][move.target];
         } else {
             score -= piece_values[move.captured_piece];
-            score -= piece_square_tables[cp][move.target.reverse()];
         }
     }
 
@@ -211,25 +258,9 @@ Score psqt_diff(const Colour moving, const Move &move) {
         if (moving == WHITE) {
             score += piece_values[promoted];
             score -= piece_values[PAWN];
-            score += piece_square_tables[promoted][move.target.reverse()];
         } else {
             score -= piece_values[promoted];
             score += piece_values[PAWN];
-            score -= piece_square_tables[promoted][move.target];
-        }
-    }
-
-    // Castling needs the rook to be moved.
-    if (move.is_castle()) {
-        const CastlingSide side = move.get_castleside();
-        const Square rook_from = RookSquares[moving][side];
-        const Square rook_to = RookCastleSquares[moving][side];
-        if (moving == WHITE) {
-            score += piece_square_tables[ROOK][rook_to.reverse()];
-            score -= piece_square_tables[ROOK][rook_from.reverse()];
-        } else {
-            score -= piece_square_tables[ROOK][rook_to];
-            score += piece_square_tables[ROOK][rook_from];
         }
     }
     return score;
@@ -310,15 +341,15 @@ score_t evaluate_white(const Board &board) {
         const unsigned s = board.find_king(WHITE).file_index() % width;
         const unsigned t = board.find_king(BLACK).file_index() % width;
 
-        score += (s * t * psqt(board, side_piece_square_tables[0][0], WHITE)) / 8;
-        score += ((width - s - 1) * t * psqt(board, side_piece_square_tables[1][0], WHITE)) / 8;
-        score += (s * (width - t - 1) * psqt(board, side_piece_square_tables[0][1], WHITE)) / 8;
-        score += ((width - s - 1) * (width - t - 1) * psqt(board, side_piece_square_tables[1][1], WHITE)) / 8;
+        score += (s * t * psqt(board, side_piece_square_tables[0][0], WHITE)) / 64;
+        score += ((width - s - 1) * t * psqt(board, side_piece_square_tables[1][0], WHITE)) / 64;
+        score += (s * (width - t - 1) * psqt(board, side_piece_square_tables[0][1], WHITE)) / 64;
+        score += ((width - s - 1) * (width - t - 1) * psqt(board, side_piece_square_tables[1][1], WHITE)) / 64;
 
-        score += (s * t * psqt(board, side_piece_square_tables[0][0], BLACK)) / 8;
-        score += ((width - s - 1) * t * psqt(board, side_piece_square_tables[0][1], BLACK)) / 8;
-        score += (s * (width - t - 1) * psqt(board, side_piece_square_tables[1][0], BLACK)) / 8;
-        score += ((width - s - 1) * (width - t - 1) * psqt(board, side_piece_square_tables[1][1], BLACK)) / 8;
+        score += (s * t * psqt(board, side_piece_square_tables[0][0], BLACK)) / 64;
+        score += ((width - s - 1) * t * psqt(board, side_piece_square_tables[0][1], BLACK)) / 64;
+        score += (s * (width - t - 1) * psqt(board, side_piece_square_tables[1][0], BLACK)) / 64;
+        score += ((width - s - 1) * (width - t - 1) * psqt(board, side_piece_square_tables[1][1], BLACK)) / 64;
     }
     // Mobility
     // A bonus is given to every square accessible to every piece, which isn't blocked by one of our pieces.
@@ -521,7 +552,7 @@ void Evaluation::print_tables() {
     std::cout << "OPENING" << std::endl;
     for (PieceType p = PAWN; p < N_PIECE; p++) {
         std::cout << Printing::piece_name(p) << std::endl;
-        print_table(piece_square_tables[p]);
+        print_table(PSQT[p]);
     }
 
     std::cout << "PASSED PAWN" << std::endl;

@@ -1,7 +1,7 @@
 #include "evaluate.hpp"
 
 void Evaluation::constants() {
-    piece_square_tables[PAWN] = {
+    PSQT[PAWN] = {
         Score(0, 0),     Score(0, 0),    Score(0, 0),     Score(0, 0),      Score(0, 0),     Score(0, 0),
         Score(0, 0),     Score(0, 0),    Score(-2, 160),  Score(-22, 148),  Score(-18, 150), Score(6, 128),
         Score(-26, 100), Score(2, 128),  Score(-42, 124), Score(-150, 138), Score(-17, 63),  Score(-1, 73),
@@ -14,7 +14,7 @@ void Evaluation::constants() {
         Score(6, 32),    Score(-26, 22), Score(0, 0),     Score(0, 0),      Score(0, 0),     Score(0, 0),
         Score(0, 0),     Score(0, 0),    Score(0, 0),     Score(0, 0),
     };
-    piece_square_tables[KNIGHT] = {
+    PSQT[KNIGHT] = {
         Score(-114, -30), Score(-34, 16),  Score(-4, 62),  Score(-10, 24), Score(42, 56),  Score(-118, 64),
         Score(14, -2),    Score(-80, -30), Score(48, 10),  Score(22, 38),  Score(158, 16), Score(96, 46),
         Score(144, 52),   Score(164, 28),  Score(68, 24),  Score(82, 18),  Score(40, 36),  Score(58, 40),
@@ -27,7 +27,7 @@ void Evaluation::constants() {
         Score(2, 46),     Score(6, 42),    Score(-86, 20), Score(0, 20),   Score(-20, 40), Score(0, 52),
         Score(0, 30),     Score(6, 20),    Score(-6, 32),  Score(-68, -4),
     };
-    piece_square_tables[BISHOP] = {
+    PSQT[BISHOP] = {
         Score(22, 20), Score(-26, 20), Score(-48, -8), Score(-116, 24), Score(-36, 6),  Score(-90, 12), Score(-34, 4),
         Score(20, 12), Score(60, 6),   Score(66, -8),  Score(36, 16),   Score(-26, 14), Score(30, -2),  Score(52, -4),
         Score(78, 18), Score(54, -14), Score(40, 8),   Score(68, 6),    Score(76, -10), Score(72, 4),   Score(74, 0),
@@ -39,7 +39,7 @@ void Evaluation::constants() {
         Score(6, 20),  Score(40, 0),   Score(24, 12),  Score(8, -8),    Score(10, -8),  Score(12, 12),  Score(2, -10),
         Score(4, 10),
     };
-    piece_square_tables[ROOK] = {
+    PSQT[ROOK] = {
         Score(52, 68),  Score(50, 82),  Score(44, 84),  Score(56, 94),  Score(58, 88),  Score(76, 94),  Score(54, 100),
         Score(84, 90),  Score(26, 92),  Score(20, 106), Score(40, 110), Score(58, 108), Score(58, 96),  Score(94, 108),
         Score(78, 114), Score(104, 92), Score(14, 92),  Score(34, 102), Score(38, 100), Score(58, 94),  Score(54, 98),
@@ -51,7 +51,7 @@ void Evaluation::constants() {
         Score(-22, 78), Score(-12, 74), Score(2, 72),   Score(10, 74),  Score(10, 72),  Score(2, 80),   Score(10, 68),
         Score(-10, 74),
     };
-    piece_square_tables[QUEEN] = {
+    PSQT[QUEEN] = {
         Score(24, 184),  Score(46, 162),  Score(74, 198),  Score(-34, 230), Score(74, 210),  Score(148, 180),
         Score(134, 172), Score(114, 172), Score(34, 176),  Score(-10, 190), Score(2, 238),   Score(-4, 262),
         Score(0, 250),   Score(100, 224), Score(46, 236),  Score(122, 188), Score(16, 152),  Score(2, 194),
@@ -64,7 +64,7 @@ void Evaluation::constants() {
         Score(24, 124),  Score(34, 106),  Score(-8, 150),  Score(-6, 134),  Score(6, 126),   Score(30, 156),
         Score(18, 142),  Score(-4, 106),  Score(-10, 132), Score(10, 148),
     };
-    piece_square_tables[KING] = {
+    PSQT[KING] = {
         Score(-2, -60),  Score(-24, -4),  Score(-18, -6),   Score(-20, -2),  Score(-26, 12),   Score(-10, 4),
         Score(-14, 4),   Score(-16, -68), Score(-12, -10),  Score(-36, 70),  Score(-32, 44),   Score(-12, 50),
         Score(-26, 58),  Score(-24, 70),  Score(-16, 84),   Score(-12, 12),  Score(-16, 0),    Score(-30, 54),
