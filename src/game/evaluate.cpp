@@ -50,23 +50,6 @@ namespace Evaluation {
 
 void init() {
     constants();
-    // Initialise training parameters list (Maybe we should seperate this out as not normally used)
-    for (PieceType p = KNIGHT; p < KING; p++) {
-        std::string label = "Material " + Printing::piece_name((PieceType)p);
-        // training_parameters.push_back(labled_parameter(&piece_values[p], label));
-    }
-
-    for (int p = KNIGHT; p < KING; p++) {
-        std::string label = "Mobility " + Printing::piece_name((PieceType)p);
-        // training_parameters.push_back(labled_parameter(&mobility[p], label));
-    }
-
-    for (PieceType p = PAWN; p < N_PIECE; p++) {
-        for (int sq = 0; sq < N_SQUARE; sq++) {
-            std::string label = "PSQT[" + Printing::piece_name(p) + "][" + std::to_string(sq) + "]";
-            // training_parameters.push_back(labled_parameter(&PSQT[p][sq], label));
-        }
-    }
     for (int sq = 0; sq < N_SQUARE; sq++) {
         std::string label = "pb_passed[" + std::to_string(sq) + "]";
         // training_parameters.push_back(labled_parameter(&pb_passed[sq], label));
