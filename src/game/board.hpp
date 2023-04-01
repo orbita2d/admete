@@ -122,8 +122,8 @@ class Board {
 
     zobrist_t hash() const { return hash_history[ply()]; }
     zobrist_t material_key() const;
-    Piece pieces(const Square sq) const;
-    PieceType piece_type(const Square sq) const;
+    Piece pieces(const Square &sq) const;
+    PieceType piece_type(const Square &sq) const;
     int count_pieces(const Colour c, const PieceType p) const { return piece_counts[c][p]; }
     Bitboard pieces() const { return occupied_bb; }
     Bitboard pieces(const PieceType p) const { return piece_bb[p]; }

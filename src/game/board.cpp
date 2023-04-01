@@ -701,7 +701,7 @@ bool Board::gives_check(const Move move) const {
     return false;
 }
 
-PieceType Board::piece_type(const Square sq) const {
+PieceType Board::piece_type(const Square &sq) const {
     Bitboard square_bb = sq_to_bb(sq);
     for (PieceType p = PAWN; p < N_PIECE; p++) {
         Bitboard occ = pieces(p);
@@ -712,7 +712,7 @@ PieceType Board::piece_type(const Square sq) const {
     return NO_PIECE;
 }
 
-Piece Board::pieces(const Square sq) const {
+Piece Board::pieces(const Square &sq) const {
     Bitboard square_bb = sq_to_bb(sq);
     for (PieceType p = PAWN; p < N_PIECE; p++) {
         Bitboard occ = pieces(WHITE, p);
