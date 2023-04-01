@@ -11,27 +11,6 @@
 
 // clang-format off
 
-constexpr per_square<score_t> center_dist = {
-    3, 3, 3, 3, 3, 3, 3, 3,
-    3, 2, 2, 2, 2, 2, 2, 3,
-    3, 2, 1, 1, 1, 1, 2, 3,
-    3, 2, 1, 0, 0, 1, 2, 3, 
-    3, 2, 1, 0, 0, 1, 2, 3,
-    3, 2, 1, 1, 1, 1, 2, 3,
-    3, 2, 2, 2, 2, 2, 2, 3, 
-    3, 3, 3, 3, 3, 3, 3, 3
-    };
-
-constexpr per_square<score_t> center_manhattan_dist = { 
-    6, 5, 4, 3, 3, 4, 5, 6,
-    5, 4, 3, 2, 2, 3, 4, 5,
-    4, 3, 2, 1, 1, 2, 3, 4, 
-    3, 2, 1, 0, 0, 1, 2, 3, 
-    3, 2, 1, 0, 0, 1, 2, 3,
-    4, 3, 2, 1, 1, 2, 3, 4,
-    5, 4, 3, 2, 2, 3, 4, 5,
-    6, 5, 4, 3, 3, 4, 5, 6
-    };
 
 constexpr per_square<score_t> lightsquare_corner_distance = {
     0, 1, 2, 3, 4, 5, 6, 7,
@@ -117,29 +96,6 @@ score_t piece_phase_material(const PieceType p) {
     assert(p != NO_PIECE);
     return phase_material[p];
 }
-Score piece_value(const PieceType p) { return piece_values[p]; }
-
-Score psqt(const Board &board) {
-    // Calculate PSQT values for default PSQT, for both colours.
-    Score score = Score(0, 0);
-
-    // Piece Square Tables and Material
-    for (PieceType p = PAWN; p < N_PIECE; p++) {
-        Bitboard occ = board.pieces(WHITE, p);
-        while (occ) {
-            Square sq = pop_lsb(&occ);
-            score += piece_values[p];
-            score += PSQT[p][sq.reverse()];
-        }
-        occ = board.pieces(BLACK, p);
-        while (occ) {
-            Square sq = pop_lsb(&occ);
-            score -= piece_values[p];
-            score -= PSQT[p][sq];
-        }
-    }
-    return score;
-}
 
 Score psqt(const Board &board, const psqt_t &psqt, const Colour c) {
     Score score = Score(0, 0);
@@ -210,8 +166,8 @@ Score psqt_diff(const Colour us, const psqt_t &psqt, const Move &move) {
 }
 
 Score psqt_them_diff(const Colour us, const psqt_t &psqt, const Move &move) {
-    // For captures, the oponents psqts need to be updated too. This computes that delta.
-    // Apply piece value for captures.
+    // Computed PSQT delta of opponent. ONLY use for captures
+    assert(move.is_capture());
     if (move.is_ep_capture()) {
         const Square captured_square(move.origin.rank(), move.target.file());
         assert(move.captured_piece == PAWN);
@@ -229,53 +185,6 @@ Score psqt_them_diff(const Colour us, const psqt_t &psqt, const Move &move) {
             return -psqt[cp][move.target.reverse()];
         }
     }
-}
-
-Score material(const Board &board) {
-    Score score = Score(0, 0);
-    for (PieceType p = PAWN; p < N_PIECE; p++) {
-        score += piece_value(p) * (board.count_pieces(WHITE, p) - board.count_pieces(BLACK, p));
-    }
-    return score;
-}
-
-Score material_diff(const Colour moving, const Move &move) {
-    Score score = Score(0, 0);
-    assert(move != NULL_MOVE);
-
-    // Apply piece value for captures.
-    if (move.is_ep_capture()) {
-        const Square captured_square(move.origin.rank(), move.target.file());
-        assert(move.captured_piece == PAWN);
-        if (moving == WHITE) {
-            score += piece_values[PAWN];
-        } else {
-            score -= piece_values[PAWN];
-        }
-    } else if (move.is_capture()) {
-        assert(move.captured_piece < NO_PIECE);
-        if (moving == WHITE) {
-            score += piece_values[move.captured_piece];
-        } else {
-            score -= piece_values[move.captured_piece];
-        }
-    }
-
-    // Promotions
-    if (move.is_promotion()) {
-        const PieceType promoted = get_promoted(move);
-        assert(promoted < NO_PIECE);
-        // We've already dealt with moving the pawn to the 8th rank, where the score is zero. Just add the score from
-        // the promoted piece.
-        if (moving == WHITE) {
-            score += piece_values[promoted];
-            score -= piece_values[PAWN];
-        } else {
-            score -= piece_values[promoted];
-            score += piece_values[PAWN];
-        }
-    }
-    return score;
 }
 
 // Pawn structure bonuses.

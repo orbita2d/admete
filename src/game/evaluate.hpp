@@ -31,27 +31,14 @@ Score psqt(const Board &board);
 Score psqt(const Board &board, const psqt_t &psqt, const Colour c);
 Score psqt_diff(const Colour us, const psqt_t &psqt, const Move &move);
 Score psqt_them_diff(const Colour us, const psqt_t &psqt, const Move &move);
-Score material(const Board &board);
-Score material_diff(const Colour moving, const Move &move);
-score_t eval_psqt(const Board &board);
 score_t evaluate_safe(const Board &board);
 score_t terminal(const Board &board);
 score_t piece_phase_material(const PieceType p);
-Score piece_value(const PieceType p);
 score_t count_phase_material(const Board &board);
+
 score_t drawn_score(const Board &board);
 constexpr score_t contempt = -10;
 sqt_t reverse_board(sqt_t in);
-
-// Piece values here for evaluation heuristic.
-inline per_piece<Score> piece_values = {{
-    Score(100, 100), // Pawn
-    Score(300, 300), // Knight
-    Score(330, 350), // Bishop
-    Score(500, 500), // Rook
-    Score(900, 900), // Queen
-    Score(0, 0),     // King
-}};
 
 inline Score weak_pawn = Score(-5, -5);        // Penalty for pawn not defended by another pawn.
 inline Score isolated_pawn = Score(-10, -10);  // Penalty for pawn with no supporting pawns on adjacent files.
