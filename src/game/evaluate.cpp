@@ -242,20 +242,18 @@ score_t evaluate_white(const Board &board) {
     const Bitboard bk = sq_to_bb(board.find_king(BLACK));
 
     {
-        constexpr unsigned cols = 2;
-        constexpr unsigned width = 8 / (cols - 1);
-        const unsigned s = board.find_king(WHITE).file_index() % width;
-        const unsigned t = board.find_king(BLACK).file_index() % width;
+        const unsigned s = board.find_king(WHITE).file_index();
+        const unsigned t = board.find_king(BLACK).file_index();
 
-        score += (s * t * board.spsqt(0, 0, WHITE)) / 64;
-        score += ((width - s - 1) * t * board.spsqt(1, 0, WHITE)) / 64;
-        score += (s * (width - t - 1) * board.spsqt(0, 1, WHITE)) / 64;
-        score += ((width - s - 1) * (width - t - 1) * board.spsqt(1, 1, WHITE)) / 64;
+        score += (s * t * board.spsqt(0, 0, WHITE)) / 49;
+        score += ((7 - s) * t * board.spsqt(1, 0, WHITE)) / 49;
+        score += (s * (7 - t) * board.spsqt(0, 1, WHITE)) / 49;
+        score += ((7 - s) * (7 - t) * board.spsqt(1, 1, WHITE)) / 49;
 
-        score -= (s * t * board.spsqt(0, 0, BLACK)) / 64;
-        score -= ((width - s - 1) * t * board.spsqt(0, 1, BLACK)) / 64;
-        score -= (s * (width - t - 1) * board.spsqt(1, 0, BLACK)) / 64;
-        score -= ((width - s - 1) * (width - t - 1) * board.spsqt(1, 1, BLACK)) / 64;
+        score -= (s * t * board.spsqt(0, 0, BLACK)) / 49;
+        score -= ((7 - s) * t * board.spsqt(0, 1, BLACK)) / 49;
+        score -= (s * (7 - t) * board.spsqt(1, 0, BLACK)) / 49;
+        score -= ((7 - s) * (7 - t) * board.spsqt(1, 1, BLACK)) / 49;
     }
 
     // Mobility
