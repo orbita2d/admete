@@ -53,6 +53,13 @@ void init() {
     for (int sq = 0; sq < N_SQUARE; sq++) {
         std::string label = "pb_passed[" + std::to_string(sq) + "]";
         // training_parameters.push_back(labled_parameter(&pb_passed[sq], label));
+        if (Square(sq).rank() == RANK8 || Square(sq).rank() == RANK1) {
+            for (int i = 0; i < 2; i++) {
+                for (int j = 0; j < 2; j++) {
+                    assert(SPSQT[i][j][PAWN][sq] == Score(0, 0));
+                }
+            }
+        }
     }
     for (CastlingSide s = KINGSIDE; s < N_SIDE; s++) {
         for (CastlingSide t = KINGSIDE; t < N_SIDE; t++) {
@@ -148,24 +155,24 @@ Score psqt_diff(const Colour us, const psqt_t &psqt, const Move &move) {
     return score;
 }
 
-Score psqt_them_diff(const Colour us, const psqt_t &psqt, const Move &move) {
+Score psqt_them_diff(const Colour them, const psqt_t &psqt, const Move &move) {
     // Computed PSQT delta of opponent. ONLY use for captures
     assert(move.is_capture());
     if (move.is_ep_capture()) {
         const Square captured_square(move.origin.rank(), move.target.file());
         assert(move.captured_piece == PAWN);
-        if (us == WHITE) {
-            return -psqt[PAWN][captured_square];
-        } else {
+        if (them == WHITE) {
             return -psqt[PAWN][captured_square.reverse()];
+        } else {
+            return -psqt[PAWN][captured_square];
         }
     } else {
         assert(move.captured_piece < NO_PIECE);
         const PieceType cp = move.captured_piece;
-        if (us == WHITE) {
-            return -psqt[cp][move.target];
-        } else {
+        if (them == WHITE) {
             return -psqt[cp][move.target.reverse()];
+        } else {
+            return -psqt[cp][move.target];
         }
     }
 }

@@ -191,7 +191,7 @@ std::ostream &operator<<(std::ostream &os, const Move move) {
 }
 
 std::ostream &operator<<(std::ostream &os, const Colour c) {
-    os << (c ? "WHITE" : "BLACK");
+    os << (c ? "BLACK" : "WHITE");
     return os;
 }
 

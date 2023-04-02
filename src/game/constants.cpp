@@ -17,7 +17,11 @@ void Evaluation::constants() {
     for (unsigned int i = 0; i < 2; i++) {
         for (unsigned int j = 0; j < 2; j++) {
             for (unsigned int sq = 0; sq < N_SQUARE; sq++) {
-                SPSQT[i][j][PAWN][sq] = Score(100, 100);
+                if (Square(sq).rank() != RANK8 && Square(sq).rank() != RANK1) {
+                    SPSQT[i][j][PAWN][sq] = Score(100, 100);
+                } else {
+                    SPSQT[i][j][PAWN][sq] = Score(0, 0);
+                }
                 SPSQT[i][j][KNIGHT][sq] = Score(300, 300);
                 SPSQT[i][j][BISHOP][sq] = Score(300, 300);
                 SPSQT[i][j][ROOK][sq] = Score(500, 500);

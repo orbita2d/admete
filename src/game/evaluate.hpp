@@ -30,7 +30,7 @@ Score eval_pawns(const Board &board);
 Score psqt(const Board &board);
 Score psqt(const Board &board, const psqt_t &psqt, const Colour c);
 Score psqt_diff(const Colour us, const psqt_t &psqt, const Move &move);
-Score psqt_them_diff(const Colour us, const psqt_t &psqt, const Move &move);
+Score psqt_them_diff(const Colour them, const psqt_t &psqt, const Move &move);
 score_t evaluate_safe(const Board &board);
 score_t terminal(const Board &board);
 score_t piece_phase_material(const PieceType p);

@@ -320,15 +320,13 @@ void Board::make_move(Move &move) {
     {
         for (unsigned i = 0; i < 2; i++) {
             for (unsigned j = 0; j < 2; j++) {
-                _spsqt[4 * i + 2 * j + us] += Evaluation::psqt_diff(us, Evaluation::SPSQT[i][j], move);
+                spsqt(i, j, us) += Evaluation::psqt_diff(us, Evaluation::SPSQT[i][j], move);
                 if (move.is_capture()) {
-                    _spsqt[4 * i + 2 * j + them] += Evaluation::psqt_them_diff(us, Evaluation::SPSQT[i][j], move);
+                    spsqt(i, j, them) += Evaluation::psqt_them_diff(them, Evaluation::SPSQT[i][j], move);
                 }
 
-                assert(spsqt((CastlingSide)i, (CastlingSide)j, WHITE) ==
-                       Evaluation::psqt(*this, Evaluation::SPSQT[i][j], WHITE));
-                assert(spsqt((CastlingSide)i, (CastlingSide)j, BLACK) ==
-                       Evaluation::psqt(*this, Evaluation::SPSQT[i][j], BLACK));
+                assert(spsqt(i, j, WHITE) == Evaluation::psqt(*this, Evaluation::SPSQT[i][j], WHITE));
+                assert(spsqt(i, j, BLACK) == Evaluation::psqt(*this, Evaluation::SPSQT[i][j], BLACK));
             }
         }
     }
@@ -440,9 +438,9 @@ void Board::unmake_move(const Move move) {
     {
         for (unsigned i = 0; i < 2; i++) {
             for (unsigned j = 0; j < 2; j++) {
-                _spsqt[4 * i + 2 * j + us] -= Evaluation::psqt_diff(us, Evaluation::SPSQT[i][j], move);
+                spsqt(i, j, us) -= Evaluation::psqt_diff(us, Evaluation::SPSQT[i][j], move);
                 if (move.is_capture()) {
-                    _spsqt[4 * i + 2 * j + them] -= Evaluation::psqt_them_diff(us, Evaluation::SPSQT[i][j], move);
+                    spsqt(i, j, them) -= Evaluation::psqt_them_diff(them, Evaluation::SPSQT[i][j], move);
                 }
                 assert(spsqt((CastlingSide)i, (CastlingSide)j, WHITE) ==
                        Evaluation::psqt(*this, Evaluation::SPSQT[i][j], WHITE));
