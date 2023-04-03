@@ -63,7 +63,7 @@ void init() {
     }
     for (CastlingSide s = KINGSIDE; s < N_SIDE; s++) {
         for (CastlingSide t = KINGSIDE; t < N_SIDE; t++) {
-            for (PieceType p = PAWN; p < KING; p++) {
+            for (PieceType p = PAWN; p < N_PIECE; p++) {
                 for (int sq = 0; sq < N_SQUARE; sq++) {
                     std::string label = "SPSQT[" + Printing::side_name(s) + "][" + Printing::side_name(t) + "][" +
                                         Printing::piece_name(p) + "][" + std::to_string(sq) + "]";
