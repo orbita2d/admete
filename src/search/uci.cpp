@@ -14,7 +14,7 @@
 #include <thread>
 
 #define ENGINE_NAME "admete"
-#define ENGINE_VERS "pre2023-03-28"
+#define ENGINE_VERS "pre2023-04-04"
 #define ENGINE_AUTH "orbita"
 
 namespace UCI {
