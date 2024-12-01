@@ -127,7 +127,9 @@ std::ostream &operator<<(std::ostream &os, const Square square);
 std::ostream &operator<<(std::ostream &os, const Colour c);
 std::ostream &operator<<(std::ostream &os, const GamePhase g);
 
-enum CastlingSide { KINGSIDE, QUEENSIDE, N_CASTLE };
+enum CastlingSide { KINGSIDE, QUEENSIDE, N_SIDE };
+inline CastlingSide operator++(CastlingSide &p, int) { return p = CastlingSide(int(p) + 1); };
+inline CastlingSide operator--(CastlingSide &p, int) { return p = CastlingSide(int(p) - 1); };
 enum CastlingRights { NO_RIGHTS = 0, WHITE_KINGSIDE = 1, WHITE_QUEENSIDE = 2, BLACK_KINGSIDE = 4, BLACK_QUEENSIDE = 8 };
 
 constexpr CastlingRights get_rights(const Colour c, const CastlingSide side) {
@@ -233,10 +235,11 @@ class Score {
   public:
     Score() = default;
     constexpr Score(score_t o, score_t e) : opening_score(o), endgame_score(e) {}
-    inline Score operator+(Score that) {
+    inline Score operator+(const Score that) const {
         return Score(opening_score + that.opening_score, endgame_score + that.endgame_score);
     }
-    inline Score operator-(Score that) {
+    inline Score operator-() const { return Score(-opening_score, -endgame_score); }
+    inline Score operator-(const Score that) const {
         return Score(opening_score - that.opening_score, endgame_score - that.endgame_score);
     }
     inline Score &operator+=(Score that) {
@@ -281,6 +284,8 @@ inline bool operator==(const Score s1, const Score s2) {
 
 inline Score operator*(const int a, const Score s) { return Score(a * s.opening_score, a * s.endgame_score); }
 inline Score operator*(const Score s, const int a) { return a * s; }
+inline Score operator/(const Score s, const int a) { return Score(s.opening_score / a, s.endgame_score / a); }
+std::ostream &operator<<(std::ostream &os, const Score &g);
 
 enum BishopTypes { LIGHTSQUARE, DARKSQUARE, N_BISHOPTYPES };
 
@@ -453,3 +458,4 @@ enum NodeType { PVNODE, ALLNODE, CUTNODE };
 template <typename T> using per_colour = std::array<T, N_COLOUR>;
 template <typename T> using per_piece = std::array<T, N_PIECE>;
 template <typename T> using per_square = std::array<T, N_SQUARE>;
+template <typename T> using per_side = std::array<T, N_SIDE>;

@@ -159,8 +159,15 @@ void Board::initialise() {
             piece_counts[c][p] = count_bits(pieces((Colour)c, p));
         }
     }
-    _phase_material = Evaluation::count_material(*this);
-    psqt = Evaluation::psqt(*this);
+    _phase_material = Evaluation::count_phase_material(*this);
+    spsqt(0, 0, WHITE) = Evaluation::psqt(*this, Evaluation::SPSQT[0][0], WHITE);
+    spsqt(0, 1, WHITE) = Evaluation::psqt(*this, Evaluation::SPSQT[0][1], WHITE);
+    spsqt(1, 0, WHITE) = Evaluation::psqt(*this, Evaluation::SPSQT[1][0], WHITE);
+    spsqt(1, 1, WHITE) = Evaluation::psqt(*this, Evaluation::SPSQT[1][1], WHITE);
+    spsqt(0, 0, BLACK) = Evaluation::psqt(*this, Evaluation::SPSQT[0][0], BLACK);
+    spsqt(0, 1, BLACK) = Evaluation::psqt(*this, Evaluation::SPSQT[0][1], BLACK);
+    spsqt(1, 0, BLACK) = Evaluation::psqt(*this, Evaluation::SPSQT[1][0], BLACK);
+    spsqt(1, 1, BLACK) = Evaluation::psqt(*this, Evaluation::SPSQT[1][1], BLACK);
     update_pawns();
     // update_attacks();
     set_root();
@@ -310,9 +317,20 @@ void Board::make_move(Move &move) {
     update_check_squares();
 
     // Update PSQT value
-    psqt += Evaluation::psqt_diff(us, move);
-    assert(psqt == Evaluation::psqt(*this));
-    assert(_phase_material == Evaluation::count_material(*this));
+    {
+        for (unsigned i = 0; i < 2; i++) {
+            for (unsigned j = 0; j < 2; j++) {
+                spsqt(i, j, us) += Evaluation::psqt_diff(us, Evaluation::SPSQT[i][j], move);
+                if (move.is_capture()) {
+                    spsqt(i, j, them) += Evaluation::psqt_them_diff(them, Evaluation::SPSQT[i][j], move);
+                }
+
+                assert(spsqt(i, j, WHITE) == Evaluation::psqt(*this, Evaluation::SPSQT[i][j], WHITE));
+                assert(spsqt(i, j, BLACK) == Evaluation::psqt(*this, Evaluation::SPSQT[i][j], BLACK));
+            }
+        }
+    }
+    assert(_phase_material == Evaluation::count_phase_material(*this));
 
     // Precompute the pawn attacks bitboards.
     if ((p == PAWN) | (move.captured_piece == PAWN)) {
@@ -417,9 +435,21 @@ void Board::unmake_move(const Move move) {
         update_pawns();
     }
 
-    assert(_phase_material == Evaluation::count_material(*this));
-    psqt -= Evaluation::psqt_diff(us, move);
-    assert(psqt == Evaluation::psqt(*this));
+    {
+        for (unsigned i = 0; i < 2; i++) {
+            for (unsigned j = 0; j < 2; j++) {
+                spsqt(i, j, us) -= Evaluation::psqt_diff(us, Evaluation::SPSQT[i][j], move);
+                if (move.is_capture()) {
+                    spsqt(i, j, them) -= Evaluation::psqt_them_diff(them, Evaluation::SPSQT[i][j], move);
+                }
+                assert(spsqt((CastlingSide)i, (CastlingSide)j, WHITE) ==
+                       Evaluation::psqt(*this, Evaluation::SPSQT[i][j], WHITE));
+                assert(spsqt((CastlingSide)i, (CastlingSide)j, BLACK) ==
+                       Evaluation::psqt(*this, Evaluation::SPSQT[i][j], BLACK));
+            }
+        }
+    }
+    assert(_phase_material == Evaluation::count_phase_material(*this));
 }
 
 void Board::make_nullmove() {
@@ -669,7 +699,7 @@ bool Board::gives_check(const Move move) const {
     return false;
 }
 
-PieceType Board::piece_type(const Square sq) const {
+PieceType Board::piece_type(const Square &sq) const {
     Bitboard square_bb = sq_to_bb(sq);
     for (PieceType p = PAWN; p < N_PIECE; p++) {
         Bitboard occ = pieces(p);
@@ -680,7 +710,7 @@ PieceType Board::piece_type(const Square sq) const {
     return NO_PIECE;
 }
 
-Piece Board::pieces(const Square sq) const {
+Piece Board::pieces(const Square &sq) const {
     Bitboard square_bb = sq_to_bb(sq);
     for (PieceType p = PAWN; p < N_PIECE; p++) {
         Bitboard occ = pieces(WHITE, p);

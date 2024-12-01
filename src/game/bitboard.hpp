@@ -15,13 +15,13 @@ inline Bitboard sq_to_bb(const int s) {
     // The space-time balance doesn't work out here, cheaper to calculate than look up.
     return Bitboard(1) << s;
 }
-inline Bitboard sq_to_bb(const Square s) { return Bitboard(1) << s; }
+inline Bitboard sq_to_bb(const Square &s) { return Bitboard(1) << s; }
 
-inline Bitboard operator&(Bitboard b, Square s) { return b & sq_to_bb(s); }
-inline Bitboard operator|(Bitboard b, Square s) { return b | sq_to_bb(s); }
-inline Bitboard operator^(Bitboard b, Square s) { return b ^ sq_to_bb(s); }
-inline Bitboard &operator|=(Bitboard &b, Square s) { return b |= sq_to_bb(s); }
-inline Bitboard &operator^=(Bitboard &b, Square s) { return b ^= sq_to_bb(s); }
+inline Bitboard operator&(Bitboard b, const Square &s) { return b & sq_to_bb(s); }
+inline Bitboard operator|(Bitboard b, const Square &s) { return b | sq_to_bb(s); }
+inline Bitboard operator^(Bitboard b, const Square &s) { return b ^ sq_to_bb(s); }
+inline Bitboard &operator|=(Bitboard &b, const Square &s) { return b |= sq_to_bb(s); }
+inline Bitboard &operator^=(Bitboard &b, const Square &s) { return b ^= sq_to_bb(s); }
 
 // Trying to implement the magic bitboard in https://www.chessprogramming.org/Magic_Bitboards "fancy"
 struct Magic {
@@ -39,24 +39,24 @@ inline Bitboard RookTable[0x19000];
 inline Magic BishopMagics[N_SQUARE];
 inline Magic RookMagics[N_SQUARE];
 
-inline Bitboard bishop_attacks(Bitboard occ, const Square sq) {
+inline Bitboard bishop_attacks(Bitboard occ, const Square &sq) {
     const Magic magic = BishopMagics[sq];
     Bitboard *aptr = magic.ptr;
     return aptr[magic.index(occ)];
 }
 
-inline Bitboard rook_attacks(Bitboard occ, const Square sq) {
+inline Bitboard rook_attacks(Bitboard occ, const Square &sq) {
     const Magic magic = RookMagics[sq];
     Bitboard *aptr = magic.ptr;
     return aptr[magic.index(occ)];
 }
 
-inline Bitboard bishop_xrays(Bitboard occ, const Square sq) {
+inline Bitboard bishop_xrays(Bitboard occ, const Square &sq) {
     const Bitboard atk = bishop_attacks(occ, sq);
     return bishop_attacks(occ ^ (occ & atk), sq);
 }
 
-inline Bitboard rook_xrays(Bitboard occ, const Square sq) {
+inline Bitboard rook_xrays(Bitboard occ, const Square &sq) {
     const Bitboard atk = rook_attacks(occ, sq);
     return rook_attacks(occ ^ (occ & atk), sq);
 }
@@ -86,22 +86,22 @@ constexpr Bitboard middle_ranks = rank_3 | rank_4 | rank_5 | rank_6;
 constexpr Bitboard null = 0x0000000000000000;
 constexpr Bitboard omega = 0xffffffffffffffff;
 // Bitboard for squares where king is castled
-constexpr Bitboard castle_king[N_COLOUR][N_CASTLE] = {{0xe0, 0x7}, {0xe000000000000000, 0x700000000000000}};
+constexpr Bitboard castle_king[N_COLOUR][N_SIDE] = {{0xe0e0e0, 0x070707}, {0xe0e0e00000000000, 0x707070000000000}};
 // Bitboard for king safetly pawns on 2nd rank
-constexpr Bitboard castle_pawn2[N_COLOUR][N_CASTLE] = {{0xe000, 0x700}, {0x00e0000000000000, 0x007000000000000}};
+constexpr Bitboard castle_pawn2[N_COLOUR][N_SIDE] = {{0xe000, 0x700}, {0x00e0000000000000, 0x007000000000000}};
 // Bitboard for king safetly pawns on 3rd rank
-constexpr Bitboard castle_pawn3[N_COLOUR][N_CASTLE] = {{0xe00000, 0x70000}, {0x0000e00000000000, 0x000070000000000}};
+constexpr Bitboard castle_pawn3[N_COLOUR][N_SIDE] = {{0xe00000, 0x70000}, {0x0000e00000000000, 0x000070000000000}};
 
 // Bitboards for squares that cannot be occupied for caslting to be legal.
-constexpr Bitboard castle_blocks_bb[N_COLOUR][N_CASTLE] = {{0x60, 0xe}, {0x6000000000000000, 0xe00000000000000}};
+constexpr Bitboard castle_blocks_bb[N_COLOUR][N_SIDE] = {{0x60, 0xe}, {0x6000000000000000, 0xe00000000000000}};
 // Bitboards for squares that cannot be attacked for caslting to be legal.
-constexpr Bitboard castle_checks_bb[N_COLOUR][N_CASTLE] = {{0x70, 0xc}, {0x7000000000000000, 0xc00000000000000}};
+constexpr Bitboard castle_checks_bb[N_COLOUR][N_SIDE] = {{0x70, 0xc}, {0x7000000000000000, 0xc00000000000000}};
 
 constexpr Bitboard dark_squares = 0xAA55AA55AA55AA55;
 constexpr Bitboard light_squares = 0x55AA55AA55AA55AA;
 constexpr Bitboard bishop_squares[N_BISHOPTYPES] = {light_squares, dark_squares};
 
-constexpr Bitboard rook_from_to[N_COLOUR][N_CASTLE] = {{0xa0, 0x09}, {0xa000000000000000, 0x900000000000000}};
+constexpr Bitboard rook_from_to[N_COLOUR][N_SIDE] = {{0xa0, 0x09}, {0xa000000000000000, 0x900000000000000}};
 
 template <Direction dir> constexpr Bitboard shift(const Bitboard bb) {
     // Bitboards are stored big-endian but who can remember that, so this hides the implementation a little
@@ -132,12 +132,12 @@ template <Direction dir> constexpr Bitboard shift(const Bitboard bb) {
     }
 }
 
-inline Bitboard pseudo_attacks(const PieceType p, const Square s) {
+inline Bitboard pseudo_attacks(const PieceType p, const Square &s) {
     // Get the value from the pseudolegal attacks table
     return PseudolegalAttacks[p][s];
 }
 
-inline Bitboard attacks(const PieceType p, const Bitboard occ, const Square sq) {
+inline Bitboard attacks(const PieceType p, const Bitboard occ, const Square &sq) {
     if (p == ROOK) {
         return rook_attacks(occ, sq);
     } else if (p == BISHOP) {
@@ -149,7 +149,7 @@ inline Bitboard attacks(const PieceType p, const Bitboard occ, const Square sq) 
     }
 }
 
-template <PieceType p> inline Bitboard attacks(const Bitboard occ, const Square sq) {
+template <PieceType p> inline Bitboard attacks(const Bitboard occ, const Square &sq) {
     if constexpr (p == ROOK) {
         return rook_attacks(occ, sq);
     } else if constexpr (p == BISHOP) {
@@ -164,11 +164,11 @@ template <PieceType p> inline Bitboard attacks(const Bitboard occ, const Square 
 constexpr Bitboard rank(const Rank r) { return rank_bb[r]; }
 constexpr Bitboard file(const File f) { return file_bb[f]; }
 
-inline Bitboard rank(const Square s) { return rank(s.rank()); }
-inline Bitboard file(const Square s) { return file(s.file()); }
+inline Bitboard rank(const Square &s) { return rank(s.rank()); }
+inline Bitboard file(const Square &s) { return file(s.file()); }
 
-inline Bitboard line(const Square s1, const Square s2) { return LineBBs[s1][s2]; }
-inline Bitboard between(const Square s1, const Square s2) {
+inline Bitboard line(const Square &s1, const Square &s2) { return LineBBs[s1][s2]; }
+inline Bitboard between(const Square &s1, const Square &s2) {
     Bitboard bb = line(s1, s2);
     if (bb) {
         bb &= ((omega << s1) ^ (omega << s2));
@@ -307,7 +307,7 @@ template <Colour c> inline Bitboard rear_fill(const Bitboard g) {
     }
 }
 
-inline Bitboard pawn_attacks(const Colour c, const Square s) { return PawnAttacks[c][s]; }
+inline Bitboard pawn_attacks(const Colour c, const Square &s) { return PawnAttacks[c][s]; }
 
 template <Colour c> inline Bitboard pawn_attacks(const Bitboard g) {
     if (c == WHITE) {

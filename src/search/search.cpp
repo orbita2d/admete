@@ -4,6 +4,7 @@
 #include "tablebase.hpp"
 #include "transposition.hpp"
 #include "uci.hpp"
+#include <algorithm>
 #include <assert.h>
 #include <chrono>
 #include <iostream>

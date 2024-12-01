@@ -5,6 +5,7 @@
 #include "search.hpp"
 #include "tablebase.hpp"
 #include "transposition.hpp"
+#include <algorithm>
 #include <chrono>
 #include <iomanip>
 #include <iostream>
@@ -13,7 +14,7 @@
 #include <thread>
 
 #define ENGINE_NAME "admete"
-#define ENGINE_VERS "1.5.0"
+#define ENGINE_VERS "1.5.1"
 #define ENGINE_AUTH "orbita"
 
 namespace UCI {
@@ -510,6 +511,8 @@ void uci() {
             show_tests(board);
         } else if (token == "tables") {
             Evaluation::print_tables();
+        } else if (token == "savetables") {
+            Evaluation::save_tables("out.txt");
         } else {
             std::cerr << "Unknown command: " << token << std::endl;
         }

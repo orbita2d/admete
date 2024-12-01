@@ -122,8 +122,8 @@ class Board {
 
     zobrist_t hash() const { return hash_history[ply()]; }
     zobrist_t material_key() const;
-    Piece pieces(const Square sq) const;
-    PieceType piece_type(const Square sq) const;
+    Piece pieces(const Square &sq) const;
+    PieceType piece_type(const Square &sq) const;
     int count_pieces(const Colour c, const PieceType p) const { return piece_counts[c][p]; }
     Bitboard pieces() const { return occupied_bb; }
     Bitboard pieces(const PieceType p) const { return piece_bb[p]; }
@@ -174,7 +174,8 @@ class Board {
     // How much material in total on the board, used to determine game phase.
     score_t phase_material() const { return _phase_material; }
     // Returns the PSQT score, which is incrementally updated.
-    Score get_psqt() const { return psqt; }
+    Score spsqt(const unsigned s, const unsigned t, const Colour c) const { return _spsqt[4 * s + 2 * t + c]; }
+    Score &spsqt(const unsigned s, const unsigned t, const Colour c) { return _spsqt[4 * s + 2 * t + c]; }
     // How many times has the current position occured since ply 'start'.
     ply_t repetitions(const ply_t start) const;
     // How many times has the position at ply 'query' occured since ply 'start'.
@@ -216,7 +217,7 @@ class Board {
     std::array<AuxilliaryInfo, MAX_PLY> aux_history;
     std::array<zobrist_t, MAX_PLY> hash_history;
     ply_t root_node_ply;
-    Score psqt;
+    std::array<Score, 8> _spsqt;
     score_t _phase_material;
 };
 
