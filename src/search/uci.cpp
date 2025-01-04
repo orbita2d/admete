@@ -1,4 +1,3 @@
-
 #include "uci.hpp"
 #include "board.hpp"
 #include "evaluate.hpp"
@@ -12,9 +11,11 @@
 #include <sstream>
 #include <string>
 #include <thread>
+#include "ordering.hpp"
+#include "weights.hpp"
 
 #define ENGINE_NAME "admete"
-#define ENGINE_VERS "1.5.1"
+#define ENGINE_VERS "pre-2024-12-02"
 #define ENGINE_AUTH "orbita"
 
 namespace UCI {
@@ -23,7 +24,6 @@ void init_uci() {
     std::cout << "id author " << ENGINE_AUTH << std::endl;
     std::cout << "option name Hash type spin default " << Cache::hash_default << " min " << Cache::hash_min << " max "
               << Cache::hash_max << std::endl;
-    std::cout << "option name TablesPath type string default <empty>" << std::endl;
     std::cout << "option name SyzygyPath type string default <empty>" << std::endl;
     std::cout << "uciok" << std::endl;
 }
@@ -93,21 +93,19 @@ void set_option(std::istringstream &is, Search::SearchOptions &options) {
         } else {
             return;
         }
-    } else if (option == "TablesPath") {
-        // Set the path to a file of input paramters
-        std::string value;
-        if (token == "value") {
-            while (is >> token) {
-                if (value.empty()) {
-                    value += token;
-                } else {
-                    value += " " + token;
-                }
-            }
-        } else {
+    } else if (option == "WeightsPath") {
+        if (token != "value") {
             return;
         }
-        Evaluation::load_tables(value);
+        std::string value;
+        while (is >> token) {
+            if (value.empty()) {
+                value += token;
+            } else {
+                value += " " + token;
+            }
+        }
+        // TODO: Load the weights from the file.
     } else {
         std::cout << "Unknown option: \"" << option << "\"" << std::endl;
     }
@@ -464,6 +462,125 @@ void uci_info_nodes(unsigned long nodes, unsigned long nps) {
     std::cout << std::endl;
 }
 
+// TODO: Tidy this up
+typedef std::pair<DenseBoard, score_t> Position;
+Position quiesce(Board &board, const score_t alpha_start, const score_t beta) {
+    // perform quiesence search to evaluate only quiet positions.
+    score_t alpha = alpha_start;
+    Position qp;
+    qp.first = board.pack();
+    MoveList moves;
+
+    // Look for checkmate
+    if (board.is_check()) {
+        // Generates all evasions.
+        moves = board.get_moves();
+        if (moves.empty()) {
+            qp.second = Evaluation::terminal(board);
+            return qp;
+        }
+    }
+
+    // If this is a draw by repetition or insufficient material, return the drawn score.
+    if (board.is_draw()) {
+        qp.second = Evaluation::drawn_score(board);
+        return qp;
+    }
+
+    const score_t stand_pat = Evaluation::eval(board);
+
+    alpha = std::max(alpha, stand_pat);
+
+    // Beta cutoff, but don't allow stand-pat in check.
+    if (!board.is_check() && stand_pat >= beta) {
+        qp.second = stand_pat;
+        return qp;
+    }
+
+    score_t delta = 900;
+    // If pawns are on seventh we could be promoting, delta is higher.
+    if (board.pieces(board.who_to_play(), PAWN) & Bitboards::rank(relative_rank(board.who_to_play(), RANK7))) {
+        delta += 500;
+    }
+    // Delta pruning
+    if (stand_pat + delta <= alpha) {
+        qp.second = stand_pat;
+        return qp;
+    }
+
+    // Get a list of moves for quiessence. If it's check, it we already have all evasions from the checkmate test.
+    // Not in check, we generate quiet checks and all captures.
+    if (!board.is_check()) {
+        moves = board.get_capture_moves();
+    }
+
+    // We already know it's not mate, if there are no captures in a position, return stand pat.
+    if (moves.empty()) {
+        qp.second = stand_pat;
+        return qp;
+    }
+
+    // Sort the captures and record SEE.
+    Ordering::rank_and_sort_moves(board, moves, NULL_DMOVE);
+
+    for (Move move : moves) {
+        // For a capture, the recorded score is the SEE value.
+        // It makes sense to not consider losing captures in qsearch.
+        if (!board.is_check() && move.is_capture() && !SEE::see(board, move, 0)) {
+            continue;
+        }
+        constexpr score_t see_margin = 100;
+        // In qsearch, only consider moves with a decent chance of raising alpha.
+        if (!board.is_check() && move.is_capture() && !SEE::see(board, move, alpha - stand_pat - see_margin)) {
+            continue;
+        }
+        board.make_move(move);
+        Position sp = quiesce(board, -beta, -alpha);
+        const score_t score = -sp.second;
+        if (score > alpha) {
+            qp.first = sp.first;
+        }
+        board.unmake_move(move);
+        alpha = std::max(alpha, score);
+        if (alpha >= beta) {
+            break; // beta-cutoff
+        }
+    }
+    qp.second = alpha;
+    return qp;
+}
+
+
+void print_features(Board &board, std::istringstream &is) {
+    // Print the feature vector from the neural network.
+    // Used to build the training set.
+
+    // if the second token is "quiesce", quiesce the board before encoding.
+    std::string token;
+    is >> token;
+    per_colour<Neural::FeatureVector> features;
+    if (token == "quiesce") {
+        auto starting_pos = board.pack();
+        Position pos = quiesce(board, MIN_SCORE, MAX_SCORE);
+        board.unpack(pos.first);
+        features = Neural::encode(board);
+        board.unpack(starting_pos);
+    } else {
+        features = Neural::encode(board);
+    }
+
+    Colour player = board.who_to_play();
+    for (size_t i = 0; i < Neural::N_FEATURES; i++) {
+        std::cout << features[player][i];
+    }
+    std::cout << ";";
+    for (size_t i = 0; i < Neural::N_FEATURES; i++) {
+        std::cout << features[~player][i];
+    }
+    
+    std::cout << std::endl;
+}
+
 void uci() {
     uci_enabled = true;
     std::string command, token;
@@ -507,13 +624,16 @@ void uci() {
         } else if (token == "h") {
             score_t v = Evaluation::evaluate_white(board);
             std::cout << std::dec << (int)v << std::endl;
+        } else if (token == "neural") {
+            // TODO: Move the initialisation to the board constructor.
+            auto score = Neural::get_network().forward(board.accumulator(), board.who_to_play());
+            std::cout << std::dec << (int)(score*400) << std::endl;
         } else if (token == "test") {
             show_tests(board);
-        } else if (token == "tables") {
-            Evaluation::print_tables();
-        } else if (token == "savetables") {
-            Evaluation::save_tables("out.txt");
-        } else {
+        } else if (token == "features") {
+            print_features(board, is);
+        }
+        else {
             std::cerr << "Unknown command: " << token << std::endl;
         }
     }

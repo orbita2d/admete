@@ -160,17 +160,10 @@ void Board::initialise() {
         }
     }
     _phase_material = Evaluation::count_phase_material(*this);
-    spsqt(0, 0, WHITE) = Evaluation::psqt(*this, Evaluation::SPSQT[0][0], WHITE);
-    spsqt(0, 1, WHITE) = Evaluation::psqt(*this, Evaluation::SPSQT[0][1], WHITE);
-    spsqt(1, 0, WHITE) = Evaluation::psqt(*this, Evaluation::SPSQT[1][0], WHITE);
-    spsqt(1, 1, WHITE) = Evaluation::psqt(*this, Evaluation::SPSQT[1][1], WHITE);
-    spsqt(0, 0, BLACK) = Evaluation::psqt(*this, Evaluation::SPSQT[0][0], BLACK);
-    spsqt(0, 1, BLACK) = Evaluation::psqt(*this, Evaluation::SPSQT[0][1], BLACK);
-    spsqt(1, 0, BLACK) = Evaluation::psqt(*this, Evaluation::SPSQT[1][0], BLACK);
-    spsqt(1, 1, BLACK) = Evaluation::psqt(*this, Evaluation::SPSQT[1][1], BLACK);
     update_pawns();
     // update_attacks();
     set_root();
+    _accumulator.initialise(*this);
 }
 
 bool Board::is_free(const Square target) const { return (occupied_bb & target) == 0; };
@@ -316,20 +309,6 @@ void Board::make_move(Move &move) {
     update_checkers();
     update_check_squares();
 
-    // Update PSQT value
-    {
-        for (unsigned i = 0; i < 2; i++) {
-            for (unsigned j = 0; j < 2; j++) {
-                spsqt(i, j, us) += Evaluation::psqt_diff(us, Evaluation::SPSQT[i][j], move);
-                if (move.is_capture()) {
-                    spsqt(i, j, them) += Evaluation::psqt_them_diff(them, Evaluation::SPSQT[i][j], move);
-                }
-
-                assert(spsqt(i, j, WHITE) == Evaluation::psqt(*this, Evaluation::SPSQT[i][j], WHITE));
-                assert(spsqt(i, j, BLACK) == Evaluation::psqt(*this, Evaluation::SPSQT[i][j], BLACK));
-            }
-        }
-    }
     assert(_phase_material == Evaluation::count_phase_material(*this));
 
     // Precompute the pawn attacks bitboards.
@@ -349,6 +328,9 @@ void Board::make_move(Move &move) {
     assert(hash() == Zobrist::hash(*this));
 
     aux_info->last_move = move;
+
+    // Add this move into the NNUE accumulator
+    _accumulator.make_move(move, us);
 }
 
 void Board::unmake_move(const Move move) {
@@ -435,21 +417,9 @@ void Board::unmake_move(const Move move) {
         update_pawns();
     }
 
-    {
-        for (unsigned i = 0; i < 2; i++) {
-            for (unsigned j = 0; j < 2; j++) {
-                spsqt(i, j, us) -= Evaluation::psqt_diff(us, Evaluation::SPSQT[i][j], move);
-                if (move.is_capture()) {
-                    spsqt(i, j, them) -= Evaluation::psqt_them_diff(them, Evaluation::SPSQT[i][j], move);
-                }
-                assert(spsqt((CastlingSide)i, (CastlingSide)j, WHITE) ==
-                       Evaluation::psqt(*this, Evaluation::SPSQT[i][j], WHITE));
-                assert(spsqt((CastlingSide)i, (CastlingSide)j, BLACK) ==
-                       Evaluation::psqt(*this, Evaluation::SPSQT[i][j], BLACK));
-            }
-        }
-    }
     assert(_phase_material == Evaluation::count_phase_material(*this));
+
+    _accumulator.unmake_move(move, us);
 }
 
 void Board::make_nullmove() {
