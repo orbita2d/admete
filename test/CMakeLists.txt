@@ -7,7 +7,11 @@ add_executable(tests main.cpp
                 board.cpp
                 eval.cpp
                 zobrist.cpp
-                ordering.cpp)
+                ordering.cpp
+                features.cpp
+                linalg.cpp
+                network.cpp
+                )
 
 target_link_libraries(tests
         gtest

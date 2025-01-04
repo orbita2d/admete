@@ -119,6 +119,7 @@ class Square {
 
     std::string pretty() const;
     const Square reverse() const { return Square(value ^ 56); }
+    const Square relative(const Colour c) const { return c == WHITE ? *this : reverse(); }
 
   private:
     square_t value = 0;

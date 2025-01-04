@@ -5,6 +5,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <features.hpp>
 
 struct DenseBoard {
     per_colour<Bitboard> colour_bb;

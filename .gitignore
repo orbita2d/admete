@@ -24,3 +24,6 @@ CMakeCache.txt
 testelo.sh
 Testing
 scripts/
+
+py-*/
+Dockerfile.perf
