@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include "network.hpp"
+#include "weights.hpp" // Actual weights, generated
 #include "board.hpp"
 
 using namespace Neural;
@@ -51,28 +52,23 @@ TEST(NeuralNetwork, ReLUBehavior) {
     EXPECT_EQ(output[3], 100);  // Positive passes through
 }
 
+constexpr size_t AccumulatorSize = 16;
 class AccumulatorTest : public ::testing::Test {
 protected:
     Board board;
-    Neural::Accumulator accum;
+    Neural::LinearLayer<nn_t, Neural::N_FEATURES, AccumulatorSize> layer;
+    Neural::Accumulator<Neural::N_FEATURES, AccumulatorSize> accum;
     
     void SetUp() override {
         board = Board();
         Neural::ENABLED = true;
 
         // initialise some random weights for the network
-        
-        auto weights = Neural::Matrix<nn_t, Neural::AccumulatorSize, Neural::N_FEATURES>::zeros();
-        auto bias = Neural::Vector<nn_t, Neural::AccumulatorSize>::zeros();
-        for (size_t i = 0; i < Neural::AccumulatorSize; i++) {
-            for (size_t j = 0; j < Neural::N_FEATURES; j++) {
-                weights.at(i, j) = 0.01 * (i + j) + 0x314159;
-            }
-            bias[i] = 0.01 * i + 0x271828;
+        auto weights = Neural::Matrix<nn_t, AccumulatorSize, Neural::N_FEATURES>::random();
+        auto bias = Neural::Vector<nn_t, AccumulatorSize>::random();
+        layer = Neural::LinearLayer<nn_t, Neural::N_FEATURES, AccumulatorSize>(weights, bias);
+        accum = Neural::Accumulator<Neural::N_FEATURES, AccumulatorSize>(layer);
         }
-
-        Neural::network.accumulator_layer = Neural::LinearLayer<nn_t, Neural::N_FEATURES, Neural::AccumulatorSize>(weights, bias); 
-    }
 
     std::vector<std::string> test_positions = {
         "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
@@ -95,7 +91,7 @@ protected:
         accum.make_move(move, us);
         
         // Get fresh accumulator for comparison
-        Neural::Accumulator direct;
+        auto direct = Neural::Accumulator<Neural::N_FEATURES, AccumulatorSize>(layer); 
         direct.initialise(board);
         
         // Compare incremental vs direct
@@ -140,35 +136,12 @@ TEST_F(AccumulatorTest, ColourSymmetry) {
 class NetworkIntegrationTest : public ::testing::Test {
 protected:
     Board board;
-    Network saved_network;  // To restore the global network after tests
+    network_t network;
+    accumulator_t accumulator = Neural::get_accumulator();
     
     void SetUp() override {
-        // Save current global network
-        saved_network = network;
-        
-        // Initialize random-ish weights in global network
-        auto acc_weights = Matrix<nn_t, AccumulatorSize, N_FEATURES>::zeros();
-        auto acc_bias = Vector<nn_t, AccumulatorSize>::zeros();
-        for (size_t i = 0; i < AccumulatorSize; i++) {
-            for (size_t j = 0; j < N_FEATURES; j++) {
-                acc_weights.at(i, j) = 0.01 * (i + j) + 0x314159;
-            }
-            acc_bias[i] = 0.01 * i + 0x271828;
-        }
-        network.accumulator_layer = LinearLayer<nn_t, N_FEATURES, AccumulatorSize>(acc_weights, acc_bias);
-
-        auto out_weights = Matrix<nn_t, 1, AccumulatorSize*2>::zeros();
-        auto out_bias = Vector<nn_t, 1>::zeros();
-        for (size_t i = 0; i < AccumulatorSize*2; i++) {
-            out_weights.at(0, i) = 0.01 * i + 0x161803;
-        }
-        out_bias[0] = 0x112358;
-        network.output_layer = LinearLayer<nn_t, AccumulatorSize*2, 1>(out_weights, out_bias);
-    }
-
-    void TearDown() override {
-        // Restore global network
-        network = saved_network;
+        // 
+        network = Neural::get_network();
     }
 
     std::vector<std::string> test_positions = {
@@ -177,17 +150,15 @@ protected:
     };
 };
 
-TEST_F(NetworkIntegrationTest, EvaluationSymmetry) {
-    Accumulator accum;
-    
+TEST_F(NetworkIntegrationTest, EvaluationSymmetry) {    
     for (const auto& fen : test_positions) {
         board.fen_decode(fen);
-        accum.initialise(board);
-        auto score = network.forward(accum, WHITE);
+        accumulator.initialise(board);
+        auto score = network.forward(accumulator, WHITE);
         
         board.flip();
-        accum.initialise(board);
-        auto flipped_score = network.forward(accum, BLACK);
+        accumulator.initialise(board);
+        auto flipped_score = network.forward(accumulator, BLACK);
         
         EXPECT_EQ(score, flipped_score) 
             << "Position: " << fen << "\n"
@@ -197,10 +168,13 @@ TEST_F(NetworkIntegrationTest, EvaluationSymmetry) {
 }
 
 TEST_F(NetworkIntegrationTest, NonZeroOutput) {
-    Accumulator accum;
-    board.fen_decode(test_positions[0]);  // Use starting position
-    accum.initialise(board);
-    
-    auto score = network.forward(accum, WHITE);
-    EXPECT_NE(score, 0) << "Network should produce non-zero output with initialized weights";
+    // This is to ensure that the network is not returning zero for all positions, which has happened more than once
+    bool any_nonzero = false;
+    for (const auto& fen : test_positions) {
+        board.fen_decode(fen);
+        accumulator.initialise(board);
+        auto score = network.forward(accumulator, WHITE);
+        any_nonzero |= (score != 0);
+    }
+    EXPECT_TRUE(any_nonzero);
 }

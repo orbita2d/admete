@@ -6,10 +6,7 @@ namespace Neural {
 per_colour<FeatureVector> cleared_features() {
     per_colour<FeatureVector> features;
     for (Colour c : {WHITE, BLACK}) {
-        features[c] = Vector<nn_t, N_FEATURES>::zeros();
-        for (size_t i = 0; i < N_FEATURES; i++) {
-            features[c][i] = 0;
-        }
+        features[c] = Vector<int32_t, N_FEATURES>::zeros();
     }
     return features;
 }

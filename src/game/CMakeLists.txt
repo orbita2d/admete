@@ -1,7 +1,7 @@
 set(NN_SOURCES
     neural/features.cpp neural/features.hpp
-    neural/linalg.hpp
-    neural/network.cpp neural/network.hpp
+    neural/linalg.hpp neural/network.hpp
+    neural/weights.hpp
 )
 
 add_library(game_library types.hpp

@@ -18,6 +18,15 @@ namespace Neural {
             }
             return result;
         }
+
+        static Vector<T, N> random() {
+            Vector<T, N> result;
+            for (size_t i = 0; i < N; i++) {
+                result[i] = (rand() % 2 == 0 ? 1 : -1) * (rand() % 1000);
+            }
+            return result;
+        }
+
         T& operator[](size_t i) { return data[i]; }
         const T& operator[](size_t i) const { return data[i]; }
 
@@ -87,6 +96,15 @@ namespace Neural {
             }
             return true;
         }
+
+        template <typename U>
+        Vector<U, N> cast_as() const {
+            Vector<U, N> result;
+            for (size_t i = 0; i < N; i++) {
+                result[i] = static_cast<U>(data[i]);
+            }
+            return result;
+        }
     };
 
     // sparse vector
@@ -136,9 +154,18 @@ namespace Neural {
             }
             return result;
         }
+
+        template <typename U>
+        SparseVector<U, N> cast_as() const {
+            SparseVector<U, N> result;
+            for (const auto& [index, value] : data) {
+                result.set(index, static_cast<U>(value));
+            }
+            return result;
+        }
     };
 
-    // Matrix - just declare it, implementation in the cpp file
+    // Matrix
     template <typename T, size_t M, size_t N>
     struct Matrix {
         T data[N][M];
@@ -158,26 +185,50 @@ namespace Neural {
             return result;
         }
 
-        Vector<T, M> matmul(const Vector<T, N>& vec) const {
-          Vector<T, M> result = Vector<T, M>::zeros();
-          for (size_t i = 0; i < N; i++) {
-            for (size_t j = 0; j < M; j++) {
-                // We want to be reading from sequential memory.
-                result[j] += data[i][j] * vec[i];
+        static Matrix<T, M, N> random() {
+            Matrix<T, M, N> result;
+            for (size_t i = 0; i < M; i++) {
+                for (size_t j = 0; j < N; j++) {
+                    result.at(i, j) = (rand() % 2 == 0 ? 1 : -1) * (rand() % 1000);
+                }
             }
-          }
-          return result;
+            return result;
+        }
+
+        void matmul(const Vector<T, N>& vec, Vector<T, M>& out) const {
+            for (size_t i = 0; i < M; i++) {
+                out[i] = 0; // TODO: I can probably optimise this to not zero out the vector, by reversing the storage order of the matrix.
+            }
+            for (size_t i = 0; i < N; i++) {
+                for (size_t j = 0; j < M; j++) {
+                    // We want to be reading from sequential memory.
+                    out[j] += data[i][j] * vec[i];
+                }
+            }
+        }
+
+        Vector<T, M> matmul(const Vector<T, N>& vec) const {
+            Vector<T, M> result = Vector<T, M>::zeros();
+            matmul(vec, result);
+            return result;
+        }
+
+        void matmul(const SparseVector<T, N>& vec, Vector<T, M>& out) const {
+            for (size_t i = 0; i < M; i++) {
+                out[i] = 0; // TODO: I can probably optimise this to not zero out the vector, by reversing the storage order of the matrix.
+            }
+            for (const auto& [index, value] : vec.data) {
+                for (size_t i = 0; i < M; i++) {
+                    // Compiler please unroll this loop. SIMD would be nice too.
+                    out[i] += data[index][i] * value;
+                }
+            }
         }
 
         Vector<T, M> matmul(const SparseVector<T, N>& vec) const {
-          Vector<T, M> result = Vector<T, M>::zeros();
-          for (const auto& [index, value] : vec.data) {
-            // Compiler please unroll and SIMD optimize this
-            for (size_t i = 0; i < M; i++) {
-              result[i] += data[index][i] * value;
-            }
-          }
-          return result;
+            Vector<T, M> result = Vector<T, M>::zeros();
+            matmul(vec, result);
+            return result;
         }
     };
 }

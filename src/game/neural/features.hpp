@@ -9,8 +9,8 @@ class Board;  // Forward declare
 namespace Neural {
   // roughly the idea here is to encode the boart state into a vector for features for each color
   inline constexpr size_t N_FEATURES = 64 * 6; // a bitboard for each piece type
-  typedef Vector<int, N_FEATURES> FeatureVector;
-  typedef SparseVector<int, N_FEATURES> FeatureDiff;
+  typedef Vector<int32_t, N_FEATURES> FeatureVector;
+  typedef SparseVector<int32_t, N_FEATURES> FeatureDiff;
 
   // We can keep these functions pure for now. So let's do that.
 

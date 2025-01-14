@@ -12,6 +12,7 @@
 #include <string>
 #include <thread>
 #include "ordering.hpp"
+#include "weights.hpp"
 
 #define ENGINE_NAME "admete"
 #define ENGINE_VERS "pre-2024-12-02"
@@ -639,6 +640,12 @@ void uci() {
         } else if (token == "h") {
             score_t v = Evaluation::evaluate_white(board);
             std::cout << std::dec << (int)v << std::endl;
+        } else if (token == "neural") {
+            // TODO: Move the initialisation to the board constructor.
+            auto acc = Neural::get_accumulator();
+            acc.initialise(board);
+            auto score = Neural::get_network().forward(acc, board.who_to_play());
+            std::cout << std::dec << (int)(score*100) << std::endl;
         } else if (token == "test") {
             show_tests(board);
         } else if (token == "tables") {

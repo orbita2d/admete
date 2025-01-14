@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <features.hpp>
+#include <weights.hpp>
 
 struct DenseBoard {
     per_colour<Bitboard> colour_bb;
@@ -202,6 +203,8 @@ class Board {
     // Returns the move that got us to this node.
     Move last_move() const { return aux_info->last_move; }
 
+    Neural::accumulator_t &accumulator() { return _accumulator; }
+
   private:
     AuxilliaryInfo *aux_info;
     Bitboard occupied_bb;
@@ -220,6 +223,8 @@ class Board {
     ply_t root_node_ply;
     std::array<Score, 8> _spsqt;
     score_t _phase_material;
+
+    Neural::accumulator_t _accumulator = Neural::get_accumulator();
 };
 
 inline Move unpack_move(const DenseMove dm, const Board &board) {

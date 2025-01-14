@@ -349,6 +349,9 @@ void Board::make_move(Move &move) {
     assert(hash() == Zobrist::hash(*this));
 
     aux_info->last_move = move;
+
+    // Add this move into the NNUE accumulator
+    _accumulator.make_move(move);
 }
 
 void Board::unmake_move(const Move move) {
@@ -450,6 +453,8 @@ void Board::unmake_move(const Move move) {
         }
     }
     assert(_phase_material == Evaluation::count_phase_material(*this));
+
+    _accumulator.unmake_move(move);
 }
 
 void Board::make_nullmove() {

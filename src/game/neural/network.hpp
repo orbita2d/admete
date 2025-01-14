@@ -4,7 +4,7 @@
 #include <features.hpp>
 
 namespace Neural {
-  typedef int nn_t;
+  typedef float nn_t; // TODO: Quantisation?
   inline bool ENABLED = false;
   // Feature vectors calculated from the initial board state
   // InitialFeatureDetectionLayer is idenditcal for each colour, a single matrix
@@ -12,26 +12,16 @@ namespace Neural {
   // Incremental changes to the feature vectors can be added projected into the Accumulator
   // Then there's *the rest* of the neural network
 
-  template <typename T, size_t Input, size_t Output>
-  class Layer {
-    public:
-      virtual ~Layer() = default;
-
-      virtual Vector<T, Output> forward(const Vector<T, Input>& input) const = 0;
-
-      constexpr size_t input_size() const { return Input; }
-      constexpr size_t output_size() const { return Output; }
-  };
 
   template <typename T, size_t Input, size_t Output>
-  class LinearLayer : public Layer<T, Input, Output> {
+  class LinearLayer {
     public:
       LinearLayer(const Matrix<T, Output, Input>& weights, const Vector<T, Output>& bias)
         : weights(weights), bias(bias) {}
       
       LinearLayer() = default;
 
-      Vector<T, Output> forward(const Vector<T, Input>& input) const override {
+      Vector<T, Output> forward(const Vector<T, Input>& input) const {
         return weights.matmul(input) + bias;
       }
 
@@ -42,16 +32,14 @@ namespace Neural {
 
       // factory methods
       static LinearLayer zeros() {
-        auto mat = Matrix<T, Output, Input>();
-        for (size_t i = 0; i < Output; i++) {
-          for (size_t j = 0; j < Input; j++) {
-            mat.at(i, j) = 0;
-          }
-        }
-        auto bias = Vector<T, Output>();
-        for (size_t i = 0; i < Output; i++) {
-          bias[i] = 0;
-        }
+        auto mat = Matrix<T, Output, Input>::zeros();
+        auto bias = Vector<T, Output>::zeros();
+        return LinearLayer(mat, bias);
+      }
+
+      static LinearLayer random() {
+        auto mat = Matrix<T, Output, Input>::random();
+        auto bias = Vector<T, Output>::random();
         return LinearLayer(mat, bias);
       }
 
@@ -62,7 +50,7 @@ namespace Neural {
 
   template <typename T>
   T relu(T x) {
-    return std::max(x, 0);
+    return std::max(x, T{0});
   }
   template <typename T, size_t N>
   Vector<T, N> relu(const Vector<T, N>& x) {
@@ -73,11 +61,29 @@ namespace Neural {
     return result;
   }
 
-  constexpr size_t AccumulatorSize = 128;
-
+  template <size_t InputSize, size_t AccumulatorSize>
   class Accumulator {
-    public:
-      Accumulator() = default;
+    LinearLayer<nn_t, InputSize, AccumulatorSize> acc_layer;
+  public:
+      Accumulator() : acc_layer(LinearLayer<nn_t, InputSize, AccumulatorSize>::zeros()) {}
+
+      explicit Accumulator(const LinearLayer<nn_t, InputSize, AccumulatorSize>& layer) 
+          : acc_layer(layer) {}
+      
+      // Copy constructor needs to copy the reference
+      Accumulator(const Accumulator& other) = default;
+      Accumulator& operator=(const Accumulator& other) = default;
+
+      Accumulator(Accumulator&& other) noexcept 
+          : acc_layer(std::move(other.acc_layer))
+          , accumulated(std::move(other.accumulated)) {}
+      
+      Accumulator& operator=(Accumulator&& other) noexcept {
+          acc_layer = std::move(other.acc_layer);
+          accumulated = std::move(other.accumulated);
+          return *this;
+      }
+
       void initialise(const Board& board);
       void make_move(const Move& move, const Colour side);
       void unmake_move(const Move& move, const Colour side);
@@ -87,37 +93,77 @@ namespace Neural {
       per_colour<Vector<nn_t, AccumulatorSize>> accumulated;
   };
 
-  struct Network {
-    LinearLayer<nn_t, N_FEATURES, AccumulatorSize> accumulator_layer;
-    LinearLayer<nn_t, AccumulatorSize*2, 1> output_layer;
-
-    Network() {
-      accumulator_layer = LinearLayer<nn_t, N_FEATURES, AccumulatorSize>::zeros();
-      output_layer = LinearLayer<nn_t, AccumulatorSize*2, 1>::zeros();
-    }
-
-    nn_t forward(const Accumulator& accm, Colour us) const {
-      auto input_us = accm.get(us);
-      auto input_them = accm.get(~us);
-      auto input = Vector<nn_t, AccumulatorSize*2>();
-      // concatenate the two vectors 
-      // TODO: don't really need to copy here
-      for (size_t i = 0; i < AccumulatorSize; i++) {
-        input[i] = input_us[i];
+  template<size_t InputSize, size_t AccumulatorSize>
+  void Accumulator<InputSize, AccumulatorSize>::initialise(const Board &board) {
+      auto encoded = encode(board);
+      for (Colour c : {WHITE, BLACK}) {
+          accumulated[c] = acc_layer.forward(encoded[c].cast_as<nn_t>());
       }
-      for (size_t i = 0; i < AccumulatorSize; i++) {
-        input[i + AccumulatorSize] = input_them[i];
-      }
-      input = relu(input);
-      return output_layer.forward(input)[0];
+  }
+
+  template<size_t InputSize, size_t AccumulatorSize>
+  void Accumulator<InputSize, AccumulatorSize>::make_move(const Move &move, const Colour side) {
+      // Assuming increment() returns per_colour<SparseVector<nn_t, InputSize>>
+      auto diff = increment(move, side, true);
+      accumulated[side] += acc_layer.delta(diff[side].cast_as<nn_t>());
+      accumulated[~side] += acc_layer.delta(diff[~side].cast_as<nn_t>());
+  }
+
+  template<size_t InputSize, size_t AccumulatorSize>
+  void Accumulator<InputSize, AccumulatorSize>::unmake_move(const Move &move, const Colour side) {
+      auto diff = increment(move, side, false);
+      accumulated[side] += acc_layer.delta(diff[side].cast_as<nn_t>());
+      accumulated[~side] += acc_layer.delta(diff[~side].cast_as<nn_t>());
+  }
+
+  template<size_t InputSize, size_t AccumulatorSize, size_t... LayerSizes>
+  class Network {
+  private:    
+    // Recursive template to build a tuple of layers
+    // Base case - just one layer left
+    template<size_t In, size_t Out, size_t... Rest>
+    struct LayerTypes {
+        using type = std::tuple<LinearLayer<nn_t, In, Out>>;
+    };
+    // Recursive case - concatenate current layer with rest of layers
+    template<size_t In, size_t Mid, size_t Out, size_t... Rest>
+    struct LayerTypes<In, Mid, Out, Rest...> {
+        using type = decltype(std::tuple_cat(
+            std::declval<std::tuple<LinearLayer<nn_t, In, Mid>>>(),
+            std::declval<typename LayerTypes<Mid, Out, Rest...>::type>()
+        ));
+    };
+    // Tuple of all the layers, excluding the accumulator layer
+    using Layers = typename LayerTypes<2*AccumulatorSize, LayerSizes...>::type;
+
+    // Helper for recursive forward pass
+    template<size_t I = 0>
+    auto forward_impl(const auto& input) const {
+        if constexpr (I == sizeof...(LayerSizes) - 1) {
+            // Base case - last layer
+            return std::get<I>(layers).forward(input);
+        } else {
+            // Recursive case - apply layer, relu, then continue
+            auto& layer = std::get<I>(layers);
+            return forward_impl<I + 1>(relu(layer.forward(input)));
+        }
     }
 
-    void load(const std::string& path) {
-      // TODO: implement
+    public:
+      Layers layers;
+
+      nn_t forward(const Accumulator<InputSize, AccumulatorSize>& accm, Colour us) const {
+        // First handle the accumulator concatenation
+        auto input_us = accm.get(us);
+        auto input_them = accm.get(~us);
+        Vector<nn_t, AccumulatorSize*2> input;
+        for (size_t i = 0; i < AccumulatorSize; i++) {
+            input[i] = input_us[i];
+            input[i + AccumulatorSize] = input_them[i];
+        }
+
+        return forward_impl(relu(input))[0];  // [0] since final layer outputs size-1 vector
     }
-    
   };
-
-  inline Network network = Network();
 
 } // namespace Neural
