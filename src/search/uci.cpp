@@ -24,7 +24,6 @@ void init_uci() {
     std::cout << "id author " << ENGINE_AUTH << std::endl;
     std::cout << "option name Hash type spin default " << Cache::hash_default << " min " << Cache::hash_min << " max "
               << Cache::hash_max << std::endl;
-    std::cout << "option name TablesPath type string default <empty>" << std::endl;
     std::cout << "option name SyzygyPath type string default <empty>" << std::endl;
     std::cout << "uciok" << std::endl;
 }
@@ -94,21 +93,6 @@ void set_option(std::istringstream &is, Search::SearchOptions &options) {
         } else {
             return;
         }
-    } else if (option == "TablesPath") {
-        // Set the path to a file of input paramters
-        std::string value;
-        if (token == "value") {
-            while (is >> token) {
-                if (value.empty()) {
-                    value += token;
-                } else {
-                    value += " " + token;
-                }
-            }
-        } else {
-            return;
-        }
-        Evaluation::load_tables(value);
     } else if (option == "WeightsPath") {
         if (token != "value") {
             return;
@@ -585,13 +569,13 @@ void print_features(Board &board, std::istringstream &is) {
         features = Neural::encode(board);
     }
 
-    // this is a vector of ones and zeros
+    Colour player = board.who_to_play();
     for (size_t i = 0; i < Neural::N_FEATURES; i++) {
-        std::cout << features[WHITE][i];
+        std::cout << features[player][i];
     }
     std::cout << ";";
     for (size_t i = 0; i < Neural::N_FEATURES; i++) {
-        std::cout << features[BLACK][i];
+        std::cout << features[~player][i];
     }
     
     std::cout << std::endl;
@@ -642,16 +626,10 @@ void uci() {
             std::cout << std::dec << (int)v << std::endl;
         } else if (token == "neural") {
             // TODO: Move the initialisation to the board constructor.
-            auto acc = Neural::get_accumulator();
-            acc.initialise(board);
-            auto score = Neural::get_network().forward(acc, board.who_to_play());
-            std::cout << std::dec << (int)(score*100) << std::endl;
+            auto score = Neural::get_network().forward(board.accumulator(), board.who_to_play());
+            std::cout << std::dec << (int)(score*400) << std::endl;
         } else if (token == "test") {
             show_tests(board);
-        } else if (token == "tables") {
-            Evaluation::print_tables();
-        } else if (token == "savetables") {
-            Evaluation::save_tables("out.txt");
         } else if (token == "features") {
             print_features(board, is);
         }

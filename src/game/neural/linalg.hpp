@@ -115,12 +115,14 @@ namespace Neural {
 
         // indexing
         void set(size_t i, T value) {
-          // assume that it has not been set before (performance > safety here sorry future me)
-          assert(i < N);
-          for (auto& [index, _] : data) {
-              assert(index != i);
-          }
-          data.push_back({i, value});
+            // assume that it has not been set before (performance > safety here sorry future me)
+            assert(i < N);
+            #ifndef NDEBUG
+            for (auto& [index, _] : data) {
+                assert(index != i);
+            }
+            #endif
+            data.push_back({i, value});
         }
 
         // dot product

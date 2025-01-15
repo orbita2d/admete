@@ -175,9 +175,6 @@ class Board {
     File en_passent() const { return aux_info->en_passent_target; }
     // How much material in total on the board, used to determine game phase.
     score_t phase_material() const { return _phase_material; }
-    // Returns the PSQT score, which is incrementally updated.
-    Score spsqt(const unsigned s, const unsigned t, const Colour c) const { return _spsqt[4 * s + 2 * t + c]; }
-    Score &spsqt(const unsigned s, const unsigned t, const Colour c) { return _spsqt[4 * s + 2 * t + c]; }
     // How many times has the current position occured since ply 'start'.
     ply_t repetitions(const ply_t start) const;
     // How many times has the position at ply 'query' occured since ply 'start'.
@@ -203,7 +200,7 @@ class Board {
     // Returns the move that got us to this node.
     Move last_move() const { return aux_info->last_move; }
 
-    Neural::accumulator_t &accumulator() { return _accumulator; }
+    const Neural::accumulator_t &accumulator() const { return _accumulator; }
 
   private:
     AuxilliaryInfo *aux_info;
@@ -221,7 +218,6 @@ class Board {
     std::array<AuxilliaryInfo, MAX_PLY> aux_history;
     std::array<zobrist_t, MAX_PLY> hash_history;
     ply_t root_node_ply;
-    std::array<Score, 8> _spsqt;
     score_t _phase_material;
 
     Neural::accumulator_t _accumulator = Neural::get_accumulator();

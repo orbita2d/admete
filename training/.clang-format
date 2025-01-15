@@ -1,8 +1,0 @@
-Language: Cpp
-BasedOnStyle: LLVM
-IndentWidth: 4
-AlignAfterOpenBracket: Align
-AllowShortBlocksOnASingleLine: true
-AllowShortFunctionsOnASingleLine: true
-IncludeBlocks: Merge
-ColumnLimit: 120

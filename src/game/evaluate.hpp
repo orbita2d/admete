@@ -1,8 +1,5 @@
 #include "board.hpp"
 
-void print_tables();
-score_t evaluate_material(Board &board);
-score_t evaluate_lazy(Board &board, std::vector<Move> &legal_moves);
 score_t piece_material(const PieceType);
 
 // Type for a single piece-square table
@@ -11,11 +8,6 @@ typedef per_piece<sqt_t> psqt_t;
 
 namespace Evaluation {
 void init();
-void load_tables(std::string filename);
-void save_tables(std::string filename);
-void print_tables();
-inline psqt_t PSQT;
-inline per_side<per_side<psqt_t>> SPSQT;
 inline sqt_t pb_passed;
 
 // Calculate the evaluation heuristic from the player's POV
@@ -27,10 +19,6 @@ score_t evaluate_white(const Board &board);
 // Calculate the pawn structure evaluation from white's POV.
 Score eval_pawns(const Board &board);
 
-Score psqt(const Board &board);
-Score psqt(const Board &board, const psqt_t &psqt, const Colour c);
-Score psqt_diff(const Colour us, const psqt_t &psqt, const Move &move);
-Score psqt_them_diff(const Colour them, const psqt_t &psqt, const Move &move);
 score_t evaluate_safe(const Board &board);
 score_t terminal(const Board &board);
 score_t piece_phase_material(const PieceType p);
