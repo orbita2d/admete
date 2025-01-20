@@ -11,6 +11,7 @@ namespace Neural {
     template <typename T, size_t N> 
     struct Vector {
         T data[N];
+        T& at(size_t i) { assert(i < N); return data[i];}
         static Vector<T, N> zeros() {
             Vector<T, N> result;
             for (size_t i = 0; i < N; i++) {
@@ -230,6 +231,17 @@ namespace Neural {
         Vector<T, M> matmul(const SparseVector<T, N>& vec) const {
             Vector<T, M> result = Vector<T, M>::zeros();
             matmul(vec, result);
+            return result;
+        }
+
+        // Transpose
+        Matrix<T, N, M> transpose() const {
+            Matrix<T, N, M> result;
+            for (size_t i = 0; i < M; i++) {
+                for (size_t j = 0; j < N; j++) {
+                    result.at(j, i) = at(i, j);
+                }
+            }
             return result;
         }
     };
