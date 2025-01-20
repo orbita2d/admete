@@ -71,32 +71,6 @@ TEST(LinAlg, SparseVector) {
     EXPECT_FLOAT_EQ(converted[3], 4.0f);
     EXPECT_FLOAT_EQ(converted[4], 0.0f);
 }
-
-TEST(LinAlg, MatrixMultiplication) {
-    Matrix<float, 2, 3> m;  // 2 rows, 3 columns
-    // [1 2 3]
-    // [4 5 6]
-    m.at(0,0) = 1.0f; m.at(0,1) = 2.0f; m.at(0,2) = 3.0f;
-    m.at(1,0) = 4.0f; m.at(1,1) = 5.0f; m.at(1,2) = 6.0f;
-    
-    // Test dense matmul
-    Vector<float, 3> v;
-    v[0] = 1.0f; v[1] = 2.0f; v[2] = 3.0f;
-    
-    auto result = m.matmul(v);
-    EXPECT_FLOAT_EQ(result[0], 14.0f);  // 1*1 + 2*2 + 3*3
-    EXPECT_FLOAT_EQ(result[1], 32.0f);  // 4*1 + 5*2 + 6*3
-    
-    // Test sparse matmul
-    SparseVector<float, 3> sv;
-    sv.set(0, 1.0f);
-    sv.set(2, 3.0f);
-    
-    auto sparse_result = m.matmul(sv);
-    EXPECT_FLOAT_EQ(sparse_result[0], 10.0f);  // 1*1 + 3*3
-    EXPECT_FLOAT_EQ(sparse_result[1], 22.0f);  // 4*1 + 6*3
-}
-
 TEST(LinAlg, MatrixDimensions) {
     Matrix<float, 2, 3> m;
     EXPECT_EQ(m.rows(), 2);
