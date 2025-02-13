@@ -7,7 +7,7 @@
 
 
 namespace Neural {
-  typedef int_fast16_t nn_t;
+  typedef int16_t nn_t;
   inline bool ENABLED = false;
   // Feature vectors calculated from the initial board state
   // InitialFeatureDetectionLayer is idenditcal for each colour, a single matrix
@@ -25,12 +25,25 @@ namespace Neural {
       LinearLayer() = default;
 
       Vector<T, Output> forward(const Vector<T, Input>& input) const {
-        return weights.matmul(input) + bias;
+        // return weights.matmul(input) + bias
+        Vector<T, Output> result = bias;
+        for (size_t i = 0; i < Output; i++) {
+          for (size_t j = 0; j < Input; j++) {
+            result[i] += weights.at(i, j) * input[j];
+          }
+        }
+        return result;
       }
 
       // Calculate the change in output for a given change in input
       Vector<T, Output> delta(const SparseVector<T, Input>& input) const {
-        return weights.matmul(input);
+        Vector<T, Output> result = Vector<T, Output>::zeros();
+        for (const auto& [index, value] : input.data) {
+          for (size_t i = 0; i < Output; i++) {
+            result[i] += weights.at(i, index) * value;
+          }
+        }
+        return result;
       }
 
       // factory methods
@@ -59,12 +72,12 @@ namespace Neural {
     // In = input size
     // Out = output size
     private:
-      Matrix<Tw, In, Out> weights;
+      Matrix<Tw, Out, In> weights;
       Vector<Ta, Out> bias;
       size_t acc_shift;
     public:
       QuantizedLayer(const Matrix<Tw, Out, In>& weights, const Vector<Ta, Out>& bias, size_t acc_shift)
-        : weights(weights.transpose()), bias(bias), acc_shift(acc_shift) {}
+        : weights(weights), bias(bias), acc_shift(acc_shift) {}
       
       QuantizedLayer() = default;
 
@@ -76,7 +89,7 @@ namespace Neural {
             // Maticies are stored in column-major order, so the transpose is useful.
             // This is mathematically x W^T + b, rather than Wx + b, but it doesn't matter.
             // This way we don't have to allocate a vector of Ta for the intermediate results.
-            acc += static_cast<Ta>(weights.at(j, i)) * static_cast<Ta>(input[j]);
+            acc += static_cast<Ta>(weights.at(i, j)) * static_cast<Ta>(input[j]);
           }
           out.at(i) = static_cast<Tout>(std::clamp(((acc + bias[i]) >> acc_shift), static_cast<Ta>(std::numeric_limits<Tout>::min()), static_cast<Ta>(std::numeric_limits<Tout>::max())));
           // out.at(i) = static_cast<Tout>((acc + bias[i]) >> acc_shift);
@@ -98,7 +111,7 @@ namespace Neural {
     public:
       using weight_t = Matrix<Tw, Out, In>;
       QuantizedAccumulatorLayer(const weight_t& weights, const Vector<Ta, Out>& bias, size_t acc_shift)
-        : weights(weights), bias(bias), acc_shift(acc_shift) {}
+        : weights(weights.transpose()), bias(bias), acc_shift(acc_shift) {}
       
       QuantizedAccumulatorLayer() = default;
 
@@ -106,7 +119,7 @@ namespace Neural {
         auto acc = Vector<Ta, Out>::zeros();
         for (const auto& [index, value] : input.data) {
           for (size_t i = 0; i < Out; i++) {
-            acc[i] += static_cast<Ta>(weights.at(i, index)) * static_cast<Ta>(value);
+            acc[i] += static_cast<Ta>(weights.at(index, i)) * static_cast<Ta>(value);
           }
         }
         auto out = Vector<Tout, Out>();
@@ -131,7 +144,7 @@ namespace Neural {
         return out;
       }
       private:
-      weight_t weights;
+      Matrix<Tw, In, Out> weights;
       Vector<Ta, Out> bias;
       size_t acc_shift;
   };
@@ -153,7 +166,7 @@ namespace Neural {
   class Accumulator {
     // LinearLayer<nn_t, InputSize, AccumulatorSize> acc_layer;
   public:
-      using layer_t = QuantizedAccumulatorLayer<int16_t, int64_t, int_fast16_t, nn_t, InputSize, AccumulatorSize>;
+      using layer_t = QuantizedAccumulatorLayer<int16_t, int32_t, int16_t, nn_t, InputSize, AccumulatorSize>;
 
       Accumulator() = default;
 
@@ -194,7 +207,6 @@ namespace Neural {
 
   template<size_t InputSize, size_t AccumulatorSize>
   void Accumulator<InputSize, AccumulatorSize>::make_move(const Move &move, const Colour side) {
-      // Assuming increment() returns per_colour<SparseVector<nn_t, InputSize>>
       auto diff = increment(move, side, true);
       accumulated[side] += acc_layer.delta(diff[side]);
       accumulated[~side] += acc_layer.delta(diff[~side]);
@@ -212,7 +224,7 @@ namespace Neural {
   private:    
     // Recursive template to build a tuple of layers
     // Base case - just one layer left
-    using _ac_t = int64_t;
+    using _ac_t = int32_t;
     using _w_t = int16_t;
     template<size_t In, size_t Out, size_t... Rest>
     struct LayerTypes {

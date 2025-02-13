@@ -171,9 +171,13 @@ namespace Neural {
     // Matrix
     template <typename T, size_t M, size_t N>
     struct Matrix {
-        T data[N][M];
-        T& at(size_t i, size_t j) { assert(i < M && j < N); return data[j][i];}
-        const T& at(size_t i, size_t j) const { assert(i < M && j < N); return data[j][i];}
+        
+        alignas(32) T data[M * N];
+        T& at(size_t i, size_t j) { 
+            assert(i < M && j < N); 
+            return data[i * N + j];  // Row-major layout
+        }
+        const T& at(size_t i, size_t j) const { assert(i < M && j < N); return data[i * N + j]; }
 
         constexpr size_t rows() const { return M; }
         constexpr size_t cols() const { return N; }
@@ -205,30 +209,12 @@ namespace Neural {
             for (size_t i = 0; i < N; i++) {
                 for (size_t j = 0; j < M; j++) {
                     // We want to be reading from sequential memory.
-                    out[j] += data[i][j] * vec[i];
+                    out[j] += at(j, i) * vec[i];
                 }
             }
         }
 
         Vector<T, M> matmul(const Vector<T, N>& vec) const {
-            Vector<T, M> result = Vector<T, M>::zeros();
-            matmul(vec, result);
-            return result;
-        }
-
-        void matmul(const SparseVector<T, N>& vec, Vector<T, M>& out) const {
-            for (size_t i = 0; i < M; i++) {
-                out[i] = 0; // TODO: I can probably optimise this to not zero out the vector, by reversing the storage order of the matrix.
-            }
-            for (const auto& [index, value] : vec.data) {
-                for (size_t i = 0; i < M; i++) {
-                    // Compiler please unroll this loop. SIMD would be nice too.
-                    out[i] += data[index][i] * value;
-                }
-            }
-        }
-
-        Vector<T, M> matmul(const SparseVector<T, N>& vec) const {
             Vector<T, M> result = Vector<T, M>::zeros();
             matmul(vec, result);
             return result;
