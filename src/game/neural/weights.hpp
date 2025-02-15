@@ -8,11 +8,11 @@ static_assert(N_FEATURES == 384, "Feature size mismatch");
 
 namespace generated {
 
-typedef int32_t acc_t;
-QuantizedAccumulatorLayer<int16_t, acc_t, nn_t, nn_t, N_FEATURES, N_ACCUMULATED> gen_accumulator();
+typedef nn_t acc_t;
+FloatingAccumulatorLayer<nn_t, N_FEATURES, N_ACCUMULATED> gen_accumulator();
 
-QuantizedLayer<int16_t, acc_t, nn_t, nn_t, 512, 128> gen_layer_0();
-QuantizedLayer<int16_t, acc_t, nn_t, nn_t, 128, 1> gen_layer_1();
+LinearLayer<nn_t, 512, 128> gen_layer_0();
+LinearLayer<nn_t, 128, 1> gen_layer_1();
 
 } // namespace generated
 

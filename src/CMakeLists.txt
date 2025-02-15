@@ -18,6 +18,7 @@ if ( CMAKE_COMPILER_IS_GNUCXX )
         PRIVATE "-march=native" 
         PRIVATE "-mtune=native" 
         PRIVATE "-flto" 
+        PRIVATE "-ffast-math"
     )
     set(CMAKE_CXX_FLAGS_RELEASE "-O3 -flto")
 endif()

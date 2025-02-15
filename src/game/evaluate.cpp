@@ -10,32 +10,6 @@
 #include <unordered_map>
 #include <algorithm>
 
-// clang-format off
-
-
-constexpr per_square<score_t> lightsquare_corner_distance = {
-    0, 1, 2, 3, 4, 5, 6, 7,
-    1, 2, 3, 4, 5, 6, 7, 6,
-    2, 3, 4, 5, 6, 7, 6, 5,
-    3, 4, 5, 6, 7, 6, 5, 4,
-    4, 5, 6, 7, 6, 5, 4, 3,
-    5, 6, 7, 6, 5, 4, 3, 2,
-    6, 7, 6, 5, 2, 3, 2, 1,
-    7, 6, 5, 4, 3, 2, 1, 0
-    };
-
-constexpr per_square<score_t> darksquare_corner_distance = {
-    7, 6, 5, 4, 3, 2, 1, 0,
-    6, 7, 6, 5, 4, 3, 2, 1,
-    5, 6, 7, 6, 5, 4, 3, 2,
-    4, 5, 6, 7, 6, 5, 4, 3,
-    3, 4, 5, 6, 7, 6, 5, 4,
-    2, 3, 4, 5, 6, 7, 6, 5,
-    1, 2, 3, 4, 5, 6, 7, 6,
-    0, 1, 2, 3, 4, 5, 6, 7
-    };
-
-// clang-format on
 
 // Material here is for determining the game phase.
 static per_piece<score_t> phase_material = {{
@@ -68,71 +42,6 @@ score_t piece_phase_material(const PieceType p) {
     return phase_material[p];
 }
 
-
-// Pawn structure bonuses.
-Score eval_pawns(const Board &board) {
-    zobrist_t hash = Zobrist::pawns(board);
-    Score score;
-    GameCache::PawnCacheElem hit;
-    if (GameCache::pawn_cache.probe(hash, hit)) {
-        return hit.eval();
-    }
-
-    const Bitboard white_pawns = board.pieces(WHITE, PAWN);
-    const Bitboard black_pawns = board.pieces(BLACK, PAWN);
-
-    // Add bonus for passed pawns for each side.
-    Bitboard occ = board.passed_pawns(WHITE);
-    while (occ) {
-        Square sq = pop_lsb(&occ);
-        score += pb_passed[sq.reverse()];
-    }
-
-    occ = board.passed_pawns(BLACK);
-    while (occ) {
-        Square sq = pop_lsb(&occ);
-        score -= pb_passed[sq];
-    }
-
-    // Bonus for connected passers.
-    occ = board.connected_passed_pawns(WHITE);
-    score += connected_passed * count_bits(occ);
-
-    occ = board.connected_passed_pawns(BLACK);
-    score -= connected_passed * count_bits(occ);
-
-    // Bonus for defended passers.
-    occ = board.passed_pawns(WHITE) && board.pawn_controlled(WHITE);
-    score += defended_passed * count_bits(occ);
-
-    occ = board.passed_pawns(BLACK) && board.pawn_controlled(BLACK);
-    score -= defended_passed * count_bits(occ);
-
-    // Penalty for weak pawns.
-    occ = board.weak_pawns(WHITE);
-    score += weak_pawn * count_bits(occ);
-
-    occ = board.weak_pawns(BLACK);
-    score -= weak_pawn * count_bits(occ);
-
-    // Penalty for isolated pawns.
-    occ = board.isolated_pawns(WHITE);
-    score += isolated_pawn * count_bits(occ);
-
-    occ = board.isolated_pawns(BLACK);
-    score -= isolated_pawn * count_bits(occ);
-
-    // Penalty for doubled pawns
-    occ = Bitboards::forward_span<WHITE>(white_pawns) & white_pawns;
-    score += doubled_pawns * count_bits(occ);
-
-    occ = Bitboards::forward_span<BLACK>(black_pawns) & black_pawns;
-    score -= doubled_pawns * count_bits(occ);
-
-    GameCache::pawn_cache.store(hash, score);
-    return score;
-}
-
 } // namespace Evaluation
 
 score_t Evaluation::count_phase_material(const Board &board) {
@@ -147,7 +56,7 @@ score_t Evaluation::eval(const Board &board) {
     // Return the eval from the point of view of the current player.
     Neural::nn_t nn = network.forward(board.accumulator(), board.who_to_play());
     // TODO: Why think about centipawns at all, ideally we'd just map the output to the score_t range.
-    auto mapped = std::clamp(static_cast<score_t>(nn), 1-MIN_MATE_SCORE, MIN_MATE_SCORE-1); 
+    auto mapped = std::clamp(static_cast<score_t>(nn*400.), 1-MIN_MATE_SCORE, MIN_MATE_SCORE-1); 
     return mapped;
 }
 

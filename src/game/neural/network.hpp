@@ -7,7 +7,7 @@
 
 
 namespace Neural {
-  typedef int16_t nn_t;
+  typedef float  nn_t;
   inline bool ENABLED = false;
   // Feature vectors calculated from the initial board state
   // InitialFeatureDetectionLayer is idenditcal for each colour, a single matrix
@@ -20,28 +20,30 @@ namespace Neural {
   class LinearLayer {
     public:
       LinearLayer(const Matrix<T, Output, Input>& weights, const Vector<T, Output>& bias)
-        : weights(weights), bias(bias) {}
+        : weights(weights.transpose()), bias(bias) {}
       
       LinearLayer() = default;
 
       Vector<T, Output> forward(const Vector<T, Input>& input) const {
-        // return weights.matmul(input) + bias
+        static_assert(std::is_arithmetic_v<T>, "LinearLayer only supports arithmetic types");
         Vector<T, Output> result = bias;
-        for (size_t i = 0; i < Output; i++) {
-          for (size_t j = 0; j < Input; j++) {
-            result[i] += weights.at(i, j) * input[j];
-          }
-        }
-        return result;
-      }
 
-      // Calculate the change in output for a given change in input
-      Vector<T, Output> delta(const SparseVector<T, Input>& input) const {
-        Vector<T, Output> result = Vector<T, Output>::zeros();
-        for (const auto& [index, value] : input.data) {
-          for (size_t i = 0; i < Output; i++) {
-            result[i] += weights.at(i, index) * value;
-          }
+        auto w = reinterpret_cast<const T* __restrict__>(&weights.data);
+        auto in = reinterpret_cast<const T* __restrict__>(&input.data);
+        auto out = reinterpret_cast<T* __restrict__>(&result.data);
+
+        constexpr size_t target_block_size = 16;
+        constexpr size_t block_size = (Output % target_block_size == 0) ? target_block_size : 1;
+        // Optimised to encourage vectorisation and a loop unroll 
+        // I might be able to improve the cache locality by transposing the matrix
+        // On this laptop, 160k NPS as of now.
+        for (size_t j = 0; j < Input; j++) {
+          for (size_t i = 0; i < Output; i+=block_size) {
+              // result[i] += weights.at(j, i) * input[j];
+              for (size_t k = 0; k < block_size; k++) {
+                out[i + k] += w[j * Output + i + k] * in[j];
+              }
+            }
         }
         return result;
       }
@@ -60,7 +62,7 @@ namespace Neural {
       }
 
     private:
-      Matrix<T, Output, Input> weights;
+      Matrix<T, Input, Output> weights;
       Vector<T, Output> bias;
   };
 
@@ -108,6 +110,10 @@ namespace Neural {
     // Out = output size
     // Optimised for the accumulator layer, where the input is sparse
 
+    static_assert(std::is_integral_v<Tw>, "Weight type must be integral");
+    static_assert(std::is_integral_v<Ta>, "Accumulator type must be integral");
+    static_assert(std::is_integral_v<Tout>, "Output type must be integral");
+
     public:
       using weight_t = Matrix<Tw, Out, In>;
       QuantizedAccumulatorLayer(const weight_t& weights, const Vector<Ta, Out>& bias, size_t acc_shift)
@@ -149,6 +155,40 @@ namespace Neural {
       size_t acc_shift;
   };
 
+  template<typename T, size_t In, size_t Out>
+  class FloatingAccumulatorLayer {
+    static_assert(std::is_floating_point_v<T>, "FloatingAccumulatorLayer only supports floating point types");
+    public:
+      FloatingAccumulatorLayer(const Matrix<T, Out, In>& weights, const Vector<T, Out>& bias)
+        : weights(weights.transpose()), bias(bias) {}
+      
+      FloatingAccumulatorLayer() = default;
+
+      Vector<T, Out> forward(const Vector<T, In>& input) const {
+        Vector<T, Out> result = bias;
+        for (size_t j = 0; j < In; j++) {
+          for (size_t i = 0; i < Out; i++) {
+            result[i] += weights.at(j, i) * input[j];
+          }
+        }
+        return result;
+      }
+
+      Vector<T, Out> delta(const SparseVector<T, In>& input) const {
+        Vector<T, Out> result = Vector<T, Out>::zeros();
+        for (const auto& [index, value] : input.data) {
+          for (size_t i = 0; i < Out; i++) {
+            result[i] += weights.at(index, i) * value;
+          }
+        }
+        return result;
+      }
+
+    private:
+      Matrix<T,  In, Out> weights;
+      Vector<T, Out> bias;
+  };
+
   template <typename T>
   T relu(T x) {
     return std::max(x, T{0});
@@ -166,7 +206,8 @@ namespace Neural {
   class Accumulator {
     // LinearLayer<nn_t, InputSize, AccumulatorSize> acc_layer;
   public:
-      using layer_t = QuantizedAccumulatorLayer<int16_t, int32_t, int16_t, nn_t, InputSize, AccumulatorSize>;
+      // using layer_t = QuantizedAccumulatorLayer<int16_t, int32_t, int16_t, nn_t, InputSize, AccumulatorSize>;
+      using layer_t = FloatingAccumulatorLayer<nn_t, InputSize, AccumulatorSize>;
 
       Accumulator() = default;
 
@@ -224,19 +265,19 @@ namespace Neural {
   private:    
     // Recursive template to build a tuple of layers
     // Base case - just one layer left
-    using _ac_t = int32_t;
-    using _w_t = int16_t;
+    // using _ac_t = int32_t;
+    // using _w_t = int16_t;
     template<size_t In, size_t Out, size_t... Rest>
     struct LayerTypes {
-        // using type = std::tuple<LinearLayer<nn_t, In, Out>>;
-        using type = std::tuple<QuantizedLayer<_w_t, _ac_t, nn_t, nn_t, In, Out>>;
+        using type = std::tuple<LinearLayer<nn_t, In, Out>>;
+        // using type = std::tuple<QuantizedLayer<_w_t, _ac_t, nn_t, nn_t, In, Out>>;
     };
     // Recursive case - concatenate current layer with rest of layers
     template<size_t In, size_t Mid, size_t Out, size_t... Rest>
     struct LayerTypes<In, Mid, Out, Rest...> {
         using type = decltype(std::tuple_cat(
-            // std::declval<std::tuple<LinearLayer<nn_t, In, Mid>>>(),
-            std::declval<std::tuple<QuantizedLayer<_w_t, _ac_t, nn_t, nn_t, In, Mid>>>(),
+            std::declval<std::tuple<LinearLayer<nn_t, In, Mid>>>(),
+            // std::declval<std::tuple<QuantizedLayer<_w_t, _ac_t, nn_t, nn_t, In, Mid>>>(),
             std::declval<typename LayerTypes<Mid, Out, Rest...>::type>()
         ));
     };
