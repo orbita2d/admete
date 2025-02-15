@@ -10,7 +10,7 @@ namespace Neural {
     // 1D vector
     template <typename T, size_t N> 
     struct Vector {
-        T data[N];
+        alignas(32) T data[N];
         T& at(size_t i) { assert(i < N); return data[i];}
         static Vector<T, N> zeros() {
             Vector<T, N> result;
@@ -171,7 +171,6 @@ namespace Neural {
     // Matrix
     template <typename T, size_t M, size_t N>
     struct Matrix {
-        
         alignas(32) T data[M * N];
         T& at(size_t i, size_t j) { 
             assert(i < M && j < N); 
