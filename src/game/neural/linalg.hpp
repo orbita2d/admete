@@ -172,11 +172,8 @@ namespace Neural {
     template <typename T, size_t M, size_t N>
     struct Matrix {
         alignas(32) T data[M * N];
-        T& at(size_t i, size_t j) { 
-            assert(i < M && j < N); 
-            return data[i * N + j];  // Row-major layout
-        }
-        const T& at(size_t i, size_t j) const { assert(i < M && j < N); return data[i * N + j]; }
+        T& at(const size_t i, const size_t j) { assert(i < M && j < N);  return data[i * N + j]; }
+        const T& at(const size_t i, const size_t j) const { assert(i < M && j < N); return data[i * N + j]; }
 
         constexpr size_t rows() const { return M; }
         constexpr size_t cols() const { return N; }
@@ -201,30 +198,65 @@ namespace Neural {
             return result;
         }
 
-        void matmul(const Vector<T, N>& vec, Vector<T, M>& out) const {
-            for (size_t i = 0; i < M; i++) {
-                out[i] = 0; // TODO: I can probably optimise this to not zero out the vector, by reversing the storage order of the matrix.
-            }
-            for (size_t i = 0; i < N; i++) {
-                for (size_t j = 0; j < M; j++) {
-                    // We want to be reading from sequential memory.
-                    out[j] += at(j, i) * vec[i];
-                }
-            }
-        }
-
-        Vector<T, M> matmul(const Vector<T, N>& vec) const {
-            Vector<T, M> result = Vector<T, M>::zeros();
-            matmul(vec, result);
-            return result;
-        }
-
         // Transpose
         Matrix<T, N, M> transpose() const {
             Matrix<T, N, M> result;
             for (size_t i = 0; i < M; i++) {
                 for (size_t j = 0; j < N; j++) {
                     result.at(j, i) = at(i, j);
+                }
+            }
+            return result;
+        }
+    };
+
+    template<typename T, size_t M, size_t N, size_t BlockSize>
+    struct BlockAccessOptimisedMatrix {
+        // This matrix is optimised for matrix-vector multiplication, with small maximum sizes in the cache, but better vectorisation performance than naive row-major storage
+        alignas(32) T data[M * N];
+        static_assert(M % BlockSize == 0, "M must be divisible by BlockSize");
+        T& at(const size_t i, const size_t j) {
+            assert(i < M && j < N); 
+            const size_t block_i = i / BlockSize;
+            const size_t in_block_i = i % BlockSize;
+            return data[block_i * N * BlockSize + j * BlockSize + in_block_i];
+        }
+        const T& at(const size_t i, const size_t j) const { 
+            assert(i < M && j < N); 
+            const size_t block_i = i / BlockSize;
+            const size_t in_block_i = i % BlockSize;
+            return data[block_i * N * BlockSize + j * BlockSize + in_block_i];
+        }
+
+        constexpr size_t rows() const { return M; }
+        constexpr size_t cols() const { return N; }
+
+        static BlockAccessOptimisedMatrix<T, M, N, BlockSize> zeros() {
+            BlockAccessOptimisedMatrix<T, M, N, BlockSize> result;
+            for (size_t i = 0; i < M; i++) {
+                for (size_t j = 0; j < N; j++) {
+                    result.at(i, j) = 0;
+                }
+            }
+            return result;
+        }
+
+        static BlockAccessOptimisedMatrix<T, M, N, BlockSize> random() {
+            BlockAccessOptimisedMatrix<T, M, N, BlockSize> result;
+            for (size_t i = 0; i < M; i++) {
+                for (size_t j = 0; j < N; j++) {
+                    result.at(i, j) = (rand() % 2 == 0 ? 1 : -1) * (rand() % 1000);
+                }
+            }
+            return result;
+        }
+
+        // Copy from a normal matrix
+        static BlockAccessOptimisedMatrix<T, M, N, BlockSize> from_matrix(const Matrix<T, M, N>& mat) {
+            BlockAccessOptimisedMatrix<T, M, N, BlockSize> result;
+            for (size_t i = 0; i < M; i++) {
+                for (size_t j = 0; j < N; j++) {
+                    result.at(i, j) = mat.at(i, j);
                 }
             }
             return result;

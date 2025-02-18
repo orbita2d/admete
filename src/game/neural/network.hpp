@@ -18,6 +18,7 @@ namespace Neural {
 
   template <typename T, size_t Input, size_t Output>
   class LinearLayer {
+  static_assert(std::is_arithmetic_v<T>, "LinearLayer only supports arithmetic types");
     public:
       LinearLayer(const Matrix<T, Output, Input>& weights, const Vector<T, Output>& bias)
         : weights(weights.transpose()), bias(bias) {}
@@ -25,21 +26,26 @@ namespace Neural {
       LinearLayer() = default;
 
       Vector<T, Output> forward(const Vector<T, Input>& input) const {
-        static_assert(std::is_arithmetic_v<T>, "LinearLayer only supports arithmetic types");
         Vector<T, Output> result = bias;
 
-        auto w = reinterpret_cast<const T* __restrict__>(&weights.data);
-        auto in = reinterpret_cast<const T* __restrict__>(&input.data);
-        auto out = reinterpret_cast<T* __restrict__>(&result.data);
+        auto w = reinterpret_cast<alignas(32) const T* __restrict__>(&weights.data);
+        auto in = reinterpret_cast<alignas(32) const T* __restrict__>(&input.data);
+        auto out = reinterpret_cast<alignas(32) T* __restrict__>(&result.data);
 
-        constexpr size_t target_block_size = 16;
-        constexpr size_t block_size = (Output % target_block_size == 0) ? target_block_size : 1;
+        constexpr size_t block_size = (Output % 16 == 0) ? 16 : 1;
+        static_assert(Output % block_size == 0, "Output size must be a multiple of block size");
         // Optimised to encourage vectorisation and a loop unroll 
-        // I might be able to improve the cache locality by transposing the matrix
+        // I might be able to improve the cache locality by doing something cleverer with the memory layout e.g. something like:
+        // ⎛  0  4    ... 4N-4⎞
+        // ⎜  1  5    ... 4N-3⎟
+        // ⎜  2  6    ... 4N-2⎟
+        // ⎜  3  7    ... 4N-1⎟
+        // ⎜  4N 4N+4 ... 8N-4⎟
+        // ⎝  etc.            ⎠
+        // The idea being to go in blocks of 4 as a single SIMD vector, and accumulate all of that block into the output.
         // On this laptop, 160k NPS as of now.
         for (size_t j = 0; j < Input; j++) {
           for (size_t i = 0; i < Output; i+=block_size) {
-              // result[i] += weights.at(j, i) * input[j];
               for (size_t k = 0; k < block_size; k++) {
                 out[i + k] += w[j * Output + i + k] * in[j];
               }
