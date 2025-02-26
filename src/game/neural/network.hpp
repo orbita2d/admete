@@ -4,13 +4,9 @@
 #include <features.hpp>
 #include <algorithm>
 #include <limits>
-#ifdef USE_AVX2
-    #include <immintrin.h> // For AVX2 intrinsics
-  #endif
-
 
 namespace Neural {
-  typedef float  nn_t;
+  typedef float nn_t;
   inline bool ENABLED = false;
   // Feature vectors calculated from the initial board state
   // InitialFeatureDetectionLayer is idenditcal for each colour, a single matrix
@@ -20,57 +16,30 @@ namespace Neural {
 
   template <typename T, size_t Input, size_t Output>
   class LinearLayer {
-  static_assert(std::is_arithmetic_v<T>, "LinearLayer only supports arithmetic types");
-  #ifdef USE_AVX2
-    static constexpr size_t simd_block_size = 8;
-  #endif
+  static_assert(std::is_floating_point_v<T>, "LinearLayer only supports arithmetic types");
 
   public:
-    #ifdef USE_AVX2
-    LinearLayer(const Matrix<T, Output, Input>& weights, const Vector<T, Output>& bias)
-      : weights(BlockAccessOptimisedMatrix<T, Input, Output, simd_block_size>::from_matrix(weights.transpose())), bias(bias) {}
-    #else
     LinearLayer(const Matrix<T, Output, Input>& weights, const Vector<T, Output>& bias)
       : weights(weights.transpose()), bias(bias) {}
-    #endif
     LinearLayer() = default;
 
     Vector<T, Output> forward(const Vector<T, Input>& input) const {
       Vector<T, Output> result = bias;
-
       auto w = reinterpret_cast<alignas(32) const T* __restrict__>(&weights.data);
       auto in = reinterpret_cast<alignas(32) const T* __restrict__>(&input.data);
       auto out = reinterpret_cast<alignas(32) T* __restrict__>(&result.data);
 
       #ifdef USE_AVX2
-      // This is soo slow oh my god
-      // On this laptop, 108k NPS as of now.
-      if constexpr (Output % simd_block_size == 0) {
-        for (size_t i = 0; i < Output; i+=simd_block_size) {
-          // load a block of output values into an accumulator
-          __m256 acc = _mm256_load_ps(out + i);
-          for (size_t j = 0; j < Input; j++) {
-            // broadcast the input value to all lanes of a SIMD register
-            const __m256 in_vec = _mm256_set1_ps(in[j]);
-            // load a block of weights into a SIMD register
-            const __m256 w_vec = _mm256_load_ps(w + i * Input + j * simd_block_size);
-            acc = _mm256_fmadd_ps(w_vec, in_vec, acc);
-          }
-          _mm256_store_ps(out + i, acc);
-        }
-      } else {
-        for (size_t i = 0; i < Output; i++) {
-          for (size_t j = 0; j < Input; j++) {
-            out[i] += w[i * Input + j] * in[j];
-          }
-        } 
-      }     
+        constexpr size_t simd_block_size = 256 / sizeof(T); // 8 singles, or 4 doubles
+        constexpr size_t loop_unroll = ((Output % (8 * simd_block_size) == 0) ? 8 : (Output % (4 * simd_block_size) == 0) ? 4 : (Output % (2 * simd_block_size) == 0) ? 2 : 1) * simd_block_size;
       #else
+        constexpr size_t loop_unroll = 16; // 16 is basically an arbitrary guess, if we don't have any info about the CPU.
+      #endif
+
       // On this laptop, 318k NPS as of now.
-      constexpr size_t loop_unroll = 16;
       constexpr size_t block_size = (Output % loop_unroll == 0) ? loop_unroll : 1;
       static_assert(Output % block_size == 0, "Output size must be a multiple of block size");
-      // Optimised to encourage vectorisation and a loop unroll 
+      // Naively, you'd expect this to be slower than the other way around, because of cache-locality. But modern CPUs are all about vectorisation and multiple independent execution units and this is really good for that.
       for (size_t j = 0; j < Input; j++) {
         for (size_t i = 0; i < Output; i+=block_size) {
           for (size_t k = 0; k < block_size; k++) {
@@ -78,7 +47,6 @@ namespace Neural {
           }
         }
       }
-      #endif
       return result;
     }
 
@@ -96,11 +64,7 @@ namespace Neural {
     }
 
   private:
-  #ifdef USE_AVX2
-    BlockAccessOptimisedMatrix<T, Input, Output, simd_block_size> weights;
-  #else
     Matrix<T, Input, Output> weights;
-  #endif
     Vector<T, Output> bias;
   };
 
