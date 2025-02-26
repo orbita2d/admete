@@ -10,13 +10,15 @@ add_subdirectory(search)
 set_property(TARGET admete PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
 set_property(TARGET admete PROPERTY CXX_STANDARD 20)
 
+option(WITH_PROFILER "Build with gperftools profiler" OFF)
+option(USE_AVX2 "Enable AVX2 instructions" OFF)
 
 if ( CMAKE_COMPILER_IS_GNUCXX )
     target_compile_options(admete
         PRIVATE "-Wall"
         PRIVATE "-Wextra"
-        PRIVATE "-march=native" 
-        PRIVATE "-mtune=native" 
+        PRIVATE "-mtune=native"
+        PRIVATE "-march=native"
         PRIVATE "-flto" 
         PRIVATE "-ffast-math"
     )
@@ -27,7 +29,20 @@ if ( MSVC )
     set(CMAKE_CXX_FLAGS_RELEASE "/O3")
 endif()
 
-option(WITH_PROFILER "Build with gperftools profiler" OFF)
+
+if(USE_AVX2)
+    message(STATUS "Enabling AVX2 instructions")
+    target_compile_definitions(admete PRIVATE USE_AVX2)
+    if(MSVC)
+        add_compile_options(/arch:AVX2)
+    elseif(CMAKE_COMPILER_IS_GNUCXX)
+        target_compile_options(admete PRIVATE "-mavx2")
+    else()
+        message(FATAL_ERROR "AVX2 is not supported on this compiler")
+    endif()
+else()
+    message(STATUS "Using native vectorisations")
+endif()
 
 if(WITH_PROFILER)
     find_library(GPERFTOOLS_PROFILER profiler REQUIRED)

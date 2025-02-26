@@ -4,6 +4,9 @@
 #include <features.hpp>
 #include <algorithm>
 #include <limits>
+#ifdef USE_AVX2
+    #include <immintrin.h> // For AVX2 intrinsics
+  #endif
 
 
 namespace Neural {
@@ -15,61 +18,90 @@ namespace Neural {
   // Incremental changes to the feature vectors can be added projected into the Accumulator
   // Then there's *the rest* of the neural network
 
-
   template <typename T, size_t Input, size_t Output>
   class LinearLayer {
   static_assert(std::is_arithmetic_v<T>, "LinearLayer only supports arithmetic types");
-    public:
-      LinearLayer(const Matrix<T, Output, Input>& weights, const Vector<T, Output>& bias)
-        : weights(weights.transpose()), bias(bias) {}
-      
-      LinearLayer() = default;
+  #ifdef USE_AVX2
+    static constexpr size_t simd_block_size = 8;
+  #endif
 
-      Vector<T, Output> forward(const Vector<T, Input>& input) const {
-        Vector<T, Output> result = bias;
+  public:
+    #ifdef USE_AVX2
+    LinearLayer(const Matrix<T, Output, Input>& weights, const Vector<T, Output>& bias)
+      : weights(BlockAccessOptimisedMatrix<T, Input, Output, simd_block_size>::from_matrix(weights.transpose())), bias(bias) {}
+    #else
+    LinearLayer(const Matrix<T, Output, Input>& weights, const Vector<T, Output>& bias)
+      : weights(weights.transpose()), bias(bias) {}
+    #endif
+    LinearLayer() = default;
 
-        auto w = reinterpret_cast<alignas(32) const T* __restrict__>(&weights.data);
-        auto in = reinterpret_cast<alignas(32) const T* __restrict__>(&input.data);
-        auto out = reinterpret_cast<alignas(32) T* __restrict__>(&result.data);
+    Vector<T, Output> forward(const Vector<T, Input>& input) const {
+      Vector<T, Output> result = bias;
 
-        constexpr size_t block_size = (Output % 16 == 0) ? 16 : 1;
-        static_assert(Output % block_size == 0, "Output size must be a multiple of block size");
-        // Optimised to encourage vectorisation and a loop unroll 
-        // I might be able to improve the cache locality by doing something cleverer with the memory layout e.g. something like:
-        // ⎛  0  4    ... 4N-4⎞
-        // ⎜  1  5    ... 4N-3⎟
-        // ⎜  2  6    ... 4N-2⎟
-        // ⎜  3  7    ... 4N-1⎟
-        // ⎜  4N 4N+4 ... 8N-4⎟
-        // ⎝  etc.            ⎠
-        // The idea being to go in blocks of 4 as a single SIMD vector, and accumulate all of that block into the output.
-        // On this laptop, 160k NPS as of now.
-        for (size_t j = 0; j < Input; j++) {
-          for (size_t i = 0; i < Output; i+=block_size) {
-              for (size_t k = 0; k < block_size; k++) {
-                out[i + k] += w[j * Output + i + k] * in[j];
-              }
-            }
+      auto w = reinterpret_cast<alignas(32) const T* __restrict__>(&weights.data);
+      auto in = reinterpret_cast<alignas(32) const T* __restrict__>(&input.data);
+      auto out = reinterpret_cast<alignas(32) T* __restrict__>(&result.data);
+
+      #ifdef USE_AVX2
+      // This is soo slow oh my god
+      // On this laptop, 108k NPS as of now.
+      if constexpr (Output % simd_block_size == 0) {
+        for (size_t i = 0; i < Output; i+=simd_block_size) {
+          // load a block of output values into an accumulator
+          __m256 acc = _mm256_load_ps(out + i);
+          for (size_t j = 0; j < Input; j++) {
+            // broadcast the input value to all lanes of a SIMD register
+            const __m256 in_vec = _mm256_set1_ps(in[j]);
+            // load a block of weights into a SIMD register
+            const __m256 w_vec = _mm256_load_ps(w + i * Input + j * simd_block_size);
+            acc = _mm256_fmadd_ps(w_vec, in_vec, acc);
+          }
+          _mm256_store_ps(out + i, acc);
         }
-        return result;
+      } else {
+        for (size_t i = 0; i < Output; i++) {
+          for (size_t j = 0; j < Input; j++) {
+            out[i] += w[i * Input + j] * in[j];
+          }
+        } 
+      }     
+      #else
+      // On this laptop, 318k NPS as of now.
+      constexpr size_t loop_unroll = 16;
+      constexpr size_t block_size = (Output % loop_unroll == 0) ? loop_unroll : 1;
+      static_assert(Output % block_size == 0, "Output size must be a multiple of block size");
+      // Optimised to encourage vectorisation and a loop unroll 
+      for (size_t j = 0; j < Input; j++) {
+        for (size_t i = 0; i < Output; i+=block_size) {
+          for (size_t k = 0; k < block_size; k++) {
+            out[i + k] += w[j * Output + i + k] * in[j];
+          }
+        }
       }
+      #endif
+      return result;
+    }
 
-      // factory methods
-      static LinearLayer zeros() {
-        auto mat = Matrix<T, Output, Input>::zeros();
-        auto bias = Vector<T, Output>::zeros();
-        return LinearLayer(mat, bias);
-      }
+    // factory methods
+    static LinearLayer zeros() {
+      auto mat = Matrix<T, Output, Input>::zeros();
+      auto bias = Vector<T, Output>::zeros();
+      return LinearLayer(mat, bias);
+    }
 
-      static LinearLayer random() {
-        auto mat = Matrix<T, Output, Input>::random();
-        auto bias = Vector<T, Output>::random();
-        return LinearLayer(mat, bias);
-      }
+    static LinearLayer random() {
+      auto mat = Matrix<T, Output, Input>::random();
+      auto bias = Vector<T, Output>::random();
+      return LinearLayer(mat, bias);
+    }
 
-    private:
-      Matrix<T, Input, Output> weights;
-      Vector<T, Output> bias;
+  private:
+  #ifdef USE_AVX2
+    BlockAccessOptimisedMatrix<T, Input, Output, simd_block_size> weights;
+  #else
+    Matrix<T, Input, Output> weights;
+  #endif
+    Vector<T, Output> bias;
   };
 
   template<typename Tw, typename Ta, typename Tin, typename Tout, size_t In, size_t Out>
