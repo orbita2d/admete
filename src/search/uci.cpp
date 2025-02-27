@@ -224,8 +224,8 @@ void do_search(Board *board, depth_t max_depth, const int soft_cutoff, const int
                Search::SearchOptions *options) {
     PrincipleLine line;
     line.reserve(max_depth);
+    options->stop_flag.store(false);
     options->running_flag.store(true);
-    options->stop_flag = false;
     options->nodes = 0;
     int score = Search::search(*board, max_depth, soft_cutoff, hard_cutoff, line, *options);
     options->eval = score;

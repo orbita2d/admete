@@ -12,6 +12,7 @@ set_property(TARGET admete PROPERTY CXX_STANDARD 20)
 
 option(WITH_PROFILER "Build with gperftools profiler" OFF)
 option(USE_AVX2 "Enable AVX2 instructions" OFF)
+# option(CACHE_LINE_SIZE "Size of cache line in bytes" 64)
 
 if ( CMAKE_COMPILER_IS_GNUCXX )
     target_compile_options(admete
@@ -19,10 +20,8 @@ if ( CMAKE_COMPILER_IS_GNUCXX )
         PRIVATE "-Wextra"
         PRIVATE "-mtune=native"
         PRIVATE "-march=native"
-        PRIVATE "-flto" 
-        PRIVATE "-ffast-math"
     )
-    set(CMAKE_CXX_FLAGS_RELEASE "-O3 -flto")
+    set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -flto")
 endif()
 if ( MSVC )
     target_compile_options(admete PRIVATE "/W4")

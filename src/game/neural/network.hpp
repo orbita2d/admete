@@ -25,9 +25,9 @@ namespace Neural {
 
     Vector<T, Output> forward(const Vector<T, Input>& input) const {
       Vector<T, Output> result = bias;
-      auto w = reinterpret_cast<alignas(32) const T* __restrict__>(&weights.data);
-      auto in = reinterpret_cast<alignas(32) const T* __restrict__>(&input.data);
-      auto out = reinterpret_cast<alignas(32) T* __restrict__>(&result.data);
+      auto w = reinterpret_cast<alignas(cache_line_size) const T* __restrict__>(&weights.data);
+      auto in = reinterpret_cast<alignas(cache_line_size) const T* __restrict__>(&input.data);
+      auto out = reinterpret_cast<alignas(cache_line_size) T* __restrict__>(&result.data);
 
       #ifdef USE_AVX2
         constexpr size_t simd_block_size = 256 / sizeof(T); // 8 singles, or 4 doubles

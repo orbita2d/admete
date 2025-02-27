@@ -10,7 +10,7 @@ namespace Neural {
     // 1D vector
     template <typename T, size_t N> 
     struct Vector {
-        alignas(32) T data[N];
+        alignas(cache_line_size) T data[N];
         T& at(size_t i) { assert(i < N); return data[i];}
         static Vector<T, N> zeros() {
             Vector<T, N> result;
@@ -171,7 +171,7 @@ namespace Neural {
     // Matrix
     template <typename T, size_t M, size_t N>
     struct Matrix {
-        alignas(32) T data[M * N];
+        alignas(cache_line_size) T data[M * N];
         T& at(const size_t i, const size_t j) { assert(i < M && j < N);  return data[i * N + j]; }
         const T& at(const size_t i, const size_t j) const { assert(i < M && j < N); return data[i * N + j]; }
 
@@ -213,7 +213,7 @@ namespace Neural {
     template<typename T, size_t M, size_t N, size_t BlockSize>
     struct BlockAccessOptimisedMatrix {
         // This matrix is optimised for matrix-vector multiplication, with small maximum sizes in the cache, but better vectorisation performance than naive row-major storage
-        alignas(32) T data[M * N];
+        alignas(cache_line_size) T data[M * N];
         static_assert(M % BlockSize == 0, "M must be divisible by BlockSize");
         T& at(const size_t i, const size_t j) {
             assert(i < M && j < N); 
