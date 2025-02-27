@@ -24,6 +24,7 @@ target_include_directories(game_library PUBLIC
 
 set_property(TARGET game_library PROPERTY CXX_STANDARD 20)
 
+target_compile_definitions(game_library PRIVATE CACHE_LINE_SIZE=64)
 
 if(USE_AVX2)
     target_compile_definitions(game_library PRIVATE USE_AVX2)
@@ -43,8 +44,6 @@ target_compile_options(
     PRIVATE "-Wextra"
     PRIVATE "-mtune=native"
     PRIVATE "-march=native"
-    PRIVATE "-flto" 
-    PRIVATE "-ffast-math"
     )
 endif()
 if ( MSVC )

@@ -37,8 +37,6 @@ target_compile_options(
     PRIVATE "-Wextra"
     PRIVATE "-mtune=native"
     PRIVATE "-march=native"
-    PRIVATE "-flto" 
-    PRIVATE "-ffast-math"
     )
 endif()
 if ( MSVC )
