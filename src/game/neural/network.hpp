@@ -68,95 +68,6 @@ namespace Neural {
     Vector<T, Output> bias;
   };
 
-  template<typename Tw, typename Ta, typename Tin, typename Tout, size_t In, size_t Out>
-  class QuantizedLayer {
-    // Tw = weight type (e.g. int8_t)
-    // Ta = accumulator type (e.g. int32_t)
-    // Tnn = input/output type (e.g. int16_t)
-    // In = input size
-    // Out = output size
-    private:
-      Matrix<Tw, Out, In> weights;
-      Vector<Ta, Out> bias;
-      size_t acc_shift;
-    public:
-      QuantizedLayer(const Matrix<Tw, Out, In>& weights, const Vector<Ta, Out>& bias, size_t acc_shift)
-        : weights(weights), bias(bias), acc_shift(acc_shift) {}
-      
-      QuantizedLayer() = default;
-
-      Vector<Tout, Out> forward(const Vector<Tin, In>& input) const {
-        auto out = Vector<Tout, Out>::zeros();
-        for (size_t i = 0; i < Out; i++) {
-          Ta acc = 0;
-          for (size_t j = 0; j < In; j++) {
-            // Maticies are stored in column-major order, so the transpose is useful.
-            // This is mathematically x W^T + b, rather than Wx + b, but it doesn't matter.
-            // This way we don't have to allocate a vector of Ta for the intermediate results.
-            acc += static_cast<Ta>(weights.at(i, j)) * static_cast<Ta>(input[j]);
-          }
-          out.at(i) = static_cast<Tout>(std::clamp(((acc + bias[i]) >> acc_shift), static_cast<Ta>(std::numeric_limits<Tout>::min()), static_cast<Ta>(std::numeric_limits<Tout>::max())));
-          // out.at(i) = static_cast<Tout>((acc + bias[i]) >> acc_shift);
-        }
-        return out;
-      }
-  };
-
-
-  template<typename Tw, typename Ta, typename Tin, typename Tout, size_t In, size_t Out>
-  class QuantizedAccumulatorLayer {
-    // Tw = weight type (e.g. int8_t)
-    // Ta = accumulator type (e.g. int32_t)
-    // Tnn = input/output type (e.g. int16_t)
-    // In = input size
-    // Out = output size
-    // Optimised for the accumulator layer, where the input is sparse
-
-    static_assert(std::is_integral_v<Tw>, "Weight type must be integral");
-    static_assert(std::is_integral_v<Ta>, "Accumulator type must be integral");
-    static_assert(std::is_integral_v<Tout>, "Output type must be integral");
-
-    public:
-      using weight_t = Matrix<Tw, Out, In>;
-      QuantizedAccumulatorLayer(const weight_t& weights, const Vector<Ta, Out>& bias, size_t acc_shift)
-        : weights(weights.transpose()), bias(bias), acc_shift(acc_shift) {}
-      
-      QuantizedAccumulatorLayer() = default;
-
-      Vector<Tout, Out> delta(const SparseVector<Tin, In>& input) const {
-        auto acc = Vector<Ta, Out>::zeros();
-        for (const auto& [index, value] : input.data) {
-          for (size_t i = 0; i < Out; i++) {
-            acc[i] += static_cast<Ta>(weights.at(index, i)) * static_cast<Ta>(value);
-          }
-        }
-        auto out = Vector<Tout, Out>();
-        for (size_t i = 0; i < Out; i++) {
-          out[i] = static_cast<Tout>(std::clamp(acc.at(i) >> acc_shift, static_cast<Ta>(std::numeric_limits<Tout>::min()), static_cast<Ta>(std::numeric_limits<Tout>::max()))); 
-        }
-        return out;
-      }
-
-      Vector<Tout, Out> forward(const Vector<Tin, In>& input) const {
-        // Warning for the user, this is poorly optimised for dense inputs, this is fine however to use in board initialisation.
-        auto acc = bias;
-        for (size_t i = 0; i < Out; i++) {
-          for (size_t j = 0; j < In; j++) {
-            acc.at(i) += static_cast<Ta>(weights.at(i, j)) * static_cast<Ta>(input[j]);
-          }
-        }
-        auto out = Vector<Tout, Out>();
-        for (size_t i = 0; i < Out; i++) {
-          out.at(i) = static_cast<Tout>(std::clamp(acc.at(i) >> acc_shift, static_cast<Ta>(std::numeric_limits<Tout>::min()), static_cast<Ta>(std::numeric_limits<Tout>::max()))); 
-        }
-        return out;
-      }
-      private:
-      Matrix<Tw, In, Out> weights;
-      Vector<Ta, Out> bias;
-      size_t acc_shift;
-  };
-
   template<typename T, size_t HalfIn, size_t Out>
   class FloatingAccumulatorLayer {
     static_assert(std::is_floating_point_v<T>, "FloatingAccumulatorLayer only supports floating point types");
@@ -300,14 +211,12 @@ namespace Neural {
     template<size_t In, size_t Out, size_t... Rest>
     struct LayerTypes {
         using type = std::tuple<LinearLayer<nn_t, In, Out>>;
-        // using type = std::tuple<QuantizedLayer<_w_t, _ac_t, nn_t, nn_t, In, Out>>;
     };
     // Recursive case - concatenate current layer with rest of layers
     template<size_t In, size_t Mid, size_t Out, size_t... Rest>
     struct LayerTypes<In, Mid, Out, Rest...> {
         using type = decltype(std::tuple_cat(
             std::declval<std::tuple<LinearLayer<nn_t, In, Mid>>>(),
-            // std::declval<std::tuple<QuantizedLayer<_w_t, _ac_t, nn_t, nn_t, In, Mid>>>(),
             std::declval<typename LayerTypes<Mid, Out, Rest...>::type>()
         ));
     };
