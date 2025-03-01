@@ -7,9 +7,6 @@ typedef per_square<Score> sqt_t;
 typedef per_piece<sqt_t> psqt_t;
 
 namespace Evaluation {
-void init();
-inline sqt_t pb_passed;
-
 // Calculate the evaluation heuristic from the player's POV
 score_t eval(const Board &board);
 
@@ -28,6 +25,4 @@ sqt_t reverse_board(sqt_t in);
 // Vector of pointers to training parameters
 typedef std::pair<Score *, std::string> labled_parameter;
 inline std::vector<labled_parameter> training_parameters;
-// Set up constants
-void constants();
 } // namespace Evaluation

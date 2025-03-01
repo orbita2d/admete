@@ -25,7 +25,7 @@ if ( CMAKE_COMPILER_IS_GNUCXX )
 endif()
 if ( MSVC )
     target_compile_options(admete PRIVATE "/W4")
-    set(CMAKE_CXX_FLAGS_RELEASE "/O3")
+    set(CMAKE_CXX_FLAGS_RELEASE "/O3 /fp:fast /GL")
 endif()
 
 

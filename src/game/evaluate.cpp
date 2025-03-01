@@ -1,6 +1,5 @@
 #include "evaluate.hpp"
 #include "board.hpp"
-#include "cache.hpp"
 #include "printing.hpp"
 #include "zobrist.hpp"
 #include <array>
@@ -25,10 +24,6 @@ namespace Evaluation {
 
 static Neural::network_t network = Neural::get_network();
 
-void init() {
-    constants();
-}
-
 sqt_t reverse_board(sqt_t in) {
     sqt_t pb;
     for (int s = 0; s < 64; s++) {
@@ -51,6 +46,7 @@ score_t Evaluation::count_phase_material(const Board &board) {
     }
     return material_value;
 }
+
 
 score_t Evaluation::eval(const Board &board) {
     // Return the eval from the point of view of the current player.
