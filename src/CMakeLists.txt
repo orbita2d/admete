@@ -1,11 +1,9 @@
 add_executable(admete main.cpp)
 
 target_link_libraries(admete 
-PRIVATE game_library
-PRIVATE search_library)
+PRIVATE libadmete)
 
-add_subdirectory(game)
-add_subdirectory(search)
+add_subdirectory(admete)
 
 set_property(TARGET admete PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
 set_property(TARGET admete PROPERTY CXX_STANDARD 20)

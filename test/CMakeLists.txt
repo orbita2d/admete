@@ -1,26 +1,26 @@
 message(STATUS "Building tests")
 add_executable(tests main.cpp
-                squares.cpp
-                perft.cpp
-                search.cpp
-                ops.cpp
-                fen.cpp
-                board.cpp
-                eval.cpp
-                zobrist.cpp
-                ordering.cpp
-                features.cpp
-                linalg.cpp
-                network.cpp
-                )
+        squares.cpp
+        perft.cpp
+        search.cpp
+        ops.cpp
+        fen.cpp
+        board.cpp
+        eval.cpp
+        zobrist.cpp
+        ordering.cpp
+        features.cpp
+        linalg.cpp
+        network.cpp
+        )
 
 target_link_libraries(tests
         gtest
-        game_library
-        search_library)
+        libadmete
+        )
 
 add_test(NAME tests
-        COMMAND tests )
+        COMMAND tests)
 
 set_property(TARGET tests PROPERTY CXX_STANDARD 20)
 
