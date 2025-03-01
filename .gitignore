@@ -26,4 +26,4 @@ Testing
 scripts/
 
 py-*/
-Dockerfile.perf
+*.Dockerfile
