@@ -1,3 +1,4 @@
+message(STATUS "Building tests")
 add_executable(tests main.cpp
                 squares.cpp
                 perft.cpp

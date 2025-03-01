@@ -10,8 +10,6 @@ add_subdirectory(search)
 set_property(TARGET admete PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
 set_property(TARGET admete PROPERTY CXX_STANDARD 20)
 
-option(WITH_PROFILER "Build with gperftools profiler" OFF)
-option(USE_AVX2 "Enable AVX2 instructions" OFF)
 # option(CACHE_LINE_SIZE "Size of cache line in bytes" 64)
 
 if ( CMAKE_COMPILER_IS_GNUCXX )
