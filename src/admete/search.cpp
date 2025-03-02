@@ -100,7 +100,7 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, u
     }
 
     // Check if we've passed our time cutoff
-    if (allow_cutoff && (options.nodes % 1000 == 0)) {
+    if (allow_cutoff && (options.nodes % (1<<10) == 0)) {
         if (options.get_millis() > time_cutoff) {
             options.set_stop();
             return MAX_SCORE;
@@ -151,8 +151,7 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, u
     }
 
     // Null move pruning.
-    // We expect (null move observation) the node after a null move to fail high. The score should be a lower bound on
-    // the score for this node.
+    // Making a null move, in most cases, should be the worst option and give us an approximate lower bound on the score for this node.
     if (!board.is_endgame() && allow_null && (depth > null_move_depth_reduction) && !board.is_check()) {
         board.make_nullmove();
         score_t score = -scout_search(board, depth - 1 - null_move_depth_reduction, -alpha - 1, time_cutoff,
@@ -169,11 +168,10 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, u
     // margin, then we can probably cut safely.
     if (depth >= 6 && beta < TBWIN_MIN && beta > -TBWIN_MIN) {
         // Beta-cut
-        score_t probcut_threshold = beta + 300;
-        score_t score =
-            scout_search(board, depth - 3, probcut_threshold - 1, time_cutoff, allow_cutoff, allow_null, node, options);
-        if (score >= probcut_threshold) {
-            return score;
+        const score_t probcut_threshold = beta + 300;
+        const score_t probcut_score = scout_search(board, depth - 3, probcut_threshold - 1, time_cutoff, allow_cutoff, allow_null, node, options);
+        if (probcut_score >= probcut_threshold) {
+            return probcut_score;
         }
     }
 
@@ -365,7 +363,7 @@ score_t Search::pv_search(Board &board, const depth_t start_depth, const score_t
     }
 
     // Check if we've passed our time cutoff
-    if (allow_cutoff && (options.nodes % 1000 == 0)) {
+    if (allow_cutoff && (options.nodes % (1<<10) == 0)) {
         if (options.get_millis() > time_cutoff) {
             options.set_stop();
             return MAX_SCORE;
@@ -648,7 +646,7 @@ score_t Search::search(Board &board, const depth_t max_depth, int soft_cutoff, c
 
         // Calculate the time spent so far.
         millis_now = 1 + options.get_millis();
-        unsigned long nps = int(1000 * (options.nodes / millis_now));
+        const unsigned long nps = ((1000 *options.nodes) / millis_now);
 
         // Send the info for the search to uci
         UCI::uci_info(depth, score, options.nodes, options.tbhits, nps, principle, millis_now, board.get_root());

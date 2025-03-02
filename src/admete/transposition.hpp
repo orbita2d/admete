@@ -44,8 +44,6 @@ struct TransElement {
     DenseMove hash_move = NULL_DMOVE;
 };
 
-typedef std::unordered_map<zobrist_t, TransElement> tt_map;
-
 constexpr unsigned hash_default = 64u;
 constexpr unsigned hash_min = 1u;
 constexpr unsigned hash_max = 8192u;
