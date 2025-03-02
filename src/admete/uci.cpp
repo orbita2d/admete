@@ -15,7 +15,7 @@
 #include "weights.hpp"
 
 #define ENGINE_NAME "admete"
-#define ENGINE_VERS "nnue-2025-03-01"
+#define ENGINE_VERS "nnue-2025-03-02"
 #define ENGINE_AUTH "orbita"
 
 namespace UCI {
