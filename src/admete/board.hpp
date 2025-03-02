@@ -75,7 +75,6 @@ class Board {
 
     bool is_free(const Square target) const;
     bool is_colour(const Colour c, const Square target) const;
-    Square slide_to_edge(const Square origin, const Square direction, const uint to_edge) const;
 
     MoveList get_moves() const;
     MoveList get_capture_moves() const;
@@ -86,9 +85,6 @@ class Board {
     void get_capture_moves(MoveList &) const;
     void get_evasion_moves(MoveList &) const;
     void get_quiessence_moves(MoveList &) const;
-
-    // Return true if there are no legal moves in the position.
-    bool is_terminal() const { return !get_moves().empty(); }
 
     bool is_attacked(const Square square, const Colour us) const;
 
@@ -135,20 +131,6 @@ class Board {
         return colour_bb[c] & (piece_bb[p1] | piece_bb[p2]);
     }
     Bitboard pawn_controlled(const Colour c) const { return pawn_atk_bb[c]; }
-    Bitboard passed_pawns(const Colour c) const { return passed_pawn_bb[c]; };
-    Bitboard connected_passed_pawns(const Colour c) const {
-        return passed_pawns(c) & Bitboards::full_atk_span(passed_pawns(c));
-    }
-    Bitboard open_files() const { return ~Bitboards::vertical_fill(pieces(PAWN)); }
-    Bitboard half_open_files(const Colour c) const { return ~Bitboards::vertical_fill(pieces(c, PAWN)); }
-    Bitboard weak_pawns(const Colour c) const { return pieces(c, PAWN) & ~pawn_controlled(c); }
-    Bitboard isolated_pawns(const Colour c) const {
-        return pieces(c, PAWN) & ~Bitboards::full_atk_span(pieces(c, PAWN));
-    }
-    // Squares that can never be defended by c's pawn.
-    Bitboard weak_squares(const Colour c) const { return weak_sq_bb[c]; }
-    // Squares that can never be defended by their pawn, that are controlled by our pawns.
-    Bitboard outposts(const Colour c) const { return pawn_controlled(c) & weak_squares(~c); }
 
     void make_move(Move &move);
     void unmake_move(const Move move);
@@ -208,8 +190,6 @@ class Board {
     per_colour<Bitboard> colour_bb;
     per_piece<Bitboard> piece_bb;
     per_colour<Bitboard> pawn_atk_bb;
-    per_colour<Bitboard> weak_sq_bb;
-    per_colour<Bitboard> passed_pawn_bb;
     int piece_counts[N_COLOUR][N_PIECE];
     Colour whos_move = WHITE;
     uint fullmove_counter = 1;

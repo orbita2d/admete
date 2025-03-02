@@ -1,12 +1,6 @@
 #include "board.hpp"
 #include <gtest/gtest.h>
 
-TEST(Operations, PassedPawns) {
-  Board board = Board();
-  board.fen_decode("8/2p5/Pp2k3/8/8/8/1K1P2P1/8 w - - 0 1");
-  EXPECT_EQ(board.passed_pawns(WHITE), 0x0000010000004000);
-  EXPECT_EQ(board.passed_pawns(BLACK), 0x0000020000000000);
-}
 
 TEST(Operations, RelativeFills) {
   Bitboard testcases[] = {
