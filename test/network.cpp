@@ -22,27 +22,6 @@ TEST(NeuralNetwork, LinearLayerForward) {
     EXPECT_EQ(output[1], 27);  // 5*0 + 7*1 + 20
 }
 
-// TEST(NeuralNetwork, LinearLayerSparse) {
-//     Matrix<nn_t, 2, 3> weights;
-//     weights.at(0,0) = 1; weights.at(0,1) = 2; weights.at(0,2) = 3;
-//     weights.at(1,0) = 4; weights.at(1,1) = 5; weights.at(1,2) = 6;
-    
-//     Vector<nn_t, 2> bias;
-//     bias[0] = 1; bias[1] = 2;
-    
-//     LinearLayer<nn_t, 3, 2> layer(weights, bias);
-    
-//     // Test sparse delta calculation
-//     SparseVector<nn_t, 3> sparse_input;
-//     sparse_input.set(0, 1);
-//     sparse_input.set(2, 3);
-    
-//     auto delta = layer.delta(sparse_input);
-//     EXPECT_EQ(delta[0], 10);  // 1*1 + 3*3
-//     EXPECT_EQ(delta[1], 22);  // 4*1 + 6*3
-// }
-
-
 TEST(NeuralNetwork, ReLUBehavior) {
     Vector<nn_t, 4> input{-100, -1, 0, 100};
     auto output = relu(input);
@@ -96,4 +75,35 @@ TEST_F(NetworkIntegrationTest, NonZeroOutput) {
         any_nonzero |= (score != 0);
     }
     EXPECT_TRUE(any_nonzero);
+}
+
+TEST_F(NetworkIntegrationTest, AccumulationCorrectness) {
+    for (const auto& fen : test_positions) {
+        board.fen_decode(fen);
+        auto score0 = network.forward(board.accumulator(), board.who_to_play());
+        // Make a move
+        auto moves = board.get_moves();
+        for (auto move : moves) {
+            board.make_move(move);
+            auto score1 = network.forward(board.accumulator(), board.who_to_play());
+            accumulator.initialise(board);
+            auto score2 = network.forward(accumulator, board.who_to_play());
+            board.unmake_move(move);
+
+            EXPECT_NEAR(score1, score2, 1e-5)
+                << "Position: " << fen << "\n"
+                << "Move: " << move.pretty() << "\n"
+                << "Score1: " << score1 << "\n"
+                << "Score2: " << score2;
+
+            auto score3 = network.forward(board.accumulator(), board.who_to_play());
+            EXPECT_NEAR(score0, score3, 1e-5)
+                << "Position: " << fen << "\n"
+                << "Move: " << move.pretty() << "\n"
+                << "Score0: " << score0 << "\n"
+                << "Score3: " << score3;
+
+        }
+    }
+
 }

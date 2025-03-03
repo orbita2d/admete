@@ -78,26 +78,6 @@ namespace Neural {
       
       FloatingAccumulatorLayer() = default;
 
-      Vector<T, Out> forward(const Vector<T, In>& input) const {
-        Vector<T, Out> result = bias;
-        for (size_t j = 0; j < In; j++) {
-          for (size_t i = 0; i < Out; i++) {
-            result[i] += weights.at(j, i) * input[j];
-          }
-        }
-        return result;
-      }
-
-      Vector<T, Out> delta(const SparseVector<T, In>& input ) const {
-        Vector<T, Out> result = Vector<T, Out>::zeros();
-        for (const auto& [index, value] : input.data) {
-          for (size_t i = 0; i < Out; i++) {
-            result[i] += weights.at(index, i) * value;
-          }
-        }
-        return result;
-      }
-
       Vector<T, Out> forward(const Vector<T, HalfIn>& input_left, const Vector<T, HalfIn>& input_right) const {
         Vector<T, Out> result = bias;
         for (size_t i = 0; i < Out; i++) {
@@ -111,20 +91,18 @@ namespace Neural {
         return result;
       }
 
-      Vector<T, Out> delta(const SparseVector<T, HalfIn>& input_left, const SparseVector<T, HalfIn>& input_right) const {
+      void increment(Vector<T, Out>& reference, const SparseVector<T, HalfIn>& input_left, const SparseVector<T, HalfIn>& input_right) const {
         // We want to concatenate the two inputs, and then propogate. This allows us to do them without copying.
-        Vector<T, Out> result = Vector<T, Out>::zeros();
         for (const auto& [index, value] : input_left.data) {
           for (size_t i = 0; i < Out; i++) {
-            result[i] += weights.at(index, i) * value;
+            reference[i] += weights.at(index, i) * value;
           }
         }
         for (const auto& [index, value] : input_right.data) {
           for (size_t i = 0; i < Out; i++) {
-            result[i] += weights.at(index + HalfIn, i) * value;
+            reference[i] += weights.at(index + HalfIn, i) * value;
           }
         }
-        return result;
       }
 
     private:
@@ -143,6 +121,13 @@ namespace Neural {
       result[i] = relu(x[i]);
     }
     return result;
+  }
+
+  template <typename T, size_t N>
+  void relu_inplace(Vector<T, N>& x) {
+    for (size_t i = 0; i < N; i++) {
+      x[i] = relu(x[i]);
+    }
   }
 
   template <size_t FeaturesSize, size_t AccumulatorSize>
@@ -190,15 +175,15 @@ namespace Neural {
   template<size_t FeaturesSize, size_t AccumulatorSize>
   void Accumulator<FeaturesSize, AccumulatorSize>::make_move(const Move &move, const Colour side) {
       auto diff = increment(move, side, true);
-      accumulated[side] += acc_layer.delta(diff[side], diff[~side]);
-      accumulated[~side] += acc_layer.delta(diff[~side], diff[side]);
+      acc_layer.increment(accumulated[side], diff[side], diff[~side]);
+      acc_layer.increment(accumulated[~side], diff[~side], diff[side]);
   }
 
   template<size_t FeaturesSize, size_t AccumulatorSize>
   void Accumulator<FeaturesSize, AccumulatorSize>::unmake_move(const Move &move, const Colour side) {
       auto diff = increment(move, side, false);
-      accumulated[side] += acc_layer.delta(diff[side], diff[~side]);
-      accumulated[~side] += acc_layer.delta(diff[~side], diff[side]);
+      acc_layer.increment(accumulated[side], diff[side], diff[~side]);
+      acc_layer.increment(accumulated[~side], diff[~side], diff[side]);
   }
 
   template<size_t FeaturesSize, size_t AccumulatorSize, size_t... LayerSizes>
