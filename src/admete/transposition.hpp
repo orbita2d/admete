@@ -56,6 +56,7 @@ class TranspositionTable {
     bool probe(const zobrist_t, TransElement &hit);
     void store(const zobrist_t hash, const score_t eval, const Bounds bound, const depth_t depth, const Move move,
                const ply_t ply);
+    void prefetch(const zobrist_t hash);
     void clear() { _data.clear(); }
     bool is_enabled() { return enabled; }
     void enable() { enabled = true; }

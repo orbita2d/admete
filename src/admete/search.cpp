@@ -36,6 +36,9 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, u
     if (board.is_check()) {
         depth++;
     }
+    const zobrist_t hash = board.hash();
+    // Try to prefetch the transposition table entry.
+    Cache::transposition_table.prefetch(hash);
 
     MoveList legal_moves = board.get_moves();
     // Terminal node.
@@ -74,7 +77,6 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, u
 
     // Lookup position in transposition table.
     DenseMove hash_dmove = NULL_DMOVE;
-    const zobrist_t hash = board.hash();
     Cache::TransElement tthit;
     if (Cache::transposition_table.probe(hash, tthit)) {
         if (tthit.depth() >= depth) {
@@ -306,6 +308,8 @@ score_t Search::pv_search(Board &board, const depth_t start_depth, const score_t
     if (board.is_check()) {
         depth++;
     }
+    const zobrist_t hash = board.hash();
+    Cache::transposition_table.prefetch(hash);
 
     MoveList legal_moves = board.get_moves();
     // Terminal node
@@ -356,7 +360,6 @@ score_t Search::pv_search(Board &board, const depth_t start_depth, const score_t
 
     // Lookup position in transposition table for hashmove.
     DenseMove hash_dmove = NULL_DMOVE;
-    const zobrist_t hash = board.hash();
     Cache::TransElement tthit;
     if (Cache::transposition_table.probe(hash, tthit)) {
         hash_dmove = tthit.move();

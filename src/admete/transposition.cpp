@@ -3,6 +3,9 @@
 #include <array>
 #include <assert.h>
 #include <bit>
+#if defined(_MSC_VER) && (defined(_M_IX86) || defined(_M_X64))
+#include <xmmintrin.h>
+#endif
 
 Cache::TranspositionTable::TranspositionTable() {
     // Limit our index to a power of two.
@@ -73,6 +76,16 @@ void Cache::TranspositionTable::store(const zobrist_t hash, const score_t eval, 
     } else {
         _data.at(index) = elem;
     }
+}
+
+void Cache::TranspositionTable::prefetch(const zobrist_t hash) {
+#if defined(__GNUC__) || defined(__clang__) || defined(__INTEL_COMPILER)
+    __builtin_prefetch(&_data[hash & bitmask], 0, 3);
+#elif defined(_MSC_VER) && (defined(_M_IX86) || defined(_M_X64))
+    _mm_prefetch((const char*)&_data[hash & bitmask], _MM_HINT_T0);
+#else
+    (void)hash;
+#endif
 }
 
 void Cache::TranspositionTable::set_delete() {
