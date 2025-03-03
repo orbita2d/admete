@@ -80,11 +80,10 @@ namespace Neural {
 
       Vector<T, Out> forward(const Vector<T, HalfIn>& input_left, const Vector<T, HalfIn>& input_right) const {
         Vector<T, Out> result = bias;
-        for (size_t i = 0; i < Out; i++) {
-          for (size_t j = 0; j < HalfIn; j++) {
+
+        for (size_t j = 0; j< HalfIn; j++) {
+          for (size_t i = 0; i < Out; i++) {
             result[i] += weights.at(j, i) * input_left[j];
-          }
-          for (size_t j = 0; j < HalfIn; j++) {
             result[i] += weights.at(j + HalfIn, i) * input_right[j];
           }
         }
