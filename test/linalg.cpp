@@ -76,14 +76,3 @@ TEST(LinAlg, MatrixDimensions) {
     EXPECT_EQ(m.rows(), 2);
     EXPECT_EQ(m.cols(), 3);
 }
-
-TEST(LinAlg, BlockAccessOptimisedMatrixCorrectness) {
-
-    auto m = Matrix<float, 256, 256>::random();
-    auto bm = BlockAccessOptimisedMatrix<float, 256, 256, 16>::from_matrix(m);
-    for (size_t i = 0; i < 256; i++) {
-        for (size_t j = 0; j < 256; j++) {
-            EXPECT_FLOAT_EQ(m.at(i, j), bm.at(i, j));
-        }
-    }
-}

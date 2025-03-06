@@ -35,10 +35,11 @@ class NetworkIntegrationTest : public ::testing::Test {
 protected:
     Board board;
     network_t network;
-    accumulator_t accumulator = Neural::get_accumulator();
+    accumulator_t accumulator;
     
     void SetUp() override {
         // 
+        accumulator = Neural::get_accumulator();
         network = Neural::get_network();
     }
 
