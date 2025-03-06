@@ -4,6 +4,7 @@
 #include <features.hpp>
 #include <algorithm>
 #include <limits>
+#include <memory>
 
 namespace Neural {
   typedef float nn_t;
@@ -87,6 +88,9 @@ namespace Neural {
         }
       }
 
+      T& weight_at(size_t i, size_t j) { return weights.at(j, i); }
+      T& bias_at(size_t i) { return bias[i]; }
+
     private:
       Matrix<T,  In, Out> weights;
       Vector<T, Out> bias;
@@ -119,13 +123,12 @@ namespace Neural {
 
       Accumulator() = default;
 
+      explicit Accumulator(std::unique_ptr<layer_t> layer)
+          : acc_layer(std::move(layer)) {}
+        
       explicit Accumulator(const layer_t& layer)
-          : acc_layer(layer) {}
+          : acc_layer(std::make_unique<layer_t>(layer)) {}
       
-      // Copy constructor needs to copy the reference
-      Accumulator(const Accumulator& other) = default;
-      Accumulator& operator=(const Accumulator& other) = default;
-
       Accumulator(Accumulator&& other) noexcept 
           : acc_layer(std::move(other.acc_layer))
           , accumulated(std::move(other.accumulated)) {}
@@ -143,29 +146,29 @@ namespace Neural {
 
     private:
       per_colour<Vector<nn_t, AccumulatorSize>> accumulated;
-      layer_t acc_layer;
+      std::unique_ptr<layer_t> acc_layer;
   };
 
   template<size_t FeaturesSize, size_t AccumulatorSize>
   void Accumulator<FeaturesSize, AccumulatorSize>::initialise(const Board &board) {
       auto encoded = encode(board);
       for (Colour c : {WHITE, BLACK}) {
-          accumulated[c] = acc_layer.forward(encoded[c], encoded[~c]);
+          accumulated[c] = acc_layer->forward(encoded[c], encoded[~c]);
       }
   }
 
   template<size_t FeaturesSize, size_t AccumulatorSize>
   void Accumulator<FeaturesSize, AccumulatorSize>::make_move(const Move &move, const Colour side) {
       auto diff = increment(move, side, true);
-      acc_layer.increment(accumulated[side], diff[side], diff[~side]);
-      acc_layer.increment(accumulated[~side], diff[~side], diff[side]);
+      acc_layer->increment(accumulated[side], diff[side], diff[~side]);
+      acc_layer->increment(accumulated[~side], diff[~side], diff[side]);
   }
 
   template<size_t FeaturesSize, size_t AccumulatorSize>
   void Accumulator<FeaturesSize, AccumulatorSize>::unmake_move(const Move &move, const Colour side) {
       auto diff = increment(move, side, false);
-      acc_layer.increment(accumulated[side], diff[side], diff[~side]);
-      acc_layer.increment(accumulated[~side], diff[~side], diff[side]);
+      acc_layer->increment(accumulated[side], diff[side], diff[~side]);
+      acc_layer->increment(accumulated[~side], diff[~side], diff[side]);
   }
 
   template<size_t FeaturesSize, size_t AccumulatorSize, size_t... LayerSizes>
