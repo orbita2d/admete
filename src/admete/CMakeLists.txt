@@ -42,7 +42,6 @@ target_include_directories(libadmete PUBLIC
 target_compile_definitions(libadmete PRIVATE CACHE_LINE_SIZE=64)
 
 if(USE_AVX2)
-    target_compile_definitions(libadmete PRIVATE USE_AVX2)
     if(MSVC)
         target_compile_options(libadmete PRIVATE "/arch:AVX2")
     elseif(CMAKE_COMPILER_IS_GNUCXX)
