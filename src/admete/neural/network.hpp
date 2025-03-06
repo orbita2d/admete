@@ -7,7 +7,6 @@
 
 namespace Neural {
   typedef float nn_t;
-  inline bool ENABLED = false;
   // Feature vectors calculated from the initial board state
   // InitialFeatureDetectionLayer is idenditcal for each colour, a single matrix
   // Accumulator stores the output of that first layer
@@ -65,7 +64,7 @@ namespace Neural {
       Vector<T, Out> forward(const Vector<T, HalfIn>& input_left, const Vector<T, HalfIn>& input_right) const {
         Vector<T, Out> result = bias;
 
-        for (size_t j = 0; j< HalfIn; j++) {
+        for (size_t j = 0; j < HalfIn; j++) {
           for (size_t i = 0; i < Out; i++) {
             result[i] += weights.at(j, i) * input_left[j];
             result[i] += weights.at(j + HalfIn, i) * input_right[j];
