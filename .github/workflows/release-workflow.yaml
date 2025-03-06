@@ -36,24 +36,25 @@ jobs:
       run: |
         mkdir -p release
         # Get the version from the release tag
-        VERSION=${{ github.event.release.tag_name }}
+        VERSION="${{ github.event.release.tag_name }}"
         # Remove 'v' prefix if present
         VERSION=${VERSION#v}
         
         # Copy the binary with version in the filename
         cp build/admete release/admete_${VERSION}_linux_x86-64_avx2
+        echo "BINARY_PATH=release/admete_${VERSION}_linux_x86-64_avx2" >> $GITHUB_ENV
     
     - name: Upload Linux Artifact
       uses: actions/upload-artifact@v3
       with:
         name: linux-x86-64-avx2
-        path: ${{github.workspace}}/release/admete_${{ github.event.release.tag_name #v}}_linux_x86-64_avx2
+        path: ${{github.workspace}}/${{ env.BINARY_PATH }}
     
     - name: Upload Release Asset
       uses: softprops/action-gh-release@v1
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
-        files: ${{github.workspace}}/release/admete_${{ github.event.release.tag_name #v}}_linux_x86-64_avx2
+        files: ${{github.workspace}}/${{ env.BINARY_PATH }}
 
   build-windows:
     runs-on: windows-latest
@@ -74,22 +75,23 @@ jobs:
       run: |
         mkdir -p release
         # Get the version from the release tag
-        VERSION=${{ github.event.release.tag_name }}
+        VERSION="${{ github.event.release.tag_name }}"
         # Remove 'v' prefix if present
         VERSION=${VERSION#v}
         
         # Copy the binary with version in the filename
         cp build/${{env.BUILD_TYPE}}/admete.exe release/admete_${VERSION}_windows_x86-64_avx2.exe
+        echo "BINARY_PATH=release/admete_${VERSION}_windows_x86-64_avx2.exe" >> $GITHUB_ENV
       shell: bash
     
     - name: Upload Windows Artifact
       uses: actions/upload-artifact@v3
       with:
         name: windows-x86-64-avx2
-        path: ${{github.workspace}}/release/admete_${{ github.event.release.tag_name #v}}_windows_x86-64_avx2.exe
+        path: ${{github.workspace}}/${{ env.BINARY_PATH }}
     
     - name: Upload Release Asset
       uses: softprops/action-gh-release@v1
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
-        files: ${{github.workspace}}/release/admete_${{ github.event.release.tag_name #v}}_windows_x86-64_avx2.exe
+        files: ${{github.workspace}}/${{ env.BINARY_PATH }}
