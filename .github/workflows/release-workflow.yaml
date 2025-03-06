@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     
     - name: CMake Version
       run: cmake --version
@@ -31,44 +31,35 @@ jobs:
     
     # Tests skipped for release builds to save compute resources
     
-    - name: Package
+    - name: Prepare Binary
       working-directory: ${{github.workspace}}
       run: |
-        mkdir -p release/linux
+        mkdir -p release
         # Get the version from the release tag
         VERSION=${{ github.event.release.tag_name }}
         # Remove 'v' prefix if present
         VERSION=${VERSION#v}
         
-        # Assuming your main executable is in the build directory
-        # Change this path if your binary location is different
-        cp build/your_app_name release/linux/your_app_name
-        # Copy any additional files needed for your application
-        # cp -r assets release/linux/
-        cd release
-        tar -czvf admete_${VERSION}_linux_x86-64_avx2.tar.gz linux
+        # Copy the binary with version in the filename
+        cp build/admete release/admete_${VERSION}_linux_x86-64_avx2
     
     - name: Upload Linux Artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: linux-x86-64-avx2
-        path: ${{github.workspace}}/release/admete_${VERSION}_linux_x86-64_avx2.tar.gz
+        path: ${{github.workspace}}/release/admete_${{ github.event.release.tag_name #v}}_linux_x86-64_avx2
     
     - name: Upload Release Asset
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: softprops/action-gh-release@v1
       with:
-        upload_url: ${{ github.event.release.upload_url }}
-        asset_path: ${{github.workspace}}/release/admete_${VERSION}_linux_x86-64_avx2.tar.gz
-        asset_name: admete_${VERSION}_linux_x86-64_avx2.tar.gz
-        asset_content_type: application/gzip
+        token: ${{ secrets.GITHUB_TOKEN }}
+        files: ${{github.workspace}}/release/admete_${{ github.event.release.tag_name #v}}_linux_x86-64_avx2
 
   build-windows:
     runs-on: windows-latest
     
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     
     - name: Configure CMake
       run: cmake -B ${{github.workspace}}\build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DWITH_TESTS=OFF -DUSE_AVX2=ON
@@ -78,37 +69,27 @@ jobs:
     
     # Tests skipped for release builds to save compute resources
     
-    - name: Package
+    - name: Prepare Binary
       working-directory: ${{github.workspace}}
       run: |
-        mkdir -p release\windows
+        mkdir -p release
         # Get the version from the release tag
         VERSION=${{ github.event.release.tag_name }}
         # Remove 'v' prefix if present
         VERSION=${VERSION#v}
         
-        # Assuming your main executable is in the build directory
-        # Change this path if your binary location is different
-        mkdir -p release\windows
-        copy build\${{env.BUILD_TYPE}}\your_app_name.exe release\windows\your_app_name.exe
-        # Copy any additional files needed for your application
-        # xcopy /E /I assets release\windows\assets
-        cd release
-        7z a admete_${VERSION}_windows_x86-64_avx2.zip windows
+        # Copy the binary with version in the filename
+        cp build/${{env.BUILD_TYPE}}/admete.exe release/admete_${VERSION}_windows_x86-64_avx2.exe
       shell: bash
     
     - name: Upload Windows Artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: windows-x86-64-avx2
-        path: ${{github.workspace}}/release/admete_${VERSION}_windows_x86-64_avx2.zip
+        path: ${{github.workspace}}/release/admete_${{ github.event.release.tag_name #v}}_windows_x86-64_avx2.exe
     
     - name: Upload Release Asset
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: softprops/action-gh-release@v1
       with:
-        upload_url: ${{ github.event.release.upload_url }}
-        asset_path: ${{github.workspace}}/release/admete_${VERSION}_windows_x86-64_avx2.zip
-        asset_name: admete_${VERSION}_windows_x86-64_avx2.zip
-        asset_content_type: application/zip
+        token: ${{ secrets.GITHUB_TOKEN }}
+        files: ${{github.workspace}}/release/admete_${{ github.event.release.tag_name #v}}_windows_x86-64_avx2.exe
