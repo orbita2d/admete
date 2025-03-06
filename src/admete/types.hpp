@@ -8,11 +8,7 @@
 typedef unsigned int uint;
 typedef uint64_t zobrist_t;
 
-#ifdef CACHE_LINE_SIZE
-constexpr int cache_line_size = CACHE_LINE_SIZE;
-#else
 constexpr int cache_line_size = 64;
-#endif
 
 // Colours
 
