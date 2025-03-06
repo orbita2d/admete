@@ -45,7 +45,7 @@ jobs:
         echo "BINARY_PATH=release/admete_${VERSION}_linux_x86-64_avx2" >> $GITHUB_ENV
     
     - name: Upload Linux Artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: linux-x86-64-avx2
         path: ${{github.workspace}}/${{ env.BINARY_PATH }}
@@ -85,7 +85,7 @@ jobs:
       shell: bash
     
     - name: Upload Windows Artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: windows-x86-64-avx2
         path: ${{github.workspace}}/${{ env.BINARY_PATH }}
