@@ -81,6 +81,8 @@ void Cache::TranspositionTable::store(const zobrist_t hash, const score_t eval, 
 void Cache::TranspositionTable::prefetch(const zobrist_t hash) {
 #if defined(__GNUC__) || defined(__clang__) || defined(__INTEL_COMPILER)
     __builtin_prefetch(&_data[hash & bitmask], 0, 3);
+#elif defined(_MSC_VER)
+    _mm_prefetch((const char*)&_data[hash & bitmask], _MM_HINT_T0);
 #else
     (void)hash;
 #endif
