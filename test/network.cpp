@@ -31,6 +31,14 @@ TEST(NeuralNetwork, ReLUBehavior) {
     EXPECT_EQ(output[3], 100);  // Positive passes through
 }
 
+TEST(NeuralNetwork, CanInitializeNetwork) {
+    network_t net = Neural::get_network();
+}
+
+TEST(NeuralNetwork, CanInitializeAccumulator) {
+    accumulator_t acc = Neural::get_accumulator();
+}
+
 class NetworkIntegrationTest : public ::testing::Test {
 protected:
     Board board;
