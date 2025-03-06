@@ -15,8 +15,8 @@
 #include "weights.hpp"
 
 #define ENGINE_NAME "admete"
-#define ENGINE_VERS "nnue-2025-03-02"
-#define ENGINE_AUTH "orbita"
+#define ENGINE_VERS "v1.6.0-pre2025-03-06"
+#define ENGINE_AUTH "Kylie MacFarquharson (née orbita)"
 
 namespace UCI {
 void init_uci() {

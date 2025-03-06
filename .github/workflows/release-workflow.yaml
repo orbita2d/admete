@@ -54,7 +54,7 @@ jobs:
       uses: softprops/action-gh-release@v1
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
-        files: ${{github.workspace}}/${{ env.BINARY_PATH }}
+        files: ${{ github.workspace }}\${{ env.BINARY_PATH }}
 
   build-windows:
     runs-on: windows-latest
@@ -71,18 +71,20 @@ jobs:
     # Tests skipped for release builds to save compute resources
     
     - name: Prepare Binary
-      working-directory: ${{github.workspace}}
       run: |
-        mkdir -p release
-        # Get the version from the release tag
-        VERSION="${{ github.event.release.tag_name }}"
+        $VERSION = "${{ github.event.release.tag_name }}"
         # Remove 'v' prefix if present
-        VERSION=${VERSION#v}
+        $VERSION = $VERSION -replace '^v',''
+        
+        # Create release directory
+        New-Item -Path "release" -ItemType Directory -Force
         
         # Copy the binary with version in the filename
-        cp build/${{env.BUILD_TYPE}}/admete.exe release/admete_${VERSION}_windows_x86-64_avx2.exe
-        echo "BINARY_PATH=release/admete_${VERSION}_windows_x86-64_avx2.exe" >> $GITHUB_ENV
-      shell: bash
+        Copy-Item -Path "build\${{ env.BUILD_TYPE }}\admete.exe" -Destination "release\admete_${VERSION}_windows_x86-64_avx2.exe"
+        
+        # Set environment variable for path
+        echo "BINARY_PATH=release\admete_${VERSION}_windows_x86-64_avx2.exe" | Out-File -FilePath $env:GITHUB_ENV -Append
+      shell: pwsh
     
     - name: Upload Windows Artifact
       uses: actions/upload-artifact@v4
