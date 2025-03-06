@@ -82,8 +82,7 @@ jobs:
         # Copy the binary with version in the filename
         Copy-Item -Path "build\${{ env.BUILD_TYPE }}\admete.exe" -Destination "release\admete_${VERSION}_windows_x86-64_avx2.exe"
         
-        # Set environment variable for path
-        echo "BINARY_PATH=release\admete_${VERSION}_windows_x86-64_avx2.exe" | Out-File -FilePath $env:GITHUB_ENV -Append
+        echo "BINARY_PATH=release/admete_${VERSION}_windows_x86-64_avx2.exe" | Out-File -FilePath $env:GITHUB_ENV -Append
       shell: pwsh
     
     - name: Upload Windows Artifact
