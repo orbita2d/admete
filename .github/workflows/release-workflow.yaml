@@ -54,7 +54,7 @@ jobs:
       uses: softprops/action-gh-release@v1
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
-        files: ${{ github.workspace }}\${{ env.BINARY_PATH }}
+        files: ${{ github.workspace }}/${{ env.BINARY_PATH }}
 
   build-windows:
     runs-on: windows-latest
