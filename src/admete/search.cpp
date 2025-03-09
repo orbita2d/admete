@@ -13,9 +13,12 @@
 
 constexpr depth_t null_move_depth_reduction = 2;
 constexpr score_t extended_futility_margins[] = {0, 200, 700};
-constexpr score_t reverse_futility_margins[] = {0, 330, 500, 900};
+constexpr score_t reverse_futility_margins[] = {0, 200, 400, 800};
 constexpr depth_t efp_max_depth = sizeof(extended_futility_margins) / sizeof(score_t) - 1;
 constexpr depth_t rfp_max_depth = sizeof(reverse_futility_margins) / sizeof(score_t) - 1;
+constexpr depth_t probcut_depth_reduction = 3;
+constexpr depth_t probcut_min_depth = 6;
+constexpr score_t probcut_margin = 300;
 
 // Offsets from our score guess for our aspiration window in cp.
 // When it gets to the end it just sets the limit it's failing on to MATING_SCORE
@@ -172,10 +175,10 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, u
     // Probcut.
     // We expect a search at a lower depth to give us a close score to the real score. If it would beat beta by some
     // margin, then we can probably cut safely.
-    if (depth >= 6 && beta < TBWIN_MIN && beta > -TBWIN_MIN) {
+    if (depth >= probcut_min_depth && beta < TBWIN_MIN && beta > -TBWIN_MIN) {
         // Beta-cut
-        const score_t probcut_threshold = beta + 300;
-        const score_t probcut_score = scout_search(board, depth - 3, probcut_threshold - 1, time_cutoff, allow_cutoff, allow_null, node, options);
+        const score_t probcut_threshold = beta + probcut_margin;
+        const score_t probcut_score = scout_search(board, depth - probcut_depth_reduction, probcut_threshold - 1, time_cutoff, allow_cutoff, allow_null, node, options);
         if (probcut_score >= probcut_threshold) {
             return probcut_score;
         }
