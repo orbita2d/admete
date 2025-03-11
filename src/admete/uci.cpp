@@ -19,12 +19,91 @@
 #define ENGINE_AUTH "Kylie MacFarquharson (née orbita)"
 
 namespace UCI {
+
+class UciOption {
+public:
+    virtual std::string print() const = 0;
+    virtual void set(std::string value) = 0;
+    std::string name;
+};
+
+template<typename T>
+class UciOptionSpin : public UciOption {
+static_assert(std::is_integral<T>::value, "T must be an integral type");
+public:
+    UciOptionSpin(T min, T max, T def, std::string name, T *value) : min(min), max(max), def(def), value(value) { this->name = name; }
+    std::string print() const override {
+        return "option name " + name + " type spin default " + std::to_string(def) + " min " + std::to_string(min) +
+               " max " + std::to_string(max);
+    }
+
+    void set(std::string value) override {
+        // if the string is not a number, stoi will throw an exception. Do some basic error checking.
+        if (value.empty()) {
+            std::cerr << "Empty value" << std::endl;
+            return;
+        }
+        try {
+            T val = static_cast<T>(std::stoi(value));
+            if (val < min ) {
+                std::cerr << "Value too low: " << val << " < " << min << std::endl;
+            } else if (val > max) {
+                std::cerr << "Value too high: " << val << " > " << max << std::endl;
+            } else {
+                *(this->value ) = val; 
+            }
+        } catch (std::invalid_argument &e) {
+            std::cerr << "Invalid argument: " << value << std::endl;
+        }
+    }
+private:
+    T min, max, def;
+    T *value;
+};
+
+class UciOptionString : public UciOption {
+public:
+    UciOptionString(std::string name, std::string def, std::string *value) :def(def), value(value) { this->name = name; }
+    std::string print() const override {
+        return "option name " + name + " type string default " + def;
+    }
+    void set(std::string value) override { *(this->value) = value; }
+private:
+    std::string def;
+    std::string *value;
+};
+
+inline std::vector<UciOption*> uci_options;    
 void init_uci() {
+    // set up the UCI options
+    uci_options.clear();
+    // efp margins
+    for (size_t i = 0; i < Search::extended_futility_margins.size(); i++) {
+        uci_options.push_back(new UciOptionSpin<score_t>(0, 1000, Search::extended_futility_margins[i], "efp_margin_" + std::to_string(i), &Search::extended_futility_margins[i]));
+    }
+    // rfp margins
+    for (size_t i = 0; i < Search::reverse_futility_margins.size(); i++) {
+        uci_options.push_back(new UciOptionSpin<score_t>(0, 1000, Search::reverse_futility_margins[i], "rfp_margin_" + std::to_string(i), &Search::reverse_futility_margins[i]));
+    }
+    uci_options.push_back(new UciOptionSpin<int16_t>(-1000, 1000, Search::reductions_quiet_di, "reductions_quiet_di", &Search::reductions_quiet_di));
+    uci_options.push_back(new UciOptionSpin<int16_t>(-1000, 1000, Search::reductions_quiet_d, "reductions_quiet_d", &Search::reductions_quiet_d));
+    uci_options.push_back(new UciOptionSpin<int16_t>(-1000, 1000, Search::reductions_quiet_i, "reductions_quiet_i", &Search::reductions_quiet_i));
+    uci_options.push_back(new UciOptionSpin<int16_t>(-1000, 1000, Search::reductions_quiet_c, "reductions_quiet_c", &Search::reductions_quiet_c));
+    uci_options.push_back(new UciOptionSpin<int16_t>(-1000, 1000, Search::reductions_capture_di, "reductions_capture_di", &Search::reductions_capture_di));
+    uci_options.push_back(new UciOptionSpin<int16_t>(-1000, 1000, Search::reductions_capture_d, "reductions_capture_d", &Search::reductions_capture_d));
+    uci_options.push_back(new UciOptionSpin<int16_t>(-1000, 1000, Search::reductions_capture_i, "reductions_capture_i", &Search::reductions_capture_i));
+    uci_options.push_back(new UciOptionSpin<int16_t>(-1000, 1000, Search::reductions_capture_c, "reductions_capture_c", &Search::reductions_capture_c));
+
     std::cout << "id name " << ENGINE_NAME << " " << ENGINE_VERS << std::endl;
     std::cout << "id author " << ENGINE_AUTH << std::endl;
     std::cout << "option name Hash type spin default " << Cache::hash_default << " min " << Cache::hash_min << " max "
               << Cache::hash_max << std::endl;
     std::cout << "option name SyzygyPath type string default <empty>" << std::endl;
+
+    for (const auto &option : uci_options) {
+        std::cout << option->print() << std::endl;
+    }
+
     std::cout << "uciok" << std::endl;
 }
 
@@ -35,14 +114,14 @@ void set_option(std::istringstream &is, Search::SearchOptions &options) {
      *        of the engine. For the "button" type no value is needed.
      *        One string will be sent for each parameter and this will only be sent when the engine is waiting.
      *        The name of the option in  should not be case sensitive and can inludes spaces like also the value.
-     *        The substrings "value" and "name" should be avoided in  and  to allow unambiguous parsing,
+     *        The substrings "value" and "name" should be avoided in and to allow unambiguous parsing,
      *        for example do not use  = "draw value".
      *        Here are some strings for the example below:
-     *           "setoption name Nullmove value true\n"
-     *      "setoption name Selectivity value 3\n"
-     *           "setoption name Style value Risky\n"
-     *           "setoption name Clear Hash\n"
-     *           "setoption name NalimovPath value c:\chess\tb\4;c:\chess\tb\5\n"
+     *          "setoption name Nullmove value true\n"
+     *          "setoption name Selectivity value 3\n"
+     *          "setoption name Style value Risky\n"
+     *          "setoption name Clear Hash\n"
+     *          "setoption name NalimovPath value c:\chess\tb\4;c:\chess\tb\5\n"
      */
     std::string token, option;
     is >> std::ws >> token;
@@ -57,13 +136,13 @@ void set_option(std::istringstream &is, Search::SearchOptions &options) {
     } else {
         return;
     }
+    if (token != "value") {
+        return;
+    }
     if (option == "Hash") {
         unsigned value = 1;
-        if (token == "value") {
-            is >> std::ws >> value;
-        } else {
-            return;
-        }
+        is >> std::ws >> value;
+        
         if (value > Cache::hash_max) {
             std::cerr << "Hash max = " << Cache::hash_max << " MiB" << std::endl;
         } else if (value < Cache::hash_min) {
@@ -72,31 +151,11 @@ void set_option(std::istringstream &is, Search::SearchOptions &options) {
         value = std::clamp(value, Cache::hash_min, Cache::hash_max);
         Cache::tt_max = (value * (1 << 20)) / sizeof(Cache::TransElement);
         Cache::reinit();
-    } else if (option == "SyzygyPath") {
+        return;
+    } 
+    
+    if (option == "SyzygyPath") {
         // Set the path to a file of input paramters
-        std::string value;
-        if (token == "value") {
-            while (is >> token) {
-                if (value.empty()) {
-                    value += token;
-                } else {
-                    value += " " + token;
-                }
-            }
-            options.tbenable = true;
-            const bool success = Tablebase::init(value);
-            if (success) {
-                std::cerr << "Load Syzygy EGTB successful." << std::endl;
-            } else {
-                std::cerr << "Load Syzygy EGTB unsuccessful." << std::endl;
-            }
-        } else {
-            return;
-        }
-    } else if (option == "WeightsPath") {
-        if (token != "value") {
-            return;
-        }
         std::string value;
         while (is >> token) {
             if (value.empty()) {
@@ -105,10 +164,35 @@ void set_option(std::istringstream &is, Search::SearchOptions &options) {
                 value += " " + token;
             }
         }
-        // TODO: Load the weights from the file.
-    } else {
-        std::cout << "Unknown option: \"" << option << "\"" << std::endl;
+        options.tbenable = true;
+        const bool success = Tablebase::init(value);
+        if (success) {
+            std::cerr << "Load Syzygy EGTB successful." << std::endl;
+        } else {
+            std::cerr << "Load Syzygy EGTB unsuccessful." << std::endl;
+        }
+        
+        return;
     }
+
+    std::string value;
+    while (is >> token) {
+        if (value.empty()) {
+            value += token;
+        } else {
+            value += " " + token;
+        }
+    }
+
+    for (const auto &opt : uci_options) {
+        if (option == opt->name) {
+            opt->set(value);
+            Search::reinit();
+            return;
+        }
+    }
+
+    std::cout << "Unknown option: \"" << option << "\"" << std::endl;
 }
 void position(Board &board, std::istringstream &is) {
     /*
@@ -481,7 +565,7 @@ Position quiesce(Board &board, const score_t alpha_start, const score_t beta) {
             continue;
         }
         board.make_move(move);
-        Position sp = quiesce(board, -beta, -alpha);
+        Position sp = UCI::quiesce(board, -beta, -alpha);
         const score_t score = -sp.second;
         if (score > alpha) {
             qp.first = sp.first;
@@ -507,7 +591,7 @@ void print_features(Board &board, std::istringstream &is) {
     per_colour<Neural::FeatureVector> features;
     if (token == "quiesce") {
         auto starting_pos = board.pack();
-        Position pos = quiesce(board, MIN_SCORE, MAX_SCORE);
+        Position pos = UCI::quiesce(board, MIN_SCORE, MAX_SCORE);
         board.unpack(pos.first);
         features = Neural::encode(board);
         board.unpack(starting_pos);

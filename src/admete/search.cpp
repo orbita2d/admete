@@ -11,14 +11,6 @@
 #include <math.h>
 #include <time.h>
 
-constexpr depth_t null_move_depth_reduction = 2;
-constexpr score_t extended_futility_margins[] = {0, 200, 700};
-constexpr score_t reverse_futility_margins[] = {0, 200, 400, 800};
-constexpr depth_t efp_max_depth = sizeof(extended_futility_margins) / sizeof(score_t) - 1;
-constexpr depth_t rfp_max_depth = sizeof(reverse_futility_margins) / sizeof(score_t) - 1;
-constexpr depth_t probcut_depth_reduction = 3;
-constexpr depth_t probcut_min_depth = 6;
-constexpr score_t probcut_margin = 300;
 
 // Offsets from our score guess for our aspiration window in cp.
 // When it gets to the end it just sets the limit it's failing on to MATING_SCORE
@@ -708,14 +700,19 @@ void Search::init() {
     for (depth_t depth = 0; depth < MAX_DEPTH; depth++) {
         reductions_table[0][depth][0] = 0;
         reductions_table[1][depth][0] = 0;
-        for (int move_count = 1; move_count < MAX_MOVES; move_count++) {
+        for (uint move_count = 1; move_count < MAX_MOVES; move_count++) {
             // Quiet moves
             reductions_table[0][depth][move_count] =
-                static_cast<depth_t>(std::log(depth) * std::log(move_count) * 0.4 + 1);
+                static_cast<depth_t>(std::log(depth) * std::log(move_count) * (reductions_quiet_di/100.f) + std::log(depth) * (reductions_quiet_d/100.f) + std::log(move_count) * (reductions_quiet_i/100.f) + (reductions_quiet_c/100.f));
 
             // Captures
             reductions_table[1][depth][move_count] =
-                static_cast<depth_t>(std::log(depth) * std::log(move_count) * 0.25);
+                static_cast<depth_t>(std::log(depth) * std::log(move_count) * (reductions_capture_di/100.f) + std::log(depth) * (reductions_capture_d/100.f) + std::log(move_count) * (reductions_capture_i/100.f) + (reductions_capture_c/100.f));
         }
     }
+}
+
+void Search::reinit() {
+    // Reinitialise the reductions table.
+    init();
 }
