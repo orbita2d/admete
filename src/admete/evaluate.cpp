@@ -88,8 +88,8 @@ score_t Evaluation::drawn_score(const Board &board) {
     // If we are an even number of nodes from root, the root player is the current player.
     const bool root_player = (board.height() % 2) == 0;
     if (root_player) {
-        return contempt;
-    } else {
         return -contempt;
+    } else {
+        return contempt;
     }
 }
