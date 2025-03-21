@@ -155,7 +155,7 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, u
     // Making a null move, in most cases, should be the worst option and give us an approximate lower bound on the score for this node.
     if (!board.is_endgame() && allow_null && (depth > null_move_depth_reduction) && !board.is_check()) {
         board.make_nullmove();
-        score_t score = -scout_search(board, depth - 1 - null_move_depth_reduction, -alpha - 1, time_cutoff,
+        score_t score = -scout_search(board, depth - 1 - null_move_depth_reduction, -beta, time_cutoff,
                                       allow_cutoff, false, CUTNODE, options);
         board.unmake_nullmove();
         if (score >= beta) {
@@ -168,7 +168,6 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, u
     // We expect a search at a lower depth to give us a close score to the real score. If it would beat beta by some
     // margin, then we can probably cut safely.
     if (depth >= probcut_min_depth && beta < TBWIN_MIN && beta > -TBWIN_MIN) {
-        // Beta-cut
         const score_t probcut_threshold = beta + probcut_margin;
         const score_t probcut_score = scout_search(board, depth - probcut_depth_reduction, probcut_threshold - 1, time_cutoff, allow_cutoff, allow_null, node, options);
         if (probcut_score >= probcut_threshold) {
@@ -184,7 +183,7 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, u
         board.make_move(hash_move);
         options.nodes++;
         // We expect first child of a cut node to be an all node, such that it would cause the cut node to fail high.
-        best_score = -scout_search(board, depth - 1, -alpha - 1, time_cutoff, allow_cutoff, true,
+        best_score = -scout_search(board, depth - 1, -beta, time_cutoff, allow_cutoff, true,
                                    node == CUTNODE ? ALLNODE : CUTNODE, options);
         board.unmake_move(hash_move);
         best_move = hash_move;
@@ -236,13 +235,13 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, u
 
             // SEE reductions
             // If the SEE for a capture is very bad, we can search to a lower depth as it's unlikely to cause a cut.
-            if ((node == ALLNODE) && move.is_capture() && !SEE::see(board, move, -100)) {
+            if ((node == ALLNODE) && move.is_capture() && !SEE::see(board, move, -see_prune_threshold)) {
                 search_depth--;
             }
 
             // History pruning
             // On a quiet move, the score is a history score. If this is low, it's less likely to cause a beta cutoff.
-            if ((node == ALLNODE) && (counter > 3) && move.is_quiet() && (search_depth < 3) && move.score < 15) {
+            if ((node == ALLNODE) && (counter > 3) && move.is_quiet() && (search_depth < history_max_depth) && move.score < history_prune_threshold) {
                 continue;
             }
 
