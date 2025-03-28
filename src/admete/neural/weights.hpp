@@ -14,8 +14,8 @@ namespace generated {
 
 std::unique_ptr<FloatingAccumulatorLayer<nn_t, N_FEATURES, N_ACCUMULATED>> gen_accumulator();
 
-LinearLayer<nn_t, 128, 64> gen_layer_0();
-LinearLayer<nn_t, 64, 1> gen_layer_1();
+std::unique_ptr<LinearLayer<nn_t, 128, 64>> gen_layer_0();
+std::unique_ptr<LinearLayer<nn_t, 64, 1>> gen_layer_1();
 
 } // namespace generated
 

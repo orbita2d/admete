@@ -180,13 +180,13 @@ namespace Neural {
     // using _w_t = int16_t;
     template<size_t In, size_t Out, size_t... Rest>
     struct LayerTypes {
-        using type = std::tuple<LinearLayer<nn_t, In, Out>>;
+        using type = std::tuple<std::unique_ptr<LinearLayer<nn_t, In, Out>>>;
     };
     // Recursive case - concatenate current layer with rest of layers
     template<size_t In, size_t Mid, size_t Out, size_t... Rest>
     struct LayerTypes<In, Mid, Out, Rest...> {
         using type = decltype(std::tuple_cat(
-            std::declval<std::tuple<LinearLayer<nn_t, In, Mid>>>(),
+            std::declval<std::tuple<std::unique_ptr<LinearLayer<nn_t, In, Mid>>>>(),
             std::declval<typename LayerTypes<Mid, Out, Rest...>::type>()
         ));
     };
@@ -198,11 +198,10 @@ namespace Neural {
     auto forward_impl(const auto& input) const {
         if constexpr (I == sizeof...(LayerSizes) - 1) {
             // Base case - last layer
-            return std::get<I>(layers).forward(input);
+            return std::get<I>(layers)->forward(input);
         } else {
             // Recursive case - apply layer, relu, then continue
-            auto& layer = std::get<I>(layers);
-            return forward_impl<I + 1>(relu(layer.forward(input)));
+            return forward_impl<I + 1>(relu(std::get<I>(layers)->forward(input)));
         }
     }
 

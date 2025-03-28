@@ -11,14 +11,6 @@
 #include <math.h>
 #include <time.h>
 
-constexpr depth_t null_move_depth_reduction = 2;
-constexpr score_t extended_futility_margins[] = {0, 200, 700};
-constexpr score_t reverse_futility_margins[] = {0, 200, 400, 800};
-constexpr depth_t efp_max_depth = sizeof(extended_futility_margins) / sizeof(score_t) - 1;
-constexpr depth_t rfp_max_depth = sizeof(reverse_futility_margins) / sizeof(score_t) - 1;
-constexpr depth_t probcut_depth_reduction = 3;
-constexpr depth_t probcut_min_depth = 6;
-constexpr score_t probcut_margin = 300;
 
 // Offsets from our score guess for our aspiration window in cp.
 // When it gets to the end it just sets the limit it's failing on to MATING_SCORE
@@ -163,7 +155,7 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, u
     // Making a null move, in most cases, should be the worst option and give us an approximate lower bound on the score for this node.
     if (!board.is_endgame() && allow_null && (depth > null_move_depth_reduction) && !board.is_check()) {
         board.make_nullmove();
-        score_t score = -scout_search(board, depth - 1 - null_move_depth_reduction, -alpha - 1, time_cutoff,
+        score_t score = -scout_search(board, depth - 1 - null_move_depth_reduction, -beta, time_cutoff,
                                       allow_cutoff, false, CUTNODE, options);
         board.unmake_nullmove();
         if (score >= beta) {
@@ -176,7 +168,6 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, u
     // We expect a search at a lower depth to give us a close score to the real score. If it would beat beta by some
     // margin, then we can probably cut safely.
     if (depth >= probcut_min_depth && beta < TBWIN_MIN && beta > -TBWIN_MIN) {
-        // Beta-cut
         const score_t probcut_threshold = beta + probcut_margin;
         const score_t probcut_score = scout_search(board, depth - probcut_depth_reduction, probcut_threshold - 1, time_cutoff, allow_cutoff, allow_null, node, options);
         if (probcut_score >= probcut_threshold) {
@@ -192,7 +183,7 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, u
         board.make_move(hash_move);
         options.nodes++;
         // We expect first child of a cut node to be an all node, such that it would cause the cut node to fail high.
-        best_score = -scout_search(board, depth - 1, -alpha - 1, time_cutoff, allow_cutoff, true,
+        best_score = -scout_search(board, depth - 1, -beta, time_cutoff, allow_cutoff, true,
                                    node == CUTNODE ? ALLNODE : CUTNODE, options);
         board.unmake_move(hash_move);
         best_move = hash_move;
@@ -244,13 +235,13 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, u
 
             // SEE reductions
             // If the SEE for a capture is very bad, we can search to a lower depth as it's unlikely to cause a cut.
-            if ((node == ALLNODE) && move.is_capture() && !SEE::see(board, move, -100)) {
+            if ((node == ALLNODE) && move.is_capture() && !SEE::see(board, move, -see_prune_threshold)) {
                 search_depth--;
             }
 
             // History pruning
             // On a quiet move, the score is a history score. If this is low, it's less likely to cause a beta cutoff.
-            if ((node == ALLNODE) && (counter > 3) && move.is_quiet() && (search_depth < 3) && move.score < 15) {
+            if ((node == ALLNODE) && (counter > 3) && move.is_quiet() && (search_depth < history_max_depth) && move.score < history_prune_threshold) {
                 continue;
             }
 
@@ -708,14 +699,19 @@ void Search::init() {
     for (depth_t depth = 0; depth < MAX_DEPTH; depth++) {
         reductions_table[0][depth][0] = 0;
         reductions_table[1][depth][0] = 0;
-        for (int move_count = 1; move_count < MAX_MOVES; move_count++) {
+        for (uint move_count = 1; move_count < MAX_MOVES; move_count++) {
             // Quiet moves
             reductions_table[0][depth][move_count] =
-                static_cast<depth_t>(std::log(depth) * std::log(move_count) * 0.4 + 1);
+                static_cast<depth_t>(std::log(depth) * std::log(move_count) * (reductions_quiet_di/100.f) + std::log(depth) * (reductions_quiet_d/100.f) + std::log(move_count) * (reductions_quiet_i/100.f) + (reductions_quiet_c/100.f));
 
             // Captures
             reductions_table[1][depth][move_count] =
-                static_cast<depth_t>(std::log(depth) * std::log(move_count) * 0.25);
+                static_cast<depth_t>(std::log(depth) * std::log(move_count) * (reductions_capture_di/100.f) + std::log(depth) * (reductions_capture_d/100.f) + std::log(move_count) * (reductions_capture_i/100.f) + (reductions_capture_c/100.f));
         }
     }
+}
+
+void Search::reinit() {
+    // Reinitialise the reductions table.
+    init();
 }
