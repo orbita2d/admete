@@ -52,14 +52,14 @@ unsigned long perft_bulk(depth_t depth, Board &board);
 void perft_divide(depth_t depth, Board &board);
 
 // Search parameters
-constexpr depth_t efp_max_depth = 2;
+constexpr depth_t efp_max_depth = 1;
 constexpr depth_t rfp_max_depth = 3;
-inline std::array<score_t, efp_max_depth+1> extended_futility_margins = {0, 36, 700};
-inline std::array<score_t,rfp_max_depth+1>  reverse_futility_margins = {0, 325, 400, 800};
+inline std::array<score_t, efp_max_depth+1> extended_futility_margins = {0, 36, };
+inline std::array<score_t,rfp_max_depth+1>  reverse_futility_margins = {0, 325, 550, 800};
 inline depth_t null_move_depth_reduction = 2;
 inline depth_t probcut_depth_reduction = 3;
 inline depth_t probcut_min_depth = 6;
-inline score_t probcut_margin = 300;
+inline score_t probcut_margin = 173;
 inline int16_t reductions_quiet_di = 40;
 inline int16_t reductions_quiet_d = 0;
 inline int16_t reductions_quiet_i = 0;

@@ -96,10 +96,10 @@ void init_uci() {
     uci_options.push_back(new UciOptionSpin<score_t>(0, 1000, Search::probcut_margin, "probcut_margin", &Search::probcut_margin));
     uci_options.push_back(new UciOptionSpin<depth_t>(0, 12, Search::probcut_min_depth, "probcut_min_depth", &Search::probcut_min_depth));
     uci_options.push_back(new UciOptionSpin<depth_t>(0, 12, Search::probcut_depth_reduction, "probcut_depth_reduction", &Search::probcut_depth_reduction));
-    uci_options.push_back(new UciOptionSpin<score_t>(0, 100, Evaluation::contempt, "contempt", &Evaluation::contempt));
+    uci_options.push_back(new UciOptionSpin<score_t>(0, 1000, Evaluation::contempt, "contempt", &Evaluation::contempt));
     uci_options.push_back(new UciOptionSpin<depth_t>(0, 12, Search::null_move_depth_reduction, "null_move_depth_reduction", &Search::null_move_depth_reduction));
     uci_options.push_back(new UciOptionSpin<depth_t>(0, 12, Search::history_max_depth, "history_max_depth", &Search::history_max_depth));
-    uci_options.push_back(new UciOptionSpin<score_t>(0, 200, Search::history_prune_threshold, "history_prune_threshold", &Search::history_prune_threshold));
+    uci_options.push_back(new UciOptionSpin<score_t>(0, 1000, Search::history_prune_threshold, "history_prune_threshold", &Search::history_prune_threshold));
     uci_options.push_back(new UciOptionSpin<score_t>(0, 1000, Search::see_prune_threshold, "see_prune_threshold", &Search::see_prune_threshold));
     
 
