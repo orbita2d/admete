@@ -24,8 +24,6 @@ TEST(Eval, Contempt) {
   for (std::string board_fen : fens) {
     board.fen_decode(board_fen);
     board.set_root();
-    EXPECT_EQ(Evaluation::drawn_score(board), Evaluation::contempt);
-    board.make_nullmove();
     EXPECT_EQ(Evaluation::drawn_score(board), -Evaluation::contempt);
     board.make_nullmove();
     EXPECT_EQ(Evaluation::drawn_score(board), Evaluation::contempt);
@@ -33,7 +31,7 @@ TEST(Eval, Contempt) {
     EXPECT_EQ(Evaluation::drawn_score(board), -Evaluation::contempt);
     board.make_nullmove();
     EXPECT_EQ(Evaluation::drawn_score(board), Evaluation::contempt);
-    board.unmake_nullmove();
+    board.make_nullmove();
     EXPECT_EQ(Evaluation::drawn_score(board), -Evaluation::contempt);
     board.unmake_nullmove();
     EXPECT_EQ(Evaluation::drawn_score(board), Evaluation::contempt);
@@ -41,6 +39,8 @@ TEST(Eval, Contempt) {
     EXPECT_EQ(Evaluation::drawn_score(board), -Evaluation::contempt);
     board.unmake_nullmove();
     EXPECT_EQ(Evaluation::drawn_score(board), Evaluation::contempt);
+    board.unmake_nullmove();
+    EXPECT_EQ(Evaluation::drawn_score(board), -Evaluation::contempt);
   }
 }
 
