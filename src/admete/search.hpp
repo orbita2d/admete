@@ -70,7 +70,7 @@ inline int16_t reductions_capture_i = 0;
 inline int16_t reductions_capture_c = 0;
 inline depth_t history_max_depth = 3;
 inline score_t history_prune_threshold = 15;
-inline score_t see_prune_threshold = 100;
+inline score_t see_prune_threshold = 50;
 void init();
 void reinit();
 inline std::array<std::array<std::array<depth_t, MAX_MOVES>, MAX_DEPTH>, 2> reductions_table;
