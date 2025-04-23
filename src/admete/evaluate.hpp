@@ -19,10 +19,6 @@ score_t piece_phase_material(const PieceType p);
 score_t count_phase_material(const Board &board);
 
 score_t drawn_score(const Board &board);
-constexpr score_t contempt = -10;
+inline score_t contempt = 10;
 sqt_t reverse_board(sqt_t in);
-
-// Vector of pointers to training parameters
-typedef std::pair<Score *, std::string> labled_parameter;
-inline std::vector<labled_parameter> training_parameters;
 } // namespace Evaluation

@@ -51,6 +51,27 @@ unsigned long perft(depth_t depth, Board &board, SearchOptions &options);
 unsigned long perft_bulk(depth_t depth, Board &board);
 void perft_divide(depth_t depth, Board &board);
 
+// Search parameters
+constexpr depth_t efp_max_depth = 1;
+constexpr depth_t rfp_max_depth = 3;
+inline std::array<score_t, efp_max_depth+1> extended_futility_margins = {0, 36, };
+inline std::array<score_t,rfp_max_depth+1>  reverse_futility_margins = {0, 325, 550, 800};
+inline depth_t null_move_depth_reduction = 2;
+inline depth_t probcut_depth_reduction = 3;
+inline depth_t probcut_min_depth = 6;
+inline score_t probcut_margin = 173;
+inline int16_t reductions_quiet_di = 40;
+inline int16_t reductions_quiet_d = 0;
+inline int16_t reductions_quiet_i = 0;
+inline int16_t reductions_quiet_c = 100;
+inline int16_t reductions_capture_di = 25;
+inline int16_t reductions_capture_d = 0;
+inline int16_t reductions_capture_i = 0;
+inline int16_t reductions_capture_c = 0;
+inline depth_t history_max_depth = 3;
+inline score_t history_prune_threshold = 15;
+inline score_t see_prune_threshold = 50;
 void init();
+void reinit();
 inline std::array<std::array<std::array<depth_t, MAX_MOVES>, MAX_DEPTH>, 2> reductions_table;
 } // namespace Search
