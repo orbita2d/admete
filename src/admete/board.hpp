@@ -142,7 +142,7 @@ class Board {
     bool try_uci_move(const std::string move_sting);
 
     // Get the square the king is on.
-    Square find_king(const Colour us) const;
+    Square find_king(const Colour us) const {return king_square[us]; }
     // Who's turn is it.
     Colour who_to_play() const { return whos_move; }
     // Returns true if it's black's turn.

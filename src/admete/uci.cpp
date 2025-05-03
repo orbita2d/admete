@@ -597,27 +597,27 @@ void print_features(Board &board, std::istringstream &is) {
     // if the second token is "quiesce", quiesce the board before encoding.
     std::string token;
     is >> token;
-    per_colour<Neural::FeatureVector> features;
+    per_colour<Neural::Feature2Vector> features;
     if (token == "quiesce") {
         auto starting_pos = board.pack();
         Position pos = UCI::quiesce(board, MIN_SCORE, MAX_SCORE);
         board.unpack(pos.first);
-        features = Neural::encode(board);
+        features = Neural::encode2(board);
         board.unpack(starting_pos);
     } else {
-        features = Neural::encode(board);
+        features = Neural::encode2(board);
     }
 
     Colour player = board.who_to_play();
-    for (size_t i = 0; i < Neural::N_FEATURES; i++) {
-        std::cout << features[player][i];
+    const size_t feature_len = Neural::N_FEATURES2;
+    for (size_t i = 0; i < feature_len; i++) {
+        std::cout << std::get<0>(features[player])[i];
     }
-    std::cout << ";";
-    for (size_t i = 0; i < Neural::N_FEATURES; i++) {
-        std::cout << features[~player][i];
+    std::cout << ";" << Square::square_t(std::get<1>(features[player])) << ";";
+    for (size_t i = 0; i < feature_len; i++) {
+        std::cout << std::get<0>(features[~player])[i];
     }
-    
-    std::cout << std::endl;
+    std::cout << ";" << Square::square_t(std::get<1>(features[~player])) << std::endl;
 }
 
 void uci() {

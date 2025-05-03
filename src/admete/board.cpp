@@ -526,8 +526,6 @@ void Board::search_kings() {
     king_square[BLACK] = lsb(pieces(BLACK, KING));
 }
 
-Square Board::find_king(const Colour us) const { return king_square[us]; }
-
 void Board::update_checkers() {
     // Looks in the current position if the king (of the player to move) is in check, and saves where those checks are.
     // It also looks up what pieces are pinned, which is used in move generation.
