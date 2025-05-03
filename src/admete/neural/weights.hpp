@@ -5,7 +5,7 @@
 
 namespace Neural {
 
-// Model generated from training run 2025-03-01_18-47-33
+// Model generated from training run 2025-04-29_23-12-44
 
 constexpr size_t N_ACCUMULATED = 128;
 static_assert(N_FEATURES == 384, "Feature size mismatch");
