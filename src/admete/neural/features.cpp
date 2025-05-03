@@ -1,6 +1,7 @@
 #include <bitboard.hpp>
 #include <board.hpp>
 #include <network.hpp>
+#include "features.hpp"
 
 namespace Neural {
 per_colour<FeatureVector> cleared_features() {
@@ -23,6 +24,26 @@ per_colour<FeatureVector> encode(const Board &board) {
                 features[c][p * 64 + sq.relative(c)] = 1;
             }
         }
+    }
+    return features;
+}
+
+per_colour<Feature2Vector> encode2(const Board &board) { 
+    per_colour<Feature2Vector> features;
+    for (Colour c : {WHITE, BLACK}) {
+        std::get<0>(features[c]) = Vector<float, N_FEATURES2>::zeros();
+
+        for (PieceType p = PAWN; p < KING; p++) {
+            Bitboard bb = board.pieces(c, p);
+            while (bb) {
+                Square sq = pop_lsb(&bb);
+                std::get<0>(features[c])[p * 64 + sq.relative(c)] = 1;
+            }
+        }
+
+        // King is special, we need to know where it is.
+        Square king_sq = board.find_king(c);
+        std::get<1>(features[c]) = king_sq.relative(c);
     }
     return features;
 }
