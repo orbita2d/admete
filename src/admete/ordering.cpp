@@ -182,14 +182,16 @@ void rank_and_sort_moves(Board &board, MoveList &legal_moves, const DenseMove ha
         } else if (move == killer_moves) {
             move.score = 200000;
         } else if (move.is_capture()) {
-            move.score = 0;
+            // Make sure to lookup and record the piece captured
+            const score_t see_score = SEE::see_capture(board, move);
+            move.score = see_score;
             if (board.gives_check(move)) {
                 move.score += 5000;
             }
-            if (SEE::see(board, move, 150)) {
+            if (see_score > 50) {
                 move.score += 400000;
-            } else if (SEE::see(board, move, -150)) {
-                move.score += 100000;
+            } else if (see_score > -50) {
+                move.score += 150000;
             } else {
                 move.score += -400000;
             }
