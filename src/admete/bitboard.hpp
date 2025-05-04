@@ -310,10 +310,18 @@ template <Colour c> inline Bitboard rear_fill(const Bitboard g) {
 inline Bitboard pawn_attacks(const Colour c, const Square &s) { return PawnAttacks[c][s]; }
 
 template <Colour c> inline Bitboard pawn_attacks(const Bitboard g) {
-    if (c == WHITE) {
+    if constexpr (c == WHITE) {
         return shift<Direction::NW>(g) | shift<Direction::NE>(g);
     } else {
         return shift<Direction::SW>(g) | shift<Direction::SE>(g);
+    }
+}
+
+inline Bitboard pawn_attacks(const Colour c, const Bitboard g) {
+    if (c == WHITE) {
+        return pawn_attacks<WHITE>(g);
+    } else {
+        return pawn_attacks<BLACK>(g);
     }
 }
 

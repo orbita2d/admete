@@ -160,8 +160,7 @@ void Board::initialise() {
         }
     }
     _phase_material = Evaluation::count_phase_material(*this);
-    update_pawns();
-    // update_attacks();
+    update_attacks();
     set_root();
     _accumulator.initialise(*this);
 }
@@ -311,16 +310,6 @@ void Board::make_move(Move &move) {
 
     assert(_phase_material == Evaluation::count_phase_material(*this));
 
-    // Precompute the pawn attacks bitboards.
-    if ((p == PAWN) | (move.captured_piece == PAWN)) {
-        update_pawns();
-    }
-
-    // update_attacks();
-
-    assert(pawn_controlled(WHITE) == Bitboards::pawn_attacks<WHITE>(pieces(WHITE, PAWN)));
-    assert(pawn_controlled(BLACK) == Bitboards::pawn_attacks<BLACK>(pieces(BLACK, PAWN)));
-
     // Update the zorbist hash
     hash_history[ply_counter] =
         hash_history[ply_counter - 1] ^ Zobrist::diff(move, us, last_ep_file, castling_rights_change);
@@ -331,6 +320,7 @@ void Board::make_move(Move &move) {
 
     // Add this move into the NNUE accumulator
     _accumulator.make_move(move, us);
+    update_attacks();
 }
 
 void Board::unmake_move(const Move move) {
@@ -348,7 +338,7 @@ void Board::unmake_move(const Move move) {
     Colour them = ~us;
 
     const PieceType p = move.moving_piece;
-    const PieceType cp = move.captured_piece;
+    // const PieceType cp = move.captured_piece;
     assert(p != NO_PIECE);
 
     if (p == KING) {
@@ -413,10 +403,6 @@ void Board::unmake_move(const Move move) {
         _phase_material += Evaluation::piece_phase_material(PAWN);
     }
 
-    if ((p == PAWN) | (cp == PAWN)) {
-        update_pawns();
-    }
-
     assert(_phase_material == Evaluation::count_phase_material(*this));
 
     _accumulator.unmake_move(move, us);
@@ -451,6 +437,7 @@ void Board::make_nullmove() {
     assert(hash() == Zobrist::hash(*this));
 
     aux_info->last_move = NULL_MOVE;
+    update_attacks();
 }
 
 void Board::unmake_nullmove() {
@@ -490,30 +477,30 @@ bool Board::try_uci_move(const std::string move_sting) {
 
 // Checks a square is attacked, ignoring pins.
 // That is, if moving the king there would result in check.
-bool Board::is_attacked(const Square origin, const Colour us) const {
+bool test_attacked(const Board& board, Square origin, const Colour us) {
     // First off, if the square is attacked by a knight, it's definitely in check.
     const Colour them = ~us;
 
-    if (Bitboards::pseudo_attacks(KNIGHT, origin) & pieces(them, KNIGHT)) {
+    if (Bitboards::pseudo_attacks(KNIGHT, origin) & board.pieces(them, KNIGHT)) {
         return true;
     }
-    if (Bitboards::pseudo_attacks(KING, origin) & pieces(them, KING)) {
+    if (Bitboards::pseudo_attacks(KING, origin) & board.pieces(them, KING)) {
         return true;
     }
     // Our colour pawn attacks are the same as attacked-by pawn
-    if (Bitboards::pawn_attacks(us, origin) & pieces(them, PAWN)) {
+    if (Bitboards::pawn_attacks(us, origin) & board.pieces(them, PAWN)) {
         return true;
     }
 
     // Sliding moves.
     //
     // Sliding attacks should xray the king.
-    const Bitboard occ = pieces() ^ pieces(us, KING);
+    const Bitboard occ = board.pieces() ^ board.pieces(us, KING);
 
-    if ((rook_attacks(occ, origin)) & (pieces(them, ROOK, QUEEN))) {
+    if ((rook_attacks(occ, origin)) & (board.pieces(them, ROOK, QUEEN))) {
         return true;
     }
-    if ((bishop_attacks(occ, origin)) & (pieces(them, BISHOP, QUEEN))) {
+    if ((bishop_attacks(occ, origin)) & (board.pieces(them, BISHOP, QUEEN))) {
         return true;
     }
 
@@ -594,11 +581,6 @@ void Board::update_check_squares() {
         blk |= pinned;
     }
     aux_info->blockers = blk;
-}
-
-void Board::update_pawns() {
-    pawn_atk_bb[WHITE] = Bitboards::pawn_attacks<WHITE>(pieces(WHITE, PAWN));
-    pawn_atk_bb[BLACK] = Bitboards::pawn_attacks<BLACK>(pieces(BLACK, PAWN));
 }
 
 bool Board::gives_check(const Move move) const {
@@ -793,7 +775,7 @@ zobrist_t Board::material_key() const { return Zobrist::material(*this); }
 void Board::update_attacks() {
     const Colour us = who_to_play();
     const Colour them = ~us;
-    aux_info->attacked = pawn_controlled(them);
+    aux_info->attacked = Bitboards::pawn_attacks(them, pieces(them, PAWN));
     const Bitboard occ = pieces() ^ pieces(us, KING);
     for (PieceType p = KNIGHT; p < KING; p++) {
         Bitboard bb = pieces(them, p);
@@ -805,6 +787,6 @@ void Board::update_attacks() {
     aux_info->attacked |= Bitboards::attacks<KING>(occ, find_king(them));
     for (int i = 0; i < N_SQUARE; i++) {
         Square sq(i);
-        assert(bool(aux_info->attacked & sq_to_bb(sq)) == is_attacked(sq, us));
+        assert(bool(aux_info->attacked & sq_to_bb(sq)) == test_attacked(*this, sq, us));
     }
 }

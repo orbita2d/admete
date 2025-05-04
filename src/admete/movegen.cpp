@@ -205,7 +205,7 @@ template <Colour us, GenType gen> void gen_pawn_moves(const Board &board, MoveLi
         Bitboard q_pin = occ & board.pinned();
         while (q_pin) {
             const Square sq = pop_lsb(&q_pin);
-            const Bitboard target_squares = Bitboards::line(sq, ks);
+            const Bitboard target_squares = Bitboards::line(ks, sq);
             gen_pawn_cap<us, E>(sq, moves, target_squares);
         }
 
@@ -223,7 +223,7 @@ template <Colour us, GenType gen> void gen_pawn_moves(const Board &board, MoveLi
         q_pin = occ & board.pinned();
         while (q_pin) {
             const Square sq = pop_lsb(&q_pin);
-            const Bitboard target_squares = Bitboards::line(sq, ks);
+            const Bitboard target_squares = Bitboards::line(ks, sq);
             gen_pawn_cap<us, W>(sq, moves, target_squares);
         }
 
@@ -241,7 +241,7 @@ template <Colour us, GenType gen> void gen_pawn_moves(const Board &board, MoveLi
             }
             while (q_pin) {
                 const Square sq = pop_lsb(&q_pin);
-                const Bitboard target_squares = Bitboards::line(sq, ks);
+                const Bitboard target_squares = Bitboards::line(ks, sq);
                 gen_pawn_ep<us>(board, sq, moves, target_squares);
             }
         }
@@ -318,14 +318,11 @@ template <GenType gen> void gen_king_moves(const Board &board, const Square orig
     Colour us = board.who_to_play();
     const Colour them = ~us;
     Bitboard atk = Bitboards::attacks<KING>(board.pieces(), origin);
+    atk &= ~board.attacked(); // remove squares that are attacked by the opponent
     if constexpr (gen == QUIET) {
         atk &= ~board.pieces();
         while (atk) {
             const Square sq = pop_lsb(&atk);
-            // Check legality of the move here.
-            if (board.is_attacked(sq, us)) {
-                continue;
-            }
             Move move = Move(KING, origin, sq);
             moves.push_back(move);
         }
@@ -333,17 +330,15 @@ template <GenType gen> void gen_king_moves(const Board &board, const Square orig
         atk &= board.pieces(them);
         while (atk) {
             const Square sq = pop_lsb(&atk);
-            // Check legality of the move here.
-            if (board.is_attacked(sq, us)) {
-                continue;
-            }
             Move move = Move(KING, origin, sq);
             move.make_capture();
             moves.push_back(move);
         }
+    } else {
+        static_assert(false, "Invalid gen type for king moves");
     }
 }
-template <GenType gen, PieceType pt> void gen_moves(const Board &board, const Square origin, MoveList &moves) {
+template <GenType gen, PieceType pt> void append_moves(const Board &board, const Square origin, MoveList &moves) {
     if constexpr (pt == KING) {
         return gen_king_moves<gen>(board, origin, moves);
     } else {
@@ -370,7 +365,7 @@ template <GenType gen, PieceType pt> void gen_moves(const Board &board, const Sq
 }
 
 template <GenType gen, PieceType pt>
-void gen_moves(const Board &board, const Square origin, MoveList &moves, Bitboard target_mask) {
+void append_moves(const Board &board, const Square origin, MoveList &moves, Bitboard target_mask) {
     Colour us = board.who_to_play();
     const Colour them = ~us;
     Bitboard atk = Bitboards::attacks<pt>(board.pieces(), origin);
@@ -400,24 +395,20 @@ template <Colour us, CastlingSide side> void gen_castle_moves(const Board &board
     // You can't castle through check, or while in check
     if (board.can_castle(us, QUEENSIDE) && (side == QUEENSIDE)) {
         // Check for overlap of squares that need to be free, and occupied bb.
-        if (!(Bitboards::castle_blocks(us, QUEENSIDE) & board.pieces())) {
-            if (!board.is_attacked(Square(back_rank(us), FILED), us) &
-                !board.is_attacked(Square(back_rank(us), FILEC), us)) {
-                move = Move(KING, Square(back_rank(us), FILEE), Square(back_rank(us), FILEC));
-                move.make_queen_castle();
-                moves.push_back(move);
-            }
-        }
+        if (Bitboards::castle_blocks(us, QUEENSIDE) & board.pieces()) { return; }
+        if (Bitboards::castle_checks(us, QUEENSIDE) & board.attacked()) { return; }
+        
+        move = Move(KING, Square(back_rank(us), FILEE), Square(back_rank(us), FILEC));
+        move.make_queen_castle();
+        moves.push_back(move);
     }
     if (board.can_castle(us, KINGSIDE) && (side == KINGSIDE)) {
-        if (!(Bitboards::castle_blocks(us, KINGSIDE) & board.pieces())) {
-            if (!board.is_attacked(Square(back_rank(us), FILEF), us) &
-                !board.is_attacked(Square(back_rank(us), FILEG), us)) {
-                move = Move(KING, Square(back_rank(us), FILEE), Square(back_rank(us), FILEG));
-                move.make_king_castle();
-                moves.push_back(move);
-            }
-        }
+        if (Bitboards::castle_blocks(us, KINGSIDE) & board.pieces()) {return;}
+        if (Bitboards::castle_checks(us, KINGSIDE) & board.attacked()) {return;}
+
+        move = Move(KING, Square(back_rank(us), FILEE), Square(back_rank(us), FILEG));
+        move.make_king_castle();
+        moves.push_back(move);        
     }
 }
 
@@ -451,46 +442,46 @@ template <GenType gen> void gen_moves(const Board &board, MoveList &moves) {
     occ = board.pieces(us, KNIGHT) & ~board.pinned();
     while (occ) {
         const Square sq = pop_lsb(&occ);
-        gen_moves<gen, KNIGHT>(board, sq, moves);
+        append_moves<gen, KNIGHT>(board, sq, moves);
     }
     // Bishops which aren't pinned
     occ = board.pieces(us, BISHOP) & ~board.pinned();
     while (occ) {
         const Square sq = pop_lsb(&occ);
-        gen_moves<gen, BISHOP>(board, sq, moves);
+        append_moves<gen, BISHOP>(board, sq, moves);
     }
     // Bisops which are pinned
     occ = board.pieces(us, BISHOP) & board.pinned();
     while (occ) {
         const Square sq = pop_lsb(&occ);
-        const Bitboard target_squares = Bitboards::line(sq, ks);
-        gen_moves<gen, BISHOP>(board, sq, moves, target_squares);
+        const Bitboard target_squares = Bitboards::line(ks, sq);
+        append_moves<gen, BISHOP>(board, sq, moves, target_squares);
     }
     // Rooks which aren't pinned
     occ = board.pieces(us, ROOK) & ~board.pinned();
     while (occ) {
         const Square sq = pop_lsb(&occ);
-        gen_moves<gen, ROOK>(board, sq, moves);
+        append_moves<gen, ROOK>(board, sq, moves);
     }
     // Rooks which are pinned
     occ = board.pieces(us, ROOK) & board.pinned();
     while (occ) {
         const Square sq = pop_lsb(&occ);
-        const Bitboard target_squares = Bitboards::line(sq, ks);
-        gen_moves<gen, ROOK>(board, sq, moves, target_squares);
+        const Bitboard target_squares = Bitboards::line(ks, sq);
+        append_moves<gen, ROOK>(board, sq, moves, target_squares);
     }
     occ = board.pieces(us, QUEEN) & ~board.pinned();
     while (occ) {
         const Square sq = pop_lsb(&occ);
-        gen_moves<gen, QUEEN>(board, sq, moves);
+        append_moves<gen, QUEEN>(board, sq, moves);
     }
     occ = board.pieces(us, QUEEN) & board.pinned();
     while (occ) {
         const Square sq = pop_lsb(&occ);
-        const Bitboard target_squares = Bitboards::line(sq, ks);
-        gen_moves<gen, QUEEN>(board, sq, moves, target_squares);
+        const Bitboard target_squares = Bitboards::line(ks, sq);
+        append_moves<gen, QUEEN>(board, sq, moves, target_squares);
     }
-    gen_moves<gen, KING>(board, ks, moves);
+    append_moves<gen, KING>(board, ks, moves);
 }
 
 template <> void gen_moves<EVASIONS>(const Board &board, MoveList &moves) {
@@ -499,8 +490,8 @@ template <> void gen_moves<EVASIONS>(const Board &board, MoveList &moves) {
     const Bitboard can_move = ~board.pinned();
     occ = board.pieces(us, KING);
     Square ks = board.find_king(us);
-    gen_moves<QUIET, KING>(board, ks, moves);
-    gen_moves<CAPTURES, KING>(board, ks, moves);
+    append_moves<QUIET, KING>(board, ks, moves);
+    append_moves<CAPTURES, KING>(board, ks, moves);
 
     Bitboard pieces_bb = board.pieces();
     // We can capture the checker
@@ -548,22 +539,22 @@ template <> void gen_moves<EVASIONS>(const Board &board, MoveList &moves) {
     occ = board.pieces(us, KNIGHT) & can_move;
     while (occ) {
         const Square sq = pop_lsb(&occ);
-        gen_moves<QUIET, KNIGHT>(board, sq, moves, between_squares);
+        append_moves<QUIET, KNIGHT>(board, sq, moves, between_squares);
     }
     occ = board.pieces(us, BISHOP) & can_move;
     while (occ) {
         const Square sq = pop_lsb(&occ);
-        gen_moves<QUIET, BISHOP>(board, sq, moves, between_squares);
+        append_moves<QUIET, BISHOP>(board, sq, moves, between_squares);
     }
     occ = board.pieces(us, ROOK) & can_move;
     while (occ) {
         const Square sq = pop_lsb(&occ);
-        gen_moves<QUIET, ROOK>(board, sq, moves, between_squares);
+        append_moves<QUIET, ROOK>(board, sq, moves, between_squares);
     }
     occ = board.pieces(us, QUEEN) & can_move;
     while (occ) {
         const Square sq = pop_lsb(&occ);
-        gen_moves<QUIET, QUEEN>(board, sq, moves, between_squares);
+        append_moves<QUIET, QUEEN>(board, sq, moves, between_squares);
     }
 }
 
@@ -587,8 +578,8 @@ template <> void generate_moves<EVASIONS>(const Board &board, MoveList &moves) {
     const int number_checkers = board.number_checkers();
     if (number_checkers == 2) {
         // Double check. Generate king moves.
-        gen_moves<QUIET, KING>(board, king_square, moves);
-        gen_moves<CAPTURES, KING>(board, king_square, moves);
+        append_moves<QUIET, KING>(board, king_square, moves);
+        append_moves<CAPTURES, KING>(board, king_square, moves);
     } else {
         gen_moves<EVASIONS>(board, moves);
     }
