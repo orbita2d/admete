@@ -11,18 +11,20 @@
 template <Colour us> void gen_pawn_push(const Square origin, MoveList &moves) {
     const Square target = origin + forwards(us);
     Move move(PAWN, origin, target);
-    if (origin.rank() == relative_rank(us, RANK7)) {
-        move.make_queen_promotion();
-        moves.push_back(move);
-        move.make_knight_promotion();
-        moves.push_back(move);
-        move.make_rook_promotion();
-        moves.push_back(move);
-        move.make_bishop_promotion();
-        moves.push_back(move);
-    } else {
-        moves.push_back(move);
-    }
+    moves.push_back(move);
+}
+
+template <Colour us> void gen_pawn_promoting_push(const Square origin, MoveList &moves) {
+    const Square target = origin + forwards(us);
+    Move move(PAWN, origin, target);
+    move.make_queen_promotion();
+    moves.push_back(move);
+    move.make_knight_promotion();
+    moves.push_back(move);
+    move.make_rook_promotion();
+    moves.push_back(move);
+    move.make_bishop_promotion();
+    moves.push_back(move);
 }
 
 template <Colour us> void gen_pawn_double_push(const Square origin, MoveList &moves) {
@@ -149,19 +151,26 @@ template <Colour us, GenType gen> void gen_pawn_moves(const Board &board, MoveLi
         occ &= ~Bitboards::shift<backwards(us)>(board.pieces());
 
         // Unpinned pawns on ranks 2 --> 6
-        q_nopin = occ & ~board.pinned();
+        q_nopin = occ & ~board.pinned() & ~Bitboards::rank(relative_rank(us, RANK7));
         while (q_nopin) {
             const Square sq = pop_lsb(&q_nopin);
             gen_pawn_push<us>(sq, moves);
         }
+
+        q_nopin = occ & ~board.pinned() & Bitboards::rank(relative_rank(us, RANK7));
+        while (q_nopin) {
+            const Square sq = pop_lsb(&q_nopin);
+            gen_pawn_promoting_push<us>(sq, moves);
+        }
+
         // Pinned pawns on ranks 2 --> 6
         q_pin = occ & board.pinned();
+        // consider only squares on the same file as the king.
+        q_pin &= Bitboards::file(ks.file());
         while (q_pin) {
             const Square sq = pop_lsb(&q_pin);
             // Can push only if the pin is down a file.
-            if (sq.file() == ks.file()) {
-                gen_pawn_push<us>(sq, moves);
-            }
+            gen_pawn_push<us>(sq, moves);
         }
 
         // Double pawn pushes.
@@ -289,12 +298,17 @@ template <Colour us, GenType gen> void gen_pawn_moves(const Board &board, MoveLi
 
         // We can block the check.
         const Bitboard between_squares = Bitboards::between(ks, ts);
-        occ = pawns;
         // All of our pawns that can move that can block the check by pushing.
-        occ &= Bitboards::shift<backwards(us)>(between_squares);
+        occ = pawns & Bitboards::shift<backwards(us)>(between_squares) & ~Bitboards::rank(relative_rank(us, RANK7));
         while (occ) {
             const Square sq = pop_lsb(&occ);
             gen_pawn_push<us>(sq, moves);
+        }
+        // block the check by promoting.
+        occ = pawns & Bitboards::shift<backwards(us)>(between_squares) & Bitboards::rank(relative_rank(us, RANK7));
+        while (occ) {
+            const Square sq = pop_lsb(&occ);
+            gen_pawn_promoting_push<us>(sq, moves);
         }
 
         // generate double pawn pushes.
@@ -315,6 +329,7 @@ template <Colour us, GenType gen> void gen_pawn_moves(const Board &board, MoveLi
 }
 
 template <GenType gen> void gen_king_moves(const Board &board, const Square origin, MoveList &moves) {
+    static_assert(gen == QUIET || gen == CAPTURES);
     Colour us = board.who_to_play();
     const Colour them = ~us;
     Bitboard atk = Bitboards::attacks<KING>(board.pieces(), origin);
@@ -334,8 +349,6 @@ template <GenType gen> void gen_king_moves(const Board &board, const Square orig
             move.make_capture();
             moves.push_back(move);
         }
-    } else {
-        static_assert(false, "Invalid gen type for king moves");
     }
 }
 template <GenType gen, PieceType pt> void append_moves(const Board &board, const Square origin, MoveList &moves) {
