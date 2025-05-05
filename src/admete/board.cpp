@@ -430,7 +430,6 @@ void Board::make_nullmove() {
     // Update the various data structures that are computed for the position
     update_checkers();
     update_check_squares();
-    // update_attacks();
 
     // Update the zorbist hash
     hash_history[ply_counter] = hash_history[ply_counter - 1] ^ Zobrist::nulldiff(us, last_ep_file);
