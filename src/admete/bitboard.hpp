@@ -85,12 +85,6 @@ constexpr Bitboard file_bb[8] = {a_file, b_file, c_file, d_file, e_file, f_file,
 constexpr Bitboard middle_ranks = rank_3 | rank_4 | rank_5 | rank_6;
 constexpr Bitboard null = 0x0000000000000000;
 constexpr Bitboard omega = 0xffffffffffffffff;
-// Bitboard for squares where king is castled
-constexpr Bitboard castle_king[N_COLOUR][N_SIDE] = {{0xe0e0e0, 0x070707}, {0xe0e0e00000000000, 0x707070000000000}};
-// Bitboard for king safetly pawns on 2nd rank
-constexpr Bitboard castle_pawn2[N_COLOUR][N_SIDE] = {{0xe000, 0x700}, {0x00e0000000000000, 0x007000000000000}};
-// Bitboard for king safetly pawns on 3rd rank
-constexpr Bitboard castle_pawn3[N_COLOUR][N_SIDE] = {{0xe00000, 0x70000}, {0x0000e00000000000, 0x000070000000000}};
 
 // Bitboards for squares that cannot be occupied for caslting to be legal.
 constexpr Bitboard castle_blocks_bb[N_COLOUR][N_SIDE] = {{0x60, 0xe}, {0x6000000000000000, 0xe00000000000000}};
@@ -310,10 +304,18 @@ template <Colour c> inline Bitboard rear_fill(const Bitboard g) {
 inline Bitboard pawn_attacks(const Colour c, const Square &s) { return PawnAttacks[c][s]; }
 
 template <Colour c> inline Bitboard pawn_attacks(const Bitboard g) {
-    if (c == WHITE) {
+    if constexpr (c == WHITE) {
         return shift<Direction::NW>(g) | shift<Direction::NE>(g);
     } else {
         return shift<Direction::SW>(g) | shift<Direction::SE>(g);
+    }
+}
+
+inline Bitboard pawn_attacks(const Colour c, const Bitboard g) {
+    if (c == WHITE) {
+        return pawn_attacks<WHITE>(g);
+    } else {
+        return pawn_attacks<BLACK>(g);
     }
 }
 

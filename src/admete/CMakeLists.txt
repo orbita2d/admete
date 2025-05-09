@@ -2,6 +2,7 @@ set(NN_SOURCES
     neural/features.cpp neural/features.hpp
     neural/linalg.hpp neural/network.hpp
     neural/weights.cpp neural/weights.hpp
+    neural/fixed.hpp
 )
 
 set(SEARCH_SOURCES

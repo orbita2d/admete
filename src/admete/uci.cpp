@@ -611,11 +611,11 @@ void print_features(Board &board, std::istringstream &is) {
     Colour player = board.who_to_play();
     const size_t feature_len = Neural::N_FEATURES2;
     for (size_t i = 0; i < feature_len; i++) {
-        std::cout << std::get<0>(features[player])[i];
+        std::cout << (int) std::get<0>(features[player])[i];
     }
     std::cout << ";" << Square::square_t(std::get<1>(features[player])) << ";";
     for (size_t i = 0; i < feature_len; i++) {
-        std::cout << std::get<0>(features[~player])[i];
+        std::cout << (int) std::get<0>(features[~player])[i];
     }
     std::cout << ";" << Square::square_t(std::get<1>(features[~player])) << std::endl;
 }

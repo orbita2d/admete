@@ -7,7 +7,7 @@ namespace Neural {
 per_colour<FeatureVector> cleared_features() {
     per_colour<FeatureVector> features;
     for (Colour c : {WHITE, BLACK}) {
-        features[c] = Vector<float, N_FEATURES>::zeros();
+        features[c] = Vector<feature_t, N_FEATURES>::zeros();
     }
     return features;
 }
@@ -31,7 +31,7 @@ per_colour<FeatureVector> encode(const Board &board) {
 per_colour<Feature2Vector> encode2(const Board &board) { 
     per_colour<Feature2Vector> features;
     for (Colour c : {WHITE, BLACK}) {
-        std::get<0>(features[c]) = Vector<float, N_FEATURES2>::zeros();
+        std::get<0>(features[c]) = Vector<feature_t, N_FEATURES2>::zeros();
 
         for (PieceType p = PAWN; p < KING; p++) {
             Bitboard bb = board.pieces(c, p);
