@@ -92,6 +92,9 @@ namespace Neural {
       T& weight_at(size_t i, size_t j) { return weights.at(j, i); }
       T& bias_at(size_t i) { return bias[i]; }
 
+      const T& weight_at(size_t i, size_t j) const { return weights.at(j, i); }
+      const T& bias_at(size_t i) const { return bias[i]; }
+
     private:
       Matrix<T,  In, Out> weights;
       Vector<T, Out> bias;
@@ -108,17 +111,17 @@ namespace Neural {
     FixedAccumulatorLayer() = default; 
 
     template<typename floatT>
-    FixedAccumulatorLayer(FloatingAccumulatorLayer<floatT, HalfIn, Out>& layer) {
+    FixedAccumulatorLayer(const FloatingAccumulatorLayer<floatT, HalfIn, Out>& layer) {
         for (size_t j = 0; j < In; j++) {
             for (size_t i = 0; i < Out; i++) {
                 floatT float_weight = layer.weight_at(i, j);
-                weights.at(j, i) = accT(float_weight);
+                weights.at(j, i) = accT::from_float(float_weight);
             }
         }
         
         for (size_t i = 0; i < Out; i++) {
             floatT float_bias = layer.bias_at(i);
-            bias[i] = accT(float_bias);
+            bias[i] = accT::from_float(float_bias);
         }
     }
 

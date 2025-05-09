@@ -76,19 +76,34 @@ public:
     
 private:
     int_type value;
+    // The full representable range is [-2^(scale_shift-1), 2^(scale_shift-1)]
     // The represented value == value * (2^scale_shift) / (2^bits) == value * 2^(scale_shift - bits)
     
 public:
     Fixed() : value(0) {}
-    Fixed(int_type v) : value(v) {}
     
+    // Integer constructor
+    Fixed(int_type v) : value(v) { }
+
     // Fixed-point from floating point
-    Fixed(float v) : value(static_cast<int_type>(apply_scale_shift(v, scale_shift, bits))) {}
-    Fixed(double v) : value(static_cast<int_type>(apply_scale_shift(v, scale_shift, bits))) {}
+    template<typename T>
+    static Fixed from_float(T v) {
+        static_assert(std::is_floating_point<T>::value, "T must be a floating point type");
+        return Fixed(apply_scale_shift(v, scale_shift, bits));
+    }
+
     // Promoting from smaller fixed point types
-    template<uint8_t other_bits>
-    Fixed(const Fixed<other_bits, scale_shift>& other) {
-        value = static_cast<int_type>(other.raw_value());
+    template<uint8_t new_bits>
+    Fixed<new_bits, scale_shift> promote() {
+        static_assert(new_bits > bits, "Cannot promote to smaller fixed point type");
+        return Fixed<new_bits, scale_shift>(static_cast<int_type>(value) << (new_bits-bits));
+    }
+
+    template<uint8_t bitshift>
+    Fixed<bits, scale_shift + bitshift> lower_precision() const {
+        // Keeping the bitwidth and values the same, reduce the precision
+        const int_type new_value = value >> bitshift;
+        return Fixed<bits, scale_shift + bitshift>(new_value);
     }
     
     template<typename T>
@@ -122,6 +137,10 @@ public:
         value--;
         return *this;
     }
+
+    constexpr bool operator==(const Fixed& other) const {
+        return value == other.value;
+    }
     
     // Static multiplication method that creates a Fixed point of this type
     template <uint8_t lhs_bits, int8_t lhs_scale_shift,
@@ -150,14 +169,6 @@ public:
     
     // Make the raw value accessible for operations
     int_type raw_value() const { return value; }
-};
-
-template <uint8_t out_bits,
-          uint8_t lhs_bits, int8_t lhs_scale_shift,
-          uint8_t rhs_bits, int8_t rhs_scale_shift>
-Fixed<out_bits, lhs_scale_shift + rhs_scale_shift> fixed_mul( Fixed<lhs_bits, lhs_scale_shift> lhs,
-    Fixed<rhs_bits, rhs_scale_shift> rhs) {
-      return Fixed<out_bits, lhs_scale_shift + rhs_scale_shift>::multiply(lhs, rhs);
 };
 
 } // namespace Neural
