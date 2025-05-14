@@ -8,8 +8,9 @@ using namespace Neural;
 class FixedAccumulatorTest : public ::testing::Test {
 protected:
     Board board;
+    static constexpr u_int8_t acc_bits = Neural::accumulator_t::acc_bits;
     using FloatingAcc = FloatingAccumulatorLayer<nn_t, N_FEATURES, N_ACCUMULATED>;
-    using FixedAcc = FixedAccumulatorLayer<N_FEATURES, N_ACCUMULATED, 32, ACC_SHIFT>;
+    using FixedAcc = FixedAccumulatorLayer<N_FEATURES, N_ACCUMULATED, acc_bits, ACC_SHIFT>;
     
     // Create a custom instance of both fixed and floating accumulators for comparison
     std::unique_ptr<FloatingAcc> floating_layer;

@@ -182,7 +182,6 @@ class Board {
     Move last_move() const { return aux_info->last_move; }
 
     const Neural::accumulator_t &accumulator() const { return _accumulator; }
-    void refresh_accumulator() { _accumulator.initialise(*this); }
 
   private:
     AuxilliaryInfo *aux_info;

@@ -171,4 +171,5 @@ public:
     int_type raw_value() const { return value; }
 };
 
+
 } // namespace Neural

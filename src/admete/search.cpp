@@ -135,10 +135,6 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, u
             }
         }
     }
-    // Occassionally refresh the neural network accumulator (because floating point error will accumulate)
-    if (options.nodes % (1<<14) == 0) {
-        board.refresh_accumulator();
-    }
 
     // Calculate the node evaluation heuristic.
     const score_t node_eval = Evaluation::eval(board);
