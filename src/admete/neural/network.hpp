@@ -64,9 +64,10 @@ namespace Neural {
   class QuantisedLinearLayer {
     public:
       using accT = Fixed<acc_bits, acc_scale_shift>;
-      static constexpr int8_t deprecision_shift = acc_bits/2 - 2;
+      static constexpr int8_t deprecision_shift = acc_bits/2 - 3;
       static constexpr int8_t intermediate_shift = acc_scale_shift + deprecision_shift;
-      using wT = Fixed<acc_bits, intermediate_shift>;
+      using wT = Fixed<acc_bits, intermediate_shift + 1>;
+      using FloatingPointEquivalent = LinearLayer<nn_t, In, Out>;
 
       // Constructors
       QuantisedLinearLayer(const Matrix<wT, Out, In>& weights, const Vector<accT, Out>& bias)
@@ -217,12 +218,15 @@ namespace Neural {
     return result;
   }
 
-  template <typename T, size_t N>
-  void relu_inplace(Vector<T, N>& x) {
+template <uint8_t bits, int8_t scale_shift, size_t N> 
+Vector<Fixed<bits, scale_shift>, N> relu_fixed(const Vector<Fixed<bits, scale_shift>, N>& x) {
+    Vector<Fixed<bits, scale_shift>, N> result;
     for (size_t i = 0; i < N; i++) {
-      x[i] = relu(x[i]);
+        result[i] = Fixed<bits, scale_shift>(relu(x[i].raw_value()));
     }
-  }
+  return result;
+}
+
 
   template <size_t FeaturesSize, size_t AccumulatorSize, uint8_t AccumulatorShift>
   class Accumulator {
@@ -304,17 +308,17 @@ namespace Neural {
   private:    
     // Recursive template to build a tuple of layers
     // Base case - just one layer left
-    // using _ac_t = int32_t;
-    // using _w_t = int16_t;
     template<size_t In, size_t Out, size_t... Rest>
     struct LayerTypes {
-        using type = std::tuple<std::unique_ptr<LinearLayer<nn_t, In, Out>>>;
+        // using type = std::tuple<std::unique_ptr<LinearLayer<nn_t, In, Out>>>;
+        using type = std::tuple<std::unique_ptr<QuantisedLinearLayer<In, Out, 16, AccumulatorShift>>>;
     };
     // Recursive case - concatenate current layer with rest of layers
     template<size_t In, size_t Mid, size_t Out, size_t... Rest>
     struct LayerTypes<In, Mid, Out, Rest...> {
         using type = decltype(std::tuple_cat(
-            std::declval<std::tuple<std::unique_ptr<LinearLayer<nn_t, In, Mid>>>>(),
+            // std::declval<std::tuple<std::unique_ptr<LinearLayer<nn_t, In, Mid>>>>(),
+            std::declval<std::tuple<std::unique_ptr<QuantisedLinearLayer<In, Mid, 16, AccumulatorShift>>>>(),
             std::declval<typename LayerTypes<Mid, Out, Rest...>::type>()
         ));
     };
@@ -329,7 +333,8 @@ namespace Neural {
             return std::get<I>(layers)->forward(input);
         } else {
             // Recursive case - apply layer, relu, then continue
-            return forward_impl<I + 1>(relu(std::get<I>(layers)->forward(input)));
+            // return forward_impl<I + 1>(relu(std::get<I>(layers)->forward(input)));
+            return forward_impl<I + 1>(relu_fixed(std::get<I>(layers)->forward(input)));
         }
     }
 
@@ -337,8 +342,22 @@ namespace Neural {
       Layers layers;
 
       nn_t forward(const Accumulator<FeaturesSize, AccumulatorSize, AccumulatorShift>& accm, Colour us) const {
-        auto input = accm.template get_as<nn_t>(us);
-        return forward_impl(relu(input))[0];  // [0] since final layer outputs size-1 vector
+        // auto input = accm.template get_as<nn_t>(us);
+        auto input = accm.get(us);
+        return forward_impl(relu_fixed(input))[0].template as<nn_t>();  // [0] since final layer outputs size-1 vector
+    }
+
+    // template<size_t I>
+    // void set_layer(std::unique_ptr<typename std::tuple_element_t<I, Layers>::element_type> layer) {
+    //   static_assert(I < sizeof...(LayerSizes), "Index out of bounds");
+    //   std::get<I>(layers) = std::move(layer);
+    // }
+    
+    template<size_t I>
+    void set_layer(std::unique_ptr<typename std::tuple_element_t<I, Layers>::element_type::FloatingPointEquivalent> layer) {
+      static_assert(I < sizeof...(LayerSizes), "Index out of bounds");
+      // std::get<I>(layers) = std::move(layer);
+      std::get<I>(layers) = std::make_unique<typename std::tuple_element_t<I, Layers>::element_type>(*layer);
     }
   };
 
