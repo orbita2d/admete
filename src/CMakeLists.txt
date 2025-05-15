@@ -6,7 +6,7 @@ PRIVATE libadmete)
 add_subdirectory(admete)
 
 set_property(TARGET admete PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
-set_property(TARGET admete PROPERTY CXX_STANDARD 20)
+set_property(TARGET admete PROPERTY CXX_STANDARD 23)
 
 # option(CACHE_LINE_SIZE "Size of cache line in bytes" 64)
 
