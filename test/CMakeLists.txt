@@ -14,6 +14,7 @@ add_executable(tests main.cpp
         network.cpp
         fixed.cpp
         fixed_accumulator.cpp
+        quantised_linear_layer.cpp
         )
 
 target_link_libraries(tests

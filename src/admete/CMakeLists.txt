@@ -33,7 +33,7 @@ find_package(Threads)
 target_link_libraries(libadmete ${CMAKE_THREAD_LIBS_INIT})
 
 set_property(TARGET libadmete PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
-set_property(TARGET libadmete PROPERTY CXX_STANDARD 20)
+set_property(TARGET libadmete PROPERTY CXX_STANDARD 23)
 
 target_include_directories(libadmete PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}

@@ -109,10 +109,18 @@ TEST_F(FixedPointTest, CompoundAssignment) {
 // Precision rediction tests
 TEST_F(FixedPointTest, PrecisionReduction) {
     auto a = Fixed<8, 4>::from_float(2.5f);
-    auto b = a.lower_precision<2>(); // Reduce precision to Q8.2
+    auto b = a.to_scale<6>(); // Reduce precision to Q8.2
     
     EXPECT_FLOAT_EQ(b.as<float>(), 2.5f); // Should be same value
     EXPECT_EQ(b.raw_value(), 10); // Q8.2 representation of 2.5 is 10
+}
+
+TEST_F(FixedPointTest, PrecisionChange) {
+    auto a = Fixed<8, 4>::from_float(2.5f);
+    auto b = a.to_scale<3>();
+    
+    EXPECT_FLOAT_EQ(b.as<float>(), 2.5f); // Should be same value
+    EXPECT_EQ(b.raw_value(), 80);
 }
 
 // Multiplication tests
@@ -122,6 +130,16 @@ TEST_F(FixedPointTest, MultiplicationStatic) {
     
     // Result in Q8.8 format
     auto prod = Fixed<16, 8>::multiply(a, b);
+    
+    // EXPECT_NEAR(prod.as<float>(), 2.5f * 1.75f, kEpsilon);
+    EXPECT_FLOAT_EQ(prod.as<float>(), 4.375f);
+}
+TEST_F(FixedPointTest, MultiplicationStatic2) {
+    auto a = Fixed<16, 5>::from_float(2.5f).to_scale<13>(); // Squeeze into 8 bits
+    auto b = Fixed<16, 5>::from_float(1.75f).to_scale<13>();
+
+    // Result in Q8.8 format
+    auto prod = Fixed<16, 5>::multiply(a, b);
     
     // EXPECT_NEAR(prod.as<float>(), 2.5f * 1.75f, kEpsilon);
     EXPECT_FLOAT_EQ(prod.as<float>(), 4.375f);

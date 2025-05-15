@@ -5,9 +5,9 @@
 
 namespace Neural {
 
-// Model generated from training run 2025-04-29_23-12-44
+// Model generated from training run 2025-05-14_07-33-51
 
-constexpr uint8_t ACC_SHIFT = 9;
+constexpr uint8_t ACC_SHIFT = 3;
 constexpr size_t N_ACCUMULATED = 128;
 static_assert(N_FEATURES == 384, "Feature size mismatch");
 

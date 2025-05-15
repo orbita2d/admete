@@ -20,6 +20,8 @@ namespace Neural {
   static_assert(std::is_floating_point_v<T>, "LinearLayer only supports arithmetic types");
 
   public:
+  static constexpr size_t In = Input;
+  static constexpr size_t Out = Output;
     LinearLayer(const Matrix<T, Output, Input>& weights, const Vector<T, Output>& bias)
       : weights(weights.transpose()), bias(bias) {}
     LinearLayer() = default;
@@ -48,9 +50,55 @@ namespace Neural {
       return LinearLayer(mat, bias);
     }
 
+    T bias_at(size_t i) const { return bias[i]; }
+    T& bias_at(size_t i) { return bias[i]; }
+    T weight_at(size_t i, size_t j) const { return weights.at(j, i); }
+    T& weight_at(size_t i, size_t j) { return weights.at(j, i); }
+
   private:
     Matrix<T, Input, Output> weights;
     Vector<T, Output> bias;
+  };
+
+  template<size_t In, size_t Out, uint8_t acc_bits, int8_t acc_scale_shift>
+  class QuantisedLinearLayer {
+    public:
+      using accT = Fixed<acc_bits, acc_scale_shift>;
+      static constexpr int8_t deprecision_shift = acc_bits/2 - 2;
+      static constexpr int8_t intermediate_shift = acc_scale_shift + deprecision_shift;
+      using wT = Fixed<acc_bits, intermediate_shift>;
+
+      // Constructors
+      QuantisedLinearLayer(const Matrix<wT, Out, In>& weights, const Vector<accT, Out>& bias)
+        : weights(weights.transpose()), bias(bias) {}
+      QuantisedLinearLayer() = default;
+      template<typename floatT>
+      QuantisedLinearLayer(const LinearLayer<floatT, In, Out>& layer) {
+        for (size_t j = 0; j < In; j++) {
+          for (size_t i = 0; i < Out; i++) {
+            weights.at(j, i) = wT::from_float(layer.weight_at(i, j));
+          }
+        }
+        for (size_t i = 0; i < Out; i++) {
+          bias[i] = accT::from_float(layer.bias_at(i));
+        }
+      }
+
+      Vector<accT, Out> forward(const Vector<accT, In>& input) const {
+        Vector<accT, Out> result = bias;
+
+        for (size_t j = 0; j < In; j++) {
+          const auto input_j = input[j].template to_scale<intermediate_shift>();
+          for (size_t i = 0; i < Out; i++) {
+            result[i] += accT::multiply(weights.at(j, i), input_j);
+          }
+        }
+        return result;
+      }
+
+      private:
+        Matrix<wT, In, Out> weights;
+        Vector<accT, Out> bias;
   };
 
   template<typename T, size_t HalfIn, size_t Out>

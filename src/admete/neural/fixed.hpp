@@ -99,11 +99,21 @@ public:
         return Fixed<new_bits, scale_shift>(static_cast<int_type>(value) << (new_bits-bits));
     }
 
-    template<uint8_t bitshift>
-    Fixed<bits, scale_shift + bitshift> lower_precision() const {
-        // Keeping the bitwidth and values the same, reduce the precision
-        const int_type new_value = value >> bitshift;
-        return Fixed<bits, scale_shift + bitshift>(new_value);
+    template <uint8_t new_bits>
+    Fixed<new_bits, scale_shift+new_bits-bits> truncate() const {
+        static_assert(new_bits <= bits, "Cannot truncate to larger fixed point type");
+        return Fixed<new_bits, scale_shift+new_bits-bits>(static_cast<int_type>(value));
+    }
+
+    template<int8_t scale>
+    Fixed<bits, scale> to_scale() const {
+        if constexpr (scale == scale_shift) {
+            return Fixed<bits, scale>(value);
+        } else if constexpr (scale > scale_shift) {
+            return Fixed<bits, scale>(value >> (scale - scale_shift));
+        } else {
+            return Fixed<bits, scale>(value << (scale_shift - scale));
+        }
     }
     
     template<typename T>
@@ -146,18 +156,12 @@ public:
     template <uint8_t lhs_bits, int8_t lhs_scale_shift,
               uint8_t rhs_bits, int8_t rhs_scale_shift>
     static Fixed multiply(const Fixed<lhs_bits, lhs_scale_shift>& lhs,
-                          const Fixed<rhs_bits, rhs_scale_shift>& rhs) {
-        static_assert(lhs_scale_shift + rhs_scale_shift == scale_shift,
-                     "Scale shift mismatch in Fixed::multiply");
-                     
-        using intermediate_type = typename smallest_int_with_bits
-            <bits + std::max(lhs_bits, rhs_bits), true>::type;
-            
+                          const Fixed<rhs_bits, rhs_scale_shift>& rhs) {            
         // Perform multiplication with wider intermediate type
-        intermediate_type result = static_cast<intermediate_type>(lhs.raw_value()) * 
-                                   static_cast<intermediate_type>(rhs.raw_value());
+        int_type result = static_cast<int_type>(lhs.raw_value()) * static_cast<int_type>(rhs.raw_value());
+        constexpr int8_t new_shift = lhs_scale_shift + rhs_scale_shift - (lhs_bits + rhs_bits - bits);
                                    
-        return Fixed(static_cast<int_type>(result));
+        return Fixed<bits, new_shift>(result).template to_scale<scale_shift>();
     }
 
     // Integer multiplicationm without changing the result type
