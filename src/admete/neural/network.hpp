@@ -60,48 +60,6 @@ namespace Neural {
     Vector<T, Output> bias;
   };
 
-  template<size_t In, size_t Out, uint8_t acc_bits, int8_t acc_scale_shift>
-  class QuantisedLinearLayer {
-    public:
-      using accT = Fixed<acc_bits, acc_scale_shift>;
-      static constexpr int8_t deprecision_shift = acc_bits/2 - 3;
-      static constexpr int8_t intermediate_shift = acc_scale_shift + deprecision_shift;
-      using wT = Fixed<acc_bits, intermediate_shift + 1>;
-      using FloatingPointEquivalent = LinearLayer<nn_t, In, Out>;
-
-      // Constructors
-      QuantisedLinearLayer(const Matrix<wT, Out, In>& weights, const Vector<accT, Out>& bias)
-        : weights(weights.transpose()), bias(bias) {}
-      QuantisedLinearLayer() = default;
-      template<typename floatT>
-      QuantisedLinearLayer(const LinearLayer<floatT, In, Out>& layer) {
-        for (size_t j = 0; j < In; j++) {
-          for (size_t i = 0; i < Out; i++) {
-            weights.at(j, i) = wT::from_float(layer.weight_at(i, j));
-          }
-        }
-        for (size_t i = 0; i < Out; i++) {
-          bias[i] = accT::from_float(layer.bias_at(i));
-        }
-      }
-
-      Vector<accT, Out> forward(const Vector<accT, In>& input) const {
-        Vector<accT, Out> result = bias;
-
-        for (size_t j = 0; j < In; j++) {
-          const auto input_j = input[j].template to_scale<intermediate_shift>();
-          for (size_t i = 0; i < Out; i++) {
-            result[i] += accT::multiply(weights.at(j, i), input_j);
-          }
-        }
-        return result;
-      }
-
-      private:
-        Matrix<wT, In, Out> weights;
-        Vector<accT, Out> bias;
-  };
-
   template<typename T, size_t HalfIn, size_t Out>
   class FloatingAccumulatorLayer {
     static_assert(std::is_floating_point_v<T>, "FloatingAccumulatorLayer only supports floating point types");
@@ -218,16 +176,6 @@ namespace Neural {
     return result;
   }
 
-template <uint8_t bits, int8_t scale_shift, size_t N> 
-Vector<Fixed<bits, scale_shift>, N> relu_fixed(const Vector<Fixed<bits, scale_shift>, N>& x) {
-    Vector<Fixed<bits, scale_shift>, N> result;
-    for (size_t i = 0; i < N; i++) {
-        result[i] = Fixed<bits, scale_shift>(relu(x[i].raw_value()));
-    }
-  return result;
-}
-
-
   template <size_t FeaturesSize, size_t AccumulatorSize, uint8_t AccumulatorShift>
   class Accumulator {
   public:
@@ -310,15 +258,13 @@ Vector<Fixed<bits, scale_shift>, N> relu_fixed(const Vector<Fixed<bits, scale_sh
     // Base case - just one layer left
     template<size_t In, size_t Out, size_t... Rest>
     struct LayerTypes {
-        // using type = std::tuple<std::unique_ptr<LinearLayer<nn_t, In, Out>>>;
-        using type = std::tuple<std::unique_ptr<QuantisedLinearLayer<In, Out, 16, AccumulatorShift>>>;
+        using type = std::tuple<std::unique_ptr<LinearLayer<nn_t, In, Out>>>;
     };
     // Recursive case - concatenate current layer with rest of layers
     template<size_t In, size_t Mid, size_t Out, size_t... Rest>
     struct LayerTypes<In, Mid, Out, Rest...> {
         using type = decltype(std::tuple_cat(
-            // std::declval<std::tuple<std::unique_ptr<LinearLayer<nn_t, In, Mid>>>>(),
-            std::declval<std::tuple<std::unique_ptr<QuantisedLinearLayer<In, Mid, 16, AccumulatorShift>>>>(),
+            std::declval<std::tuple<std::unique_ptr<LinearLayer<nn_t, In, Mid>>>>(),
             std::declval<typename LayerTypes<Mid, Out, Rest...>::type>()
         ));
     };
@@ -333,8 +279,7 @@ Vector<Fixed<bits, scale_shift>, N> relu_fixed(const Vector<Fixed<bits, scale_sh
             return std::get<I>(layers)->forward(input);
         } else {
             // Recursive case - apply layer, relu, then continue
-            // return forward_impl<I + 1>(relu(std::get<I>(layers)->forward(input)));
-            return forward_impl<I + 1>(relu_fixed(std::get<I>(layers)->forward(input)));
+            return forward_impl<I + 1>(relu(std::get<I>(layers)->forward(input)));
         }
     }
 
@@ -342,22 +287,14 @@ Vector<Fixed<bits, scale_shift>, N> relu_fixed(const Vector<Fixed<bits, scale_sh
       Layers layers;
 
       nn_t forward(const Accumulator<FeaturesSize, AccumulatorSize, AccumulatorShift>& accm, Colour us) const {
-        // auto input = accm.template get_as<nn_t>(us);
-        auto input = accm.get(us);
-        return forward_impl(relu_fixed(input))[0].template as<nn_t>();  // [0] since final layer outputs size-1 vector
+        auto input = accm.template get_as<nn_t>(us);
+        return forward_impl(relu(input))[0];  // [0] since final layer outputs size-1 vector
     }
 
-    // template<size_t I>
-    // void set_layer(std::unique_ptr<typename std::tuple_element_t<I, Layers>::element_type> layer) {
-    //   static_assert(I < sizeof...(LayerSizes), "Index out of bounds");
-    //   std::get<I>(layers) = std::move(layer);
-    // }
-    
     template<size_t I>
-    void set_layer(std::unique_ptr<typename std::tuple_element_t<I, Layers>::element_type::FloatingPointEquivalent> layer) {
+    void set_layer(std::unique_ptr<typename std::tuple_element_t<I, Layers>::element_type> layer) {
       static_assert(I < sizeof...(LayerSizes), "Index out of bounds");
-      // std::get<I>(layers) = std::move(layer);
-      std::get<I>(layers) = std::make_unique<typename std::tuple_element_t<I, Layers>::element_type>(*layer);
+      std::get<I>(layers) = std::move(layer);
     }
   };
 
