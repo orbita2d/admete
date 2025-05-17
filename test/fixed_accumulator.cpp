@@ -8,7 +8,7 @@ using namespace Neural;
 class FixedAccumulatorTest : public ::testing::Test {
 protected:
     Board board;
-    static constexpr u_int8_t acc_bits = Neural::accumulator_t::acc_bits;
+    static constexpr uint8_t acc_bits = Neural::accumulator_t::acc_bits;
     using FloatingAcc = FloatingAccumulatorLayer<nn_t, N_FEATURES, N_ACCUMULATED>;
     using FixedAcc = FixedAccumulatorLayer<N_FEATURES, N_ACCUMULATED, acc_bits, ACC_SHIFT>;
     
