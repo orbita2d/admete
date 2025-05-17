@@ -27,3 +27,4 @@ scripts/
 
 py-*/
 *.Dockerfile
+.dockerignore
