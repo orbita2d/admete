@@ -180,7 +180,7 @@ namespace Neural {
   class Accumulator {
   public:
       // using layer_t = FloatingAccumulatorLayer<nn_t, FeaturesSize, AccumulatorSize>;
-      static constexpr u_int8_t acc_bits = 16u;
+      static constexpr uint8_t acc_bits = 16u;
       using layer_t = FixedAccumulatorLayer<FeaturesSize, AccumulatorSize, acc_bits, AccumulatorShift>;
       using accT = layer_t::accT;
       using floating_t = FloatingAccumulatorLayer<nn_t, FeaturesSize, AccumulatorSize>;
