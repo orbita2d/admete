@@ -1,0 +1,179 @@
+/* Zero-overhead fixed point arithmetic implementation
+*/
+#include <cassert>
+#include <cstdint>
+#include <limits>
+#include <type_traits>
+#include <cmath>
+
+namespace Neural {
+
+template<std::size_t N, bool Signed = true>
+struct smallest_int_with_bits {
+private:
+    // Try different integer types
+    template<typename T>
+    static constexpr bool has_enough_bits =
+        std::numeric_limits<T>::digits + (Signed ? 1 : 0) >= N;
+public:
+    using type = std::conditional_t<has_enough_bits<int8_t>, int8_t,
+                std::conditional_t<has_enough_bits<int16_t>, int16_t,
+                std::conditional_t<has_enough_bits<int32_t>, int32_t,
+                std::conditional_t<has_enough_bits<int64_t>, int64_t,
+                void>>>>;
+};
+
+// Specialization for unsigned types
+template<std::size_t N>
+struct smallest_int_with_bits<N, false> {
+private:
+    template<typename T>
+    static constexpr bool has_enough_bits =
+        std::numeric_limits<T>::digits >= N;
+public:
+    using type = std::conditional_t<has_enough_bits<uint8_t>, uint8_t,
+                std::conditional_t<has_enough_bits<uint16_t>, uint16_t,
+                std::conditional_t<has_enough_bits<uint32_t>, uint32_t,
+                std::conditional_t<has_enough_bits<uint64_t>, uint64_t,
+                void>>>>;
+};
+
+// Helper constexpr function to handle both positive and negative scale shifts
+
+template <typename T>
+constexpr T invert_scale_shift(T value, int8_t shift, uint8_t bits) {
+    // From internal fixed point representation to floating point
+    static_assert(std::is_floating_point<T>::value, "T must be a floating point type");
+    auto total_shift = shift - bits;
+    if (total_shift > 0) {
+        return value * T(1 << total_shift);
+    } else if (total_shift < 0) {
+        return value / T(1 << (-total_shift));
+    } else {
+        return value;
+    }
+}
+
+
+template <typename T>
+constexpr T apply_scale_shift(T value, int8_t shift, uint8_t bits) {
+    // From floating point to internal fixed point representation
+    static_assert(std::is_floating_point<T>::value, "T must be a floating point type");
+    auto total_shift = shift - bits;
+    if (total_shift > 0) {
+        return value / T(1 << total_shift);
+    } else if (total_shift < 0) {
+        return value * T(1 << (-total_shift));
+    } else {
+        return value;
+    }
+}
+
+template <uint8_t bits, int8_t scale_shift>
+class Fixed {
+public:
+    using int_type = typename smallest_int_with_bits<bits, true>::type;
+    
+private:
+    int_type value;
+    // The full representable range is [-2^(scale_shift-1), 2^(scale_shift-1)]
+    // The represented value == value * (2^scale_shift) / (2^bits) == value * 2^(scale_shift - bits)
+    
+public:
+    Fixed() : value(0) {}
+    
+    // Integer constructor
+    Fixed(int_type v) : value(v) { }
+
+    // Fixed-point from floating point
+    template<typename T>
+    static Fixed from_float(T v) {
+        static_assert(std::is_floating_point<T>::value, "T must be a floating point type");
+        return Fixed(apply_scale_shift(v, scale_shift, bits));
+    }
+
+    // Promoting from smaller fixed point types
+    template<uint8_t new_bits>
+    Fixed<new_bits, scale_shift> promote() {
+        static_assert(new_bits > bits, "Cannot promote to smaller fixed point type");
+        return Fixed<new_bits, scale_shift>(static_cast<int_type>(value) << (new_bits-bits));
+    }
+
+    template <uint8_t new_bits>
+    Fixed<new_bits, scale_shift+new_bits-bits> truncate() const {
+        static_assert(new_bits <= bits, "Cannot truncate to larger fixed point type");
+        return Fixed<new_bits, scale_shift+new_bits-bits>(static_cast<int_type>(value));
+    }
+
+    template<int8_t scale>
+    Fixed<bits, scale> to_scale() const {
+        if constexpr (scale == scale_shift) {
+            return Fixed<bits, scale>(value);
+        } else if constexpr (scale > scale_shift) {
+            return Fixed<bits, scale>(value >> (scale - scale_shift));
+        } else {
+            return Fixed<bits, scale>(value << (scale_shift - scale));
+        }
+    }
+    
+    template<typename T>
+    T as() const {
+        static_assert(std::is_floating_point<T>::value, "T must be a floating point type");
+        return invert_scale_shift(static_cast<T>(value), scale_shift, bits);
+    }
+    
+    Fixed operator+(const Fixed& other) const {
+        return Fixed(value + other.value);
+    }
+    
+    Fixed operator-(const Fixed& other) const {
+        return Fixed(value - other.value);
+    }
+
+    // increment and decrement operators
+    Fixed& operator+=(const Fixed& other) {
+        value += other.value;
+        return *this;
+    }
+    Fixed& operator-=(const Fixed& other) {
+        value -= other.value;
+        return *this;
+    }
+    Fixed& operator++() {
+        value++;
+        return *this;
+    }
+    Fixed& operator--() {
+        value--;
+        return *this;
+    }
+
+    constexpr bool operator==(const Fixed& other) const {
+        return value == other.value;
+    }
+    
+    // Static multiplication method that creates a Fixed point of this type
+    template <uint8_t lhs_bits, int8_t lhs_scale_shift,
+              uint8_t rhs_bits, int8_t rhs_scale_shift>
+    static Fixed multiply(const Fixed<lhs_bits, lhs_scale_shift>& lhs,
+                          const Fixed<rhs_bits, rhs_scale_shift>& rhs) {            
+        // Perform multiplication with wider intermediate type
+        int_type result = static_cast<int_type>(lhs.raw_value()) * static_cast<int_type>(rhs.raw_value());
+        constexpr int8_t new_shift = lhs_scale_shift + rhs_scale_shift - (lhs_bits + rhs_bits - bits);
+                                   
+        return Fixed<bits, new_shift>(result).template to_scale<scale_shift>();
+    }
+
+    // Integer multiplicationm without changing the result type
+    template<typename T>
+    Fixed small_multiply(const T other) const {
+        static_assert(std::is_integral<T>::value, "T must be an integral type");
+        return Fixed(value * other);
+    }
+    
+    // Make the raw value accessible for operations
+    int_type raw_value() const { return value; }
+};
+
+
+} // namespace Neural

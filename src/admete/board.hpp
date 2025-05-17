@@ -86,7 +86,9 @@ class Board {
     void get_evasion_moves(MoveList &) const;
     void get_quiessence_moves(MoveList &) const;
 
-    bool is_attacked(const Square square, const Colour us) const;
+    bool is_attacked(const Square square) const {
+        return (aux_info->attacked & square) != 0;
+    }
 
     // Find the locations of the kings.
     void search_kings();
@@ -96,8 +98,6 @@ class Board {
     void update_check_squares();
     // Find the squares that are being attacked.
     void update_attacks();
-    // Calculate the extra pawn structure information used in eval.
-    void update_pawns();
     // Returns true if a given move will give check.
     bool gives_check(const Move move) const;
     // Returns the squares where p would give check.
@@ -106,7 +106,7 @@ class Board {
     Bitboard blockers() const { return aux_info->blockers; };
     // Returns the bitboard of pieces pinned to king.
     Bitboard pinned() const { return aux_info->pinned; }
-    // Returns the bitboard of pieces pinned to king.
+    // Returns the bitboard of squares which are attacked by the opponent (ignoring the king).
     Bitboard attacked() const { return aux_info->attacked; }
 
     // Returns the location of the i'th checker.
@@ -130,7 +130,6 @@ class Board {
     Bitboard pieces(const Colour c, const PieceType p1, const PieceType p2) const {
         return colour_bb[c] & (piece_bb[p1] | piece_bb[p2]);
     }
-    Bitboard pawn_controlled(const Colour c) const { return pawn_atk_bb[c]; }
 
     void make_move(Move &move);
     void unmake_move(const Move move);
@@ -183,14 +182,12 @@ class Board {
     Move last_move() const { return aux_info->last_move; }
 
     const Neural::accumulator_t &accumulator() const { return _accumulator; }
-    void refresh_accumulator() { _accumulator.initialise(*this); }
 
   private:
     AuxilliaryInfo *aux_info;
     Bitboard occupied_bb;
     per_colour<Bitboard> colour_bb;
     per_piece<Bitboard> piece_bb;
-    per_colour<Bitboard> pawn_atk_bb;
     int piece_counts[N_COLOUR][N_PIECE];
     Colour whos_move = WHITE;
     uint fullmove_counter = 1;

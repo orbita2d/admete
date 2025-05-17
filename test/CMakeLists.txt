@@ -12,6 +12,8 @@ add_executable(tests main.cpp
         features.cpp
         linalg.cpp
         network.cpp
+        fixed.cpp
+        fixed_accumulator.cpp
         )
 
 target_link_libraries(tests
@@ -22,7 +24,7 @@ target_link_libraries(tests
 add_test(NAME tests
         COMMAND tests)
 
-set_property(TARGET tests PROPERTY CXX_STANDARD 20)
+set_property(TARGET tests PROPERTY CXX_STANDARD 23)
 
 include(FetchContent)
 FetchContent_Declare(

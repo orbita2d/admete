@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <limits>
 #include <memory>
+#include <fixed.hpp>
 
 namespace Neural {
   typedef float nn_t;
@@ -19,6 +20,8 @@ namespace Neural {
   static_assert(std::is_floating_point_v<T>, "LinearLayer only supports arithmetic types");
 
   public:
+  static constexpr size_t In = Input;
+  static constexpr size_t Out = Output;
     LinearLayer(const Matrix<T, Output, Input>& weights, const Vector<T, Output>& bias)
       : weights(weights.transpose()), bias(bias) {}
     LinearLayer() = default;
@@ -46,6 +49,11 @@ namespace Neural {
       auto bias = Vector<T, Output>::random();
       return LinearLayer(mat, bias);
     }
+
+    T bias_at(size_t i) const { return bias[i]; }
+    T& bias_at(size_t i) { return bias[i]; }
+    T weight_at(size_t i, size_t j) const { return weights.at(j, i); }
+    T& weight_at(size_t i, size_t j) { return weights.at(j, i); }
 
   private:
     Matrix<T, Input, Output> weights;
@@ -91,9 +99,68 @@ namespace Neural {
       T& weight_at(size_t i, size_t j) { return weights.at(j, i); }
       T& bias_at(size_t i) { return bias[i]; }
 
+      const T& weight_at(size_t i, size_t j) const { return weights.at(j, i); }
+      const T& bias_at(size_t i) const { return bias[i]; }
+
     private:
       Matrix<T,  In, Out> weights;
       Vector<T, Out> bias;
+  };
+
+  template<size_t HalfIn, size_t Out, uint8_t acc_bits, int8_t acc_scale_shift>
+  class FixedAccumulatorLayer {
+    public:
+    using inT = feature_t;
+    static_assert(std::is_integral_v<inT>, "FixedAccumulatorLayer only supports integral types");
+    using accT = Fixed<acc_bits, acc_scale_shift>;
+    static constexpr size_t In = HalfIn * 2;
+
+    FixedAccumulatorLayer() = default; 
+
+    template<typename floatT>
+    FixedAccumulatorLayer(const FloatingAccumulatorLayer<floatT, HalfIn, Out>& layer) {
+        for (size_t j = 0; j < In; j++) {
+            for (size_t i = 0; i < Out; i++) {
+                floatT float_weight = layer.weight_at(i, j);
+                weights.at(j, i) = accT::from_float(float_weight);
+            }
+        }
+        
+        for (size_t i = 0; i < Out; i++) {
+            floatT float_bias = layer.bias_at(i);
+            bias[i] = accT::from_float(float_bias);
+        }
+    }
+
+    Vector<accT, Out> forward(const Vector<inT, HalfIn>& input_left, const Vector<inT, HalfIn>& input_right) const {
+      Vector<accT, Out> result = bias;
+
+      for (size_t j = 0; j < HalfIn; j++) {
+        for (size_t i = 0; i < Out; i++) {
+          result[i] += weights.at(j, i).small_multiply(input_left[j]);
+          result[i] += weights.at(j + HalfIn, i).small_multiply(input_right[j]);
+        }
+      }
+      return result;
+    }
+
+    void increment(Vector<accT, Out>& reference, const SparseVector<inT, HalfIn>& input_left, const SparseVector<inT, HalfIn>& input_right) const {
+      // We want to concatenate the two inputs, and then propogate. This allows us to do them without copying.
+      for (const auto& [index, value] : input_left.data) {
+        for (size_t i = 0; i < Out; i++) {
+          reference[i] += weights.at(index, i).small_multiply(value);
+        }
+      }
+      for (const auto& [index, value] : input_right.data) {
+        for (size_t i = 0; i < Out; i++) {
+          reference[i] += weights.at(index + HalfIn, i).small_multiply(value);
+        }
+      }
+    }
+
+    private:
+      Matrix<accT, In, Out> weights;
+      Vector<accT, Out> bias;
   };
 
   template <typename T>
@@ -109,17 +176,14 @@ namespace Neural {
     return result;
   }
 
-  template <typename T, size_t N>
-  void relu_inplace(Vector<T, N>& x) {
-    for (size_t i = 0; i < N; i++) {
-      x[i] = relu(x[i]);
-    }
-  }
-
-  template <size_t FeaturesSize, size_t AccumulatorSize>
+  template <size_t FeaturesSize, size_t AccumulatorSize, uint8_t AccumulatorShift>
   class Accumulator {
   public:
-      using layer_t = FloatingAccumulatorLayer<nn_t, FeaturesSize, AccumulatorSize>;
+      // using layer_t = FloatingAccumulatorLayer<nn_t, FeaturesSize, AccumulatorSize>;
+      static constexpr uint8_t acc_bits = 16u;
+      using layer_t = FixedAccumulatorLayer<FeaturesSize, AccumulatorSize, acc_bits, AccumulatorShift>;
+      using accT = layer_t::accT;
+      using floating_t = FloatingAccumulatorLayer<nn_t, FeaturesSize, AccumulatorSize>;
 
       Accumulator() = default;
 
@@ -127,6 +191,12 @@ namespace Neural {
           : acc_layer(std::move(layer)) {}
         
       explicit Accumulator(const layer_t& layer)
+          : acc_layer(std::make_unique<layer_t>(layer)) {}
+
+      explicit Accumulator(std::unique_ptr<floating_t> layer)
+          : acc_layer(std::make_unique<layer_t>(*layer)) {}
+        
+      explicit Accumulator(const floating_t& layer)
           : acc_layer(std::make_unique<layer_t>(layer)) {}
       
       Accumulator(Accumulator&& other) noexcept 
@@ -142,42 +212,50 @@ namespace Neural {
       void initialise(const Board& board);
       void make_move(const Move& move, const Colour side);
       void unmake_move(const Move& move, const Colour side);
-      const Vector<nn_t, AccumulatorSize>& get(Colour c) const { return accumulated[c]; }
+      const Vector<accT, AccumulatorSize>& get(Colour c) const { return accumulated[c]; }
+
+      template<typename T>
+      const Vector<T, AccumulatorSize> get_as(Colour c) const {
+          auto values = Vector<T, AccumulatorSize>::zeros();
+          for (size_t i = 0; i < AccumulatorSize; i++) {
+              values[i] = accumulated[c][i].template as<T>();
+          }
+          return values;
+      }
 
     private:
-      per_colour<Vector<nn_t, AccumulatorSize>> accumulated;
+      per_colour<Vector<accT, AccumulatorSize>> accumulated;
       std::unique_ptr<layer_t> acc_layer;
   };
 
-  template<size_t FeaturesSize, size_t AccumulatorSize>
-  void Accumulator<FeaturesSize, AccumulatorSize>::initialise(const Board &board) {
+  template<size_t FeaturesSize, size_t AccumulatorSize, uint8_t AccumulatorShift>
+  void Accumulator<FeaturesSize, AccumulatorSize, AccumulatorShift>::initialise(const Board &board) {
       auto encoded = encode(board);
       for (Colour c : {WHITE, BLACK}) {
           accumulated[c] = acc_layer->forward(encoded[c], encoded[~c]);
       }
   }
 
-  template<size_t FeaturesSize, size_t AccumulatorSize>
-  void Accumulator<FeaturesSize, AccumulatorSize>::make_move(const Move &move, const Colour side) {
+  template<size_t FeaturesSize, size_t AccumulatorSize, uint8_t AccumulatorShift>
+  void Accumulator<FeaturesSize, AccumulatorSize, AccumulatorShift>::make_move(const Move &move, const Colour side) {
       auto diff = increment(move, side, true);
       acc_layer->increment(accumulated[side], diff[side], diff[~side]);
       acc_layer->increment(accumulated[~side], diff[~side], diff[side]);
   }
 
-  template<size_t FeaturesSize, size_t AccumulatorSize>
-  void Accumulator<FeaturesSize, AccumulatorSize>::unmake_move(const Move &move, const Colour side) {
+  template<size_t FeaturesSize, size_t AccumulatorSize, uint8_t AccumulatorShift>
+  void Accumulator<FeaturesSize, AccumulatorSize, AccumulatorShift>::unmake_move(const Move &move, const Colour side) {
       auto diff = increment(move, side, false);
+
       acc_layer->increment(accumulated[side], diff[side], diff[~side]);
       acc_layer->increment(accumulated[~side], diff[~side], diff[side]);
   }
 
-  template<size_t FeaturesSize, size_t AccumulatorSize, size_t... LayerSizes>
+  template<size_t FeaturesSize, size_t AccumulatorSize, uint8_t AccumulatorShift, size_t... LayerSizes>
   class Network {
   private:    
     // Recursive template to build a tuple of layers
     // Base case - just one layer left
-    // using _ac_t = int32_t;
-    // using _w_t = int16_t;
     template<size_t In, size_t Out, size_t... Rest>
     struct LayerTypes {
         using type = std::tuple<std::unique_ptr<LinearLayer<nn_t, In, Out>>>;
@@ -208,10 +286,15 @@ namespace Neural {
     public:
       Layers layers;
 
-      nn_t forward(const Accumulator<FeaturesSize, AccumulatorSize>& accm, Colour us) const {
-        // First handle the accumulator concatenation
-        auto input = accm.get(us);
+      nn_t forward(const Accumulator<FeaturesSize, AccumulatorSize, AccumulatorShift>& accm, Colour us) const {
+        auto input = accm.template get_as<nn_t>(us);
         return forward_impl(relu(input))[0];  // [0] since final layer outputs size-1 vector
+    }
+
+    template<size_t I>
+    void set_layer(std::unique_ptr<typename std::tuple_element_t<I, Layers>::element_type> layer) {
+      static_assert(I < sizeof...(LayerSizes), "Index out of bounds");
+      std::get<I>(layers) = std::move(layer);
     }
   };
 

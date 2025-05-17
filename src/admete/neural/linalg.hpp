@@ -106,6 +106,14 @@ namespace Neural {
             }
             return result;
         }
+
+        Vector<T, N> copy() const {
+            Vector<T, N> result;
+            for (size_t i = 0; i < N; i++) {
+                result[i] = data[i];
+            }
+            return result;
+        }
     };
 
     // sparse vector
