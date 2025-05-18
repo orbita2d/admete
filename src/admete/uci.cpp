@@ -77,29 +77,32 @@ inline std::vector<UciOption*> uci_options;
 void init_uci() {
     // set up the UCI options
     uci_options.clear();
+#ifdef WITH_TUNING
     // efp margins
-    // for (size_t i ]
+    for (size_t i = 1; i < Search::extended_futility_margins.size(); i++) {
+        uci_options.push_back(new UciOptionSpin<score_t>(0, TBWIN_MIN-1, Search::extended_futility_margins[i], "efp_margin_" + std::to_string(i), &Search::extended_futility_margins[i]));
+    }
     // rfp margins
-    // for (size_t i = 1; i < Search::reverse_futility_margins.size(); i++) {
-    //     uci_options.push_back(new UciOptionSpin<score_t>(0, TBWIN_MIN-1, Search::reverse_futility_margins[i], "rfp_margin_" + std::to_string(i), &Search::reverse_futility_margins[i]));
-    // }
-    // uci_options.push_back(new UciOptionSpin<int16_t>(-1000, 1000, Search::reductions_quiet_di, "reductions_quiet_di", &Search::reductions_quiet_di));
-    // uci_options.push_back(new UciOptionSpin<int16_t>(-1000, 1000, Search::reductions_quiet_d, "reductions_quiet_d", &Search::reductions_quiet_d));
-    // uci_options.push_back(new UciOptionSpin<int16_t>(-1000, 1000, Search::reductions_quiet_i, "reductions_quiet_i", &Search::reductions_quiet_i));
-    // uci_options.push_back(new UciOptionSpin<int16_t>(-1000, 1000, Search::reductions_quiet_c, "reductions_quiet_c", &Search::reductions_quiet_c));
-    // uci_options.push_back(new UciOptionSpin<int16_t>(-1000, 1000, Search::reductions_capture_di, "reductions_capture_di", &Search::reductions_capture_di));
-    // uci_options.push_back(new UciOptionSpin<int16_t>(-1000, 1000, Search::reductions_capture_d, "reductions_capture_d", &Search::reductions_capture_d));
-    // uci_options.push_back(new UciOptionSpin<int16_t>(-1000, 1000, Search::reductions_capture_i, "reductions_capture_i", &Search::reductions_capture_i));
-    // uci_options.push_back(new UciOptionSpin<int16_t>(-1000, 1000, Search::reductions_capture_c, "reductions_capture_c", &Search::reductions_capture_c));
-    // uci_options.push_back(new UciOptionSpin<score_t>(0, 1000, Search::probcut_margin, "probcut_margin", &Search::probcut_margin));
-    // uci_options.push_back(new UciOptionSpin<depth_t>(0, 12, Search::probcut_min_depth, "probcut_min_depth", &Search::probcut_min_depth));
-    // uci_options.push_back(new UciOptionSpin<depth_t>(0, 12, Search::probcut_depth_reduction, "probcut_depth_reduction", &Search::probcut_depth_reduction));
-    // uci_options.push_back(new UciOptionSpin<score_t>(0, 1000, Evaluation::contempt, "contempt", &Evaluation::contempt));
-    // uci_options.push_back(new UciOptionSpin<depth_t>(0, 12, Search::null_move_depth_reduction, "null_move_depth_reduction", &Search::null_move_depth_reduction));
-    // uci_options.push_back(new UciOptionSpin<depth_t>(0, 12, Search::history_max_depth, "history_max_depth", &Search::history_max_depth));
-    // uci_options.push_back(new UciOptionSpin<score_t>(0, 1000, Search::history_prune_threshold, "history_prune_threshold", &Search::history_prune_threshold));
-    // uci_options.push_back(new UciOptionSpin<score_t>(0, 1000, Search::see_prune_threshold, "see_prune_threshold", &Search::see_prune_threshold));
-    
+    for (size_t i = 1; i < Search::reverse_futility_margins.size(); i++) {
+        uci_options.push_back(new UciOptionSpin<score_t>(0, TBWIN_MIN-1, Search::reverse_futility_margins[i], "rfp_margin_" + std::to_string(i), &Search::reverse_futility_margins[i]));
+    }
+    uci_options.push_back(new UciOptionSpin<int16_t>(-1000, 1000, Search::reductions_quiet_di, "reductions_quiet_di", &Search::reductions_quiet_di));
+    uci_options.push_back(new UciOptionSpin<int16_t>(-1000, 1000, Search::reductions_quiet_d, "reductions_quiet_d", &Search::reductions_quiet_d));
+    uci_options.push_back(new UciOptionSpin<int16_t>(-1000, 1000, Search::reductions_quiet_i, "reductions_quiet_i", &Search::reductions_quiet_i));
+    uci_options.push_back(new UciOptionSpin<int16_t>(-1000, 1000, Search::reductions_quiet_c, "reductions_quiet_c", &Search::reductions_quiet_c));
+    uci_options.push_back(new UciOptionSpin<int16_t>(-1000, 1000, Search::reductions_capture_di, "reductions_capture_di", &Search::reductions_capture_di));
+    uci_options.push_back(new UciOptionSpin<int16_t>(-1000, 1000, Search::reductions_capture_d, "reductions_capture_d", &Search::reductions_capture_d));
+    uci_options.push_back(new UciOptionSpin<int16_t>(-1000, 1000, Search::reductions_capture_i, "reductions_capture_i", &Search::reductions_capture_i));
+    uci_options.push_back(new UciOptionSpin<int16_t>(-1000, 1000, Search::reductions_capture_c, "reductions_capture_c", &Search::reductions_capture_c));
+    uci_options.push_back(new UciOptionSpin<score_t>(0, 1000, Search::probcut_margin, "probcut_margin", &Search::probcut_margin));
+    uci_options.push_back(new UciOptionSpin<depth_t>(0, 12, Search::probcut_min_depth, "probcut_min_depth", &Search::probcut_min_depth));
+    uci_options.push_back(new UciOptionSpin<depth_t>(0, 12, Search::probcut_depth_reduction, "probcut_depth_reduction", &Search::probcut_depth_reduction));
+    uci_options.push_back(new UciOptionSpin<score_t>(0, 1000, Evaluation::contempt, "contempt", &Evaluation::contempt));
+    uci_options.push_back(new UciOptionSpin<depth_t>(0, 12, Search::null_move_depth_reduction, "null_move_depth_reduction", &Search::null_move_depth_reduction));
+    uci_options.push_back(new UciOptionSpin<depth_t>(0, 12, Search::history_max_depth, "history_max_depth", &Search::history_max_depth));
+    uci_options.push_back(new UciOptionSpin<score_t>(0, 1000, Search::history_prune_threshold, "history_prune_threshold", &Search::history_prune_threshold));
+    uci_options.push_back(new UciOptionSpin<score_t>(0, 1000, Search::see_prune_threshold, "see_prune_threshold", &Search::see_prune_threshold));
+#endif
 
     std::cout << "id name " << ENGINE_NAME << " " << ENGINE_VERS << std::endl;
     std::cout << "id author " << ENGINE_AUTH << std::endl;

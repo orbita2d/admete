@@ -64,3 +64,7 @@ endif()
 if ( MSVC )
 target_compile_options(libadmete PRIVATE "/W4")
 endif()
+
+if(WITH_TUNING)
+    target_compile_definitions(libadmete PRIVATE WITH_TUNING)
+endif()

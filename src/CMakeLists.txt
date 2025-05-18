@@ -29,3 +29,9 @@ if(WITH_PROFILER)
     target_link_libraries(admete PRIVATE ${GPERFTOOLS_PROFILER})
     target_compile_definitions(admete PRIVATE WITH_GPERFTOOLS)
 endif()
+
+if(WITH_TUNING)
+    target_compile_definitions(admete PRIVATE WITH_TUNING)
+    # print that we are using tuning
+    message(STATUS "Using tuning")
+endif()
