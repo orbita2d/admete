@@ -6,6 +6,7 @@ LANGUAGES CXX)
 option(WITH_PROFILER "Build with gperftools profiler" OFF)
 option(USE_AVX2 "Enable AVX2 instructions" OFF)
 option(WITH_TESTS "Build tests" ON)
+option(WITH_TUNING "Allow runtime parameter tuning" OFF)
 
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 # Code is here

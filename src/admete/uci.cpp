@@ -77,6 +77,7 @@ inline std::vector<UciOption*> uci_options;
 void init_uci() {
     // set up the UCI options
     uci_options.clear();
+#ifdef WITH_TUNING
     // efp margins
     for (size_t i = 1; i < Search::extended_futility_margins.size(); i++) {
         uci_options.push_back(new UciOptionSpin<score_t>(0, TBWIN_MIN-1, Search::extended_futility_margins[i], "efp_margin_" + std::to_string(i), &Search::extended_futility_margins[i]));
@@ -101,7 +102,7 @@ void init_uci() {
     uci_options.push_back(new UciOptionSpin<depth_t>(0, 12, Search::history_max_depth, "history_max_depth", &Search::history_max_depth));
     uci_options.push_back(new UciOptionSpin<score_t>(0, 1000, Search::history_prune_threshold, "history_prune_threshold", &Search::history_prune_threshold));
     uci_options.push_back(new UciOptionSpin<score_t>(0, 1000, Search::see_prune_threshold, "see_prune_threshold", &Search::see_prune_threshold));
-    
+#endif
 
     std::cout << "id name " << ENGINE_NAME << " " << ENGINE_VERS << std::endl;
     std::cout << "id author " << ENGINE_AUTH << std::endl;
