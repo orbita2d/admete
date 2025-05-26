@@ -24,6 +24,16 @@ namespace Neural {
   static constexpr size_t Out = Output;
     LinearLayer(const Matrix<T, Output, Input>& weights, const Vector<T, Output>& bias)
       : weights(weights.transpose()), bias(bias) {}
+    LinearLayer(const T* weights_data, const T* bias_data) {
+      for (size_t j = 0; j < Input; j++) {
+        for (size_t i = 0; i < Output; i++) {
+          weights.at(j, i) = weights_data[j * Output + i];
+        }
+      }
+      for (size_t i = 0; i < Output; i++) {
+        bias[i] = bias_data[i];
+      }
+    }
     LinearLayer() = default;
 
     Vector<T, Output> forward(const Vector<T, Input>& input) const {
@@ -67,6 +77,18 @@ namespace Neural {
     public:
       FloatingAccumulatorLayer(const Matrix<T, Out, In>& weights, const Vector<T, Out>& bias)
         : weights(weights.transpose()), bias(bias) {}
+
+      FloatingAccumulatorLayer(const float* weights_data, const float* bias_data) {
+        for (size_t j = 0; j < In; j++) {
+          for (size_t i = 0; i < Out; i++) {
+            weights.at(j, i) = weights_data[j * Out + i];
+          }
+        }
+        for (size_t i = 0; i < Out; i++) {
+          bias[i] = bias_data[i];
+        }
+        
+      }
       
       FloatingAccumulatorLayer() = default;
 
