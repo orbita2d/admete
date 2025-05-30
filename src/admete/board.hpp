@@ -180,6 +180,8 @@ class Board {
     void flip();
     // Returns the move that got us to this node.
     Move last_move() const { return aux_info->last_move; }
+    // One byte per square, 64 bytes total -> useful for training the nn.
+    std::array<uint8_t, N_SQUARE> byte_encoded();
 
     const Neural::accumulator_t &accumulator() const { return _accumulator; }
 

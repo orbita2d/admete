@@ -690,6 +690,101 @@ score_t Search::search(Board &board, const depth_t depth, PrincipleLine &line) {
     return search(board, depth, POS_INF, POS_INF, line, options);
 }
 
+
+typedef std::pair<DenseBoard, score_t> Position;
+Position board_quiesce(Board &board, const score_t alpha_start, const score_t beta) {
+    // perform quiesence search to evaluate only quiet positions.
+    score_t alpha = alpha_start;
+    Position qp;
+    qp.first = board.pack();
+    MoveList moves;
+
+    // Look for checkmate
+    if (board.is_check()) {
+        // Generates all evasions.
+        moves = board.get_moves();
+        if (moves.empty()) {
+            qp.second = Evaluation::terminal(board);
+            return qp;
+        }
+    }
+
+    // If this is a draw by repetition or insufficient material, return the drawn score.
+    if (board.is_draw()) {
+        qp.second = Evaluation::drawn_score(board);
+        return qp;
+    }
+
+    const score_t stand_pat = Evaluation::eval(board);
+
+    alpha = std::max(alpha, stand_pat);
+
+    // Beta cutoff, but don't allow stand-pat in check.
+    if (!board.is_check() && stand_pat >= beta) {
+        qp.second = stand_pat;
+        return qp;
+    }
+
+    score_t delta = 900;
+    // If pawns are on seventh we could be promoting, delta is higher.
+    if (board.pieces(board.who_to_play(), PAWN) & Bitboards::rank(relative_rank(board.who_to_play(), RANK7))) {
+        delta += 500;
+    }
+    // Delta pruning
+    if (stand_pat + delta <= alpha) {
+        qp.second = stand_pat;
+        return qp;
+    }
+
+    // Get a list of moves for quiessence. If it's check, it we already have all evasions from the checkmate test.
+    // Not in check, we generate quiet checks and all captures.
+    if (!board.is_check()) {
+        moves = board.get_capture_moves();
+    }
+
+    // We already know it's not mate, if there are no captures in a position, return stand pat.
+    if (moves.empty()) {
+        qp.second = stand_pat;
+        return qp;
+    }
+
+    // Sort the captures and record SEE.
+    Ordering::rank_and_sort_moves(board, moves, NULL_DMOVE);
+
+    for (Move move : moves) {
+        // For a capture, the recorded score is the SEE value.
+        // It makes sense to not consider losing captures in qsearch.
+        if (!board.is_check() && move.is_capture() && !SEE::see(board, move, 0)) {
+            continue;
+        }
+        constexpr score_t see_margin = 100;
+        // In qsearch, only consider moves with a decent chance of raising alpha.
+        if (!board.is_check() && move.is_capture() && !SEE::see(board, move, alpha - stand_pat - see_margin)) {
+            continue;
+        }
+        board.make_move(move);
+        Position sp = board_quiesce(board, -beta, -alpha);
+        const score_t score = -sp.second;
+        if (score > alpha) {
+            qp.first = sp.first;
+        }
+        board.unmake_move(move);
+        alpha = std::max(alpha, score);
+        if (alpha >= beta) {
+            break; // beta-cutoff
+        }
+    }
+    qp.second = alpha;
+    return qp;
+}
+
+DenseBoard Search::board_quiesce(Board &board) {
+    Position qp = board_quiesce(board, MIN_SCORE, MAX_SCORE);
+    return qp.first;
+}
+
+
+
 void Search::init() {
     // Initialise the reductions table.
     for (depth_t depth = 0; depth < MAX_DEPTH; depth++) {

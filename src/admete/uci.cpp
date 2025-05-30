@@ -502,118 +502,6 @@ void uci_info_nodes(unsigned long nodes, unsigned long nps) {
     std::cout << std::endl;
 }
 
-// TODO: Tidy this up
-typedef std::pair<DenseBoard, score_t> Position;
-Position quiesce(Board &board, const score_t alpha_start, const score_t beta) {
-    // perform quiesence search to evaluate only quiet positions.
-    score_t alpha = alpha_start;
-    Position qp;
-    qp.first = board.pack();
-    MoveList moves;
-
-    // Look for checkmate
-    if (board.is_check()) {
-        // Generates all evasions.
-        moves = board.get_moves();
-        if (moves.empty()) {
-            qp.second = Evaluation::terminal(board);
-            return qp;
-        }
-    }
-
-    // If this is a draw by repetition or insufficient material, return the drawn score.
-    if (board.is_draw()) {
-        qp.second = Evaluation::drawn_score(board);
-        return qp;
-    }
-
-    const score_t stand_pat = Evaluation::eval(board);
-
-    alpha = std::max(alpha, stand_pat);
-
-    // Beta cutoff, but don't allow stand-pat in check.
-    if (!board.is_check() && stand_pat >= beta) {
-        qp.second = stand_pat;
-        return qp;
-    }
-
-    score_t delta = 900;
-    // If pawns are on seventh we could be promoting, delta is higher.
-    if (board.pieces(board.who_to_play(), PAWN) & Bitboards::rank(relative_rank(board.who_to_play(), RANK7))) {
-        delta += 500;
-    }
-    // Delta pruning
-    if (stand_pat + delta <= alpha) {
-        qp.second = stand_pat;
-        return qp;
-    }
-
-    // Get a list of moves for quiessence. If it's check, it we already have all evasions from the checkmate test.
-    // Not in check, we generate quiet checks and all captures.
-    if (!board.is_check()) {
-        moves = board.get_capture_moves();
-    }
-
-    // We already know it's not mate, if there are no captures in a position, return stand pat.
-    if (moves.empty()) {
-        qp.second = stand_pat;
-        return qp;
-    }
-
-    // Sort the captures and record SEE.
-    Ordering::rank_and_sort_moves(board, moves, NULL_DMOVE);
-
-    for (Move move : moves) {
-        // For a capture, the recorded score is the SEE value.
-        // It makes sense to not consider losing captures in qsearch.
-        if (!board.is_check() && move.is_capture() && !SEE::see(board, move, 0)) {
-            continue;
-        }
-        constexpr score_t see_margin = 100;
-        // In qsearch, only consider moves with a decent chance of raising alpha.
-        if (!board.is_check() && move.is_capture() && !SEE::see(board, move, alpha - stand_pat - see_margin)) {
-            continue;
-        }
-        board.make_move(move);
-        Position sp = UCI::quiesce(board, -beta, -alpha);
-        const score_t score = -sp.second;
-        if (score > alpha) {
-            qp.first = sp.first;
-        }
-        board.unmake_move(move);
-        alpha = std::max(alpha, score);
-        if (alpha >= beta) {
-            break; // beta-cutoff
-        }
-    }
-    qp.second = alpha;
-    return qp;
-}
-
-std::array<uint8_t, 64> dense_board_relative(Board &board) {
-    bool flipped = false;
-    if (board.who_to_play() == BLACK) {
-        flipped = true;
-        board.flip();
-    }
-    // dense format is 64 bytes, 0 is empty, 1-6 for white peices, 9-14 for black pieces. 8 will be a "black emtpy square", and should never happen.
-    std::array<uint8_t, 64> dense_board = {0};
-    for (Square::square_t sq = 0; sq < N_SQUARE; sq++) {
-        Piece p = board.pieces(sq);
-        auto pt = p.get_piece();
-        auto c = p.get_colour();
-        auto cv = c == WHITE ? 0 : 8; // 0 for white, 8 for black
-        if (pt == NO_PIECE) {
-            dense_board[sq] = 0; // empty square
-        } else {
-            // PieceType is 0-5
-            dense_board[sq] = (uint8_t)(pt + cv + 1);
-        }
-    }
-    // flip the board back
-    if (flipped) board.flip();
-    return dense_board;
-}
 
 void print_features(Board &board, std::istringstream &is) {
     // Print the feature vector from the neural network.
@@ -622,15 +510,15 @@ void print_features(Board &board, std::istringstream &is) {
     // if the second token is "quiesce", quiesce the board before encoding.
     std::string token;
     is >> token;
-    std::array<uint8_t, 64> dense_board;
+    std::array<uint8_t, N_SQUARE> dense_board;
     if (token == "quiesce") {
         auto starting_pos = board.pack();
-        Position pos = UCI::quiesce(board, MIN_SCORE, MAX_SCORE);
-        board.unpack(pos.first);
-        dense_board = dense_board_relative(board);
+        DenseBoard pos = Search::board_quiesce(board);
+        board.unpack(pos);
+        dense_board = board.byte_encoded();
         board.unpack(starting_pos);
     } else {
-        dense_board = dense_board_relative(board);
+        dense_board = board.byte_encoded();
     }
     // print the half-bytes to stdout in hex format
     for (const auto &b : dense_board) {

@@ -789,3 +789,28 @@ void Board::update_attacks() {
         assert(bool(aux_info->attacked & sq_to_bb(sq)) == test_attacked(*this, sq, us));
     }
 }
+
+std::array<uint8_t, N_SQUARE> Board::byte_encoded() {
+    bool flipped = false;
+    if (this->who_to_play() == BLACK) {
+        flipped = true;
+        this->flip();
+    }
+    // dense format is 64 bytes, 0 is empty, 1-6 for white peices, 9-14 for black pieces. 8 will be a "black emtpy square", and should never happen.
+    std::array<uint8_t, 64> dense_board = {0};
+    for (Square::square_t sq = 0; sq < N_SQUARE; sq++) {
+        Piece p = this->pieces(sq);
+        auto pt = p.get_piece();
+        auto c = p.get_colour();
+        auto cv = c == WHITE ? 0 : 8; // 0 for white, 8 for black
+        if (pt == NO_PIECE) {
+            dense_board[sq] = 0; // empty square
+        } else {
+            // PieceType is 0-5
+            dense_board[sq] = (uint8_t)(pt + cv + 1);
+        }
+    }
+    // flip the board back
+    if (flipped) this->flip();
+    return dense_board;
+}
