@@ -24,14 +24,6 @@ namespace Evaluation {
 
 static Neural::network_t network = Neural::get_network();
 
-sqt_t reverse_board(sqt_t in) {
-    sqt_t pb;
-    for (int s = 0; s < 64; s++) {
-        pb[s] = in[56 ^ s];
-    }
-    return pb;
-}
-
 score_t piece_phase_material(const PieceType p) {
     assert(p != NO_PIECE);
     return phase_material[p];
