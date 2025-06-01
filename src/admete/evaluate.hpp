@@ -2,10 +2,6 @@
 
 score_t piece_material(const PieceType);
 
-// Type for a single piece-square table
-typedef per_square<Score> sqt_t;
-typedef per_piece<sqt_t> psqt_t;
-
 namespace Evaluation {
 // Calculate the evaluation heuristic from the player's POV
 score_t eval(const Board &board);
@@ -20,5 +16,4 @@ score_t count_phase_material(const Board &board);
 
 score_t drawn_score(const Board &board);
 inline score_t contempt = 10;
-sqt_t reverse_board(sqt_t in);
 } // namespace Evaluation

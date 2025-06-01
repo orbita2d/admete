@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.18)
-project(admete VERSION 1.6.0
-DESCRIPTION "A C++ chess engine written for fun. Contact orbita@orbital.me.uk"
+project(admete VERSION 1.8.0
+DESCRIPTION "A C++ chess engine written for fun."
 LANGUAGES CXX)
 
 option(WITH_PROFILER "Build with gperftools profiler" OFF)

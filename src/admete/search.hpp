@@ -45,6 +45,7 @@ score_t quiesce(Board &board, score_t alpha, const score_t beta, SearchOptions &
 score_t search(Board &board, const depth_t depth, int soft_cutoff, const int hard_cutoff, PrincipleLine &line,
                SearchOptions &options);
 score_t search(Board &board, const depth_t depth, PrincipleLine &line);
+DenseBoard board_quiesce(Board &board);
 
 unsigned long perft(depth_t depth, Board &board);
 unsigned long perft(depth_t depth, Board &board, SearchOptions &options);
