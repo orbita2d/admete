@@ -527,6 +527,13 @@ void print_features(Board &board, std::istringstream &is) {
     std::cout << std::dec << std::endl;
 }
 
+void quiesce(Board &board) {
+    // Quiesce the board and leave it in the quiescent position.
+    // Used for debugging and testing.
+    DenseBoard pos = Search::board_quiesce(board);
+    board.unpack(pos);
+}
+
 void uci() {
     uci_enabled = true;
     std::string command, token;
@@ -552,6 +559,9 @@ void uci() {
         } else if (token == "position") {
             stop(options);
             position(board, is);
+        } else if (token == "quiesce") {
+            stop(options);
+            quiesce(board);
         } else if (token == "go") {
             stop(options);
             go(board, is, options);
