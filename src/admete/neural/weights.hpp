@@ -5,7 +5,7 @@
 
 namespace Neural {
 
-// Model generated from training run 2025-06-02_15-50-02
+// Model generated from training run 2025-06-03_07-06-51
 
 constexpr uint8_t ACC_SHIFT = 4;
 constexpr size_t N_ACCUMULATED = 128;
