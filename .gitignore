@@ -1,5 +1,6 @@
 # Build directory
 build
+build-*
 dist
 lib
 bin
@@ -13,7 +14,6 @@ gmon.out
 
 *.gen
 *.exe
-*.cmake
 *.dll
 *.dll.a
 Makefile

@@ -59,7 +59,52 @@ jobs:
         token: ${{ secrets.GITHUB_TOKEN }}
         files: ${{ github.workspace }}/${{ env.BINARY_PATH }}
 
-  build-windows:
+  build-windows-mingw:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        lfs: true
+    
+    - name: Install MinGW
+      run: sudo apt update && sudo apt install -y gcc-mingw-w64-x86-64-posix g++-mingw-w64-x86-64-posix
+    
+    - name: Configure CMake
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_TOOLCHAIN_FILE=${{github.workspace}}/toolchain-win-mingw64.cmake -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DWITH_TESTS=OFF -DUSE_AVX2=ON -DCMAKE_EXE_LINKER_FLAGS="-static-libgcc -static-libstdc++ -static"
+    
+    - name: Build
+      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+    
+    # Tests skipped for release builds to save compute resources
+    
+    - name: Prepare Binary
+      working-directory: ${{github.workspace}}
+      run: |
+        VERSION="${{ github.event.release.tag_name }}"
+        # Remove 'v' prefix if present
+        VERSION=${VERSION#v}
+        
+        # Create release directory
+        mkdir -p release
+        
+        # Copy the binary with version in the filename
+        cp build/admete.exe release/admete_${VERSION}_windows_x86-64_avx2_mingw.exe
+        echo "BINARY_PATH=release/admete_${VERSION}_windows_x86-64_avx2_mingw.exe" >> $GITHUB_ENV
+    
+    - name: Upload Windows MinGW Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: windows-x86-64-avx2-mingw
+        path: ${{github.workspace}}/${{ env.BINARY_PATH }}
+    
+    - name: Upload Release Asset
+      uses: softprops/action-gh-release@v1
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        files: ${{github.workspace}}/${{ env.BINARY_PATH }}
+
+  build-windows-msvc:
     runs-on: windows-latest
     
     steps:
@@ -73,8 +118,6 @@ jobs:
     - name: Build
       run: cmake --build ${{github.workspace}}\build --config ${{env.BUILD_TYPE}}
     
-    # Tests skipped for release builds to save compute resources
-    
     - name: Prepare Binary
       run: |
         $VERSION = "${{ github.event.release.tag_name }}"
@@ -85,16 +128,16 @@ jobs:
         New-Item -Path "release" -ItemType Directory -Force
         
         # Copy the binary with version in the filename
-        Copy-Item -Path "build\${{ env.BUILD_TYPE }}\admete.exe" -Destination "release\admete_${VERSION}_windows_x86-64_avx2.exe"
+        Copy-Item -Path "build\${{ env.BUILD_TYPE }}\admete.exe" -Destination "release\admete_${VERSION}_windows_x86-64_avx2_msvc.exe"
         
-        echo "BINARY_PATH=release/admete_${VERSION}_windows_x86-64_avx2.exe" | Out-File -FilePath $env:GITHUB_ENV -Append
+        echo "BINARY_PATH=release/admete_${VERSION}_windows_x86-64_avx2_msvc.exe" | Out-File -FilePath $env:GITHUB_ENV -Append
       shell: pwsh
     
-    - name: Upload Windows Artifact
+    - name: Upload Windows MSVC Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: windows-x86-64-avx2
-        path: ${{github.workspace}}/${{ env.BINARY_PATH }}
+        name: windows-x86-64-avx2-msvc
+        path: ${{ env.BINARY_PATH }}
     
     - name: Upload Release Asset
       uses: softprops/action-gh-release@v1
