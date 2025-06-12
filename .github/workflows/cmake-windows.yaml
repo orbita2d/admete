@@ -20,7 +20,7 @@ jobs:
             test-command: ".\\Release\\tests.exe"
           - name: "MinGW Cross-compile" 
             runs-on: ubuntu-latest
-            toolchain: "-DCMAKE_TOOLCHAIN_FILE=toolchain-mingw64.cmake"
+            toolchain: "-DCMAKE_TOOLCHAIN_FILE=toolchain-win-mingw64.cmake"
             test-command: "wine ./tests.exe"
     
     name: ${{ matrix.name }}
