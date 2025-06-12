@@ -60,35 +60,37 @@ jobs:
         files: ${{ github.workspace }}/${{ env.BINARY_PATH }}
 
   build-windows:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest  # Changed from windows-latest
     
     steps:
     - uses: actions/checkout@v4
       with:
         lfs: true
     
+    - name: Install MinGW
+      run: sudo apt update && sudo apt install -y gcc-mingw-w64-x86-64-posix g++-mingw-w64-x86-64-posix
+    
     - name: Configure CMake
-      run: cmake -B ${{github.workspace}}\build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DWITH_TESTS=OFF -DUSE_AVX2=ON
+      run: cmake -B ${{github.workspace}}/build-windows -DCMAKE_TOOLCHAIN_FILE=${{github.workspace}}/toolchain-mingw64.cmake -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DWITH_TESTS=OFF -DUSE_AVX2=ON
     
     - name: Build
-      run: cmake --build ${{github.workspace}}\build --config ${{env.BUILD_TYPE}}
+      run: cmake --build ${{github.workspace}}/build-windows --config ${{env.BUILD_TYPE}}
     
     # Tests skipped for release builds to save compute resources
     
     - name: Prepare Binary
+      working-directory: ${{github.workspace}}
       run: |
-        $VERSION = "${{ github.event.release.tag_name }}"
+        VERSION="${{ github.event.release.tag_name }}"
         # Remove 'v' prefix if present
-        $VERSION = $VERSION -replace '^v',''
+        VERSION=${VERSION#v}
         
         # Create release directory
-        New-Item -Path "release" -ItemType Directory -Force
+        mkdir -p release
         
         # Copy the binary with version in the filename
-        Copy-Item -Path "build\${{ env.BUILD_TYPE }}\admete.exe" -Destination "release\admete_${VERSION}_windows_x86-64_avx2.exe"
-        
-        echo "BINARY_PATH=release/admete_${VERSION}_windows_x86-64_avx2.exe" | Out-File -FilePath $env:GITHUB_ENV -Append
-      shell: pwsh
+        cp build-windows/admete.exe release/admete_${VERSION}_windows_x86-64_avx2.exe
+        echo "BINARY_PATH=release/admete_${VERSION}_windows_x86-64_avx2.exe" >> $GITHUB_ENV
     
     - name: Upload Windows Artifact
       uses: actions/upload-artifact@v4
@@ -100,4 +102,4 @@ jobs:
       uses: softprops/action-gh-release@v1
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
-        files: ${{ env.BINARY_PATH }}
+        files: ${{ github.workspace }}/${{ env.BINARY_PATH }}
