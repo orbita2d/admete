@@ -17,7 +17,7 @@ jobs:
           - name: "MSVC"
             runs-on: windows-latest
             toolchain: ""
-            test-command: ".\${{env.BUILD_TYPE}}\tests.exe"
+            test-command: ".\\${{env.BUILD_TYPE}}\\tests.exe"
           - name: "MinGW Cross-compile" 
             runs-on: ubuntu-latest
             toolchain: "-DCMAKE_TOOLCHAIN_FILE=toolchain-mingw64.cmake"
