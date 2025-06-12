@@ -2,7 +2,7 @@ name: Tests - Windows
 
 on:
   push:
-    branches: [ master]
+    branches: [ master ]
   pull_request:
     branches: [ master ]
 
@@ -10,37 +10,59 @@ env:
   BUILD_TYPE: Release
 
 jobs:
-  build:
-    strategy:
-      matrix:
-        include:
-          - name: "MSVC"
-            runs-on: windows-latest
-            toolchain: ""
-            test-command: ".\\Release\\tests.exe"
-          - name: "MinGW Cross-compile" 
-            runs-on: ubuntu-latest
-            toolchain: "-DCMAKE_TOOLCHAIN_FILE=toolchain-win-mingw64.cmake"
-            test-command: "wine ./tests.exe"
-    
-    name: ${{ matrix.name }}
-    runs-on: ${{ matrix.runs-on }}
+  test-msvc:
+    runs-on: windows-latest
+    name: Windows MSVC
 
     steps:
     - uses: actions/checkout@v4
       with:
         lfs: true
 
-    - name: Install MinGW (Linux only)
-      if: matrix.runs-on == 'ubuntu-latest'
-      run: sudo apt update && sudo apt install -y gcc-mingw-w64-x86-64-posix g++-mingw-w64-x86-64-posix wine
-
     - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} ${{ matrix.toolchain }}
+      run: cmake -B ${{github.workspace}}\build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 
     - name: Build
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+      run: cmake --build ${{github.workspace}}\build --config ${{env.BUILD_TYPE}}
 
-    - name: Test
+    - name: Run Tests
       working-directory: ${{github.workspace}}/build
-      run: ${{ matrix.test-command }}
+      run: .\${{env.BUILD_TYPE}}\tests.exe
+
+  build-mingw:
+    runs-on: ubuntu-latest
+    name: Build Windows MinGW
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        lfs: true
+    
+    - name: Install MinGW
+      run: sudo apt update && sudo apt install -y gcc-mingw-w64-x86-64-posix g++-mingw-w64-x86-64-posix
+    
+    - name: Configure CMake
+      run: cmake -B build -DCMAKE_TOOLCHAIN_FILE=toolchain-mingw64.cmake -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+    
+    - name: Build
+      run: cmake --build build --config ${{env.BUILD_TYPE}}
+    
+    - name: Upload MinGW Binary
+      uses: actions/upload-artifact@v4
+      with:
+        name: mingw-tests
+        path: build/tests.exe
+
+  test-mingw:
+    needs: build-mingw
+    runs-on: windows-latest
+    name: Test Windows MinGW
+    
+    steps:
+    - name: Download MinGW Binary
+      uses: actions/download-artifact@v4
+      with:
+        name: mingw-tests
+    
+    - name: Test MinGW Binary
+      run: .\tests.exe
