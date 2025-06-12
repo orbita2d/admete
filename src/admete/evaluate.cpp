@@ -44,7 +44,7 @@ score_t Evaluation::eval(const Board &board) {
     // Return the eval from the point of view of the current player.
     Neural::nn_t nn = network.forward(board.accumulator(), board.who_to_play());
     // TODO: Why think about centipawns at all, ideally we'd just map the output to the score_t range.
-    auto mapped = std::clamp(static_cast<score_t>(nn*400.), 1-MIN_MATE_SCORE, MIN_MATE_SCORE-1); 
+    auto mapped = std::clamp(static_cast<score_t>(nn*400.), static_cast<score_t>(1-MIN_MATE_SCORE), static_cast<score_t>(MIN_MATE_SCORE-1)); 
     return mapped;
 }
 
