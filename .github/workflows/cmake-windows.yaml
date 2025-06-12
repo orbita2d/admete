@@ -42,7 +42,7 @@ jobs:
       run: sudo apt update && sudo apt install -y gcc-mingw-w64-x86-64-posix g++-mingw-w64-x86-64-posix
     
     - name: Configure CMake
-      run: cmake -B build -DCMAKE_TOOLCHAIN_FILE=toolchain-mingw64.cmake -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+      run: cmake -B build -DCMAKE_TOOLCHAIN_FILE=toolchain-win-mingw64.cmake -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
     
     - name: Build
       run: cmake --build build --config ${{env.BUILD_TYPE}}
