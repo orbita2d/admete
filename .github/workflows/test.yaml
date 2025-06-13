@@ -1,0 +1,43 @@
+# .github/workflows/test.yaml
+name: Tests
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  test-linux:
+    name: Test Linux
+    uses: ./.github/workflows/build-reusable.yaml
+    with:
+      platform: linux
+      build_type: Release
+      enable_tests: true
+      artifact_name: linux-tests
+      binary_name: admete
+
+  build-windows:
+    name: Build Windows MinGW
+    uses: ./.github/workflows/build-reusable.yaml
+    with:
+      platform: windows
+      build_type: Release
+      enable_tests: true
+      artifact_name: windows-tests
+      binary_name: tests
+
+  test-windows:
+    name: Test Windows MinGW
+    needs: build-windows
+    runs-on: windows-latest
+    
+    steps:
+    - name: Download Windows Binary
+      uses: actions/download-artifact@v4
+      with:
+        name: windows-tests
+    
+    - name: Test Windows Binary
+      run: .\tests_windows_x86-64.exe

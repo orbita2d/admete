@@ -1,6 +1,6 @@
 # Build directory
-build
-build-*
+build/
+build-*/
 dist
 lib
 bin
