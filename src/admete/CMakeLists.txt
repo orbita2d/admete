@@ -33,35 +33,14 @@ target_link_libraries(libadmete fathom)
 find_package(Threads)
 target_link_libraries(libadmete ${CMAKE_THREAD_LIBS_INIT})
 
-set_property(TARGET libadmete PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
-set_property(TARGET libadmete PROPERTY CXX_STANDARD 23)
-
 target_include_directories(libadmete PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/neural
 )
 
 target_compile_definitions(libadmete PRIVATE CACHE_LINE_SIZE=64)
-
-if(USE_AVX2)
-    if(CMAKE_COMPILER_IS_GNUCXX)
-        target_compile_options(libadmete PRIVATE "-mavx2")
-    else()
-        message(FATAL_ERROR "AVX2 is not supported on this compiler")
-    endif()
-endif()
-
-if ( CMAKE_COMPILER_IS_GNUCXX )
-target_compile_options(
-    libadmete 
-    PRIVATE "-Wall"
-    PRIVATE "-Wextra"
-    PRIVATE "-mtune=native"
-    PRIVATE "-march=native"
-    )
-else()
-    message(FATAL_ERROR "AVX2 is not supported on this compiler")
-endif()
+apply_common_target_properties(libadmete)
+apply_common_compiler_flags(libadmete)
 
 if(WITH_TUNING)
     target_compile_definitions(libadmete PRIVATE WITH_TUNING)

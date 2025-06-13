@@ -8,15 +8,8 @@ add_subdirectory(admete)
 set_property(TARGET admete PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
 set_property(TARGET admete PROPERTY CXX_STANDARD 23)
 
-if ( CMAKE_COMPILER_IS_GNUCXX )
-    target_compile_options(admete
-        PRIVATE "-Wall"
-        PRIVATE "-Wextra"
-        PRIVATE "-mtune=native"
-        PRIVATE "-march=native"
-    )
-    set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -flto")
-endif()
+apply_common_target_properties(admete)
+apply_common_compiler_flags(admete)
 
 if(WITH_PROFILER)
     find_library(GPERFTOOLS_PROFILER profiler REQUIRED)
