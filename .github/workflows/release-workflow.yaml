@@ -43,21 +43,40 @@ jobs:
         
         mkdir -p release
         
-        # Rename artifacts with version
+        # Process all artifacts and rename with version after admete_
         for artifact_dir in artifacts/*/; do
           for file in "$artifact_dir"*; do
-            if [ -f "$file" ]; then
+            if [ -f "$file" ] && [[ "$(basename "$file")" != "MANIFEST.txt" ]]; then
               filename=$(basename "$file")
-              # Insert version into filename
-              if [[ "$filename" == *.exe ]]; then
-                new_name="${filename%.exe}_${VERSION}.exe"
+              
+              # Remove 'admete_' prefix and get the rest
+              if [[ "$filename" == admete_* ]]; then
+                suffix="${filename#admete_}"
+                
+                # Reconstruct with version right after admete_
+                if [[ "$filename" == *.exe ]]; then
+                  # For .exe files, remove .exe, add version, then add .exe back
+                  suffix_no_ext="${suffix%.exe}"
+                  new_name="admete_v${VERSION}_${suffix_no_ext}.exe"
+                else
+                  # For other files (like .so), just insert version
+                  new_name="admete_v${VERSION}_${suffix}"
+                fi
+                
+                cp "$file" "release/$new_name"
+                echo "Renamed: $filename -> $new_name"
               else
-                new_name="${filename}_${VERSION}"
+                # Fallback for files not starting with admete_
+                cp "$file" "release/$filename"
+                echo "Copied unchanged: $filename"
               fi
-              cp "$file" "release/$new_name"
             fi
           done
         done
+        
+        # List what we're uploading
+        echo "Release assets:"
+        ls -la release/
     
     - name: Upload Release Assets
       uses: softprops/action-gh-release@v1
