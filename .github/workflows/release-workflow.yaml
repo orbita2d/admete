@@ -1,146 +1,66 @@
+# .github/workflows/release.yaml
 name: Release Build
 
 on:
   release:
     types: [created]
 
-env:
-  BUILD_TYPE: Release
-
 jobs:
-  build-linux:
-    runs-on: ubuntu-latest
+  build-release:
+    strategy:
+      matrix:
+        include:
+          - platform: linux
+            artifact_name: linux-x86-64-avx2
+          - platform: windows  
+            artifact_name: windows-x86-64-avx2-mingw
     
-    steps:    
-    - uses: actions/checkout@v4
-      with:
-        lfs: true
+    name: Build ${{ matrix.platform }}
+    uses: ./.github/workflows/build-reusable.yaml
+    with:
+      platform: ${{ matrix.platform }}
+      build_type: Release
+      enable_tests: false
+      enable_avx2: true
+      artifact_name: ${{ matrix.artifact_name }}
+      binary_name: admete
 
-    
-    - name: CMake Version
-      run: cmake --version
-    
-    - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DWITH_TESTS=OFF -DUSE_AVX2=ON
-      env:
-        CC: gcc-14
-        CXX: g++-14
-    
-    - name: Build
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
-      env:
-        CC: gcc-14
-        CXX: g++-14
-    
-    # Tests skipped for release builds to save compute resources
-    
-    - name: Prepare Binary
-      working-directory: ${{github.workspace}}
-      run: |
-        mkdir -p release
-        # Get the version from the release tag
-        VERSION="${{ github.event.release.tag_name }}"
-        # Remove 'v' prefix if present
-        VERSION=${VERSION#v}
-        
-        # Copy the binary with version in the filename
-        cp build/admete release/admete_${VERSION}_linux_x86-64_avx2
-        echo "BINARY_PATH=release/admete_${VERSION}_linux_x86-64_avx2" >> $GITHUB_ENV
-    
-    - name: Upload Linux Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: linux-x86-64-avx2
-        path: ${{github.workspace}}/${{ env.BINARY_PATH }}
-    
-    - name: Upload Release Asset
-      uses: softprops/action-gh-release@v1
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        files: ${{ github.workspace }}/${{ env.BINARY_PATH }}
-
-  build-windows-mingw:
+  upload-release-assets:
+    name: Upload Release Assets
+    needs: build-release
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v4
+    - name: Download All Artifacts
+      uses: actions/download-artifact@v4
       with:
-        lfs: true
+        path: artifacts
     
-    - name: Install MinGW
-      run: sudo apt update && sudo apt install -y gcc-mingw-w64-x86-64-posix g++-mingw-w64-x86-64-posix
-    
-    - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_TOOLCHAIN_FILE=${{github.workspace}}/toolchain-win-mingw64.cmake -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DWITH_TESTS=OFF -DUSE_AVX2=ON -DCMAKE_EXE_LINKER_FLAGS="-static-libgcc -static-libstdc++ -static"
-    
-    - name: Build
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
-    
-    # Tests skipped for release builds to save compute resources
-    
-    - name: Prepare Binary
-      working-directory: ${{github.workspace}}
+    - name: Prepare Release Assets
       run: |
         VERSION="${{ github.event.release.tag_name }}"
-        # Remove 'v' prefix if present
-        VERSION=${VERSION#v}
+        VERSION=${VERSION#v}  # Remove 'v' prefix if present
         
-        # Create release directory
         mkdir -p release
         
-        # Copy the binary with version in the filename
-        cp build/admete.exe release/admete_${VERSION}_windows_x86-64_avx2_mingw.exe
-        echo "BINARY_PATH=release/admete_${VERSION}_windows_x86-64_avx2_mingw.exe" >> $GITHUB_ENV
+        # Rename artifacts with version
+        for artifact_dir in artifacts/*/; do
+          for file in "$artifact_dir"*; do
+            if [ -f "$file" ]; then
+              filename=$(basename "$file")
+              # Insert version into filename
+              if [[ "$filename" == *.exe ]]; then
+                new_name="${filename%.exe}_${VERSION}.exe"
+              else
+                new_name="${filename}_${VERSION}"
+              fi
+              cp "$file" "release/$new_name"
+            fi
+          done
+        done
     
-    - name: Upload Windows MinGW Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: windows-x86-64-avx2-mingw
-        path: ${{github.workspace}}/${{ env.BINARY_PATH }}
-    
-    - name: Upload Release Asset
+    - name: Upload Release Assets
       uses: softprops/action-gh-release@v1
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
-        files: ${{github.workspace}}/${{ env.BINARY_PATH }}
-
-  build-windows-msvc:
-    runs-on: windows-latest
-    
-    steps:
-    - uses: actions/checkout@v4
-      with:
-        lfs: true
-    
-    - name: Configure CMake
-      run: cmake -B ${{github.workspace}}\build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DWITH_TESTS=OFF -DUSE_AVX2=ON
-    
-    - name: Build
-      run: cmake --build ${{github.workspace}}\build --config ${{env.BUILD_TYPE}}
-    
-    - name: Prepare Binary
-      run: |
-        $VERSION = "${{ github.event.release.tag_name }}"
-        # Remove 'v' prefix if present
-        $VERSION = $VERSION -replace '^v',''
-        
-        # Create release directory
-        New-Item -Path "release" -ItemType Directory -Force
-        
-        # Copy the binary with version in the filename
-        Copy-Item -Path "build\${{ env.BUILD_TYPE }}\admete.exe" -Destination "release\admete_${VERSION}_windows_x86-64_avx2_msvc.exe"
-        
-        echo "BINARY_PATH=release/admete_${VERSION}_windows_x86-64_avx2_msvc.exe" | Out-File -FilePath $env:GITHUB_ENV -Append
-      shell: pwsh
-    
-    - name: Upload Windows MSVC Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: windows-x86-64-avx2-msvc
-        path: ${{ env.BINARY_PATH }}
-    
-    - name: Upload Release Asset
-      uses: softprops/action-gh-release@v1
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        files: ${{ env.BINARY_PATH }}
+        files: release/*

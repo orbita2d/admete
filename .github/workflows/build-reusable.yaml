@@ -1,0 +1,119 @@
+# .github/workflows/build-reusable.yaml
+name: Reusable Build
+
+on:
+  workflow_call:
+    inputs:
+      platform:
+        description: 'Build platform (linux or windows)'
+        required: true
+        type: string
+      build_type:
+        description: 'Build type (Release or Debug)'
+        required: false
+        type: string
+        default: 'Release'
+      enable_tests:
+        description: 'Whether to build with tests enabled'
+        required: false
+        type: boolean
+        default: true
+      enable_avx2:
+        description: 'Whether to enable AVX2 optimizations'
+        required: false
+        type: boolean
+        default: false
+      artifact_name:
+        description: 'Name for the uploaded artifact'
+        required: true
+        type: string
+      binary_name:
+        description: 'Name for the binary file'
+        required: false
+        type: string
+        default: 'admete'
+    outputs:
+      binary_path:
+        description: 'Path to the built binary'
+        value: ${{ jobs.build.outputs.binary_path }}
+
+jobs:
+  build:
+    runs-on: ${{ inputs.platform == 'linux' && 'ubuntu-latest' || 'ubuntu-latest' }}
+    outputs:
+      binary_path: ${{ steps.prepare.outputs.binary_path }}
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        lfs: true
+
+    - name: Setup Linux Build Environment
+      if: inputs.platform == 'linux'
+      run: |
+        cmake --version
+        echo "CC=gcc-14" >> $GITHUB_ENV
+        echo "CXX=g++-14" >> $GITHUB_ENV
+
+    - name: Setup Windows Build Environment
+      if: inputs.platform == 'windows'
+      run: |
+        sudo apt update && sudo apt install -y gcc-mingw-w64-x86-64-posix g++-mingw-w64-x86-64-posix
+
+    - name: Configure CMake (Linux)
+      if: inputs.platform == 'linux'
+      run: |
+        cmake -B build \
+          -DCMAKE_BUILD_TYPE=${{ inputs.build_type }} \
+          -DWITH_TESTS=${{ inputs.enable_tests && 'ON' || 'OFF' }} \
+          ${{ inputs.enable_avx2 && '-DUSE_AVX2=ON' || '' }}
+
+    - name: Configure CMake (Windows)
+      if: inputs.platform == 'windows'
+      run: |
+        cmake -B build \
+          -DCMAKE_TOOLCHAIN_FILE=toolchain-win-mingw64.cmake \
+          -DCMAKE_BUILD_TYPE=${{ inputs.build_type }} \
+          -DWITH_TESTS=${{ inputs.enable_tests && 'ON' || 'OFF' }} \
+          ${{ inputs.enable_avx2 && '-DUSE_AVX2=ON' || '' }} \
+          -DCMAKE_EXE_LINKER_FLAGS="-static-libgcc -static-libstdc++ -static"
+
+    - name: Build
+      run: cmake --build build --config ${{ inputs.build_type }}
+
+    - name: Run Tests
+      if: inputs.enable_tests && inputs.platform == 'linux'
+      working-directory: build
+      run: |
+        ctest -C ${{ inputs.build_type }}
+        ./tests
+
+    - name: Prepare Artifact
+      id: prepare
+      run: |
+        mkdir -p artifacts
+        
+        if [ "${{ inputs.platform }}" = "windows" ]; then
+          BINARY_EXT=".exe"
+          PLATFORM_SUFFIX="windows_x86-64"
+        else
+          BINARY_EXT=""
+          PLATFORM_SUFFIX="linux_x86-64"
+        fi
+        
+        AVX2_SUFFIX=""
+        if [ "${{ inputs.enable_avx2 }}" = "true" ]; then
+          AVX2_SUFFIX="_avx2"
+        fi
+        
+        BINARY_NAME="${{ inputs.binary_name }}${BINARY_EXT}"
+        ARTIFACT_NAME="${{ inputs.binary_name }}_${PLATFORM_SUFFIX}${AVX2_SUFFIX}${BINARY_EXT}"
+        
+        cp "build/${BINARY_NAME}" "artifacts/${ARTIFACT_NAME}"
+        echo "binary_path=artifacts/${ARTIFACT_NAME}" >> $GITHUB_OUTPUT
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.artifact_name }}
+        path: ${{ steps.prepare.outputs.binary_path }}
