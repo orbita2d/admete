@@ -44,9 +44,7 @@ target_include_directories(libadmete PUBLIC
 target_compile_definitions(libadmete PRIVATE CACHE_LINE_SIZE=64)
 
 if(USE_AVX2)
-    if(MSVC)
-        target_compile_options(libadmete PRIVATE "/arch:AVX2")
-    elseif(CMAKE_COMPILER_IS_GNUCXX)
+    if(CMAKE_COMPILER_IS_GNUCXX)
         target_compile_options(libadmete PRIVATE "-mavx2")
     else()
         message(FATAL_ERROR "AVX2 is not supported on this compiler")
@@ -61,9 +59,8 @@ target_compile_options(
     PRIVATE "-mtune=native"
     PRIVATE "-march=native"
     )
-endif()
-if ( MSVC )
-target_compile_options(libadmete PRIVATE "/W4")
+else()
+    message(FATAL_ERROR "AVX2 is not supported on this compiler")
 endif()
 
 if(WITH_TUNING)
