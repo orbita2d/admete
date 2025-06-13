@@ -57,10 +57,10 @@ jobs:
                 if [[ "$filename" == *.exe ]]; then
                   # For .exe files, remove .exe, add version, then add .exe back
                   suffix_no_ext="${suffix%.exe}"
-                  new_name="admete_v${VERSION}_${suffix_no_ext}.exe"
+                  new_name="admete_${VERSION}_${suffix_no_ext}.exe"
                 else
                   # For other files (like .so), just insert version
-                  new_name="admete_v${VERSION}_${suffix}"
+                  new_name="admete_${VERSION}_${suffix}"
                 fi
                 
                 cp "$file" "release/$new_name"
