@@ -9,6 +9,7 @@ namespace Neural {
 
 constexpr uint8_t ACC_SHIFT = 4;
 constexpr size_t N_ACCUMULATED = 256;
+constexpr nn_t LOGISTIC_SCALING = 400.0f;
 static_assert(N_FEATURES == 384, "Feature size mismatch");
 
 namespace generated {
