@@ -5,12 +5,12 @@
 
 namespace Neural {
 
-// Model generated from training run 2025-06-09_06-41-10
+// Model generated from training run gaudy-hare-868
 
 constexpr uint8_t ACC_SHIFT = 4;
 constexpr size_t N_ACCUMULATED = 256;
 constexpr nn_t LOGISTIC_SCALING = 400.0f;
-static_assert(N_FEATURES == 384, "Feature size mismatch");
+static_assert(N_FEATURES == 320, "Feature size mismatch");
 
 namespace generated {
 

@@ -44,27 +44,35 @@ protected:
         
         // For both colors, verify features match expected values
         for (Colour c : {WHITE, BLACK}) {
-          auto diff = expected_diff[c].as_dense();
+          auto diff = std::get<0>(expected_diff[c]).as_dense();
             for (size_t i = 0; i < Neural::N_FEATURES; i++) {
                 // The new features should equal initial features plus the diff
-                EXPECT_EQ(new_features[c][i], 
-                         initial_features[c][i] + diff[i]) 
+                EXPECT_EQ(std::get<0>(new_features[c])[i], 
+                         std::get<0>(initial_features[c])[i] + diff[i]) 
                     << "Mismatch at index " << i << " for color " << (c == WHITE ? "WHITE" : "BLACK");
+                
+                EXPECT_EQ(std::get<0>(board.accumulator().features[c])[i], std::get<0>(new_features[c])[i])
+                    << "Accumulator features do not match encoded features at index " << i;
             }
+            // Also verify king square
+            EXPECT_EQ(std::get<1>(new_features[c]), std::get<1>(board.accumulator().features[c]))
+                << "King square mismatch for color " << (c == WHITE ? "WHITE" : "BLACK");
         }
         
         // Verify reverse diff works
         board.unmake_move(move);
         auto reverse_diff = Neural::increment(move, side, false);
-
         
         // Verify we're back to initial position
-        auto final_features = Neural::encode(board);
+        auto final_features = board.accumulator().features;
         for (Colour c : {WHITE, BLACK}) {
             for (size_t i = 0; i < Neural::N_FEATURES; i++) {
-                EXPECT_EQ(initial_features[c][i], final_features[c][i])
+                EXPECT_EQ(std::get<0>(initial_features[c])[i], std::get<0>(final_features[c])[i])
                     << "Position not properly restored at index " << i;
             }
+
+            EXPECT_EQ(std::get<1>(initial_features[c]), std::get<1>(final_features[c]))
+                << "King square mismatch for color " << (c == WHITE ? "WHITE" : "BLACK");
         }
     }
 };
@@ -95,8 +103,10 @@ TEST_F(NeuralFeaturesTest, ColourSymmetry) {
 
         // Verify flipped features are the same as original
         for (size_t i = 0; i < Neural::N_FEATURES; i++) {
-            EXPECT_EQ(start_w[i], flipped_b[i]);
-            EXPECT_EQ(start_b[i], flipped_w[i]);
+            EXPECT_EQ(std::get<0>(start_w)[i], std::get<0>(flipped_b)[i]);
+            EXPECT_EQ(std::get<0>(start_b)[i], std::get<0>(flipped_w)[i]);
         }
+        EXPECT_EQ(std::get<1>(start_w), std::get<1>(flipped_b));
+        EXPECT_EQ(std::get<1>(start_b), std::get<1>(flipped_w));
     }
 }

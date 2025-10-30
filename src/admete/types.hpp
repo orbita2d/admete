@@ -82,9 +82,11 @@ class Square {
   public:
     typedef unsigned int square_t;
     constexpr Square(const square_t val) : value(val){};
-    constexpr Square(const Rank rank, const File file) { value = 8 * rank + file; };
+    constexpr Square(const Rank rank, const File file) : value(8 * rank + file) {};
     Square(const std::string rf);
     Square() = default;
+
+    inline static constexpr Square Invalid() { return Square(65);}
 
     bool operator==(const Square that) const { return value == that.value; }
     bool operator!=(const Square that) const { return value != that.value; }

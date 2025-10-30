@@ -87,6 +87,53 @@ TEST_F(NetworkIntegrationTest, NonZeroOutput) {
 }
 
 TEST_F(NetworkIntegrationTest, AccumulationCorrectness) {
+    /*
+    Verify that making a move and updating the accumulator gives the same result
+    */
+    for (const auto& fen : test_positions) {
+        board.fen_decode(fen);
+        auto v0 = board.accumulator().accumulated;
+        // Make a move
+        auto moves = board.get_moves();
+        for (auto move : moves) {
+            board.make_move(move);
+            auto v1 = board.accumulator().accumulated;
+            accumulator.initialise(board);
+            auto v2 = accumulator.accumulated;
+            board.unmake_move(move);
+            
+            for (Colour c : {WHITE, BLACK}) {
+                for (size_t i = 0; i < Neural::N_ACCUMULATED; i++) {
+                    EXPECT_NEAR(v1[c][i], v2[c][i], 1e-5)
+                        << "Position: " << fen << "\n"
+                        << "Move: " << move.pretty() << "\n"
+                        << "Colour: " << (c == WHITE ? "WHITE" : "BLACK") << "\n"
+                        << "Index: " << i << "\n"
+                        << "Value1: " << v1[c][i] << "\n"
+                        << "Value2: " << v2[c][i];
+                }
+            }
+
+            auto v3 = board.accumulator().accumulated;
+            for (Colour c : {WHITE, BLACK}) {
+                for (size_t i = 0; i < Neural::N_ACCUMULATED; i++) {
+                    EXPECT_NEAR(v0[c][i], v3[c][i], 1e-5)
+                        << "Position: " << fen << "\n"
+                        << "Move: " << move.pretty() << "\n"
+                        << "Colour: " << (c == WHITE ? "WHITE" : "BLACK") << "\n"
+                        << "Index: " << i << "\n"
+                        << "Value0: " << v0[c][i] << "\n"
+                        << "Value3: " << v3[c][i];
+                }
+            }
+        }
+    }
+}
+
+TEST_F(NetworkIntegrationTest, AccumulationCorrectness2) {
+    /*
+    Verify that making a move and updating the accumulator gives the same result
+    */
     for (const auto& fen : test_positions) {
         board.fen_decode(fen);
         auto score0 = network.forward(board.accumulator(), board.who_to_play());
@@ -114,5 +161,4 @@ TEST_F(NetworkIntegrationTest, AccumulationCorrectness) {
 
         }
     }
-
 }

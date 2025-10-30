@@ -13,7 +13,7 @@ add_executable(tests main.cpp
         linalg.cpp
         network.cpp
         fixed.cpp
-        fixed_accumulator.cpp
+        # fixed_accumulator.cpp
         )
 
 target_link_libraries(tests

@@ -69,19 +69,26 @@ namespace Neural {
     Matrix<T, Input, Output> weights;
     Vector<T, Output> bias;
   };
-
-  template<typename T, size_t HalfIn, size_t Out>
+  
+  template<typename T, size_t In, size_t Out>
   class FloatingAccumulatorLayer {
     static_assert(std::is_floating_point_v<T>, "FloatingAccumulatorLayer only supports floating point types");
-    static constexpr size_t In = HalfIn * 2;
     public:
-      FloatingAccumulatorLayer(const Matrix<T, Out, In>& weights, const Vector<T, Out>& bias)
-        : weights(weights.transpose()), bias(bias) {}
+        using accT = float;
 
-      FloatingAccumulatorLayer(const float* weights_data, const float* bias_data) {
-        for (size_t j = 0; j < In; j++) {
+      FloatingAccumulatorLayer(const float* weights_l_data, const float* weights_r_data, const float* weights_k_data, const float* bias_data) {
+        for (size_t k = 0; k < N_SQUARE; k++) {
+          for (size_t j = 0; j < In; j++) {
+            for (size_t i = 0; i < Out; i++) {
+              weights_l.at(k).at(j, i) = weights_l_data[k * In * Out + j * Out + i];
+              weights_r.at(k).at(j, i) = weights_r_data[k * In * Out + j * Out + i];
+            }
+          }
+        }
+        for (size_t k = 0; k < N_SQUARE; k++) {
           for (size_t i = 0; i < Out; i++) {
-            weights.at(j, i) = weights_data[j * Out + i];
+            weights_k.at(k, i) = weights_k_data[k * Out + i];
+            weights_k.at(k + N_SQUARE, i) = weights_k_data[(k + N_SQUARE) * Out + i];
           }
         }
         for (size_t i = 0; i < Out; i++) {
@@ -92,97 +99,79 @@ namespace Neural {
       
       FloatingAccumulatorLayer() = default;
 
-      Vector<T, Out> forward(const Vector<T, HalfIn>& input_left, const Vector<T, HalfIn>& input_right) const {
-        Vector<T, Out> result = bias;
+      /*
+        f(xl, xr) = W_l^[k_l] @ x_l + W_r^[k_r] @ x_r + b_l^[k_l] + b_r^[k_r] + b
+        dy = y(x + dx) - y(x)
+        dy = W_l^[k_l] @ dx_l + W_r^[k_r] @ dx_r
+      
+      */
 
-        for (size_t j = 0; j < HalfIn; j++) {
+      template<typename U>
+      Vector<T, Out> forward(const FeatureVectorType<U, In>& xl, const FeatureVectorType<U, In>& xr) const {
+        // TODO: leverage sparsity here
+        Vector<T, Out> result = bias;
+        const auto kl = std::get<1>(xl).get_value();
+        const auto kr = std::get<1>(xr).get_value();
+
+        for (size_t j = 0; j < In; j++) {
           for (size_t i = 0; i < Out; i++) {
-            result[i] += weights.at(j, i) * input_left[j];
-            result[i] += weights.at(j + HalfIn, i) * input_right[j];
+            result[i] += weights_l[kl].at(j, i) * std::get<0>(xl)[j];
+            result[i] += weights_r[kr].at(j, i) * std::get<0>(xr)[j];
           }
+        }
+        for (size_t i = 0; i < Out; i++) {
+          result[i] += weights_k.at(kl, i);
+          result[i] += weights_k.at(kr + N_SQUARE, i);
         }
         return result;
       }
 
-      void increment(Vector<T, Out>& reference, const SparseVector<T, HalfIn>& input_left, const SparseVector<T, HalfIn>& input_right) const {
+      template<typename U>
+      void increment(Vector<T, Out>& reference, const FeatureVectorType<U, In>& xl, const FeatureVectorType<U, In>& xr, const FeatureDiffType<U, In>& dl, const FeatureDiffType<U, In>& dr) const {
         // We want to concatenate the two inputs, and then propogate. This allows us to do them without copying.
-        for (const auto& [index, value] : input_left.data) {
+        const auto kl1 = std::get<1>(dl).get_value();
+        const auto kl2 = std::get<2>(dl).get_value();
+        const auto kr1 = std::get<1>(dr).get_value();
+        const auto kr2 = std::get<2>(dr).get_value();
+        
+        // if the king square has changed, it's cheaper to just do the whole thing.
+        // TODO: we should do left and right separately here, only one side can move king at a time.
+        if ((kl1 != kl2) || (kr1 != kr2)) {
+          reference = forward(xl, xr);
+          return;
+        }
+        
+        const auto kl = std::get<1>(xl).get_value();
+        const auto kr = std::get<1>(xr).get_value();
+
+        for (const auto& [index, value] : std::get<0>(dl).data) {
           for (size_t i = 0; i < Out; i++) {
-            reference[i] += weights.at(index, i) * value;
+            reference[i] += weights_l.at(kl).at(index, i) * value;
           }
         }
-        for (const auto& [index, value] : input_right.data) {
+        for (const auto& [index, value] : std::get<0>(dr).data) {
           for (size_t i = 0; i < Out; i++) {
-            reference[i] += weights.at(index + HalfIn, i) * value;
+            reference[i] += weights_r.at(kr).at(index, i) * value;
           }
         }
       }
 
-      T& weight_at(size_t i, size_t j) { return weights.at(j, i); }
+      T& weight_l_at(size_t i, size_t j, Square k) { return weights_l.at(k.get_value()).at(j, i); }
+      T& weight_r_at(size_t i, size_t j, Square k) { return weights_r.at(k.get_value()).at(j, i); }
+      T& weight_k_at(size_t i, Square k) { return weights_k.at(k.get_value(), i); }
       T& bias_at(size_t i) { return bias[i]; }
 
-      const T& weight_at(size_t i, size_t j) const { return weights.at(j, i); }
+
+      const T& weight_l_at(size_t i, size_t j, Square k) const { return weights_l.at(k.get_value()).at(j, i); }
+      const T& weight_r_at(size_t i, size_t j, Square k) const { return weights_r.at(k.get_value()).at(j, i); }
+      const T& weight_k_at(size_t i, Square k) const { return weights_k.at(k.get_value(), i); }
       const T& bias_at(size_t i) const { return bias[i]; }
 
     private:
-      Matrix<T,  In, Out> weights;
-      Vector<T, Out> bias;
-  };
-
-  template<size_t HalfIn, size_t Out, uint8_t acc_bits, int8_t acc_scale_shift>
-  class FixedAccumulatorLayer {
-    public:
-    using inT = feature_t;
-    static_assert(std::is_integral_v<inT>, "FixedAccumulatorLayer only supports integral types");
-    using accT = Fixed<acc_bits, acc_scale_shift>;
-    static constexpr size_t In = HalfIn * 2;
-
-    FixedAccumulatorLayer() = default; 
-
-    template<typename floatT>
-    FixedAccumulatorLayer(const FloatingAccumulatorLayer<floatT, HalfIn, Out>& layer) {
-        for (size_t j = 0; j < In; j++) {
-            for (size_t i = 0; i < Out; i++) {
-                floatT float_weight = layer.weight_at(i, j);
-                weights.at(j, i) = accT::from_float(float_weight);
-            }
-        }
-        
-        for (size_t i = 0; i < Out; i++) {
-            floatT float_bias = layer.bias_at(i);
-            bias[i] = accT::from_float(float_bias);
-        }
-    }
-
-    Vector<accT, Out> forward(const Vector<inT, HalfIn>& input_left, const Vector<inT, HalfIn>& input_right) const {
-      Vector<accT, Out> result = bias;
-
-      for (size_t j = 0; j < HalfIn; j++) {
-        for (size_t i = 0; i < Out; i++) {
-          result[i] += weights.at(j, i).small_multiply(input_left[j]);
-          result[i] += weights.at(j + HalfIn, i).small_multiply(input_right[j]);
-        }
-      }
-      return result;
-    }
-
-    void increment(Vector<accT, Out>& reference, const SparseVector<inT, HalfIn>& input_left, const SparseVector<inT, HalfIn>& input_right) const {
-      // We want to concatenate the two inputs, and then propogate. This allows us to do them without copying.
-      for (const auto& [index, value] : input_left.data) {
-        for (size_t i = 0; i < Out; i++) {
-          reference[i] += weights.at(index, i).small_multiply(value);
-        }
-      }
-      for (const auto& [index, value] : input_right.data) {
-        for (size_t i = 0; i < Out; i++) {
-          reference[i] += weights.at(index + HalfIn, i).small_multiply(value);
-        }
-      }
-    }
-
-    private:
-      Matrix<accT, In, Out> weights;
-      Vector<accT, Out> bias;
+      std::array<Matrix<T, In, Out>, N_SQUARE> weights_l; // a matrix for each king square
+      std::array<Matrix<T, In, Out>, N_SQUARE> weights_r; // ^
+      Matrix<T, N_SQUARE * 2, Out> weights_k; // a bias for each king square
+      Vector<T, Out> bias; // final bias
   };
 
   template <typename T>
@@ -201,9 +190,9 @@ namespace Neural {
   template <size_t FeaturesSize, size_t AccumulatorSize, uint8_t AccumulatorShift>
   class Accumulator {
   public:
-      // using layer_t = FloatingAccumulatorLayer<nn_t, FeaturesSize, AccumulatorSize>;
+      using layer_t = FloatingAccumulatorLayer<nn_t, FeaturesSize, AccumulatorSize>;
       static constexpr uint8_t acc_bits = 16u;
-      using layer_t = FixedAccumulatorLayer<FeaturesSize, AccumulatorSize, acc_bits, AccumulatorShift>;
+      // using layer_t = FixedAccumulatorLayer<FeaturesSize, AccumulatorSize, acc_bits, AccumulatorShift>;
       using accT = layer_t::accT;
       using floating_t = FloatingAccumulatorLayer<nn_t, FeaturesSize, AccumulatorSize>;
 
@@ -215,11 +204,11 @@ namespace Neural {
       explicit Accumulator(const layer_t& layer)
           : acc_layer(std::make_unique<layer_t>(layer)) {}
 
-      explicit Accumulator(std::unique_ptr<floating_t> layer)
-          : acc_layer(std::make_unique<layer_t>(*layer)) {}
+      // explicit Accumulator(std::unique_ptr<floating_t> layer)
+      //     : acc_layer(std::make_unique<layer_t>(*layer)) {}
         
-      explicit Accumulator(const floating_t& layer)
-          : acc_layer(std::make_unique<layer_t>(layer)) {}
+      // explicit Accumulator(const floating_t& layer)
+      //     : acc_layer(std::make_unique<layer_t>(layer)) {}
       
       Accumulator(Accumulator&& other) noexcept 
           : acc_layer(std::move(other.acc_layer))
@@ -240,13 +229,18 @@ namespace Neural {
       const Vector<T, AccumulatorSize> get_as(Colour c) const {
           auto values = Vector<T, AccumulatorSize>::zeros();
           for (size_t i = 0; i < AccumulatorSize; i++) {
-              values[i] = accumulated[c][i].template as<T>();
+              if constexpr (std::is_floating_point_v<accT>) {
+                  values[i] = accumulated[c][i];
+              } else {
+                  values[i] = accumulated[c][i].template as<T>();
+              }
           }
           return values;
       }
 
-    private:
       per_colour<Vector<accT, AccumulatorSize>> accumulated;
+      per_colour<FeatureVector> features;
+    private:
       std::unique_ptr<layer_t> acc_layer;
   };
 
@@ -255,22 +249,24 @@ namespace Neural {
       auto encoded = encode(board);
       for (Colour c : {WHITE, BLACK}) {
           accumulated[c] = acc_layer->forward(encoded[c], encoded[~c]);
+          features[c] = encoded[c];
       }
   }
 
   template<size_t FeaturesSize, size_t AccumulatorSize, uint8_t AccumulatorShift>
   void Accumulator<FeaturesSize, AccumulatorSize, AccumulatorShift>::make_move(const Move &move, const Colour side) {
       auto diff = increment(move, side, true);
-      acc_layer->increment(accumulated[side], diff[side], diff[~side]);
-      acc_layer->increment(accumulated[~side], diff[~side], diff[side]);
+      update(features, diff);
+      acc_layer->increment(accumulated[side], features[side], features[~side], diff[side], diff[~side]);
+      acc_layer->increment(accumulated[~side], features[~side], features[side], diff[~side], diff[side]);
   }
 
   template<size_t FeaturesSize, size_t AccumulatorSize, uint8_t AccumulatorShift>
   void Accumulator<FeaturesSize, AccumulatorSize, AccumulatorShift>::unmake_move(const Move &move, const Colour side) {
       auto diff = increment(move, side, false);
-
-      acc_layer->increment(accumulated[side], diff[side], diff[~side]);
-      acc_layer->increment(accumulated[~side], diff[~side], diff[side]);
+      update(features, diff);
+      acc_layer->increment(accumulated[side], features[side], features[~side], diff[side], diff[~side]);
+      acc_layer->increment(accumulated[~side], features[~side], features[side], diff[~side], diff[side]);
   }
 
   template<size_t FeaturesSize, size_t AccumulatorSize, uint8_t AccumulatorShift, size_t... LayerSizes>
