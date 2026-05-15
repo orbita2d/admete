@@ -330,6 +330,7 @@ void go(Board &board, std::istringstream &is, Search::SearchOptions &options) {
     int move_time = POS_INF;              // Absolute max time to spend on this move.
     uint max_depth = 20;                  // Absolute max depth to calculate to.
     uint movestogo = 0;                   // How many moves till the next time control.
+    uint nodes = 0;                       // Maximum number of nodes to search.
     std::string token;
     while (is >> token) {
         // munch through the command string
@@ -349,6 +350,8 @@ void go(Board &board, std::istringstream &is, Search::SearchOptions &options) {
             is >> options.mate_depth;
         } else if (token == "movestogo") {
             is >> movestogo;
+        } else if (token == "nodes") {
+            is >> nodes;
         }
     }
     const int our_time = board.is_white_move() ? wtime : btime;
@@ -372,6 +375,7 @@ void go(Board &board, std::istringstream &is, Search::SearchOptions &options) {
     // Time passed after which we kill the search, (to keep up with movetime resitriction, to not lose on time, to not
     // waste time if bf explodes).
     hard_cutoff = std::min(std::min(move_time, (int)(our_time * 0.8)), hard_cutoff);
+    options.max_nodes = nodes;
     options.running_thread = std::thread(&do_search, &board, (depth_t)max_depth, soft_cutoff, hard_cutoff, &options);
 }
 

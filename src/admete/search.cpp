@@ -96,14 +96,6 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, u
         hash_dmove = tthit.move();
     }
 
-    // Check if we've passed our time cutoff
-    if (allow_cutoff && (options.nodes % (1<<10) == 0)) {
-        if (options.get_millis() > time_cutoff) {
-            options.set_stop();
-            return MAX_SCORE;
-        }
-    }
-
     score_t score_ub = MAX_SCORE;
     score_t best_score = MIN_SCORE;
     // Probe the tablebase
@@ -134,6 +126,20 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, u
                 return tbresult;
             }
         }
+    }
+
+    // Check if we've passed our time cutoff
+    if (allow_cutoff && (options.nodes % (1<<10) == 0)) {
+        if (options.get_millis() > time_cutoff) {
+            options.set_stop();
+            return MAX_SCORE;
+        }
+    }
+
+    // We only count nodes we do some real work on.
+    if (options.check_nodes_and_increment()) {
+        options.set_stop();
+        return MAX_SCORE;
     }
 
     // Calculate the node evaluation heuristic.
@@ -177,7 +183,6 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, u
     // Do the hash move explicitly to avoid sorting moves if our hash moves provides a beta-cutoff
     if (hash_move != NULL_MOVE) {
         board.make_move(hash_move);
-        options.nodes++;
         // We expect first child of a cut node to be an all node, such that it would cause the cut node to fail high.
         best_score = -scout_search(board, depth - 1, -beta, time_cutoff, allow_cutoff, true,
                                    node == CUTNODE ? ALLNODE : CUTNODE, options);
@@ -258,7 +263,6 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, u
         search_depth = std::clamp(search_depth, (depth_t)0, (depth_t)(depth - 1));
 
         board.make_move(move);
-        options.nodes++;
         score_t score = -scout_search(board, search_depth, -beta, time_cutoff, allow_cutoff, true, child, options);
         // If our search at lower depth did raise alpha, and this is an All node, re-search at full depth before failing
         // high.
@@ -367,6 +371,12 @@ score_t Search::pv_search(Board &board, const depth_t start_depth, const score_t
         }
     }
 
+    // We only count nodes we do some real work on.
+    if (options.check_nodes_and_increment()) {
+        options.set_stop();
+        return MAX_SCORE;
+    }
+
     // The TB can bound our score < TBLOSS. At the end, the best score should be compared to this, and the lower
     // taken.
     score_t score_ub = MAX_SCORE;
@@ -409,7 +419,6 @@ score_t Search::pv_search(Board &board, const depth_t start_depth, const score_t
     // Do the hash move explicitly to avoid sorting moves if our hash moves provides a beta-cutoff
     if (hash_move != NULL_MOVE) {
         board.make_move(hash_move);
-        options.nodes++;
         score_t score = -pv_search(board, depth - 1, -beta, -alpha, pv, time_cutoff, allow_cutoff, options);
         board.unmake_move(hash_move);
         pv.push_back(hash_move);
@@ -441,7 +450,6 @@ score_t Search::pv_search(Board &board, const depth_t start_depth, const score_t
         temp_line.reserve(16);
 
         board.make_move(move);
-        options.nodes++;
         score_t score;
         if (is_first_child) {
             score = -pv_search(board, depth - 1, -beta, -alpha, temp_line, time_cutoff, allow_cutoff, options);
@@ -501,6 +509,8 @@ score_t Search::quiesce(Board &board, const score_t alpha_start, const score_t b
         return Evaluation::drawn_score(board);
     }
 
+    options.nodes++;
+
     const score_t stand_pat = Evaluation::eval(board);
 
     alpha = std::max(alpha, stand_pat);
@@ -546,7 +556,6 @@ score_t Search::quiesce(Board &board, const score_t alpha_start, const score_t b
             continue;
         }
         board.make_move(move);
-        options.nodes++;
         const score_t score = -quiesce(board, -beta, -alpha, options);
         board.unmake_move(move);
         alpha = std::max(alpha, score);
@@ -643,7 +652,7 @@ score_t Search::search(Board &board, const depth_t max_depth, int soft_cutoff, c
 
         // Calculate the time spent so far.
         millis_now = 1 + options.get_millis();
-        const unsigned long nps = ((1000 *options.nodes) / millis_now);
+        const uint64_t nps = ((uint64_t)1000 * options.nodes) / millis_now;
 
         // Send the info for the search to uci
         UCI::uci_info(depth, score, options.nodes, options.tbhits, nps, principle, millis_now, board.get_root());

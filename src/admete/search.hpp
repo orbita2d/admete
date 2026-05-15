@@ -21,12 +21,13 @@ struct SearchOptions {
     }
     std::atomic<bool> stop_flag;    // Flag to use to tell the search to stop as soon as possible
     score_t eval = MIN_SCORE;       // Where the eval is set when the object is shared between threads.
-    unsigned long nodes = 0;        // How many nodes have been accessed
+    uint64_t nodes = 0;             // How many nodes have been accessed
+    uint64_t max_nodes = 0;         // Maximum number of nodes to search
     std::thread running_thread;     // The thread object for the search itself.
     std::atomic<bool> running_flag; // Flag set when the search is running.
     ply_t mate_depth = 0;           // Mate in N distance to look for UCI go mate N commands.
     bool tbenable = false;          // Set true if the tablebase is enabled.
-    unsigned long tbhits = 0;
+    uint64_t tbhits = 0;
     my_clock::time_point origin_time; // Time At start of search.
     bool is_running() const { return running_flag.load(); }
     bool stop() const { return stop_flag.load(); }
@@ -34,6 +35,10 @@ struct SearchOptions {
     void set_origin() { origin_time = my_clock::now(); }
     unsigned get_millis() {
         return 1 + std::chrono::duration_cast<std::chrono::milliseconds>(my_clock::now() - origin_time).count();
+    }
+    bool check_nodes_and_increment() {
+        nodes++;
+        return (max_nodes > 0) && (nodes >= max_nodes);
     }
     // bool passed_time() { return (get_millis() > hard_cutoff); }
 };
