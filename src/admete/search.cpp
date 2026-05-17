@@ -129,7 +129,7 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, u
     }
 
     // Check if we've passed our time cutoff
-    if (allow_cutoff && (options.nodes % (1<<10) == 0)) {
+    if (allow_cutoff && (options.nodes % (1<<5) == 0)) {
         if (options.get_millis() > time_cutoff) {
             options.set_stop();
             return MAX_SCORE;
@@ -364,7 +364,7 @@ score_t Search::pv_search(Board &board, const depth_t start_depth, const score_t
     }
 
     // Check if we've passed our time cutoff
-    if (allow_cutoff && (options.nodes % (1<<10) == 0)) {
+    if (allow_cutoff && (options.nodes % (1<<5) == 0)) {
         if (options.get_millis() > time_cutoff) {
             options.set_stop();
             return MAX_SCORE;
