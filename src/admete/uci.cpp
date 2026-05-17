@@ -366,11 +366,12 @@ void go(Board &board, std::istringstream &is, Search::SearchOptions &options) {
         // Sudden death time control, try fit sd_N_move moves in the rest of the game
         constexpr int sd_n_move = 20;
         soft_cutoff = (our_time / sd_n_move + our_inc);
-        hard_cutoff = soft_cutoff * 3;
+        hard_cutoff = (our_time / 2 + our_inc);
     } else {
         // Classical type time control. Try fit however many moves till the next time control plus one in the game.
         soft_cutoff = (our_time / (.5 * movestogo + 1) + our_inc);
-        hard_cutoff = soft_cutoff * 2.5;
+        if (movestogo > 1) hard_cutoff = (our_time / 2 + our_inc);
+        else hard_cutoff = std::max(std::min(our_time+our_inc, 10), our_time + our_inc - 10); // try give ourselves 10ms to spare
     }
     // Time passed after which we kill the search, (to keep up with movetime resitriction, to not lose on time, to not
     // waste time if bf explodes).

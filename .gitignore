@@ -8,6 +8,7 @@ _deps
 
 # .vscode directory
 .vscode
+.claude
 
 # Profiling output
 gmon.out
