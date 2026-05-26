@@ -153,6 +153,34 @@ TEST(Search, Underpromotion) {
   }
 }
 
+TEST(Search, NodeLimit) {
+  // The search must stop once it has visited max_nodes. The limit is checked
+  // per node, so we tolerate a small constant overshoot from the in-flight
+  // quiescence subtree, but never anything close to a full deeper iteration.
+  Board board = Board();
+  const std::string fens[] = {
+      "r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 0 1",
+      "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1",
+  };
+  // Allowance for the quiescence subtree that may finish after the limit is
+  // hit; comfortably above the few dozen nodes observed in practice.
+  constexpr uint64_t overshoot_allowance = 0;
+  for (const std::string &fen : fens) {
+    for (uint64_t limit : {1000ull, 100000ull, 1000000ull}) {
+      board.fen_decode(fen);
+      PrincipleLine line;
+      Search::SearchOptions options;
+      options.max_nodes = limit;
+      // Huge depth and no time cutoff so the node limit is the only thing that
+      // can stop the search.
+      Search::search(board, 40, POS_INF, POS_INF, line, options);
+      EXPECT_GE(options.nodes, limit) << "fen=" << fen << " limit=" << limit;
+      EXPECT_LE(options.nodes, limit + overshoot_allowance)
+          << "fen=" << fen << " limit=" << limit;
+    }
+  }
+}
+
 TEST(Search, Rule50CheckmatePriority) {
   Board board = Board();
   board.set_root();

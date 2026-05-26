@@ -582,6 +582,8 @@ void uci() {
             exit(EXIT_SUCCESS);
         } else if (token == "d") {
             board.pretty();
+        } else if (token == "zobrist") {
+            std::cout << std::hex << std::setfill('0') << std::setw(16) << board.hash() << std::dec << std::endl;
         } else if (token == "h") {
             score_t v = Evaluation::evaluate_white(board);
             std::cout << std::dec << (int)v << std::endl;
