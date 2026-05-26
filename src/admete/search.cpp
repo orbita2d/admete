@@ -27,6 +27,8 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, u
     assert(depth < MAX_DEPTH);
     const score_t beta = alpha + 1;
 
+    if (options.stop()) return MAX_SCORE;
+
     // Check extentions
     if (board.is_check()) {
         depth++;
@@ -302,6 +304,10 @@ score_t Search::pv_search(Board &board, const depth_t start_depth, const score_t
     score_t alpha = alpha_start;
     depth_t depth = start_depth;
 
+    // Check if we've been told to stop searching.
+    if (options.stop()) return MAX_SCORE;
+
+
     // Check extentions
     if (board.is_check()) {
         depth++;
@@ -509,7 +515,10 @@ score_t Search::quiesce(Board &board, const score_t alpha_start, const score_t b
         return Evaluation::drawn_score(board);
     }
 
-    options.nodes++;
+    if (options.stop() || options.check_nodes_and_increment()) {
+        options.set_stop();
+        return MAX_SCORE;
+    }
 
     const score_t stand_pat = Evaluation::eval(board);
 
