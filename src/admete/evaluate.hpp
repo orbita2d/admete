@@ -16,4 +16,5 @@ score_t count_phase_material(const Board &board);
 
 score_t drawn_score(const Board &board);
 inline score_t contempt = 10;
+inline score_t even_odd_bias = 11;
 } // namespace Evaluation
