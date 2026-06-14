@@ -204,13 +204,11 @@ score_t Search::scout_search(Board &board, depth_t depth, const score_t alpha, u
         }
     }
 
-    Ordering::rank_and_sort_moves(board, legal_moves, hash_dmove);
+    Ordering::rank_and_sort_moves(board, legal_moves);
     uint counter = 0;
     for (Move move : legal_moves) {
         // We've already dealt with the hashmove.
-        if (move == hash_move) {
-            continue;
-        }
+        if (move == hash_move) continue;
         counter++;
         const bool gives_check = board.gives_check(move);
         if ((node == CUTNODE) && (counter >= 5)) {
@@ -319,17 +317,6 @@ score_t Search::pv_search(Board &board, const depth_t start_depth, const score_t
     // Terminal node
     if (legal_moves.empty()) {
         return Evaluation::terminal(board);
-    }
-
-    // Probe the tablebase for the winning move at root.
-    if (options.tbenable && board.is_root()) {
-        if (Tablebase::probe_root(board, legal_moves)) {
-            assert(!legal_moves.empty());
-            options.tbhits++;
-            // Only move in legal_moves will be the best move from the tablebase. Its score is set to the eval.
-            line.push_back(legal_moves.front());
-            return legal_moves.front().score;
-        }
     }
 
     // If this is a draw by repetition, 50 moves, or insufficient material, return the drawn score.
@@ -445,13 +432,11 @@ score_t Search::pv_search(Board &board, const depth_t start_depth, const score_t
         is_first_child = false;
     }
     // Sort the remaining moves, and remove the hash move if it exists
-    Ordering::rank_and_sort_moves(board, legal_moves, hash_dmove);
+    Ordering::rank_and_sort_moves(board, legal_moves);
 
     for (Move move : legal_moves) {
         // We've already dealt with the hashmove.
-        if (move == hash_move) {
-            continue;
-        }
+        if (move == hash_move) continue;
         PrincipleLine temp_line;
         temp_line.reserve(16);
 
@@ -551,7 +536,7 @@ score_t Search::quiesce(Board &board, const score_t alpha_start, const score_t b
     }
 
     // Sort the captures and record SEE.
-    Ordering::rank_and_sort_moves(board, moves, NULL_DMOVE);
+    Ordering::rank_and_sort_moves(board, moves);
 
     for (Move move : moves) {
         // For a capture, the recorded score is the SEE value.
@@ -582,6 +567,18 @@ score_t Search::search(Board &board, const depth_t max_depth, int soft_cutoff, c
     Cache::history_table.clear();
     PrincipleLine principle;
     board.set_root();
+
+    // Probe the tablebase for the winning move at root.
+    if (options.tbenable) {
+        auto legal_moves = board.get_moves();
+        if (Tablebase::probe_root(board, legal_moves)) {
+            assert(!legal_moves.empty());
+            options.tbhits = 1;
+            // Only move in legal_moves will be the best move from the tablebase. Its score is set to the eval.
+            line.push_back(legal_moves.front());
+            return legal_moves.front().score;
+        }
+    }
 
     const ply_t mate_in_ply = 2 * options.mate_depth;
 
@@ -767,7 +764,7 @@ Position board_quiesce(Board &board, const score_t alpha_start, const score_t be
     }
 
     // Sort the captures and record SEE.
-    Ordering::rank_and_sort_moves(board, moves, NULL_DMOVE);
+    Ordering::rank_and_sort_moves(board, moves);
 
     for (Move move : moves) {
         // For a capture, the recorded score is the SEE value.

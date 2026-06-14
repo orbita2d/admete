@@ -172,14 +172,10 @@ bool see(Board &board, const Move move, const int threshold) {
 
 namespace Ordering {
 void sort_moves(MoveList &legal_moves) { std::sort(legal_moves.begin(), legal_moves.end(), cmp); }
-void rank_and_sort_moves(Board &board, MoveList &legal_moves, const DenseMove hash_dmove) {
+void rank_and_sort_moves(Board &board, MoveList &legal_moves) {
     KillerTableRow killer_moves = Cache::killer_table.probe(board.ply());
     for (Move &move : legal_moves) {
-        if (move == hash_dmove) {
-            // The search handles the hash move itself. Here we just make sure it doesn't end up in the final move
-            // list.
-            move.score = 1000000;
-        } else if (move == killer_moves) {
+        if (move == killer_moves) {
             move.score = 200000;
         } else if (move.is_capture()) {
             // Make sure to lookup and record the piece captured
