@@ -314,7 +314,7 @@ struct DenseMove {
     Square target() const { return v & 0x003f; }
     Square origin() const { return (v >> 6) & 0x003f; }
     MoveType type() const { return (MoveType)((v >> 12) & 0x000f); }
-    int16_t v = 0;
+    uint16_t v = 0;
 };
 
 inline bool operator==(const DenseMove m1, const DenseMove m2) { return (m1.v == m2.v); }
