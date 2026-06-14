@@ -3,7 +3,7 @@
 
 namespace Ordering {
 void sort_moves(MoveList &legal_moves);
-void rank_and_sort_moves(Board &board, MoveList &legal_moves, const DenseMove hash_dmove);
+void rank_and_sort_moves(Board &board, MoveList &legal_moves);
 } // namespace Ordering
 
 namespace SEE {
