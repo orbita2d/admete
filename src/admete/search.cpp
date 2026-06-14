@@ -481,7 +481,7 @@ score_t Search::pv_search(Board &board, const depth_t start_depth, const score_t
         alpha = std::max(alpha, score);
         if (alpha >= beta) {
             Cache::killer_table.store(board.ply(), pv.back());
-            Cache::history_table.store(depth, move);
+            Cache::history_table.store(depth, pv.back());
             break; // beta-cutoff
         }
         is_first_child = false;
