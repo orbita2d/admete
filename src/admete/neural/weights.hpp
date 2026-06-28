@@ -5,7 +5,7 @@
 
 namespace Neural {
 
-// Model generated from training run mysterious-calf-826 (king features concatenated into per-side block)
+// Model generated from training run marvelous-quail-309 (king features concatenated into per-side block)
 
 constexpr uint8_t ACC_SHIFT = 4;
 constexpr size_t N_ACCUMULATED = 256;
