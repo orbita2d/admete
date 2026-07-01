@@ -163,29 +163,6 @@ namespace Neural {
           _mm256_storeu_ps(&result[i], _mm256_add_ps(_mm256_loadu_ps(&result[i]), scaled));
         }
         return result;
-      } else if constexpr (Output % 4 == 0) {
-        auto result = bias;
-        for (size_t i = 0; i < Output; i+=4) {
-          auto acc0 = _mm256_setzero_si256();
-          auto acc1 = _mm256_setzero_si256();
-          auto acc2 = _mm256_setzero_si256();
-          auto acc3 = _mm256_setzero_si256();
-          for (size_t j = 0; j < Input; j+= 32) {
-            auto x =  _mm256_load_si256((const __m256i*)&quantised_input.data[j]);
-            auto w0 = _mm256_load_si256((const __m256i*)&weights.data[i * Input + j]);
-            auto w1 = _mm256_load_si256((const __m256i*)&weights.data[(i+1) * Input + j]);
-            auto w2 = _mm256_load_si256((const __m256i*)&weights.data[(i+2) * Input + j]);
-            auto w3 = _mm256_load_si256((const __m256i*)&weights.data[(i+3) * Input + j]);
-            acc0 = _mm256_dpbusd_avx_epi32(acc0, x, w0);
-            acc1 = _mm256_dpbusd_avx_epi32(acc1, x, w1);
-            acc2 = _mm256_dpbusd_avx_epi32(acc2, x, w2);
-            acc3 = _mm256_dpbusd_avx_epi32(acc3, x, w3);
-          }
-          __m128i sums = haddx4(acc0, acc1, acc2, acc3);
-          __m128 scaled = _mm_mul_ps(_mm_cvtepi32_ps(sums), _mm_set1_ps(scale_x * scale_w));
-          _mm_storeu_ps(&result[i], _mm_add_ps(_mm_loadu_ps(&result[i]), scaled));
-        }
-        return result;
       } else {
         // one output at a time, still vectorised for the input
         // TODO: clean this all up.
