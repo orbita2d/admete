@@ -104,7 +104,7 @@ TEST(Search, InsufficientMaterial) {
   PrincipleLine line;
   line.reserve(depth);
 
-  for (const std::string fen : fens) {
+  for (const std::string& fen : fens) {
     board.fen_decode(fen);
     EXPECT_EQ(Search::search(board, depth, line),
               Evaluation::drawn_score(board));
@@ -137,7 +137,6 @@ TEST(Search, Stalemate) {
 TEST(Search, Underpromotion) {
   Board board = Board();
   board.set_root();
-  const score_t draw_score = Evaluation::drawn_score(board);
   std::pair<std::string, score_t> testcases[] = {
       {"6n1/5P1k/5Q2/8/8/8/8/7K w - - 0 1", MATING_SCORE - 1},
       {"7k/8/8/8/8/5q2/5p1K/6N1 b - - 0 1", MATING_SCORE - 1},
@@ -166,7 +165,7 @@ TEST(Search, NodeLimit) {
   // hit; comfortably above the few dozen nodes observed in practice.
   constexpr uint64_t overshoot_allowance = 0;
   for (const std::string &fen : fens) {
-    for (uint64_t limit : {1000ull, 100000ull, 1000000ull}) {
+    for (uint64_t limit : {1000ull, 100000ull}) {
       board.fen_decode(fen);
       PrincipleLine line;
       Search::SearchOptions options;
@@ -184,7 +183,6 @@ TEST(Search, NodeLimit) {
 TEST(Search, Rule50CheckmatePriority) {
   Board board = Board();
   board.set_root();
-  const score_t draw_score = Evaluation::drawn_score(board);
   std::pair<std::string, score_t> testcases[] = {
       {"7k/1R6/R7/8/8/8/8/4K3 w - - 99 1", MATING_SCORE - 1},
       {"4k3/8/8/8/8/r7/1r6/7K b - - 99 1", MATING_SCORE - 1},

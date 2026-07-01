@@ -6,6 +6,8 @@
 #include <limits>
 #include <memory>
 #include <fixed.hpp>
+#include <immintrin.h>
+#include <span>
 
 namespace Neural {
   typedef float nn_t;
@@ -22,11 +24,12 @@ namespace Neural {
   public:
   static constexpr size_t In = Input;
   static constexpr size_t Out = Output;
+  typedef T value_type;
     LinearLayer(const Matrix<T, Output, Input>& weights, const Vector<T, Output>& bias)
       : weights(weights.transpose()), bias(bias) {}
     LinearLayer(const T* weights_data, const T* bias_data) {
+      for (size_t i = 0; i < Output; i++) {
       for (size_t j = 0; j < Input; j++) {
-        for (size_t i = 0; i < Output; i++) {
           weights.at(j, i) = weights_data[j * Output + i];
         }
       }
@@ -64,11 +67,153 @@ namespace Neural {
     T& bias_at(size_t i) { return bias[i]; }
     T weight_at(size_t i, size_t j) const { return weights.at(j, i); }
     T& weight_at(size_t i, size_t j) { return weights.at(j, i); }
+    T* weights_data() { return weights.data; }
+    const T* weights_data() const { return weights.data; }
 
   private:
     Matrix<T, Input, Output> weights;
     Vector<T, Output> bias;
   };
+
+  template <size_t Input, size_t Output>
+  class QuantisedLinearLayer {
+  typedef int8_t weight_T;
+  typedef int32_t acc_T;
+
+  public:
+  static constexpr size_t In = Input;
+  static constexpr size_t Out = Output;
+  typedef LinearLayer<float, Input, Output> float_layer_t;
+
+    QuantisedLinearLayer(const Matrix<weight_T, Output, Input>& weights, const Vector<float, Output>& bias, const float scale_x, const float sca, const float scale_wle_w) : weights(weights), bias(bias), scale_x(scale_x), scale_w(scale_w) {}
+
+  template <typename T>
+    QuantisedLinearLayer(const T* weights_data, const T* bias_data, const float rng_x) {
+      auto w_span = std::span<const T>(weights_data, Input * Output);
+      auto max_abs_w = std::ranges::max(w_span, {}, [](const T& x) { return std::abs(x); });
+      scale_w = std::abs(max_abs_w) / 127.0f;
+      scale_x = rng_x / 127.0f; // TODO 255.
+      for (size_t j = 0; j < Input; j++) {
+        for (size_t i = 0; i < Output; i++) {
+          weights.at(i, j) = static_cast<int8_t>(std::clamp(std::lround(weights_data[j*Output+i] / scale_w), -127L, 127L));;
+        }
+      }
+      for (size_t i = 0; i < Output; i++) {
+        // bias[i] = static_cast<acc_T>(bias_data[i] / (scale_x * scale_w));
+        bias[i] = static_cast<float>(bias_data[i]);
+      }
+    }
+
+    QuantisedLinearLayer(const float_layer_t& layer, const float rng_x)  {
+      auto w_span = std::span<const typename float_layer_t::value_type>(layer.weights_data(), Input * Output);
+      auto max_abs_w = std::ranges::max(w_span, {}, [](const float_layer_t::value_type& x) { return std::abs(x); });
+      scale_w = std::abs(max_abs_w) / 127.0f;
+      scale_x = rng_x / 127.0f; // TODO 255.
+      for (size_t j = 0; j < Input; j++) {
+        for (size_t i = 0; i < Output; i++) {
+          weights.at(i, j) = static_cast<int8_t>(std::clamp(std::lround(layer.weight_at(i, j) / scale_w), -127L, 127L));;
+        }
+      }
+      for (size_t i = 0; i < Output; i++) {
+        // bias[i] = static_cast<acc_T>(layer.bias_at(i) / (scale_x * scale_w));
+        bias[i] = static_cast<float>(layer.bias_at(i));
+      }
+    }
+
+    QuantisedLinearLayer() = default;
+
+    Vector<float, Output> forward(const Vector<float, Input>& input) const {
+      auto quantised_input = Vector<int8_t, Input>::zeros();
+      static_assert(Input % 32 == 0, "Input size must be a multiple of 32 for AVX2");
+      {
+        const __m256 inv = _mm256_set1_ps(1.0f / scale_x);
+        const __m256i max127 = _mm256_set1_epi8(127);
+        // packs/packus interleave the two 128-bit lanes; this restores natural element order.
+        const __m256i lane_fix = _mm256_setr_epi32(0, 4, 1, 5, 2, 6, 3, 7);
+        for (size_t j = 0; j < Input; j += 32) {
+          auto a = _mm256_cvtps_epi32(_mm256_mul_ps(_mm256_load_ps(&input.data[j +  0]), inv));
+          auto b = _mm256_cvtps_epi32(_mm256_mul_ps(_mm256_load_ps(&input.data[j +  8]), inv));
+          auto c = _mm256_cvtps_epi32(_mm256_mul_ps(_mm256_load_ps(&input.data[j + 16]), inv));
+          auto d = _mm256_cvtps_epi32(_mm256_mul_ps(_mm256_load_ps(&input.data[j + 24]), inv));
+          auto bytes = _mm256_packus_epi16(_mm256_packs_epi32(a, b), _mm256_packs_epi32(c, d)); // saturates negatives to 0
+          bytes = _mm256_min_epu8(bytes, max127);
+          bytes = _mm256_permutevar8x32_epi32(bytes, lane_fix);
+          _mm256_store_si256((__m256i*)&quantised_input.data[j], bytes);
+        }
+      }
+      // Reduce four dpbusd accumulators to one i32 dot-product per lane: [out0,out1,out2,out3].
+      auto haddx4 = [](__m256i a, __m256i b, __m256i c, __m256i d) {
+        auto s = _mm256_hadd_epi32(_mm256_hadd_epi32(a, b), _mm256_hadd_epi32(c, d));
+        return _mm_add_epi32(_mm256_castsi256_si128(s), _mm256_extracti128_si256(s, 1));
+      };
+      if constexpr (Output % 8 == 0) {
+        auto result = bias;
+        const __m256 scale = _mm256_set1_ps(scale_x * scale_w);
+        for (size_t i = 0; i < Output; i+=8) {
+          __m256i acc[8];
+          for (size_t k = 0; k < 8; k++) acc[k] = _mm256_setzero_si256();
+          for (size_t j = 0; j < Input; j+= 32) {
+            auto x =  _mm256_load_si256((const __m256i*)&quantised_input.data[j]);
+            for (size_t k = 0; k < 8; k++)
+              acc[k] = _mm256_dpbusd_avx_epi32(acc[k], x, _mm256_load_si256((const __m256i*)&weights.data[(i+k) * Input + j]));
+          }
+          __m256i sums = _mm256_set_m128i(haddx4(acc[4], acc[5], acc[6], acc[7]),
+                                          haddx4(acc[0], acc[1], acc[2], acc[3]));
+          __m256 scaled = _mm256_mul_ps(_mm256_cvtepi32_ps(sums), scale);
+          _mm256_storeu_ps(&result[i], _mm256_add_ps(_mm256_loadu_ps(&result[i]), scaled));
+        }
+        return result;
+      } else if constexpr (Output % 4 == 0) {
+        auto result = bias;
+        for (size_t i = 0; i < Output; i+=4) {
+          auto acc0 = _mm256_setzero_si256();
+          auto acc1 = _mm256_setzero_si256();
+          auto acc2 = _mm256_setzero_si256();
+          auto acc3 = _mm256_setzero_si256();
+          for (size_t j = 0; j < Input; j+= 32) {
+            auto x =  _mm256_load_si256((const __m256i*)&quantised_input.data[j]);
+            auto w0 = _mm256_load_si256((const __m256i*)&weights.data[i * Input + j]);
+            auto w1 = _mm256_load_si256((const __m256i*)&weights.data[(i+1) * Input + j]);
+            auto w2 = _mm256_load_si256((const __m256i*)&weights.data[(i+2) * Input + j]);
+            auto w3 = _mm256_load_si256((const __m256i*)&weights.data[(i+3) * Input + j]);
+            acc0 = _mm256_dpbusd_avx_epi32(acc0, x, w0);
+            acc1 = _mm256_dpbusd_avx_epi32(acc1, x, w1);
+            acc2 = _mm256_dpbusd_avx_epi32(acc2, x, w2);
+            acc3 = _mm256_dpbusd_avx_epi32(acc3, x, w3);
+          }
+          __m128i sums = haddx4(acc0, acc1, acc2, acc3);
+          __m128 scaled = _mm_mul_ps(_mm_cvtepi32_ps(sums), _mm_set1_ps(scale_x * scale_w));
+          _mm_storeu_ps(&result[i], _mm_add_ps(_mm_loadu_ps(&result[i]), scaled));
+        }
+        return result;
+      } else {
+        // one output at a time, still vectorised for the input
+        // TODO: clean this all up.
+        auto result = bias;
+        for (size_t i = 0; i < Output; i++) {
+          auto acc = _mm256_setzero_si256();
+          for (size_t j = 0; j < Input; j+= 32) {
+            auto x =  _mm256_load_si256((const __m256i*)&quantised_input.data[j]);
+            auto w = _mm256_load_si256((const __m256i*)&weights.data[i * Input + j]);
+            acc = _mm256_dpbusd_avx_epi32(acc, x, w);
+          }
+          __m128i s = _mm_add_epi32(_mm256_castsi256_si128(acc), _mm256_extracti128_si256(acc, 1));
+          s = _mm_hadd_epi32(s, s);
+          s = _mm_hadd_epi32(s, s);
+          auto acc_i32 = _mm_cvtsi128_si32(s);
+          result[i] += static_cast<float>(acc_i32) * scale_x * scale_w;
+        }
+        return result;
+      }
+    }
+
+  private:
+    Matrix<weight_T, Output, Input> weights;
+    // Vector<acc_T, Output> bias;
+    Vector<float, Output> bias;
+    float scale_x;
+    float scale_w;
+  };  
 
   template<typename T, size_t HalfIn, size_t Out>
   class FloatingAccumulatorLayer {
@@ -280,13 +425,13 @@ namespace Neural {
     // Base case - just one layer left
     template<size_t In, size_t Out, size_t... Rest>
     struct LayerTypes {
-        using type = std::tuple<std::unique_ptr<LinearLayer<nn_t, In, Out>>>;
+        using type = std::tuple<std::unique_ptr<QuantisedLinearLayer<In, Out>>>;
     };
     // Recursive case - concatenate current layer with rest of layers
     template<size_t In, size_t Mid, size_t Out, size_t... Rest>
     struct LayerTypes<In, Mid, Out, Rest...> {
         using type = decltype(std::tuple_cat(
-            std::declval<std::tuple<std::unique_ptr<LinearLayer<nn_t, In, Mid>>>>(),
+            std::declval<std::tuple<std::unique_ptr<QuantisedLinearLayer<In, Mid>>>>(),
             std::declval<typename LayerTypes<Mid, Out, Rest...>::type>()
         ));
     };
@@ -314,9 +459,10 @@ namespace Neural {
     }
 
     template<size_t I>
-    void set_layer(std::unique_ptr<typename std::tuple_element_t<I, Layers>::element_type> layer) {
+    void set_layer(std::unique_ptr<typename std::tuple_element_t<I, Layers>::element_type::float_layer_t> layer) {
       static_assert(I < sizeof...(LayerSizes), "Index out of bounds");
-      std::get<I>(layers) = std::move(layer);
+      // std::get<I>(layers) = std::move(layer);
+      std::get<I>(layers) = std::make_unique<typename std::tuple_element_t<I, Layers>::element_type>(std::move(*layer), 6.0f); // Let's see if it compiles. aside, normalised to ~ N(0, 1)
     }
   };
 

@@ -25,6 +25,7 @@ add_test(NAME tests
         COMMAND tests)
 
 set_property(TARGET tests PROPERTY CXX_STANDARD 23)
+apply_common_compiler_flags(tests)
 
 include(FetchContent)
 FetchContent_Declare(
