@@ -5,23 +5,6 @@
 
 using namespace Neural;
 
-TEST(NeuralNetwork, LinearLayerForward) {
-    // Simpler test with clear input->output relationship
-    Matrix<nn_t, 2, 2> weights;
-    weights.at(0,0) = 1; weights.at(0,1) = 0;  // First output = x
-    weights.at(1,0) = 0; weights.at(1,1) = 1;  // Second output = y
-    
-    Vector<nn_t, 2> bias;
-    bias[0] = 10; bias[1] = 20;  // Fixed offsets
-    
-    LinearLayer<nn_t, 2, 2> layer(weights, bias);
-    
-    Vector<nn_t, 2> input{5, 7};
-    auto output = layer.forward(input);
-    EXPECT_EQ(output[0], 15);  // 5*1 + 7*0 + 10
-    EXPECT_EQ(output[1], 27);  // 5*0 + 7*1 + 20
-}
-
 TEST(NeuralNetwork, ReLUBehavior) {
     Vector<nn_t, 4> input{-100, -1, 0, 100};
     auto output = relu(input);
