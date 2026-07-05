@@ -15,10 +15,10 @@ jobs:
         include:
           - platform: linux
             compiler: clang
-            artifact_name: linux-x86-64-v3-vnni-clang
+            artifact_name: linux-x86-64-v3-vnni
           - platform: windows
             compiler: clang
-            artifact_name: windows-x86-64-v3-vnni-clang-mingw
+            artifact_name: windows-x86-64-v3-vnni
 
     name: Build ${{ matrix.platform }} (${{ matrix.compiler }})
     uses: ./.github/workflows/build-reusable.yaml

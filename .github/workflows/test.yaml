@@ -47,4 +47,4 @@ jobs:
         name: windows-tests
     
     - name: Test Windows Binary
-      run: .\tests_windows_x86-64_v3_clang.exe
+      run: .\tests_windows_x86-64-v3.exe

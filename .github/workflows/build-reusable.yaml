@@ -130,25 +130,17 @@ jobs:
       id: prepare
       run: |
         mkdir -p artifacts
-        
+
         if [ "${{ inputs.platform }}" = "windows" ]; then
           BINARY_EXT=".exe"
-          PLATFORM_SUFFIX="windows_x86-64"
         else
           BINARY_EXT=""
-          PLATFORM_SUFFIX="linux_x86-64"
         fi
-        
-        # Compact arch tag for the filename: x86-64-v3-vnni -> v3-vnni, native -> native.
-        ARCH_TAG="_${{ inputs.target_arch }}"
-        ARCH_TAG="${ARCH_TAG/_x86-64-/_}"
 
-        COMPILER_SUFFIX="_${{ inputs.compiler }}"
+        # e.g. admete_windows_x86-64-v3-vnni.exe, tests_linux_x86-64-v3
+        ARTIFACT_NAME="${{ inputs.binary_name }}_${{ inputs.platform }}_${{ inputs.target_arch }}${BINARY_EXT}"
 
-        BINARY_NAME="${{ inputs.binary_name }}${BINARY_EXT}"
-        ARTIFACT_NAME="${{ inputs.binary_name }}_${PLATFORM_SUFFIX}${ARCH_TAG}${COMPILER_SUFFIX}${BINARY_EXT}"
-        
-        cp "build/${BINARY_NAME}" "artifacts/${ARTIFACT_NAME}"
+        cp "build/${{ inputs.binary_name }}${BINARY_EXT}" "artifacts/${ARTIFACT_NAME}"
         echo "binary_path=artifacts/${ARTIFACT_NAME}" >> $GITHUB_OUTPUT
 
     - name: Upload Artifact
