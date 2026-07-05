@@ -10,10 +10,10 @@ alignas(32) static const uint8_t accumulator_bias[] = {
   #embed "accumulator-b.bin"
 };
 
-std::unique_ptr<FloatingAccumulatorLayer<nn_t, N_FEATURES, N_ACCUMULATED>> gen_accumulator() {
+std::unique_ptr<FixedAccumulatorLayer<N_FEATURES, N_ACCUMULATED, ACC_BITS, ACC_SHIFT>> gen_accumulator() {
     const float* w = reinterpret_cast<const float*>(accumulator_weights);
     const float* b = reinterpret_cast<const float*>(accumulator_bias);
-    std::unique_ptr<FloatingAccumulatorLayer<nn_t, N_FEATURES, N_ACCUMULATED>> layer = std::make_unique<FloatingAccumulatorLayer<nn_t, N_FEATURES, N_ACCUMULATED>>(w, b);
+    std::unique_ptr<FixedAccumulatorLayer<N_FEATURES, N_ACCUMULATED, ACC_BITS, ACC_SHIFT>> layer = std::make_unique<FixedAccumulatorLayer<N_FEATURES, N_ACCUMULATED, ACC_BITS, ACC_SHIFT>>(w, b);
     return layer;
 }
 
