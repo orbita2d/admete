@@ -13,6 +13,7 @@ jobs:
     uses: ./.github/workflows/build-reusable.yaml
     with:
       platform: linux
+      compiler: clang
       build_type: Release
       enable_tests: true
       artifact_name: linux-tests
@@ -23,8 +24,12 @@ jobs:
     uses: ./.github/workflows/build-reusable.yaml
     with:
       platform: windows
+      compiler: gcc
       build_type: Release
       enable_tests: true
+      # Portable, non-VNNI: this binary is executed on the windows-latest runner,
+      # which may not support AVX-VNNI.
+      target_arch: x86-64-v3
       artifact_name: windows-tests
       binary_name: tests
 
@@ -40,4 +45,4 @@ jobs:
         name: windows-tests
     
     - name: Test Windows Binary
-      run: .\tests_windows_x86-64.exe
+      run: .\tests_windows_x86-64_v3_gcc.exe

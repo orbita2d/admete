@@ -96,7 +96,7 @@ std::string Board::fen_encode() const {
         ss << "q";
     }
 
-    if (!(can_castle(WHITE) | can_castle(BLACK))) {
+    if (!(can_castle(WHITE) || can_castle(BLACK))) {
         ss << "-";
     }
     ss << " ";
