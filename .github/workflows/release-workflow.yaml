@@ -17,9 +17,6 @@ jobs:
             compiler: clang
             artifact_name: linux-x86-64-v3-vnni-clang
           - platform: windows
-            compiler: gcc
-            artifact_name: windows-x86-64-v3-vnni-gcc-mingw
-          - platform: windows
             compiler: clang
             artifact_name: windows-x86-64-v3-vnni-clang-mingw
 

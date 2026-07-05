@@ -20,11 +20,13 @@ jobs:
       binary_name: admete
 
   build-windows:
-    name: Build Windows MinGW
+    name: Build Windows (clang/mingw)
     uses: ./.github/workflows/build-reusable.yaml
     with:
       platform: windows
-      compiler: gcc
+      # clang, not gcc: the mingw-w64 gcc on the runners is v13, too old for the
+      # #embed weights (needs gcc >= 15 / clang >= 19).
+      compiler: clang
       build_type: Release
       enable_tests: true
       # Portable, non-VNNI: this binary is executed on the windows-latest runner,
@@ -34,7 +36,7 @@ jobs:
       binary_name: tests
 
   test-windows:
-    name: Test Windows MinGW
+    name: Test Windows (clang/mingw)
     needs: build-windows
     runs-on: windows-latest
     
@@ -45,4 +47,4 @@ jobs:
         name: windows-tests
     
     - name: Test Windows Binary
-      run: .\tests_windows_x86-64_v3_gcc.exe
+      run: .\tests_windows_x86-64_v3_clang.exe
