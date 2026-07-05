@@ -8,6 +8,11 @@ on:
         description: 'Build platform (linux or windows)'
         required: true
         type: string
+      compiler:
+        description: 'Compiler toolchain (gcc or clang)'
+        required: false
+        type: string
+        default: 'gcc'
       build_type:
         description: 'Build type (Release or Debug)'
         required: false
@@ -18,11 +23,11 @@ on:
         required: false
         type: boolean
         default: true
-      enable_avx2:
-        description: 'Whether to enable AVX2 optimizations'
+      target_arch:
+        description: 'TARGET_ARCH passed to CMake (native, x86-64-v3, x86-64-v3-vnni)'
         required: false
-        type: boolean
-        default: false
+        type: string
+        default: 'native'
       artifact_name:
         description: 'Name for the uploaded artifact'
         required: true
@@ -40,21 +45,44 @@ on:
 jobs:
   build:
     runs-on: ${{ inputs.platform == 'linux' && 'ubuntu-latest' || 'ubuntu-latest' }}
+    env:
+      # clang version installed from apt.llvm.org (needs >= 19 for C++23 + #embed).
+      LLVM_VERSION: '20'
     outputs:
       binary_path: ${{ steps.prepare.outputs.binary_path }}
-    
+
     steps:
     - uses: actions/checkout@v4
       with:
         lfs: true
 
-    - name: Setup Linux Build Environment
-      if: inputs.platform == 'linux'
+    # A modern clang toolchain used by the clang builds on both platforms: clang
+    # (C++23 + #embed), lld (fast ThinLTO linker, also drives PE/COFF for mingw),
+    # and llvm (provides llvm-ar for ThinLTO archives). Its bin dir is prepended to
+    # PATH so the unversioned clang/clang++/ld.lld/llvm-ar names resolve.
+    - name: Install clang toolchain
+      if: inputs.compiler == 'clang'
       run: |
-        cmake --version
+        wget https://apt.llvm.org/llvm.sh
+        chmod +x llvm.sh
+        sudo ./llvm.sh ${LLVM_VERSION}
+        sudo apt-get install -y llvm-${LLVM_VERSION} lld-${LLVM_VERSION}
+        echo "/usr/lib/llvm-${LLVM_VERSION}/bin" >> $GITHUB_PATH
+
+    - name: Setup Linux Build Environment (gcc)
+      if: inputs.platform == 'linux' && inputs.compiler == 'gcc'
+      run: |
         echo "CC=gcc-14" >> $GITHUB_ENV
         echo "CXX=g++-14" >> $GITHUB_ENV
 
+    - name: Setup Linux Build Environment (clang)
+      if: inputs.platform == 'linux' && inputs.compiler == 'clang'
+      run: |
+        echo "CC=clang" >> $GITHUB_ENV
+        echo "CXX=clang++" >> $GITHUB_ENV
+
+    # The mingw-w64 packages are the sysroot (headers + libstdc++) for BOTH the gcc
+    # and clang Windows builds; the clang build just uses clang as the code generator.
     - name: Setup Windows Build Environment
       if: inputs.platform == 'windows'
       run: |
@@ -63,21 +91,30 @@ jobs:
     - name: Configure CMake (Linux)
       if: inputs.platform == 'linux'
       run: |
+        LDFLAGS=""
+        if [ "${{ inputs.compiler }}" = "clang" ]; then LDFLAGS="-fuse-ld=lld"; fi
         cmake -B build \
           -DCMAKE_BUILD_TYPE=${{ inputs.build_type }} \
-          -DWITH_TESTS=${{ inputs.enable_tests && 'ON' || 'OFF' }} \
-          ${{ inputs.enable_avx2 && '-DUSE_AVX2=ON' || '' }}
+          -DCMAKE_EXE_LINKER_FLAGS="$LDFLAGS" \
+          -DTARGET_ARCH=${{ inputs.target_arch }} \
+          -DWITH_TESTS=${{ inputs.enable_tests && 'ON' || 'OFF' }}
 
     - name: Configure CMake (Windows)
       if: inputs.platform == 'windows'
       run: |
+        LDFLAGS="-static-libgcc -static-libstdc++ -static"
+        if [ "${{ inputs.compiler }}" = "clang" ]; then
+          TOOLCHAIN=toolchain-win-clang.cmake
+          LDFLAGS="-fuse-ld=lld $LDFLAGS"
+        else
+          TOOLCHAIN=toolchain-win-mingw64.cmake
+        fi
         cmake -B build \
-          -DCMAKE_TOOLCHAIN_FILE=toolchain-win-mingw64.cmake \
+          -DCMAKE_TOOLCHAIN_FILE=$TOOLCHAIN \
           -DCMAKE_BUILD_TYPE=${{ inputs.build_type }} \
           -DWITH_TESTS=${{ inputs.enable_tests && 'ON' || 'OFF' }} \
-          ${{ inputs.enable_avx2 && '-DUSE_AVX2=ON' || '' }} \
-          -DTARGET_ARCH=x86-64-v3 \
-          -DCMAKE_EXE_LINKER_FLAGS="-static-libgcc -static-libstdc++ -static"
+          -DTARGET_ARCH=${{ inputs.target_arch }} \
+          -DCMAKE_EXE_LINKER_FLAGS="$LDFLAGS"
 
     - name: Build
       run: cmake --build build --config ${{ inputs.build_type }}
@@ -102,13 +139,14 @@ jobs:
           PLATFORM_SUFFIX="linux_x86-64"
         fi
         
-        AVX2_SUFFIX=""
-        if [ "${{ inputs.enable_avx2 }}" = "true" ]; then
-          AVX2_SUFFIX="_avx2"
-        fi
-        
+        # Compact arch tag for the filename: x86-64-v3-vnni -> v3-vnni, native -> native.
+        ARCH_TAG="_${{ inputs.target_arch }}"
+        ARCH_TAG="${ARCH_TAG/_x86-64-/_}"
+
+        COMPILER_SUFFIX="_${{ inputs.compiler }}"
+
         BINARY_NAME="${{ inputs.binary_name }}${BINARY_EXT}"
-        ARTIFACT_NAME="${{ inputs.binary_name }}_${PLATFORM_SUFFIX}${AVX2_SUFFIX}${BINARY_EXT}"
+        ARTIFACT_NAME="${{ inputs.binary_name }}_${PLATFORM_SUFFIX}${ARCH_TAG}${COMPILER_SUFFIX}${BINARY_EXT}"
         
         cp "build/${BINARY_NAME}" "artifacts/${ARTIFACT_NAME}"
         echo "binary_path=artifacts/${ARTIFACT_NAME}" >> $GITHUB_OUTPUT

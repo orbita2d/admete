@@ -56,7 +56,7 @@ namespace Neural {
       static_assert(Input % 32 == 0, "Input size must be a multiple of 32 for AVX2");
       {
         const __m256 inv = _mm256_set1_ps(1.0f / scale_x);
-        const __m256i max255 = _mm256_set1_epi8(255);
+        const __m256i max255 = _mm256_set1_epi8((char)255);
         // packs/packus interleave the two 128-bit lanes; this restores natural element order.
         const __m256i lane_fix = _mm256_setr_epi32(0, 4, 1, 5, 2, 6, 3, 7);
         for (size_t j = 0; j < Input; j += 32) {

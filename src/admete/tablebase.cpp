@@ -67,7 +67,7 @@ bool probe_wdl(Board &board, score_t &result, Bounds &bounds) {
         return false;
     }
 
-    unsigned castling_rights = board.can_castle(WHITE) | board.can_castle(BLACK);
+    unsigned castling_rights = board.can_castle(WHITE) || board.can_castle(BLACK);
 
     // Don't probe if there are castling rights.
     if (castling_rights) {

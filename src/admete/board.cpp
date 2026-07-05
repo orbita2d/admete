@@ -17,7 +17,7 @@ std::map<char, Piece> fen_decode_map = {
 void Board::fen_decode(const std::string &fen) {
     ply_counter = 0;
     aux_info = &(*aux_history.begin());
-    uint N = fen.length(), board_position;
+    uint N = fen.length(), board_position = 0;
     uint rank = 7, file = 0;
     char my_char;
 
@@ -56,6 +56,9 @@ void Board::fen_decode(const std::string &fen) {
         colour_bb[p.get_colour()] |= square_bb;
         occupied_bb |= square_bb;
         file++;
+    }
+    if (board_position == 0) {
+        throw std::domain_error("FEN string does not contain a space after the board position");
     }
 
     std::string side_to_move, castling, en_passent;
@@ -274,21 +277,21 @@ void Board::make_move(Move &move) {
     }
 
     // Check if we've moved our rook to update our castling rights.
-    if ((move.origin == RookSquares[us][KINGSIDE]) & can_castle(us, KINGSIDE)) {
+    if ((move.origin == RookSquares[us][KINGSIDE]) && can_castle(us, KINGSIDE)) {
         aux_info->castling_rights &= ~us_kingside;
         castling_rights_change |= us_kingside;
-    } else if ((move.origin == RookSquares[us][QUEENSIDE]) & can_castle(us, QUEENSIDE)) {
+    } else if ((move.origin == RookSquares[us][QUEENSIDE]) && can_castle(us, QUEENSIDE)) {
         aux_info->castling_rights &= ~us_queenside;
         castling_rights_change |= us_queenside;
     }
 
     // Check for rook captures to update their castling rights
     if (move.is_capture()) {
-        if ((move.target == RookSquares[them][KINGSIDE]) & can_castle(them, KINGSIDE)) {
+        if ((move.target == RookSquares[them][KINGSIDE]) && can_castle(them, KINGSIDE)) {
             aux_info->castling_rights &= ~them_kingside;
             castling_rights_change |= them_kingside;
         }
-        if ((move.target == RookSquares[them][QUEENSIDE]) & can_castle(them, QUEENSIDE)) {
+        if ((move.target == RookSquares[them][QUEENSIDE]) && can_castle(them, QUEENSIDE)) {
             aux_info->castling_rights &= ~them_queenside;
             castling_rights_change |= them_queenside;
         }
@@ -713,13 +716,13 @@ bool Board::is_draw() const {
         return false;
     } else if (count_pieces(WHITE, KNIGHT) > 2) {
         return false;
-    } else if ((count_pieces(WHITE, KNIGHT) >= 1) & (count_pieces(WHITE, BISHOP) >= 1)) {
+    } else if ((count_pieces(WHITE, KNIGHT) >= 1) && (count_pieces(WHITE, BISHOP) >= 1)) {
         return false;
     } else if (count_pieces(BLACK, BISHOP) > 1) {
         return false;
     } else if (count_pieces(BLACK, KNIGHT) > 2) {
         return false;
-    } else if ((count_pieces(BLACK, KNIGHT) >= 1) & (count_pieces(BLACK, BISHOP) >= 1)) {
+    } else if ((count_pieces(BLACK, KNIGHT) >= 1) && (count_pieces(BLACK, BISHOP) >= 1)) {
         return false;
     } else {
         return true;

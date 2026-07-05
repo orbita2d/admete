@@ -4,6 +4,9 @@ name: Release Build
 on:
   release:
     types: [created]
+  # Allow building the binaries on demand (e.g. to hand off for benchmarking)
+  # without cutting a real release. Artifacts are downloadable from the run.
+  workflow_dispatch: {}
 
 jobs:
   build-release:
@@ -11,23 +14,30 @@ jobs:
       matrix:
         include:
           - platform: linux
-            artifact_name: linux-x86-64-avx2
-          - platform: windows  
-            artifact_name: windows-x86-64-avx2-mingw
-    
-    name: Build ${{ matrix.platform }}
+            compiler: clang
+            artifact_name: linux-x86-64-v3-vnni-clang
+          - platform: windows
+            compiler: gcc
+            artifact_name: windows-x86-64-v3-vnni-gcc-mingw
+          - platform: windows
+            compiler: clang
+            artifact_name: windows-x86-64-v3-vnni-clang-mingw
+
+    name: Build ${{ matrix.platform }} (${{ matrix.compiler }})
     uses: ./.github/workflows/build-reusable.yaml
     with:
       platform: ${{ matrix.platform }}
+      compiler: ${{ matrix.compiler }}
       build_type: Release
       enable_tests: false
-      enable_avx2: true
+      target_arch: x86-64-v3-vnni
       artifact_name: ${{ matrix.artifact_name }}
       binary_name: admete
 
   upload-release-assets:
     name: Upload Release Assets
     needs: build-release
+    if: github.event_name == 'release'
     runs-on: ubuntu-latest
     
     steps:
