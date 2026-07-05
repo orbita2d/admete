@@ -87,35 +87,17 @@ namespace Neural {
 
     QuantisedLinearLayer(const Matrix<weight_T, Output, Input>& weights, const Vector<float, Output>& bias, const float scale_x, const float sca, const float scale_wle_w) : weights(weights), bias(bias), scale_x(scale_x), scale_w(scale_w) {}
 
-  template <typename T>
-    QuantisedLinearLayer(const T* weights_data, const T* bias_data, const float rng_x) {
-      auto w_span = std::span<const T>(weights_data, Input * Output);
-      auto max_abs_w = std::ranges::max(w_span, {}, [](const T& x) { return std::abs(x); });
-      scale_w = std::abs(max_abs_w) / 127.0f;
-      scale_x = rng_x / 127.0f; // TODO 255.
-      for (size_t j = 0; j < Input; j++) {
-        for (size_t i = 0; i < Output; i++) {
-          weights.at(i, j) = static_cast<int8_t>(std::clamp(std::lround(weights_data[j*Output+i] / scale_w), -127L, 127L));;
-        }
-      }
-      for (size_t i = 0; i < Output; i++) {
-        // bias[i] = static_cast<acc_T>(bias_data[i] / (scale_x * scale_w));
-        bias[i] = static_cast<float>(bias_data[i]);
-      }
-    }
-
     QuantisedLinearLayer(const float_layer_t& layer, const float rng_x)  {
       auto w_span = std::span<const typename float_layer_t::value_type>(layer.weights_data(), Input * Output);
       auto max_abs_w = std::ranges::max(w_span, {}, [](const float_layer_t::value_type& x) { return std::abs(x); });
       scale_w = std::abs(max_abs_w) / 127.0f;
-      scale_x = rng_x / 127.0f; // TODO 255.
+      scale_x = rng_x / 255.0f;
       for (size_t j = 0; j < Input; j++) {
         for (size_t i = 0; i < Output; i++) {
           weights.at(i, j) = static_cast<int8_t>(std::clamp(std::lround(layer.weight_at(i, j) / scale_w), -127L, 127L));;
         }
       }
       for (size_t i = 0; i < Output; i++) {
-        // bias[i] = static_cast<acc_T>(layer.bias_at(i) / (scale_x * scale_w));
         bias[i] = static_cast<float>(layer.bias_at(i));
       }
     }
@@ -127,7 +109,7 @@ namespace Neural {
       static_assert(Input % 32 == 0, "Input size must be a multiple of 32 for AVX2");
       {
         const __m256 inv = _mm256_set1_ps(1.0f / scale_x);
-        const __m256i max127 = _mm256_set1_epi8(127);
+        const __m256i max255 = _mm256_set1_epi8(255);
         // packs/packus interleave the two 128-bit lanes; this restores natural element order.
         const __m256i lane_fix = _mm256_setr_epi32(0, 4, 1, 5, 2, 6, 3, 7);
         for (size_t j = 0; j < Input; j += 32) {
@@ -136,7 +118,7 @@ namespace Neural {
           auto c = _mm256_cvtps_epi32(_mm256_mul_ps(_mm256_load_ps(&input.data[j + 16]), inv));
           auto d = _mm256_cvtps_epi32(_mm256_mul_ps(_mm256_load_ps(&input.data[j + 24]), inv));
           auto bytes = _mm256_packus_epi16(_mm256_packs_epi32(a, b), _mm256_packs_epi32(c, d)); // saturates negatives to 0
-          bytes = _mm256_min_epu8(bytes, max127);
+          bytes = _mm256_min_epu8(bytes, max255);
           bytes = _mm256_permutevar8x32_epi32(bytes, lane_fix);
           _mm256_store_si256((__m256i*)&quantised_input.data[j], bytes);
         }
@@ -186,7 +168,6 @@ namespace Neural {
 
   private:
     Matrix<weight_T, Output, Input> weights;
-    // Vector<acc_T, Output> bias;
     Vector<float, Output> bias;
     float scale_x;
     float scale_w;
@@ -439,7 +420,7 @@ namespace Neural {
     void set_layer(std::unique_ptr<typename std::tuple_element_t<I, Layers>::element_type::float_layer_t> layer) {
       static_assert(I < sizeof...(LayerSizes), "Index out of bounds");
       // std::get<I>(layers) = std::move(layer);
-      std::get<I>(layers) = std::make_unique<typename std::tuple_element_t<I, Layers>::element_type>(std::move(*layer), 6.0f); // Let's see if it compiles. aside, normalised to ~ N(0, 1)
+      std::get<I>(layers) = std::make_unique<typename std::tuple_element_t<I, Layers>::element_type>(std::move(*layer), 8.0f); // Let's see if it compiles. aside, normalised to ~ N(0, 1)
     }
   };
 
