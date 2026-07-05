@@ -11,108 +11,45 @@
 
 namespace Neural {
   typedef float nn_t;
-  // Feature vectors calculated from the initial board state
-  // InitialFeatureDetectionLayer is idenditcal for each colour, a single matrix
-  // Accumulator stores the output of that first layer
-  // Incremental changes to the feature vectors can be added projected into the Accumulator
-  // Then there's *the rest* of the neural network
-
-  template <typename T, size_t Input, size_t Output>
-  class LinearLayer {
-  static_assert(std::is_floating_point_v<T>, "LinearLayer only supports arithmetic types");
-
-  public:
-  static constexpr size_t In = Input;
-  static constexpr size_t Out = Output;
-  typedef T value_type;
-    LinearLayer(const Matrix<T, Output, Input>& weights, const Vector<T, Output>& bias)
-      : weights(weights.transpose()), bias(bias) {}
-    LinearLayer(const T* weights_data, const T* bias_data) {
-      for (size_t i = 0; i < Output; i++) {
-      for (size_t j = 0; j < Input; j++) {
-          weights.at(j, i) = weights_data[j * Output + i];
-        }
-      }
-      for (size_t i = 0; i < Output; i++) {
-        bias[i] = bias_data[i];
-      }
-    }
-    LinearLayer() = default;
-
-    Vector<T, Output> forward(const Vector<T, Input>& input) const {
-      Vector<T, Output> result = bias;
-      // There are no tricks to be had here, gcc will happily vectorise this loop *really* effectively with -ffast-math on.
-      for (size_t j = 0; j < Input; j++) {
-        for (size_t i = 0; i < Output; i++) {
-          result[i] += weights.at(j, i) * input[j];
-        }
-      }
-      return result;
-    }
-
-    // factory methods
-    static LinearLayer zeros() {
-      auto mat = Matrix<T, Output, Input>::zeros();
-      auto bias = Vector<T, Output>::zeros();
-      return LinearLayer(mat, bias);
-    }
-
-    static LinearLayer random() {
-      auto mat = Matrix<T, Output, Input>::random();
-      auto bias = Vector<T, Output>::random();
-      return LinearLayer(mat, bias);
-    }
-
-    T bias_at(size_t i) const { return bias[i]; }
-    T& bias_at(size_t i) { return bias[i]; }
-    T weight_at(size_t i, size_t j) const { return weights.at(j, i); }
-    T& weight_at(size_t i, size_t j) { return weights.at(j, i); }
-    T* weights_data() { return weights.data; }
-    const T* weights_data() const { return weights.data; }
-
-  private:
-    Matrix<T, Input, Output> weights;
-    Vector<T, Output> bias;
-  };
-
+  
   [[gnu::always_inline]] inline __m256i dpbusd(__m256i a, __m256i b, __m256i c) {
+    // DPUSD is an AVX-VNNI instruction for a dot product over 8bit integers (unsigned, signed), accumulated into 32bit integers.
+    // It's quite quick. 
     #if defined(__AVXVNNI__)
       return _mm256_dpbusd_avx_epi32(a, b, c);
     #else
       // AVX2 emulation of dpbusd
+      // ~ 10% performance hit.
       auto p = _mm256_maddubs_epi16(b, c);
       return _mm256_add_epi32(a, _mm256_madd_epi16(p, _mm256_set1_epi16(1)));
     #endif
   }
 
   template <size_t Input, size_t Output>
-  class QuantisedLinearLayer {
+  class LinearLayer {
   typedef int8_t weight_T;
   typedef int32_t acc_T;
 
   public:
   static constexpr size_t In = Input;
   static constexpr size_t Out = Output;
-  typedef LinearLayer<float, Input, Output> float_layer_t;
 
-    QuantisedLinearLayer(const Matrix<weight_T, Output, Input>& weights, const Vector<float, Output>& bias, const float scale_x, const float sca, const float scale_wle_w) : weights(weights), bias(bias), scale_x(scale_x), scale_w(scale_w) {}
-
-    QuantisedLinearLayer(const float_layer_t& layer, const float rng_x)  {
-      auto w_span = std::span<const typename float_layer_t::value_type>(layer.weights_data(), Input * Output);
-      auto max_abs_w = std::ranges::max(w_span, {}, [](const float_layer_t::value_type& x) { return std::abs(x); });
+    LinearLayer(const float* weights_data, const float* bias_data, const float rng_x)  {
+      auto w_span = std::span<const float>(weights_data, Input * Output);
+      auto max_abs_w = std::ranges::max(w_span, {}, [](const float x) { return std::abs(x); });
       scale_w = std::abs(max_abs_w) / 127.0f;
       scale_x = rng_x / 255.0f;
       for (size_t j = 0; j < Input; j++) {
         for (size_t i = 0; i < Output; i++) {
-          weights.at(i, j) = static_cast<int8_t>(std::clamp(std::lround(layer.weight_at(i, j) / scale_w), -127L, 127L));;
+          weights.at(i, j) = static_cast<int8_t>(std::clamp(std::lround(weights_data[j * Output + i] / scale_w), -127L, 127L));;
         }
       }
       for (size_t i = 0; i < Output; i++) {
-        bias[i] = static_cast<float>(layer.bias_at(i));
+        bias[i] = static_cast<float>(bias_data[i]);
       }
     }
 
-    QuantisedLinearLayer() = default;
+    LinearLayer() = default;
 
     Vector<float, Output> forward(const Vector<float, Input>& input) const {
       auto quantised_input = Vector<int8_t, Input>::zeros();
@@ -395,13 +332,13 @@ namespace Neural {
     // Base case - just one layer left
     template<size_t In, size_t Out, size_t... Rest>
     struct LayerTypes {
-        using type = std::tuple<std::unique_ptr<QuantisedLinearLayer<In, Out>>>;
+        using type = std::tuple<std::unique_ptr<LinearLayer<In, Out>>>;
     };
     // Recursive case - concatenate current layer with rest of layers
     template<size_t In, size_t Mid, size_t Out, size_t... Rest>
     struct LayerTypes<In, Mid, Out, Rest...> {
         using type = decltype(std::tuple_cat(
-            std::declval<std::tuple<std::unique_ptr<QuantisedLinearLayer<In, Mid>>>>(),
+            std::declval<std::tuple<std::unique_ptr<LinearLayer<In, Mid>>>>(),
             std::declval<typename LayerTypes<Mid, Out, Rest...>::type>()
         ));
     };
@@ -429,10 +366,9 @@ namespace Neural {
     }
 
     template<size_t I>
-    void set_layer(std::unique_ptr<typename std::tuple_element_t<I, Layers>::element_type::float_layer_t> layer) {
+    void set_layer(std::unique_ptr<typename std::tuple_element_t<I, Layers>::element_type> layer) {
       static_assert(I < sizeof...(LayerSizes), "Index out of bounds");
-      // std::get<I>(layers) = std::move(layer);
-      std::get<I>(layers) = std::make_unique<typename std::tuple_element_t<I, Layers>::element_type>(std::move(*layer), 8.0f); // Let's see if it compiles. aside, normalised to ~ N(0, 1)
+      std::get<I>(layers) = std::move(layer);
     }
   };
 
