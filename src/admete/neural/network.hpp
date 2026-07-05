@@ -75,6 +75,16 @@ namespace Neural {
     Vector<T, Output> bias;
   };
 
+  [[gnu::always_inline]] inline __m256i dpbusd(__m256i a, __m256i b, __m256i c) {
+    #if defined(__AVXVNNI__)
+      return _mm256_dpbusd_avx_epi32(a, b, c);
+    #else
+      // AVX2 emulation of dpbusd
+      auto p = _mm256_maddubs_epi16(b, c);
+      return _mm256_add_epi32(a, _mm256_madd_epi16(p, _mm256_set1_epi16(1)));
+    #endif
+  }
+
   template <size_t Input, size_t Output>
   class QuantisedLinearLayer {
   typedef int8_t weight_T;
@@ -136,8 +146,10 @@ namespace Neural {
           for (size_t k = 0; k < 8; k++) acc[k] = _mm256_setzero_si256();
           for (size_t j = 0; j < Input; j+= 32) {
             auto x =  _mm256_load_si256((const __m256i*)&quantised_input.data[j]);
-            for (size_t k = 0; k < 8; k++)
-              acc[k] = _mm256_dpbusd_avx_epi32(acc[k], x, _mm256_load_si256((const __m256i*)&weights.data[(i+k) * Input + j]));
+            for (size_t k = 0; k < 8; k++) {
+              auto w = _mm256_load_si256((const __m256i*)&weights.data[(i+k) * Input + j]);
+              acc[k] = dpbusd(acc[k], x, w);
+            }
           }
           __m256i sums = _mm256_set_m128i(haddx4(acc[4], acc[5], acc[6], acc[7]),
                                           haddx4(acc[0], acc[1], acc[2], acc[3]));
@@ -154,7 +166,7 @@ namespace Neural {
           for (size_t j = 0; j < Input; j+= 32) {
             auto x =  _mm256_load_si256((const __m256i*)&quantised_input.data[j]);
             auto w = _mm256_load_si256((const __m256i*)&weights.data[i * Input + j]);
-            acc = _mm256_dpbusd_avx_epi32(acc, x, w);
+            acc = dpbusd(acc, x, w);
           }
           __m128i s = _mm_add_epi32(_mm256_castsi256_si128(acc), _mm256_extracti128_si256(acc, 1));
           s = _mm_hadd_epi32(s, s);
