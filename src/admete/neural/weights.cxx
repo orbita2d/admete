@@ -10,13 +10,16 @@ alignas(32) static const uint8_t accumulator_bias[] = {
   #embed "accumulator-b.bin"
 };
 
-std::unique_ptr<FixedAccumulatorLayer<N_FEATURES, N_ACCUMULATED, ACC_BITS, ACC_SHIFT>> gen_accumulator() {
+std::unique_ptr<AccumulatorLayer<N_FEATURES, N_ACCUMULATED, ACC_BITS, ACC_SHIFT>> gen_accumulator() {
     const float* w = reinterpret_cast<const float*>(accumulator_weights);
     const float* b = reinterpret_cast<const float*>(accumulator_bias);
-    std::unique_ptr<FixedAccumulatorLayer<N_FEATURES, N_ACCUMULATED, ACC_BITS, ACC_SHIFT>> layer = std::make_unique<FixedAccumulatorLayer<N_FEATURES, N_ACCUMULATED, ACC_BITS, ACC_SHIFT>>(w, b);
+    std::unique_ptr<AccumulatorLayer<N_FEATURES, N_ACCUMULATED, ACC_BITS, ACC_SHIFT>> layer = std::make_unique<AccumulatorLayer<N_FEATURES, N_ACCUMULATED, ACC_BITS, ACC_SHIFT>>(w, b);
     return layer;
 }
 
+
+
+// Layer 0: 256 -> 64
 alignas(32) static const uint8_t layer_0_weights[] = {
   #embed "layer-0-w.bin"
 };
@@ -30,6 +33,8 @@ std::unique_ptr<LinearLayer<256, 64>> gen_layer_0() {
   const float* b = reinterpret_cast<const float*>(layer_0_bias);
   return std::make_unique<LinearLayer<256, 64>>(w, b, 8.0f);
 }
+
+// Layer 1: 64 -> 1
 alignas(32) static const uint8_t layer_1_weights[] = {
   #embed "layer-1-w.bin"
 };

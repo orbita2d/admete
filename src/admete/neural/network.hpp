@@ -123,16 +123,16 @@ namespace Neural {
   };  
 
   template<size_t HalfIn, size_t Out, uint8_t acc_bits, int8_t acc_scale_shift>
-  class FixedAccumulatorLayer {
+  class AccumulatorLayer {
     public:
     using inT = feature_t;
-    static_assert(std::is_integral_v<inT>, "FixedAccumulatorLayer only supports integral types");
+    static_assert(std::is_integral_v<inT>, "AccumulatorLayer only supports integral types");
     using accT = Fixed<acc_bits, acc_scale_shift>;
     static constexpr size_t In = HalfIn * 2;
 
-    FixedAccumulatorLayer() = default; 
+    AccumulatorLayer() = default; 
 
-    FixedAccumulatorLayer(const float* weights_data, const float* bias_data) {
+    AccumulatorLayer(const float* weights_data, const float* bias_data) {
       for (size_t j = 0; j < In; j++) {
         for (size_t i = 0; i < Out; i++) {
           weights.at(j, i) = accT::from_float(weights_data[j * Out + i]);
@@ -191,7 +191,7 @@ namespace Neural {
   template <size_t FeaturesSize, size_t AccumulatorSize, uint8_t AccumulatorBits, uint8_t AccumulatorShift>
   class Accumulator {
   public:
-      using layer_t = FixedAccumulatorLayer<FeaturesSize, AccumulatorSize, AccumulatorBits, AccumulatorShift>;
+      using layer_t = AccumulatorLayer<FeaturesSize, AccumulatorSize, AccumulatorBits, AccumulatorShift>;
       using accT = layer_t::accT;
 
       Accumulator() = default;
