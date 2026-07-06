@@ -13,22 +13,26 @@ jobs:
     strategy:
       matrix:
         include:
+          # AVX2 + AVX-VNNI (fast; Alder Lake / Zen 4+)
           - platform: linux
-            compiler: clang
-            artifact_name: linux-x86-64-v3-vnni
+            target_arch: x86-64-v3-vnni
           - platform: windows
-            compiler: clang
-            artifact_name: windows-x86-64-v3-vnni
+            target_arch: x86-64-v3-vnni
+          # AVX2, no VNNI (portable fallback; dpbusd emulation, any 2013+ CPU)
+          - platform: linux
+            target_arch: x86-64-v3
+          - platform: windows
+            target_arch: x86-64-v3
 
-    name: Build ${{ matrix.platform }} (${{ matrix.compiler }})
+    name: Build ${{ matrix.platform }} ${{ matrix.target_arch }}
     uses: ./.github/workflows/build-reusable.yaml
     with:
       platform: ${{ matrix.platform }}
-      compiler: ${{ matrix.compiler }}
+      compiler: clang
       build_type: Release
       enable_tests: false
-      target_arch: x86-64-v3-vnni
-      artifact_name: ${{ matrix.artifact_name }}
+      target_arch: ${{ matrix.target_arch }}
+      artifact_name: ${{ matrix.platform }}-${{ matrix.target_arch }}
       binary_name: admete
 
   upload-release-assets:
